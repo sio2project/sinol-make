@@ -47,7 +47,7 @@ def check_oiejq(path = None):
 	if path is not None:
 		return check(path)
 		
-	if not check(os.path.expanduser('~/.local/bin/oiejq.sh')):
+	if not check(os.path.expanduser('~/.local/bin/oiejq')):
 		return False
 	else:
 		return True
@@ -82,7 +82,7 @@ def install_oiejq():
 	tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
 	tar.close()
 	os.remove('/tmp/oiejq.tar.gz')
-	os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
+	os.rename(os.path.expanduser('~/.local/bin/oiejq'), os.path.expanduser('~/.local/bin/oiejq'))
 
 	return check_oiejq()
 
@@ -99,8 +99,8 @@ def get_oiejq_path():
 		else:
 			return False
 	
-	if check(os.path.expanduser('~/.local/bin/oiejq.sh')):
-		return os.path.expanduser('~/.local/bin/oiejq.sh')
+	if check(os.path.expanduser('~/.local/bin/oiejq')):
+		return os.path.expanduser('~/.local/bin/oiejq')
 	else:
 		return None
 
