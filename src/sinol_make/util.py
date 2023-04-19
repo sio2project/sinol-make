@@ -29,7 +29,7 @@ def check_if_project():
 	return False
 
 
-def check_oiejq():
+def check_oiejq(path = None):
 	"""
 	Function to check if oiejq is installed
 	"""
@@ -44,7 +44,10 @@ def check_oiejq():
 		else:
 			return False
 		
-	if not check('oiejq.sh') and not check(os.path.expanduser('~/.local/bin/oiejq.sh')):
+	if path is not None:
+		return check(path)
+		
+	if not check(os.path.expanduser('~/.local/bin/oiejq.sh')):
 		return False
 	else:
 		return True
@@ -79,6 +82,7 @@ def install_oiejq():
 	tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
 	tar.close()
 	os.remove('/tmp/oiejq.tar.gz')
+	os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
 
 	return check_oiejq()
 
@@ -95,9 +99,7 @@ def get_oiejq_path():
 		else:
 			return False
 	
-	if check('oiejq.sh'):
-		return 'oiejq.sh'
-	elif check(os.path.expanduser('~/.local/bin/oiejq.sh')):
+	if check(os.path.expanduser('~/.local/bin/oiejq.sh')):
 		return os.path.expanduser('~/.local/bin/oiejq.sh')
 	else:
 		return None

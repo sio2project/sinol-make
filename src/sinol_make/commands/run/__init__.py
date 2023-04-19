@@ -1,10 +1,6 @@
 # Modified version of https://sinol3.dasie.mimuw.edu.pl/oij/jury/package/-/blob/master/runner.py
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
-# Changes made:
-# - Move code to one class
-# - Add ability to measure time with `time` gnu command
-# 
 
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
@@ -51,6 +47,8 @@ class Command(BaseCommand):
 							help='file to store report from subtask validation (in markdown)')
 		parser.add_argument('--program_report', type=str,
 							help='file to store report from program executions (in markdown)')
+		parser.add_argument('--oiejq_path', type=str,
+		      				help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
 		parser.add_argument('--c_compiler', type=str,
 		    				help='C compiler to use (default for Linux and Windows: gcc, default for Mac: gcc-{9-12})')
 		parser.add_argument('--cpp_compiler', type=str,
@@ -372,18 +370,23 @@ class Command(BaseCommand):
 
 	def validate_subtasks(self):
 		print("Validating subtasks...")
-		assert "subtasks" in self.config.keys(), "Subtasks description not defined in config.yml"
+		if 'subtasks' not in self.config.keys():
+			print(util.bold(util.color_red('Subtasks description not defined in config.yml.')))
+			
 		programs = []
 		for subtask in self.config["subtasks"]:
 			score_checksum = 0
 			for group in  self.config["subtasks"][subtask]["groups"]:
-				assert group in self.scores.keys() or group != 0, \
-					"Group %d was not defined." % group
+				if group not in self.scores.keys() or group == 0:
+					print(util.bold(util.color_red('Group %d was not defined.' % group)))
+					exit(1)
+					
 				score_checksum += self.scores[group]
 			score_expected = self.config["subtasks"][subtask]["points"]
-			assert score_checksum == score_expected, \
-				"Solving subtask %s will grant %d points (expected %d)." \
-				% (subtask, score_checksum, score_expected)
+			if score_checksum != score_expected:
+				print(util.bold(util.color_red('Subtask %s will grant %d points (expected %d).' % (subtask, score_checksum, score_expected))))
+				exit(1)
+			
 			validator_program = self.config["subtasks"][subtask]["validator"].split()[0]
 			programs.append(validator_program)
 		programs = list(set(programs))
@@ -403,8 +406,9 @@ class Command(BaseCommand):
 			passed_groups.sort()
 			should_pass = self.config["subtasks"][subtask]["groups"]
 			should_pass.sort()
-			assert passed_groups == should_pass, ("For subtask %s, the following groups will pass: %s, "
-				"while the following should: %s") % (subtask, passed_groups, should_pass)
+			if passed_groups != should_pass:
+				print(util.bold(util.color_red('Subtask %s will pass groups %s (expected %s).' % (subtask, passed_groups, should_pass))))
+				exit(1)
 
 
 	def run_programs(self):
@@ -426,7 +430,7 @@ class Command(BaseCommand):
 	
 	def run(self, args):
 		if not util.check_if_project():
-			print('You are not in a project directory')
+			print(util.bold(util.color_red('You are not in a project directory.')))
 			exit(1)
 
 		self.args = args
@@ -434,14 +438,29 @@ class Command(BaseCommand):
 			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
 		except AttributeError:
 			self.config = yaml.load(open("config.yml"))
-		assert "title" in self.config.keys(), "Title was not defined in config.yml."
-		assert "time_limit" in self.config.keys(), "Time limit was not defined in config.yml."
-		assert "memory_limit" in self.config.keys(), "Memory limit was not defined in config.yml."
-		assert "scores" in self.config.keys(), "Scores were not defined in config.yml."
+		
+		if not 'title' in self.config.keys():
+			print(util.bold(util.color_red('Title was not defined in config.yml.')))
+			exit(1)
+		if not 'time_limit' in self.config.keys():
+			print(util.bold(util.color_red('Time limit was not defined in config.yml.')))
+			exit(1)
+		if not 'memory_limit' in self.config.keys():
+			print(util.bold(util.color_red('Memory limit was not defined in config.yml.')))
+			exit(1)
+		if not 'scores' in self.config.keys():
+			print(util.bold(util.color_red('Scores were not defined in config.yml.')))
+			exit(1)
 
-		self.timetool_path = util.get_oiejq_path()
+		if 'oiejq_path' in args and args.oiejq_path is not None:
+			if not util.check_oiejq(args.oiejq_path):
+				print(util.bold(util.color_red('Invalid oiejq path.')))
+				exit(1)
+			self.timetool_path = args.oiejq_path
+		else:
+			self.timetool_path = util.get_oiejq_path()
 		if self.timetool_path is None:
-			print('oiejq is not installed')
+			print(util.bold(util.color_red('oiejq is not installed.')))
 			exit(1)
 
 		self.ID = os.path.split(os.getcwd())[-1]
