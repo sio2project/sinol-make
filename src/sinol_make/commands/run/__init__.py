@@ -1,6 +1,10 @@
 # Modified version of https://sinol3.dasie.mimuw.edu.pl/oij/jury/package/-/blob/master/runner.py
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
+# Changes made:
+# - Move code to one class
+# - Add ability to measure time with `time` gnu command
+# 
 
 from sinol_make.interfaces.BaseCommand import BaseCommand
 import sinol_make.util as util
@@ -244,7 +248,6 @@ class Command(BaseCommand):
 			pass
 
 	def perform_executions(self, compiled_commands, names, programs, report_file):
-		# print(compiled_commands, names, programs, report_file)
 		executions = []
 		all_results = collections.defaultdict(
 			lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
@@ -259,7 +262,6 @@ class Command(BaseCommand):
 					all_results[name][self.get_group(test)][test] = {"Status": "CE"}
 		print()
 		executions.sort(key = lambda x: (self.get_program_key(x[1]), x[2]))
-		# print(executions)
 		program_groups_scores = collections.defaultdict(dict)
 
 		def print_view(output_file=None):

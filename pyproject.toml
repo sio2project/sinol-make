@@ -6,10 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "sinol-make"
 version = "0.0.1"
 authors = [
-  { name="Mateusz Masiarz", email="m.masiarz@fri.edu.pl" },
+  { name="Mateusz Masiarz", email="m.masiarz@fri.edu.pl" }
+]
+maintainers = [
   { name="Tomasz Nowak", email="tomek.nowak.gm.16@gmail.com" }
 ]
-description = "Tool for creating sio2 tasks"
+description = "CLI tool for creating sio2 task packages"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
@@ -20,7 +22,7 @@ classifiers = [
 dependencies = [
 	"argparse",
 	"requests",
-  "PyYAML",
+	"PyYAML",
 ]
 
 [project.urls]
