@@ -7,6 +7,8 @@
 # 
 
 from sinol_make.interfaces.BaseCommand import BaseCommand
+from sinol_make.interfaces.Errors import CompilationError
+from sinol_make.helpers import compile
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math
 import multiprocessing as mp
@@ -51,6 +53,15 @@ class Command(BaseCommand):
 							help='file to store report from program executions (in markdown)')
 		parser.add_argument('--time_tool', choices=['oiejq', 'time', 'python'], default='oiejq',
 		      				help='tool to measure time (default: oiejq)')
+		parser.add_argument('--c_compiler', type=str,
+		    				help='C compiler to use (default for Linux and Windows: gcc, default for Mac: gcc-{9-12})')
+		parser.add_argument('--cpp_compiler', type=str,
+		    				help='C++ compiler to use (default for Linux and Windows: g++, default for Mac: gcc-{9-12})')
+		parser.add_argument('--python_interpreter', type=str,
+		    				help='Python interpreter to use (default: python3)')
+		parser.add_argument('--java_compiler', type=str,
+		    				help='Java compiler to use (default: javac)')
+		
 
 
 	def color_memory(self, memory, limit):
@@ -145,32 +156,46 @@ class Command(BaseCommand):
 		return os.path.splitext(self.extract_program_name(program))[0] + ".e"
 	
 
+	def get_source_file(self, executable):
+		file = os.path.splitext(executable)[0]
+		for ext in self.SOURCE_EXTENSIONS:
+			if os.path.isfile(file + ext):
+				return file + ext
+		raise Exception("Source file not found for executable %s" % executable)
+	
+
 	def get_output_file(self, test_path):
 		return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
 
 
 	def compile_programs(self, programs):
 		os.makedirs(self.COMPILATION_DIR, exist_ok=True)
+		os.makedirs(self.EXECUTABLES_DIR, exist_ok=True)
 		print("Compiling %d programs..." % len(programs))
 		with mp.Pool(self.cpus) as pool:
 			compilation_results = pool.map(self.compile, programs)
+		if not all(compilation_results):
+			print(util.bold(util.color_red("\nCompilation failed.")))
+			exit(1)
 		return compilation_results
 
 
 	def compile(self, program):
 		compile_log_file = os.path.join(
 			self.COMPILATION_DIR, "%s.compile_log" % self.extract_program_name(program))
-		res = os.system("make -B -C prog %s 1>/dev/null 2>%s"
-						% (self.get_executable(program), compile_log_file))
-		if res != 0:
-			print(util.bold(util.color_red("Compilation of file %s was unsuccessful."
-								% self.extract_program_name(program))))
-			os.system("head -c 500 %s" % compile_log_file)
-			return False
-		else:
+		source_file = self.get_source_file(os.path.join(os.getcwd(), "prog", program))
+		output = os.path.join(self.EXECUTABLES_DIR, program)
+		try:
+			compile.compile(source_file, output, open(compile_log_file, "w"))
 			print(util.color_green("Compilation of file %s was successful."
 							% self.extract_program_name(program)))
 			return True
+		except CompilationError as e:
+			print(util.bold(util.color_red("Compilation of file %s was unsuccessful."
+								% self.extract_program_name(program))))
+			os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
+			return False
+
 
 	def execute(self, execution):
 		(name, program, test, time_limit, memory_limit, timetool_path) = execution
@@ -367,7 +392,7 @@ class Command(BaseCommand):
 				print(10*len(program_group)*' ')
 			sys.stdout = sys.__stdout__
 			if output_file is not None:
-				os.system('sed -i -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g" %s' % output_file)
+				os.system('sed -i -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g" %s' % output_file) # TODO: make this work on Windows
 				print("Report has been saved to", util.bold(output_file))
 				print()
 
@@ -403,7 +428,7 @@ class Command(BaseCommand):
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
 		compiled_commands = []
 		for subtask in self.config["subtasks"]:
-			validator_program = os.path.join("prog", self.config["subtasks"][subtask]["validator"])
+			validator_program = os.path.join(self.EXECUTABLES_DIR, self.config["subtasks"][subtask]["validator"])
 			compiled_commands.append((subtask, validator_program, True))
 		names = list(self.config["subtasks"])
 		results = self.perform_executions(compiled_commands, names, programs, self.args.subtask_report)
@@ -429,7 +454,7 @@ class Command(BaseCommand):
 		print()
 		compilation_results = self.compile_programs(programs)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-		program_executables = [os.path.join("prog", self.get_executable(program))
+		program_executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(program))
 							for program in programs]
 		compiled_commands = zip(programs, program_executables, compilation_results)
 		names = programs
@@ -465,6 +490,8 @@ class Command(BaseCommand):
 		self.TMP_DIR = os.path.join(os.getcwd(), "cache")
 		self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
 		self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
+		self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")
+		self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
 		self.PROGRAMS_IN_ROW = 8
 		self.PROGRAMS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
 
