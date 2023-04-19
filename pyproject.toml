@@ -9,7 +9,7 @@ authors = [
   { name="Mateusz Masiarz", email="m.masiarz@fri.edu.pl" }
 ]
 maintainers = [
-  { name="Tomasz Nowak", email="tomek.nowak.gm.16@gmail.com" }
+  { name="Tomasz Nowak", email="tomasz.nowak@tonowak.com" }
 ]
 description = "CLI tool for creating sio2 task packages"
 readme = "README.md"
