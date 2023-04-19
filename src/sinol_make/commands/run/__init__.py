@@ -51,8 +51,6 @@ class Command(BaseCommand):
 							help='file to store report from subtask validation (in markdown)')
 		parser.add_argument('--program_report', type=str,
 							help='file to store report from program executions (in markdown)')
-		parser.add_argument('--time_tool', choices=['oiejq', 'time', 'python'], default='oiejq',
-		      				help='tool to measure time (default: oiejq)')
 		parser.add_argument('--c_compiler', type=str,
 		    				help='C compiler to use (default for Linux and Windows: gcc, default for Mac: gcc-{9-12})')
 		parser.add_argument('--cpp_compiler', type=str,
@@ -205,72 +203,37 @@ class Command(BaseCommand):
 								self.extract_test_no(test)+".res")
 		hard_time_limit_in_s = math.ceil(2*time_limit / 1000.0)
 
-		if self.args.time_tool == 'oiejq':
-			command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
-					% (math.ceil(memory_limit), hard_time_limit_in_s,
-						hard_time_limit_in_s, timetool_path,
-						program, test, output_file, result_file)
-			code = os.system(command)
-			result = {}
-			with open(result_file) as r:
-				for line in r:
-					line = line.strip()
-					if ": " in line:
-						(key, value) = line.split(": ")[:2]
-						result[key] = value
-			if "Time" in result.keys():
-				result["Time"] = self.parse_time(result["Time"])
-			if "Memory" in result.keys():
-				result["Memory"] = self.parse_memory(result["Memory"])
-			if code == 35072:
+		command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
+				% (math.ceil(memory_limit), hard_time_limit_in_s,
+					hard_time_limit_in_s, timetool_path,
+					program, test, output_file, result_file)
+		code = os.system(command)
+		result = {}
+		with open(result_file) as r:
+			for line in r:
+				line = line.strip()
+				if ": " in line:
+					(key, value) = line.split(": ")[:2]
+					result[key] = value
+		if "Time" in result.keys():
+			result["Time"] = self.parse_time(result["Time"])
+		if "Memory" in result.keys():
+			result["Memory"] = self.parse_memory(result["Memory"])
+		if code == 35072:
+			result["Status"] = "TL"
+		elif "Status" not in result.keys():
+			result["Status"] = "RE"
+		elif result["Status"] == "OK":
+			if os.system("diff -q -Z %s %s >/dev/null"
+						% (output_file, self.get_output_file(test))):
+				result["Status"] = "WA"
+			elif result["Time"] > time_limit:
 				result["Status"] = "TL"
-			elif "Status" not in result.keys():
-				result["Status"] = "RE"
-			elif result["Status"] == "OK":
-				if os.system("diff -q -Z %s %s >/dev/null"
-							% (output_file, self.get_output_file(test))):
-					result["Status"] = "WA"
-				elif result["Time"] > time_limit:
-					result["Status"] = "TL"
-				elif result["Memory"] > memory_limit:
-					result["Status"] = "ML"
-			else:
-				result["Status"] = result["Status"][:2]
-			return result
-		elif self.args.time_tool == 'time':
-			if sys.platform == 'darwin':
-				command = 'launchctl limit memlock %s; gtimeout -k %ds %ds gtime -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s' \
-					% (math.ceil(memory_limit) * 1024, hard_time_limit_in_s,
-						hard_time_limit_in_s, result_file, program, test, output_file)
-			elif sys.platform == 'linux':
-				command = 'ulimit -v %s; timeout -k %ds %ds time -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s' \
-					% (math.ceil(memory_limit), hard_time_limit_in_s,
-						hard_time_limit_in_s, result_file, program, test, output_file)
-				
-			code = os.system(command)
-			result = {}
-			lines = open(result_file).readlines()
-			if len(lines) == 3:
-				result["Time"] = round(float(lines[0].strip()) * 1000)
-				result["Memory"] = int(lines[1].strip())
-				if lines[2].strip() == "0":
-					result["Status"] = "OK"
-				else:
-					result["Status"] = "RE"
-
-			if code != 0:
-				result["Status"] = "TL"
-			if result["Status"] == "OK":
-				if os.system("diff -q -Z %s %s >/dev/null"
-							% (output_file, self.get_output_file(test))):
-					result["Status"] = "WA"
-				elif result["Time"] > time_limit:
-					result["Status"] = "TL"
-				elif result["Memory"] > memory_limit:
-					result["Status"] = "ML"
-			return result
-		elif self.args.time_tool == 'python':
-			pass
+			elif result["Memory"] > memory_limit:
+				result["Status"] = "ML"
+		else:
+			result["Status"] = result["Status"][:2]
+		return result
 
 	def perform_executions(self, compiled_commands, names, programs, report_file):
 		executions = []
@@ -476,15 +439,10 @@ class Command(BaseCommand):
 		assert "memory_limit" in self.config.keys(), "Memory limit was not defined in config.yml."
 		assert "scores" in self.config.keys(), "Scores were not defined in config.yml."
 
-		if args.time_tool == 'oiejq':
-			self.timetool_path = util.get_oiejq_path()
-			if self.timetool_path is None:
-				print('oiejq is not installed')
-				exit(1)
-		elif args.time_tool == 'time':
-			self.timetool_path = 'time'
-		else:
-			self.timetool_path = 'python'
+		self.timetool_path = util.get_oiejq_path()
+		if self.timetool_path is None:
+			print('oiejq is not installed')
+			exit(1)
 
 		self.ID = os.path.split(os.getcwd())[-1]
 		self.TMP_DIR = os.path.join(os.getcwd(), "cache")
