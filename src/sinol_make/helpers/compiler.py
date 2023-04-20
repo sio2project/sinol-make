@@ -19,7 +19,7 @@ def get_c_compiler():
 	Get the C compiler
 	"""
 		
-	if sys.platform == 'win32' or sys.platform == 'linux':
+	if sys.platform == 'win32' or sys.platform == 'cygwin' or sys.platform == 'linux':
 		if not check_if_installed('gcc'):
 			return None
 		else:
@@ -37,7 +37,7 @@ def get_cpp_compiler():
 	Get the C++ compiler
 	"""
 		
-	if sys.platform == 'win32' or sys.platform == 'linux':
+	if sys.platform == 'win32' or sys.platform == 'cygwin' or sys.platform == 'linux':
 		if not check_if_installed('g++'):
 			return None
 		else:

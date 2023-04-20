@@ -73,7 +73,7 @@ def compile_python(program, output, compiler_path, compile_log = None):
 	compile_log - A file to write the compilation log to
 	"""
 
-	if sys.platform == 'win32':
+	if sys.platform == 'win32' or sys.platform == 'cygwin':
 		# TODO: Make this work on Windows
 		pass
 	else:

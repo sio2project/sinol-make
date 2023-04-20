@@ -33,7 +33,7 @@ def check_oiejq(path = None):
 	"""
 	Function to check if oiejq is installed
 	"""
-	if sys.platform == 'win32' or sys.platform == 'darwin':
+	if sys.platform != 'linux':
 		return False
 	
 	def check(path):
@@ -59,7 +59,7 @@ def install_oiejq():
 	Returns True if successful.
 	"""
 	
-	if sys.platform == 'win32' or sys.platform == 'darwin':
+	if sys.platform != 'linux':
 		return False
 	if check_oiejq():
 		return True
