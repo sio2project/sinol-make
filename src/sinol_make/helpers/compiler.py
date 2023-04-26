@@ -18,7 +18,7 @@ def get_c_compiler():
 	"""
 	Get the C compiler
 	"""
-		
+
 	if sys.platform == 'win32' or sys.platform == 'cygwin' or sys.platform == 'linux':
 		if not check_if_installed('gcc'):
 			return None
@@ -29,14 +29,14 @@ def get_c_compiler():
 			compiler = 'gcc-' + str(i)
 			if check_if_installed(compiler):
 				return compiler
-			
+
 		return None
 
 def get_cpp_compiler():
 	"""
 	Get the C++ compiler
 	"""
-		
+
 	if sys.platform == 'win32' or sys.platform == 'cygwin' or sys.platform == 'linux':
 		if not check_if_installed('g++'):
 			return None
@@ -47,24 +47,24 @@ def get_cpp_compiler():
 			compiler = 'g++-' + str(i)
 			if check_if_installed(compiler):
 				return compiler
-			
+
 		return None
 
 def get_python_interpreter():
 	"""
 	Get the Python interpreter
 	"""
-		
+
 	if not check_if_installed('python3'):
 		return None
 	else:
 		return 'python3'
-	
+
 def get_java_compiler():
 	"""
 	Get the Java compiler
 	"""
-		
+
 	if not check_if_installed('javac'):
 		return None
 	else:

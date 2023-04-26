@@ -26,6 +26,3 @@ def main():
 			exit(0)
 
 	parser.print_help()
-
-	
-        

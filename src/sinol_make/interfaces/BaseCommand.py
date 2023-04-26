@@ -23,4 +23,3 @@ class BaseCommand:
 		Run command
 		"""
 		pass
-

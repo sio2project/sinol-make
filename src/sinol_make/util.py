@@ -13,8 +13,8 @@ def get_commands():
 	commands = []
 	for path in commands_path:
 		temp = importlib.import_module('sinol_make.commands.' + os.path.basename(path), 'Command')
-		commands.append(temp.Command())	
-	
+		commands.append(temp.Command())
+
 	return commands
 
 
@@ -22,7 +22,7 @@ def check_if_project():
 	"""
 	Function to check if current directory is a project
 	"""
-	
+
 	cwd = os.getcwd()
 	if os.path.exists(os.path.join(cwd, 'config.yml')):
 		return True
@@ -35,7 +35,7 @@ def check_oiejq(path = None):
 	"""
 	if sys.platform != 'linux':
 		return False
-	
+
 	def check(path):
 		p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		out, err = p.communicate()
@@ -43,10 +43,10 @@ def check_oiejq(path = None):
 			return True
 		else:
 			return False
-		
+
 	if path is not None:
 		return check(path)
-		
+
 	if not check(os.path.expanduser('~/.local/bin/oiejq')):
 		return False
 	else:
@@ -58,7 +58,7 @@ def install_oiejq():
 	Function to install oiejq, if not installed.
 	Returns True if successful.
 	"""
-	
+
 	if sys.platform != 'linux':
 		return False
 	if check_oiejq():
@@ -90,7 +90,7 @@ def install_oiejq():
 def get_oiejq_path():
 	if not check_oiejq():
 		return None
-	
+
 	def check(path):
 		p = subprocess.Popen([path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		out, err = p.communicate()
@@ -98,7 +98,7 @@ def get_oiejq_path():
 			return True
 		else:
 			return False
-	
+
 	if check(os.path.expanduser('~/.local/bin/oiejq')):
 		return os.path.expanduser('~/.local/bin/oiejq')
 	else:

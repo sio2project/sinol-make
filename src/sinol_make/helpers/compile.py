@@ -26,9 +26,9 @@ def compile_c(program, output, compiler_path, compile_log = None):
 	Compile a C program
 	compile_log - A file to write the compilation log to
 	"""
-	
+
 	flags = '-O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
-	
+
 	process = subprocess.Popen([compiler_path, program, '-o', output] + flags, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	process.wait()
 	out, _  = process.communicate()
@@ -37,7 +37,7 @@ def compile_c(program, output, compiler_path, compile_log = None):
 		compile_log.close()
 	else:
 		print(out.decode('utf-8'))
-	
+
 	if process.returncode != 0:
 		raise CompilationError('Compilation failed')
 	else:
@@ -51,7 +51,7 @@ def compile_cpp(program, output, compiler_path, compile_log = None):
 	"""
 
 	flags = '-O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
-	
+
 	process = subprocess.Popen([compiler_path, program, '-o', output] + flags, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	process.wait()
 	out, _ = process.communicate()
@@ -60,7 +60,7 @@ def compile_cpp(program, output, compiler_path, compile_log = None):
 		compile_log.close()
 	else:
 		print(out.decode('utf-8'))
-    
+
 	if process.returncode != 0:
 		raise CompilationError('Compilation failed')
 	else:
@@ -80,7 +80,7 @@ def compile_python(program, output, compiler_path, compile_log = None):
 		open(output, 'w').write('#!/usr/bin/python3\n')
 		open(output, 'a').write(open(program, 'r').read())
 		subprocess.call(['chmod', '+x', output])
-	
+
 	process = subprocess.Popen([compiler_path, '-m', 'compileall', output], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	process.wait()
 	out, _ = process.communicate()
@@ -94,7 +94,7 @@ def compile_python(program, output, compiler_path, compile_log = None):
 		raise CompilationError('Compilation failed')
 	else:
 		return True
-	
+
 def compile_java(program, output, compiler_path, compile_log = None):
 	"""
 	Compile a Java program
