@@ -33,8 +33,6 @@ class Command(BaseCommand):
 							help='number of cpus to use, you have %d avaliable' % mp.cpu_count())
 		parser.add_argument('--tl', type=float, help='time limit (in s)')
 		parser.add_argument('--ml', type=float, help='memory limit (in MB)')
-		parser.add_argument('--verbose', dest='verbose', action='store_true',
-							help='show detailed raport (status for every test in a group)')
 		parser.add_argument('--show_memory', dest='show_memory', action='store_true',
 							help='show memory usage in report')
 		parser.add_argument('--validate_subtasks',
@@ -252,12 +250,13 @@ class Command(BaseCommand):
 
 		def print_view(output_file=None):
 			if i != 0 and output_file is None:
-				if self.args.verbose:
-					cursor_delta = len(self.tests) + len(self.groups)+ 9
-					if self.args.show_memory:
-						cursor_delta += len(self.tests)
-				else:
-					cursor_delta = len(self.groups) + 7
+				# TODO: always display both tables
+				# if self.args.verbose:
+				# 	cursor_delta = len(self.tests) + len(self.groups)+ 9
+				# 	if self.args.show_memory:
+				# 		cursor_delta += len(self.tests)
+				# else:
+				cursor_delta = len(self.groups) + 7
 				number_of_rows = (len(programs) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
 				sys.stdout.write('\033[%dA' % (cursor_delta * number_of_rows + 1))
 			program_scores = collections.defaultdict(int)
@@ -328,28 +327,29 @@ class Command(BaseCommand):
 						if program_mem < 2 * self.memory_limit and program_mem >= 0
 						else "   "+7*'-'), end=" | ")
 				print()
-				if self.args.verbose:
-					print(6*" ", end=" | ")
-					for program in program_group:
-						print(10*" ", end=" | ")
-					print()
-					for test in self.tests:
-						print("%6s" % self.extract_test_no(test), end=" | ")
-						for program in program_group:
-							result = all_results[program][self.get_group(test)][test]
-							status = result["Status"]
-							if status == "  ": print(10*' ', end=" | ")
-							else:
-								print("%3s" % self.colorize_status(status),
-									("%17s" % self.color_time(result["Time"], self.time_limit)) if "Time" in result.keys() else 7*" ", end=" | ")
-						print()
-						if self.args.show_memory:
-							print(6*" ", end=" | ")
-							for program in program_group:
-								result = all_results[program][self.get_group(test)][test]
-								print(("%20s" % self.color_memory(result["Memory"], self.memory_limit))  if "Memory" in result.keys() else 10*" ", end=" | ")
-							print()
-					print()
+				# TODO: always display both tables
+				# if self.args.verbose:
+				# 	print(6*" ", end=" | ")
+				# 	for program in program_group:
+				# 		print(10*" ", end=" | ")
+				# 	print()
+				# 	for test in self.tests:
+				# 		print("%6s" % self.extract_test_no(test), end=" | ")
+				# 		for program in program_group:
+				# 			result = all_results[program][self.get_group(test)][test]
+				# 			status = result["Status"]
+				# 			if status == "  ": print(10*' ', end=" | ")
+				# 			else:
+				# 				print("%3s" % self.colorize_status(status),
+				# 					("%17s" % self.color_time(result["Time"], self.time_limit)) if "Time" in result.keys() else 7*" ", end=" | ")
+				# 		print()
+				# 		if self.args.show_memory:
+				# 			print(6*" ", end=" | ")
+				# 			for program in program_group:
+				# 				result = all_results[program][self.get_group(test)][test]
+				# 				print(("%20s" % self.color_memory(result["Memory"], self.memory_limit))  if "Memory" in result.keys() else 10*" ", end=" | ")
+				# 			print()
+				# 	print()
 				print(10*len(program_group)*' ')
 			sys.stdout = sys.__stdout__
 			if output_file is not None:
