@@ -69,7 +69,7 @@ def install_oiejq():
 
 	request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz')
 	if request.status_code != 200:
-		raise Exception('Couldn\'t download oiejq (oij.edu.pl status code: ' + str(request.status_code) + ')')
+		raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
 	open('/tmp/oiejq.tar.gz', 'wb').write(request.content)
 
 	def strip(tar):
