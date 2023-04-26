@@ -37,11 +37,14 @@ def check_oiejq(path = None):
 		return False
 
 	def check(path):
-		p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		out, err = p.communicate()
-		if p.returncode == 0:
-			return True
-		else:
+		try:
+			p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			out, err = p.communicate()
+			if p.returncode == 0:
+				return True
+			else:
+				return False
+		except FileNotFoundError:
 			return False
 
 	if path is not None:
