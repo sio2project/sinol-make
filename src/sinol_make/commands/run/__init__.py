@@ -370,46 +370,47 @@ class Command(BaseCommand):
 
 	def validate_subtasks(self):
 		print("Validating subtasks...")
-		if 'subtasks' not in self.config.keys():
+		if 'sinol_expected_scores' not in self.config.keys():
 			print(util.bold(util.color_red('Subtasks description not defined in config.yml.')))
 			exit(1)
 
 		programs = []
-		for subtask in self.config["subtasks"]:
+		for subtask in self.config["sinol_expected_scores"]:
 			score_checksum = 0
-			for group in  self.config["subtasks"][subtask]["groups"]:
-				if group not in self.scores.keys() or group == 0:
-					print(util.bold(util.color_red('Group %d was not defined.' % group)))
+			for num, expected_result in self.config["sinol_expected_scores"][subtask]["expected"].items():
+				if num not in self.scores.keys() or num == 0:
+					print(util.bold(util.color_red('Group %d was not defined.' % num)))
+					exit(1)
+				if expected_result not in ["TLE", "MLE", "RTE", "WA", "OK"]:
+					print(util.bold(util.color_red('Expected result for group %d is not valid.' % num)))
 					exit(1)
 
-				score_checksum += self.scores[group]
-			score_expected = self.config["subtasks"][subtask]["points"]
+				if expected_result == "OK":
+					score_checksum += self.scores[num]
+
+			score_expected = self.config["sinol_expected_scores"][subtask]["points"]
 			if score_checksum != score_expected:
 				print(util.bold(util.color_red('Subtask %s will grant %d points (expected %d).' % (subtask, score_checksum, score_expected))))
 				exit(1)
 
-			validator_program = self.config["subtasks"][subtask]["validator"].split()[0]
+			validator_program = self.config["sinol_expected_scores"][subtask]["validator"].split()[0]
 			programs.append(validator_program)
 		programs = list(set(programs))
 		compilation_results = self.compile_programs(programs)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
 		compiled_commands = []
-		for subtask in self.config["subtasks"]:
-			validator_program = os.path.join(self.EXECUTABLES_DIR, self.config["subtasks"][subtask]["validator"])
+		for subtask in self.config["sinol_expected_scores"]:
+			validator_program = os.path.join(self.EXECUTABLES_DIR, self.config["sinol_expected_scores"][subtask]["validator"])
 			compiled_commands.append((subtask, validator_program, True))
-		names = list(self.config["subtasks"])
+		names = list(self.config["sinol_expected_scores"])
 		results = self.perform_executions(compiled_commands, names, programs, self.args.subtask_report)
-		for subtask in self.config["subtasks"]:
-			passed_groups = []
-			for group in self.config["scores"]:
-				if results[subtask][group] == "OK":
-					passed_groups.append(group)
-			passed_groups.sort()
-			should_pass = self.config["subtasks"][subtask]["groups"]
-			should_pass.sort()
-			if passed_groups != should_pass:
-				print(util.bold(util.color_red('Subtask %s will pass groups %s (expected %s).' % (subtask, passed_groups, should_pass))))
-				exit(1)
+		for subtask in self.config["sinol_expected_scores"]:
+			for num, expected_result in self.config["sinol_expected_scores"][subtask]["expected"].items():
+				if results[subtask][num] != expected_result:
+					print(util.bold(util.color_red('Subtask %s will pass group %d with result %s (expected %s).' % (subtask, num, results[subtask][num], expected_result))))
+					exit(1)
+
+		print(util.color_green("Subtasks are valid."))
 
 
 	def run_programs(self):
