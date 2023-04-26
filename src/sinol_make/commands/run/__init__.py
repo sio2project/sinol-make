@@ -372,6 +372,7 @@ class Command(BaseCommand):
 		print("Validating subtasks...")
 		if 'subtasks' not in self.config.keys():
 			print(util.bold(util.color_red('Subtasks description not defined in config.yml.')))
+			exit(1)
 
 		programs = []
 		for subtask in self.config["subtasks"]:

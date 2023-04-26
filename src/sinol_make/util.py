@@ -39,7 +39,7 @@ def check_oiejq(path = None):
 	def check(path):
 		try:
 			p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			out, err = p.communicate()
+			p.wait()
 			if p.returncode == 0:
 				return True
 			else:
@@ -96,7 +96,7 @@ def get_oiejq_path():
 
 	def check(path):
 		p = subprocess.Popen([path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		out, err = p.communicate()
+		p.wait()
 		if p.returncode == 0:
 			return True
 		else:
