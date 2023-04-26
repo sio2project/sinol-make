@@ -10,10 +10,10 @@ def compile(program, output, compilers = None, compile_log = None):
 	ext = os.path.splitext(program)[1]
 	arguments = []
 	if ext == '.cpp':
-		arguments = [compilers['cpp_compiler'] or compiler.get_cpp_compiler(), program, '-o', output] + \
+		arguments = [compilers['cpp_compiler_path'] or compiler.get_cpp_compiler_path(), program, '-o', output] + \
 						'-O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
 	elif ext == '.c':
-		arguments = [compilers['c_compiler'] or compiler.get_c_compiler(), program, '-o', output] + \
+		arguments = [compilers['c_compiler_path'] or compiler.get_c_compiler_path(), program, '-o', output] + \
 						'-O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
 	elif ext == '.py':
 		if sys.platform == 'win32' or sys.platform == 'cygwin':
@@ -23,7 +23,7 @@ def compile(program, output, compilers = None, compile_log = None):
 			open(output, 'w').write('#!/usr/bin/python3\n')
 			open(output, 'a').write(open(program, 'r').read())
 			subprocess.call(['chmod', '+x', output])
-		arguments = [compilers['python_interpreter'] or compiler.get_python_interpreter(), '-m', 'py_compile', program]
+		arguments = [compilers['python_interpreter_path'] or compiler.get_python_interpreter_path(), '-m', 'py_compile', program]
 	elif ext == '.java':
 		raise NotImplementedError('Java compilation is not implemented')
 	else:

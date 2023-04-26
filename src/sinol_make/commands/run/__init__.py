@@ -49,13 +49,13 @@ class Command(BaseCommand):
 							help='file to store report from program executions (in markdown)')
 		parser.add_argument('--oiejq_path', type=str,
 		      				help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
-		parser.add_argument('--c_compiler', type=str, default=compiler.get_c_compiler(),
+		parser.add_argument('--c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
 		    				help='C compiler to use (default for Linux and Windows: gcc, default for Mac: gcc-{9-12})')
-		parser.add_argument('--cpp_compiler', type=str, default=compiler.get_cpp_compiler(),
+		parser.add_argument('--cpp_compiler_path', type=str, default=compiler.get_cpp_compiler_path(),
 		    				help='C++ compiler to use (default for Linux and Windows: g++, default for Mac: gcc-{9-12})')
-		parser.add_argument('--python_interpreter', type=str, default=compiler.get_python_interpreter(),
+		parser.add_argument('--python_interpreter_path', type=str, default=compiler.get_python_interpreter_path(),
 		    				help='Python interpreter to use (default: python3)')
-		parser.add_argument('--java_compiler', type=str, default=compiler.get_java_compiler(),
+		parser.add_argument('--java_compiler_path', type=str, default=compiler.get_java_compiler_path(),
 		    				help='Java compiler to use (default: javac)')
 
 
@@ -463,31 +463,31 @@ class Command(BaseCommand):
 
 		for program in self.get_programs(None):
 			ext = os.path.splitext(program)[1]
-			if ext == '.c' and args.c_compiler is None:
+			if ext == '.c' and args.c_compiler_path is None:
 				if sys.platform == 'darwin':
-					print(util.bold(util.color_red('Couldn\'t find a C compiler. Tried gcc-{9,10,11,12}. Try specifying a compiler with --c_compiler.')))
+					print(util.bold(util.color_red('Couldn\'t find a C compiler. Tried gcc-{9,10,11,12}. Try specifying a compiler with --c_compiler_path.')))
 					exit(1)
 				else:
-					print(util.bold(util.color_red('Couldn\'t find a C compiler. Tried gcc. Try specifying a compiler with --c_compiler.')))
-			elif ext == '.cpp' and args.cpp_compiler is None:
+					print(util.bold(util.color_red('Couldn\'t find a C compiler. Tried gcc. Try specifying a compiler with --c_compiler_path.')))
+			elif ext == '.cpp' and args.cpp_compiler_path is None:
 				if sys.platform == 'darwin':
-					print(util.bold(util.color_red('Couldn\'t find a C++ compiler. Tried g++-{9,10,11,12}. Try specifying a compiler with --cpp_compiler.')))
+					print(util.bold(util.color_red('Couldn\'t find a C++ compiler. Tried g++-{9,10,11,12}. Try specifying a compiler with --cpp_compiler_path.')))
 					exit(1)
 				else:
-					print(util.bold(util.color_red('Couldn\'t find a C++ compiler. Tried g++. Try specifying a compiler with --cpp_compiler.')))
+					print(util.bold(util.color_red('Couldn\'t find a C++ compiler. Tried g++. Try specifying a compiler with --cpp_compiler_path.')))
 					exit(1)
-			elif ext == '.py' and args.python_interpreter is None:
-				print(util.bold(util.color_red('Couldn\'t find a Python interpreter. Tried python3. Try specifying an interpreter with --python_interpreter.')))
+			elif ext == '.py' and args.python_interpreter_path is None:
+				print(util.bold(util.color_red('Couldn\'t find a Python interpreter. Tried python3. Try specifying an interpreter with --python_interpreter_path.')))
 				exit(1)
-			elif ext == '.java' and args.java_compiler is None:
-				print(util.bold(util.color_red('Couldn\'t find a Java compiler. Tried javac. Try specifying a compiler with --java_compiler.')))
+			elif ext == '.java' and args.java_compiler_path is None:
+				print(util.bold(util.color_red('Couldn\'t find a Java compiler. Tried javac. Try specifying a compiler with --java_compiler_path.')))
 				exit(1)
 
 		self.compilers = {
-			'c_compiler': args.c_compiler,
-			'cpp_compiler': args.cpp_compiler,
-			'python_interpreter': args.python_interpreter,
-			'java_compiler': args.java_compiler
+			'c_compiler_path': args.c_compiler_path,
+			'cpp_compiler_path': args.cpp_compiler_path,
+			'python_interpreter_path': args.python_interpreter_path,
+			'java_compiler_path': args.java_compiler_path
 		}
 
 		if 'oiejq_path' in args and args.oiejq_path is not None:
