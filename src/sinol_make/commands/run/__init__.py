@@ -33,8 +33,8 @@ class Command(BaseCommand):
 							help='number of cpus to use, you have %d avaliable' % mp.cpu_count())
 		parser.add_argument('--tl', type=float, help='time limit (in s)')
 		parser.add_argument('--ml', type=float, help='memory limit (in MB)')
-		parser.add_argument('--show_memory', dest='show_memory', action='store_true',
-							help='show memory usage in report')
+		parser.add_argument('--hide_memory', dest='hide_memory', action='store_true',
+							help='hide memory usage in report')
 		parser.add_argument('--validate_subtasks',
 							dest='validate_subtasks', action='store_true',
 							help='validate subtasks defined in config.yml')
@@ -253,7 +253,7 @@ class Command(BaseCommand):
 				# TODO: always display both tables
 				# if self.args.verbose:
 				# 	cursor_delta = len(self.tests) + len(self.groups)+ 9
-				# 	if self.args.show_memory:
+				# 	if not self.args.hide_memory:
 				# 		cursor_delta += len(self.tests)
 				# else:
 				cursor_delta = len(self.groups) + 7
@@ -343,7 +343,7 @@ class Command(BaseCommand):
 				# 				print("%3s" % self.colorize_status(status),
 				# 					("%17s" % self.color_time(result["Time"], self.time_limit)) if "Time" in result.keys() else 7*" ", end=" | ")
 				# 		print()
-				# 		if self.args.show_memory:
+				# 		if not self.args.hide_memory:
 				# 			print(6*" ", end=" | ")
 				# 			for program in program_group:
 				# 				result = all_results[program][self.get_group(test)][test]
@@ -431,7 +431,7 @@ class Command(BaseCommand):
 
 	def run(self, args):
 		if not util.check_if_project():
-			print(util.bold(util.color_yellow()('You are not in a project directory (couldn\'t find config.yml in current directory).')))
+			print(util.bold(util.color_yellow('You are not in a project directory (couldn\'t find config.yml in current directory).')))
 			exit(1)
 
 		self.args = args
