@@ -464,24 +464,34 @@ class Command(BaseCommand):
 
 		for program in self.get_programs(None):
 			ext = os.path.splitext(program)[1]
+			compiler = ""
+			tried = ""
+			flag = ""
 			if ext == '.c' and args.c_compiler_path is None:
+				compiler = 'C compiler'
+				flag = '--c_compiler_path'
 				if sys.platform == 'darwin':
-					print(util.bold(util.color_red('Couldn\'t find a C compiler. Tried gcc-{9,10,11,12}. Try specifying a compiler with --c_compiler_path.')))
-					exit(1)
+					tried = 'gcc-{9,10,11,12}'
 				else:
-					print(util.bold(util.color_red('Couldn\'t find a C compiler. Tried gcc. Try specifying a compiler with --c_compiler_path.')))
+					tried = 'gcc'
 			elif ext == '.cpp' and args.cpp_compiler_path is None:
+				compiler = 'C++ compiler'
+				flag = '--cpp_compiler_path'
 				if sys.platform == 'darwin':
-					print(util.bold(util.color_red('Couldn\'t find a C++ compiler. Tried g++-{9,10,11,12}. Try specifying a compiler with --cpp_compiler_path.')))
-					exit(1)
+					tried = 'g++-{9,10,11,12}'
 				else:
-					print(util.bold(util.color_red('Couldn\'t find a C++ compiler. Tried g++. Try specifying a compiler with --cpp_compiler_path.')))
-					exit(1)
-			elif ext == '.py' and args.python_interpreter_path is None:
-				print(util.bold(util.color_red('Couldn\'t find a Python interpreter. Tried python3. Try specifying an interpreter with --python_interpreter_path.')))
-				exit(1)
+					tried = 'g++'
+			elif ext == '.py' and args.python_intepreter_path:
+				compiler = 'Python interpreter'
+				tried = 'python3'
+				flag = '--python_interpreter_path'
 			elif ext == '.java' and args.java_compiler_path is None:
-				print(util.bold(util.color_red('Couldn\'t find a Java compiler. Tried javac. Try specifying a compiler with --java_compiler_path.')))
+				compiler = 'Java compiler'
+				tried = 'javac'
+				flag = '--java_compiler_path'
+
+			if compiler != "":
+				print(util.bold(util.color_red(f'Couldn\'t find a {compiler}. Tried {tried}. Try specyfing it with {flag}.')))
 				exit(1)
 
 		self.compilers = {
