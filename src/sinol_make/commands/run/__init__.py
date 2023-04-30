@@ -393,9 +393,9 @@ class Command(BaseCommand):
 		if suggestions:
 			programs = self.get_solutions()
 		else:
-			for prog in self.config["sinol_expected_scores"]:
+			for program in self.config["sinol_expected_scores"]:
 				score_checksum = 0
-				for group, expected_result in self.config["sinol_expected_scores"][prog]["expected"].items():
+				for group, expected_result in self.config["sinol_expected_scores"][program]["expected"].items():
 					if group not in self.scores.keys():
 						print(util.error('Group %d was not defined.' % group))
 						exit(1)
@@ -406,26 +406,24 @@ class Command(BaseCommand):
 					if expected_result == "OK":
 						score_checksum += self.scores[group]
 
-				score_expected = self.config["sinol_expected_scores"][prog]["points"]
+				score_expected = self.config["sinol_expected_scores"][program]["points"]
 				if score_checksum != score_expected:
-					print(util.error('Program %s will get %d points (expected %d).' % (prog, score_checksum, score_expected)))
+					print(util.error('Program %s will get %d points (expected %d).' % (program, score_checksum, score_expected)))
 					exit(1)
 
-				program = self.config["sinol_expected_scores"][prog]["program"].split()[0]
 				programs.append(program)
 			programs = list(set(programs))
 
 		compilation_results = self.compile_programs(programs)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
 		compiled_commands = []
+		for program in programs:
+			path = os.path.join(self.EXECUTABLES_DIR, program)
+			compiled_commands.append((program, path, True))
+		names = programs
+		results = self.perform_executions(compiled_commands, names, programs, self.args.expected_scores_report)
 
 		if suggestions:
-			for program in programs:
-				path = os.path.join(self.EXECUTABLES_DIR, program)
-				compiled_commands.append((program, path, True))
-			names = programs
-			results = self.perform_executions(compiled_commands, names, programs, self.args.expected_scores_report)
-
 			print(util.bold("Suggested expected scores description:"))
 			print("sinol_expected_scores:")
 
@@ -435,10 +433,8 @@ class Command(BaseCommand):
 
 			for program in programs:
 				print("  %s:" % program)
-				print("    program: %s" % program)
 				print("    expected: {" + ', '.join(results[program].items()) + "}")
 				new_config["sinol_expected_scores"][program] = {
-					"program": program,
 					"expected": results[program],
 					"points": 0
 				}
@@ -460,15 +456,10 @@ class Command(BaseCommand):
 				else:
 					print("Suggestions not applied.")
 		else:
-			for prog in self.config["sinol_expected_scores"]:
-				program = os.path.join(self.EXECUTABLES_DIR, self.config["sinol_expected_scores"][prog]["validator"])
-				compiled_commands.append((prog, program, True))
-			names = list(self.config["sinol_expected_scores"])
-			results = self.perform_executions(compiled_commands, names, programs, self.args.expected_scores_report)
-			for prog in self.config["sinol_expected_scores"]:
-				for group, expected_result in self.config["sinol_expected_scores"][prog]["expected"].items():
-					if results[prog][group] != expected_result:
-						print(util.error('Program %s will pass group %d with result %s (expected %s).' % (prog, group, results[prog][group], expected_result)))
+			for program in self.config["sinol_expected_scores"]:
+				for group, expected_result in self.config["sinol_expected_scores"][program]["expected"].items():
+					if results[program][group] != expected_result:
+						print(util.error('Program %s will pass group %d with result %s (expected %s).' % (program, group, results[program][group], expected_result)))
 						exit(1)
 
 			print(util.color_green("Expected scores are valid."))
