@@ -396,7 +396,7 @@ class Command(BaseCommand):
 			for prog in self.config["sinol_expected_scores"]:
 				score_checksum = 0
 				for group, expected_result in self.config["sinol_expected_scores"][prog]["expected"].items():
-					if group not in self.scores.keys() or group == 0:
+					if group not in self.scores.keys():
 						print(util.error('Group %d was not defined.' % group))
 						exit(1)
 					if expected_result not in ["TLE", "MLE", "RTE", "WA", "OK"]:
