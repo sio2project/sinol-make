@@ -110,6 +110,34 @@ class Command(BaseCommand):
 		return (self.get_group(test), test)
 
 
+	def time_test_status(self, timeout_exit_code, program_exit_code, diff_exit_code,
+		     memory, memory_limit, time, time_limit):
+		if timeout_exit_code != 0:
+			return "TL"
+		if program_exit_code != 0:
+			return "RE"
+		if diff_exit_code:
+			return "WA"
+		if time > time_limit:
+			return "TL"
+		if memory > memory_limit:
+			return "ML"
+		return "OK"
+
+
+	def oiejq_test_status(self, timeout_exit_code, diff_exit_code,
+		       memory, memory_limit, time, time_limit):
+		if timeout_exit_code == 35072:
+			return "TL"
+		if diff_exit_code:
+			return "WA"
+		if time > time_limit:
+			return "TL"
+		if memory > memory_limit:
+			return "ML"
+		return "OK"
+
+
 	def get_tests(self, arg_tests):
 		if arg_tests is None:
 			all_tests = ["in/%s" % test for test in os.listdir("in/")
@@ -220,20 +248,10 @@ class Command(BaseCommand):
 				result["Time"] = self.parse_time(result["Time"])
 			if "Memory" in result.keys():
 				result["Memory"] = self.parse_memory(result["Memory"])
-			if code == 35072:
-				result["Status"] = "TL"
-			elif "Status" not in result.keys():
+			if "Status" not in result.keys():
 				result["Status"] = "RE"
-			elif result["Status"] == "OK":
-				if os.system("diff -q -Z %s %s >/dev/null"
-							% (output_file, self.get_output_file(test))):
-					result["Status"] = "WA"
-				elif result["Time"] > time_limit:
-					result["Status"] = "TL"
-				elif result["Memory"] > memory_limit:
-					result["Status"] = "ML"
-			else:
-				result["Status"] = result["Status"][:2]
+			result["Status"] = self.oiejq_test_status(code, os.system("diff -q -Z %s %s >/dev/null" % (output_file, self.get_output_file(test))),
+					     result["Memory"], memory_limit, result["Time"], time_limit)
 			return result
 		elif self.args.time_tool == 'time':
 			if sys.platform == 'darwin':
@@ -253,24 +271,16 @@ class Command(BaseCommand):
 			if len(lines) == 3:
 				result["Time"] = round(float(lines[0].strip()) * 1000)
 				result["Memory"] = int(lines[1].strip())
-				if lines[2].strip() == "0":
-					result["Status"] = "OK"
-				else:
-					result["Status"] = "RE"
+				program_exit_code = int(lines[2].strip())
 
-			if code != 0:
-				result["Status"] = "TL"
-			if result["Status"] == "OK":
-				if os.system("diff -q -Z %s %s >/dev/null"
-							% (output_file, self.get_output_file(test))):
-					result["Status"] = "WA"
-				elif result["Time"] > time_limit:
-					result["Status"] = "TL"
-				elif result["Memory"] > memory_limit:
-					result["Status"] = "ML"
+			result["Status"] = self.time_test_status(code, program_exit_code,
+					    os.system("diff -q -Z %s %s >/dev/null" % (output_file, self.get_output_file(test))),
+						result["Memory"], memory_limit, result["Time"], time_limit)
+
 			return result
 		elif self.args.time_tool == 'python':
 			pass
+
 
 	def perform_executions(self, compiled_commands, names, programs, report_file):
 		executions = []
