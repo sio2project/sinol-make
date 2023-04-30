@@ -212,7 +212,7 @@ class Command(BaseCommand):
 		source_file = self.get_source_file(os.path.join(os.getcwd(), "prog", program))
 		output = os.path.join(self.EXECUTABLES_DIR, program)
 		try:
-			compile.compile(source_file, output, open(compile_log_file, "w"))
+			compile.compile(source_file, output, open(compile_log_file, "w"), self.args)
 			print(util.color_green("Compilation of file %s was successful."
 							% self.extract_program_name(program)))
 			return True
