@@ -510,7 +510,23 @@ class Command(BaseCommand):
 			if self.timetool_path is None:
 				print(util.bold(util.color_red('oiejq is not installed.')))
 				exit(1)
-		elif args.time_tool == 'time':
+		elif args.time_tool == "time":
+			if sys.platform == "win32" or sys.platform == "cygwin":
+				print(util.bold(util.color_red("Measuring with time is not supported on Windows.")))
+				exit(1)
+
+			def check(program):
+				return not os.system("%s --version > /dev/null 2>&1" % program)
+
+			time = "time"
+			timeout = "timeout"
+			if sys.platform == "darwin":
+				time = "gtime"
+				timeout = "gtimeout"
+
+			if not check(time) or not check(timeout):
+				print(util.bold(util.color_red("%s is not installed. Read README.md for more information." % (time if not check(time) else timeout))))
+				exit(1)
 			self.timetool_path = 'time'
 
 		self.ID = os.path.split(os.getcwd())[-1]
