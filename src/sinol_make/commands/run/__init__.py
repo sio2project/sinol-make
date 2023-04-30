@@ -390,12 +390,14 @@ class Command(BaseCommand):
 			else:
 				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
 
+		expected_scores = self.config["sinol_expected_scores"] if 'sinol_expected_scores' in self.config.keys() else {}
+
 		if suggestions:
 			programs = self.get_solutions()
 		else:
-			for program in self.config["sinol_expected_scores"]:
+			for program in expected_scores.keys():
 				score_checksum = 0
-				for group, expected_result in self.config["sinol_expected_scores"][program]["expected"].items():
+				for group, expected_result in expected_scores[program]["expected"].items():
 					if group not in self.scores.keys():
 						print(util.error('Group %d was not defined.' % group))
 						exit(1)
@@ -406,7 +408,7 @@ class Command(BaseCommand):
 					if expected_result == "OK":
 						score_checksum += self.scores[group]
 
-				score_expected = self.config["sinol_expected_scores"][program]["points"]
+				score_expected = expected_scores[program]["points"]
 				if score_checksum != score_expected:
 					print(util.error('Program %s will get %d points (expected %d).' % (program, score_checksum, score_expected)))
 					exit(1)
@@ -428,12 +430,12 @@ class Command(BaseCommand):
 			print("sinol_expected_scores:")
 
 			new_config = self.config
-			new_config["sinol_expected_scores"] = {}
+			new_expected_scores = {}
 
 			for program in programs:
 				print("  %s:" % program)
 				print("    expected: {" + ', '.join(results[program].items()) + "}")
-				new_config["sinol_expected_scores"][program] = {
+				new_expected_scores[program] = {
 					"expected": results[program],
 					"points": 0
 				}
@@ -443,46 +445,48 @@ class Command(BaseCommand):
 					if result == "OK":
 						points += self.scores[group]
 				print("    points: %d" % points)
-				new_config["sinol_expected_scores"][program]["points"] = points
+				new_expected_scores[program]["points"] = points
 
 			if self.args.apply_suggestions:
+				self.config["sinol_expected_scores"] = new_expected_scores
 				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
-					yaml.dump(new_config, f, default_flow_style=False)
+					yaml.dump(self.config, f, default_flow_style=False)
 			else:
 				print(util.warning("Use flag --apply_suggestions to apply suggestions."))
 				exit(1)
 		else:
-			new_config = self.config
+			new_expected_scores = {}
 			error = False
 
 			for program in results.keys():
-				if program not in self.config["sinol_expected_scores"]:
+				if program not in expected_scores.keys():
 					print(util.warning("Program %s is not defined in expected scores description." % program))
 					error = True
-					new_config["sinol_expected_scores"][program] = {
+					new_expected_scores[program] = {
 						"expected": results[program],
 						"points": 0
 					}
 					continue
 
 				for group, result in results[program].items():
-					if group not in self.config["sinol_expected_scores"][program]["expected"]:
+					if group not in expected_scores[program]["expected"]:
 						print(util.warning("Group %d is not defined for program %s in expected scores description." % (group, program)))
 						error = True
-						new_config["sinol_expected_scores"][program]["expected"][group] = result
-						new_config["sinol_expected_scores"][program]["points"] += self.scores[group] if result == "OK" else 0
+						new_expected_scores[program]["expected"][group] = result
+						new_expected_scores[program]["points"] += self.scores[group] if result == "OK" else 0
 						continue
-					if self.config["sinol_expected_scores"][program]["expected"][group] != result:
+					if expected_scores[program]["expected"][group] != result:
 						print(util.warning("Program %s passed group %d with status %s, while it should pass with status %s."
-			 								% (program, group, result, self.config["sinol_expected_scores"][program]["expected"][group])))
+			 								% (program, group, result, expected_scores[program]["expected"][group])))
 						error = True
-						new_config["sinol_expected_scores"][program]["expected"][group] = result
-						new_config["sinol_expected_scores"][program]["points"] += self.scores[group] if result == "OK" else 0
+						new_expected_scores[program]["expected"][group] = result
+						new_expected_scores[program]["points"] += self.scores[group] if result == "OK" else 0
 						continue
 
 			if self.args.apply_suggestions and error:
+				self.config["sinol_expected_scores"] = new_expected_scores
 				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
-					yaml.dump(new_config, f, default_flow_style=False)
+					yaml.dump(self.config, f, default_flow_style=False)
 				print(util.info("Suggested expected scores description was applied."))
 			elif error:
 				print(util.error("Expected scores description is not valid. Use --apply_suggestions to apply results."))
