@@ -186,7 +186,7 @@ class Command(BaseCommand):
 		output = os.path.join(self.EXECUTABLES_DIR, program)
 		try:
 			compile.compile(source_file, output, self.compilers, open(compile_log_file, "w"))
-			print(util.color_green("Compilation of file %s was successful."
+			print(util.info("Compilation of file %s was successful."
 							% self.extract_program_name(program)))
 			return True
 		except CompilationError as e:
@@ -423,11 +423,10 @@ class Command(BaseCommand):
 		names = programs
 		results = self.perform_executions(compiled_commands, names, programs, self.args.expected_scores_report)
 
-		if suggestions:
+		if "sinol_expected_scores" not in self.config.keys():
 			print(util.bold("Suggested expected scores description:"))
 			print("sinol_expected_scores:")
 
-			i = 1
 			new_config = self.config
 			new_config["sinol_expected_scores"] = {}
 
@@ -447,22 +446,49 @@ class Command(BaseCommand):
 				new_config["sinol_expected_scores"][program]["points"] = points
 
 			if self.args.apply_suggestions:
-				print("Do you want to apply these suggestions? (y/n) ", end="")
-				choice = input().lower()
-				if choice == "y" or choice == "yes" or choice == "":
-					with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
-						yaml.dump(new_config, f, default_flow_style=False)
-					print(util.color_green("Suggestions applied."))
-				else:
-					print("Suggestions not applied.")
+				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
+					yaml.dump(new_config, f, default_flow_style=False)
+			else:
+				print(util.warning("Use flag --apply_suggestions to apply suggestions."))
+				exit(1)
 		else:
-			for program in self.config["sinol_expected_scores"]:
-				for group, expected_result in self.config["sinol_expected_scores"][program]["expected"].items():
-					if results[program][group] != expected_result:
-						print(util.error('Program %s will pass group %d with result %s (expected %s).' % (program, group, results[program][group], expected_result)))
-						exit(1)
+			new_config = self.config
+			error = False
 
-			print(util.color_green("Expected scores are valid."))
+			for program in results.keys():
+				if program not in self.config["sinol_expected_scores"]:
+					print(util.warning("Program %s is not defined in expected scores description." % program))
+					error = True
+					new_config["sinol_expected_scores"][program] = {
+						"expected": results[program],
+						"points": 0
+					}
+					continue
+
+				for group, result in results[program].items():
+					if group not in self.config["sinol_expected_scores"][program]["expected"]:
+						print(util.warning("Group %d is not defined for program %s in expected scores description." % (group, program)))
+						error = True
+						new_config["sinol_expected_scores"][program]["expected"][group] = result
+						new_config["sinol_expected_scores"][program]["points"] += self.scores[group] if result == "OK" else 0
+						continue
+					if self.config["sinol_expected_scores"][program]["expected"][group] != result:
+						print(util.warning("Program %s passed group %d with status %s, while it should pass with status %s."
+			 								% (program, group, result, self.config["sinol_expected_scores"][program]["expected"][group])))
+						error = True
+						new_config["sinol_expected_scores"][program]["expected"][group] = result
+						new_config["sinol_expected_scores"][program]["points"] += self.scores[group] if result == "OK" else 0
+						continue
+
+			if self.args.apply_suggestions and error:
+				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
+					yaml.dump(new_config, f, default_flow_style=False)
+				print(util.info("Suggested expected scores description was applied."))
+			elif error:
+				print(util.error("Expected scores description is not valid. Use --apply_suggestions to apply results."))
+				exit(1)
+			else:
+				print(util.info("Expected scores are valid."))
 
 
 	def run_programs(self):
