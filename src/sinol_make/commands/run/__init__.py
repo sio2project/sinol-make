@@ -278,8 +278,6 @@ class Command(BaseCommand):
 						result["Memory"], memory_limit, result["Time"], time_limit)
 
 			return result
-		elif self.args.time_tool == 'python':
-			pass
 
 
 	def perform_executions(self, compiled_commands, names, programs, report_file):
