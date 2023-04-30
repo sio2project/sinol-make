@@ -401,7 +401,7 @@ class Command(BaseCommand):
 					if group not in self.scores.keys():
 						print(util.error('Group %d was not defined.' % group))
 						exit(1)
-					if expected_result not in ["TLE", "MLE", "RTE", "WA", "OK"]:
+					if expected_result not in ["TL", "ML", "RT", "WA", "OK"]:
 						print(util.error('Expected result for group %d is not valid.' % group))
 						exit(1)
 
