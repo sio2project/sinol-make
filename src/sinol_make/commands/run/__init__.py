@@ -21,7 +21,7 @@ class Command(BaseCommand):
 
 	def configure_subparser(self, subparser):
 		parser = subparser.add_parser(
-			'run', 
+			'run',
 			help='Run current task',
 			description='Run current task'
 		)
@@ -59,7 +59,7 @@ class Command(BaseCommand):
 		    				help='Python interpreter to use (default: python3)')
 		parser.add_argument('--java_compiler', type=str,
 		    				help='Java compiler to use (default: javac)')
-		
+
 
 
 	def color_memory(self, memory, limit):
@@ -82,7 +82,7 @@ class Command(BaseCommand):
 		if status == "OK": return util.bold(util.color_green(status))
 		if status == "  " or status == "??": return util.bold(util.color_yellow(status))
 		return util.bold(util.color_red(status))
-	
+
 
 	def parse_time(self, time_str):
 		if len(time_str) < 3: return -1
@@ -108,7 +108,7 @@ class Command(BaseCommand):
 
 	def get_test_key(self, test):
 		return (self.get_group(test), test)
-	
+
 
 	def get_tests(self, arg_tests):
 		if arg_tests is None:
@@ -133,7 +133,7 @@ class Command(BaseCommand):
 		if suffix != "":
 			value[1] = int(suffix)
 		return tuple(value)
-	
+
 
 	def get_programs(self, arg_problems):
 		if arg_problems is None:
@@ -149,10 +149,10 @@ class Command(BaseCommand):
 		for group in groups:
 			possible_score += self.scores[group]
 		return possible_score
-	
+
 	def get_executable(self, program):
 		return os.path.splitext(self.extract_program_name(program))[0] + ".e"
-	
+
 
 	def get_source_file(self, executable):
 		file = os.path.splitext(executable)[0]
@@ -160,7 +160,7 @@ class Command(BaseCommand):
 			if os.path.isfile(file + ext):
 				return file + ext
 		raise Exception("Source file not found for executable %s" % executable)
-	
+
 
 	def get_output_file(self, test_path):
 		return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
@@ -244,7 +244,9 @@ class Command(BaseCommand):
 				command = 'ulimit -v %s; timeout -k %ds %ds time -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s' \
 					% (math.ceil(memory_limit), hard_time_limit_in_s,
 						hard_time_limit_in_s, result_file, program, test, output_file)
-				
+			elif sys.platform == 'win32' or sys.platform == 'cygwin':
+				raise Exception("Measuring time with GNU time on Windows is not supported.")
+
 			code = os.system(command)
 			result = {}
 			lines = open(result_file).readlines()
@@ -290,7 +292,7 @@ class Command(BaseCommand):
 		def print_view(output_file=None):
 			if i != 0 and output_file is None:
 				if self.args.verbose:
-					cursor_delta = len(self.tests) + len(self.groups)+ 9 
+					cursor_delta = len(self.tests) + len(self.groups)+ 9
 					if self.args.show_memory:
 						cursor_delta += len(self.tests)
 				else:
@@ -403,13 +405,13 @@ class Command(BaseCommand):
 		if report_file:
 			print_view(report_file)
 		return program_groups_scores
-	
+
 
 	def validate_subtasks(self):
 		print("Validating subtasks...")
 		if 'subtasks' not in self.config.keys():
 			print(util.bold(util.color_red('Subtasks description not defined in config.yml.')))
-			
+
 		programs = []
 		for subtask in self.config["subtasks"]:
 			score_checksum = 0
@@ -417,13 +419,13 @@ class Command(BaseCommand):
 				if group not in self.scores.keys() or group == 0:
 					print(util.bold(util.color_red('Group %d was not defined.' % group)))
 					exit(1)
-					
+
 				score_checksum += self.scores[group]
 			score_expected = self.config["subtasks"][subtask]["points"]
 			if score_checksum != score_expected:
 				print(util.bold(util.color_red('Subtask %s will grant %d points (expected %d).' % (subtask, score_checksum, score_expected))))
 				exit(1)
-			
+
 			validator_program = self.config["subtasks"][subtask]["validator"].split()[0]
 			programs.append(validator_program)
 		programs = list(set(programs))
@@ -463,8 +465,8 @@ class Command(BaseCommand):
 		compiled_commands = zip(programs, program_executables, compilation_results)
 		names = programs
 		self.perform_executions(compiled_commands, names, programs, self.args.program_report)
-	
-	
+
+
 	def run(self, args):
 		if not util.check_if_project():
 			print(util.bold(util.color_red('You are not in a project directory.')))
@@ -475,7 +477,7 @@ class Command(BaseCommand):
 			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
 		except AttributeError:
 			self.config = yaml.load(open("config.yml"))
-		
+
 		if not 'title' in self.config.keys():
 			print(util.bold(util.color_red('Title was not defined in config.yml.')))
 			exit(1)
