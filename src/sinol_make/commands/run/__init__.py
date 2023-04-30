@@ -72,8 +72,8 @@ class Command(BaseCommand):
 
 	def colorize_status(self, status):
 		if status == "OK": return util.bold(util.color_green(status))
-		if status == "  " or status == "??": return util.bold(util.color_yellow(status))
-		return util.bold(util.color_red(status))
+		if status == "  " or status == "??": return util.warning(status)
+		return util.error(status)
 
 
 	def parse_time(self, time_str):
@@ -174,7 +174,7 @@ class Command(BaseCommand):
 		with mp.Pool(self.cpus) as pool:
 			compilation_results = pool.map(self.compile, programs)
 		if not all(compilation_results):
-			print(util.bold(util.color_red("\nCompilation failed.")))
+			print(util.error("\nCompilation failed."))
 			exit(1)
 		return compilation_results
 
@@ -190,8 +190,8 @@ class Command(BaseCommand):
 							% self.extract_program_name(program)))
 			return True
 		except CompilationError as e:
-			print(util.bold(util.color_red("Compilation of file %s was unsuccessful."
-								% self.extract_program_name(program))))
+			print(util.error("Compilation of file %s was unsuccessful."
+								% self.extract_program_name(program)))
 			os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
 			return False
 
@@ -379,15 +379,16 @@ class Command(BaseCommand):
 
 	def validate_expected_scores(self):
 		print("Validating expected scores...")
+		suggestions = False
 		if 'sinol_expected_scores' not in self.config.keys():
-			print(util.bold(util.color_yellow('Expected scores description not defined in config.yml. ' \
-				    	'The program will run all files on all tests and will print you the results. ')))
+			print(util.warning('Expected scores description not defined in config.yml. ' \
+				    	'The program will run all files on all tests and will print you the results. '))
 			suggestions = True
 
 			if self.args.apply_suggestions:
-				print(util.bold(util.color_yellow('Suggestions will be applied.')))
+				print(util.warning('Suggestions will be applied.'))
 			else:
-				print(util.bold(util.color_yellow('Use flag --apply_suggestions to apply suggestions.')))
+				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
 
 		if suggestions:
 			programs = self.get_solutions()
@@ -396,10 +397,10 @@ class Command(BaseCommand):
 				score_checksum = 0
 				for group, expected_result in self.config["sinol_expected_scores"][prog]["expected"].items():
 					if group not in self.scores.keys() or group == 0:
-						print(util.bold(util.color_red('Group %d was not defined.' % group)))
+						print(util.error('Group %d was not defined.' % group))
 						exit(1)
 					if expected_result not in ["TLE", "MLE", "RTE", "WA", "OK"]:
-						print(util.bold(util.color_red('Expected result for group %d is not valid.' % group)))
+						print(util.error('Expected result for group %d is not valid.' % group))
 						exit(1)
 
 					if expected_result == "OK":
@@ -407,15 +408,17 @@ class Command(BaseCommand):
 
 				score_expected = self.config["sinol_expected_scores"][prog]["points"]
 				if score_checksum != score_expected:
-					print(util.bold(util.color_red('Program %s will get %d points (expected %d).' % (prog, score_checksum, score_expected))))
+					print(util.error('Program %s will get %d points (expected %d).' % (prog, score_checksum, score_expected)))
 					exit(1)
 
 				program = self.config["sinol_expected_scores"][prog]["program"].split()[0]
 				programs.append(program)
 			programs = list(set(programs))
+
 		compilation_results = self.compile_programs(programs)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
 		compiled_commands = []
+
 		if suggestions:
 			for program in programs:
 				path = os.path.join(self.EXECUTABLES_DIR, program)
@@ -465,7 +468,7 @@ class Command(BaseCommand):
 			for prog in self.config["sinol_expected_scores"]:
 				for group, expected_result in self.config["sinol_expected_scores"][prog]["expected"].items():
 					if results[prog][group] != expected_result:
-						print(util.bold(util.color_red('Program %s will pass group %d with result %s (expected %s).' % (prog, group, results[prog][group], expected_result))))
+						print(util.error('Program %s will pass group %d with result %s (expected %s).' % (prog, group, results[prog][group], expected_result)))
 						exit(1)
 
 			print(util.color_green("Expected scores are valid."))
@@ -490,7 +493,7 @@ class Command(BaseCommand):
 
 	def run(self, args):
 		if not util.check_if_project():
-			print(util.bold(util.color_yellow('You are not in a project directory (couldn\'t find config.yml in current directory).')))
+			print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
 			exit(1)
 
 		self.args = args
@@ -500,16 +503,16 @@ class Command(BaseCommand):
 			self.config = yaml.load(open("config.yml"))
 
 		if not 'title' in self.config.keys():
-			print(util.bold(util.color_red('Title was not defined in config.yml.')))
+			print(util.error('Title was not defined in config.yml.'))
 			exit(1)
 		if not 'time_limit' in self.config.keys():
-			print(util.bold(util.color_red('Time limit was not defined in config.yml.')))
+			print(util.error('Time limit was not defined in config.yml.'))
 			exit(1)
 		if not 'memory_limit' in self.config.keys():
-			print(util.bold(util.color_red('Memory limit was not defined in config.yml.')))
+			print(util.error('Memory limit was not defined in config.yml.'))
 			exit(1)
 		if not 'scores' in self.config.keys():
-			print(util.bold(util.color_red('Scores were not defined in config.yml.')))
+			print(util.error('Scores were not defined in config.yml.'))
 			exit(1)
 
 		self.ID = os.path.split(os.getcwd())[-1]
@@ -530,27 +533,24 @@ class Command(BaseCommand):
 				compiler = 'C compiler'
 				flag = '--c_compiler_path'
 				if sys.platform == 'darwin':
-					tried = 'gcc-{9,10,11,12}'
+					print(util.error('Couldn\'t find a C compiler. Tried gcc-{9,10,11,12}. Try specifying a compiler with --c_compiler_path.'))
+					exit(1)
 				else:
-					tried = 'gcc'
+					print(util.error('Couldn\'t find a C compiler. Tried gcc. Try specifying a compiler with --c_compiler_path.'))
 			elif ext == '.cpp' and args.cpp_compiler_path is None:
 				compiler = 'C++ compiler'
 				flag = '--cpp_compiler_path'
 				if sys.platform == 'darwin':
-					tried = 'g++-{9,10,11,12}'
+					print(util.error('Couldn\'t find a C++ compiler. Tried g++-{9,10,11,12}. Try specifying a compiler with --cpp_compiler_path.'))
+					exit(1)
 				else:
-					tried = 'g++'
+					print(util.error('Couldn\'t find a C++ compiler. Tried g++. Try specifying a compiler with --cpp_compiler_path.'))
+					exit(1)
 			elif ext == '.py' and args.python_interpreter_path is None:
-				compiler = 'Python interpreter'
-				tried = 'python3'
-				flag = '--python_interpreter_path'
+				print(util.error('Couldn\'t find a Python interpreter. Tried python3. Try specifying an interpreter with --python_interpreter_path.'))
+				exit(1)
 			elif ext == '.java' and args.java_compiler_path is None:
-				compiler = 'Java compiler'
-				tried = 'javac'
-				flag = '--java_compiler_path'
-
-			if compiler != "":
-				print(util.bold(util.color_red(f'Couldn\'t find a {compiler}. Tried {tried}. Try specyfing it with {flag}.')))
+				print(util.error('Couldn\'t find a Java compiler. Tried javac. Try specifying a compiler with --java_compiler_path.'))
 				exit(1)
 
 		self.compilers = {
@@ -562,13 +562,13 @@ class Command(BaseCommand):
 
 		if 'oiejq_path' in args and args.oiejq_path is not None:
 			if not util.check_oiejq(args.oiejq_path):
-				print(util.bold(util.color_red('Invalid oiejq path.')))
+				print(util.error('Invalid oiejq path.'))
 				exit(1)
 			self.timetool_path = args.oiejq_path
 		else:
 			self.timetool_path = util.get_oiejq_path()
 		if self.timetool_path is None:
-			print(util.bold(util.color_red('oiejq is not installed.')))
+			print(util.error('oiejq is not installed.'))
 			exit(1)
 
 		title = self.config["title"]
@@ -582,12 +582,12 @@ class Command(BaseCommand):
 			print("Time limit (in ms):", self.time_limit)
 		else:
 			print("Time limit (in ms):", self.time_limit,
-				util.bold(util.color_yellow(("[originally was %.1f ms]" % config_time_limit))))
+				util.warning(("[originally was %.1f ms]" % config_time_limit)))
 		if self.memory_limit == config_memory_limit:
 			print("Memory limit (in kb):", self.memory_limit)
 		else:
 			print("Memory limit (in kb):", self.memory_limit,
-				util.bold(util.color_yellow(("[originally was %.1f kb]" % config_memory_limit))))
+				util.warning(("[originally was %.1f kb]" % config_memory_limit)))
 		self.scores = collections.defaultdict(int)
 		print("Scores:")
 		total_score = 0
@@ -596,7 +596,7 @@ class Command(BaseCommand):
 			print("%2d: %3d" % (group, self.scores[group]))
 			total_score += self.scores[group]
 		if total_score != 100:
-			print(util.bold(util.color_yellow("WARN: Scores sum up to %d (instead of 100)." % total_score)))
+			print(util.warning("WARN: Scores sum up to %d (instead of 100)." % total_score))
 		print()
 
 		self.tests = self.get_tests(args.tests)
