@@ -1,5 +1,5 @@
-import sinol_make.util as util
-import sys, subprocess
+import sys
+import subprocess
 
 def check_if_installed(compiler):
 	"""

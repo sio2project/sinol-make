@@ -1,6 +1,8 @@
+import os
+import subprocess
+import sys
 import sinol_make.helpers.compiler as compiler
 from sinol_make.interfaces.Exceptions import CompilationException
-import os, subprocess, sys
 
 def compile(program, output, compilers = None, compile_log = None):
 	"""
@@ -10,20 +12,23 @@ def compile(program, output, compilers = None, compile_log = None):
 	ext = os.path.splitext(program)[1]
 	arguments = []
 	if ext == '.cpp':
-		arguments = [compilers['cpp_compiler_path'] or compiler.get_cpp_compiler_path(), program, '-o', output] + \
-						'-O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
+		arguments = [compilers['cpp_compiler_path'] or compiler.get_cpp_compiler_path(),
+	       			 program, '-o', output] + \
+					 '-O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
 	elif ext == '.c':
-		arguments = [compilers['c_compiler_path'] or compiler.get_c_compiler_path(), program, '-o', output] + \
-						'-O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
+		arguments = [compilers['c_compiler_path'] or compiler.get_c_compiler_path(),
+	       			 program, '-o', output] + \
+					 '-O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
 	elif ext == '.py':
 		if sys.platform == 'win32' or sys.platform == 'cygwin':
 			# TODO: Make this work on Windows
 			pass
 		else:
-			open(output, 'w').write('#!/usr/bin/python3\n')
-			open(output, 'a').write(open(program, 'r').read())
+			open(output, 'w', encoding='utf-8').write('#!/usr/bin/python3\n')
+			open(output, 'a', encoding='utf-8').write(open(program, 'r', encoding='utf-8').read())
 			subprocess.call(['chmod', '+x', output])
-		arguments = [compilers['python_interpreter_path'] or compiler.get_python_interpreter_path(), '-m', 'py_compile', program]
+		arguments = [compilers['python_interpreter_path'] or compiler.get_python_interpreter_path(),
+	       			 '-m', 'py_compile', program]
 	elif ext == '.java':
 		raise NotImplementedError('Java compilation is not implemented')
 	else:
