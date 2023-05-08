@@ -2,12 +2,18 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
+import os
+import collections
+import sys
+import re
+import math
+import multiprocessing as mp
+import yaml
+from sinol_make.commands.Exceptions import RunCommandException
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Exceptions import CompilationException
 from sinol_make.helpers import compile, compiler
-import sinol_make.util as util
-import yaml, os, collections, sys, re, math
-import multiprocessing as mp
+from sinol_make import util
 
 class Command(BaseCommand):
 	"""
@@ -30,7 +36,7 @@ class Command(BaseCommand):
 		parser.add_argument('--tests', type=str, nargs='+',
 							help='tests to be run, for example in/abc{0,1}*')
 		parser.add_argument('--cpus', type=int,
-							help='number of cpus to use, you have %d avaliable' % mp.cpu_count())
+							help=f'number of cpus to use, you have {mp.cpu_count()} avaliable')
 		parser.add_argument('--tl', type=float, help='time limit (in s)')
 		parser.add_argument('--ml', type=float, help='memory limit (in MB)')
 		parser.add_argument('--hide_memory', dest='hide_memory', action='store_true',
@@ -59,34 +65,46 @@ class Command(BaseCommand):
 
 
 	def color_memory(self, memory, limit):
-		if memory == -1: return util.color_yellow("")
-		memory_str = "%.1fMB" % (memory / 1024.0)
-		if memory > limit: return util.color_red(memory_str)
-		elif memory > limit / 2.0: return util.color_yellow(memory_str)
-		else: return util.color_green(memory_str)
+		if memory == -1:
+			return util.color_yellow("")
+		memory_str = f'{memory / 1024.0:.1f}MB'
+		if memory > limit:
+			return util.color_red(memory_str)
+		elif memory > limit / 2.0:
+			return util.color_yellow(memory_str)
+		else:
+			return util.color_green(memory_str)
 
 
 	def color_time(self, time, limit):
-		if time == -1: return util.color_yellow("")
-		time_str = "%.2fs" % (time / 1000.0)
-		if time > limit: return util.color_red(time_str)
-		elif time > limit / 2.0: return util.color_yellow(time_str)
-		else: return util.color_green(time_str)
+		if time == -1:
+			return util.color_yellow("")
+		time_str = f'{time / 1000.0:.2f}s'
+		if time > limit:
+			return util.color_red(time_str)
+		elif time > limit / 2.0:
+			return util.color_yellow(time_str)
+		else:
+			return util.color_green(time_str)
 
 
 	def colorize_status(self, status):
-		if status == "OK": return util.bold(util.color_green(status))
-		if status == "  " or status == "??": return util.bold(util.color_yellow(status))
+		if status == "OK":
+			return util.bold(util.color_green(status))
+		if status == "  " or status == "??":
+			return util.bold(util.color_yellow(status))
 		return util.bold(util.color_red(status))
 
 
 	def parse_time(self, time_str):
-		if len(time_str) < 3: return -1
+		if len(time_str) < 3:
+			return -1
 		return int(time_str[:-2])
 
 
 	def parse_memory(self, memory_str):
-		if len(memory_str) < 3: return -1
+		if len(memory_str) < 3:
+			return -1
 		return int(memory_str[:-2])
 
 
@@ -108,7 +126,7 @@ class Command(BaseCommand):
 
 	def get_tests(self, arg_tests):
 		if arg_tests is None:
-			all_tests = ["in/%s" % test for test in os.listdir("in/")
+			all_tests = [f'in/{test}' for test in os.listdir("in/")
 						if test[-3:] == ".in"]
 			return sorted(all_tests, key=self.get_test_key)
 		else:
@@ -155,7 +173,7 @@ class Command(BaseCommand):
 		for ext in self.SOURCE_EXTENSIONS:
 			if os.path.isfile(file + ext):
 				return file + ext
-		raise Exception("Source file not found for executable %s" % executable)
+		raise RunCommandException(f'Source file not found for executable {executable}')
 
 
 	def get_output_file(self, test_path):
@@ -165,7 +183,7 @@ class Command(BaseCommand):
 	def compile_programs(self, programs):
 		os.makedirs(self.COMPILATION_DIR, exist_ok=True)
 		os.makedirs(self.EXECUTABLES_DIR, exist_ok=True)
-		print("Compiling %d programs..." % len(programs))
+		print(f'Compiling {len(programs)} programs...')
 		with mp.Pool(self.cpus) as pool:
 			compilation_results = pool.map(self.compile, programs)
 		if not all(compilation_results):
@@ -176,17 +194,15 @@ class Command(BaseCommand):
 
 	def compile(self, program):
 		compile_log_file = os.path.join(
-			self.COMPILATION_DIR, "%s.compile_log" % self.extract_program_name(program))
+			self.COMPILATION_DIR, f'{self.extract_program_name(program)}.compile_log')
 		source_file = self.get_source_file(os.path.join(os.getcwd(), "prog", program))
 		output = os.path.join(self.EXECUTABLES_DIR, program)
 		try:
-			compile.compile(source_file, output, self.compilers, open(compile_log_file, "w"))
-			print(util.color_green("Compilation of file %s was successful."
-							% self.extract_program_name(program)))
+			compile.compile(source_file, output, self.compilers, open(compile_log_file, "w", encoding="utf-8"))
+			print(util.color_green(f'Compilation of file {self.extract_program_name(program)} was successful.'))
 			return True
-		except CompilationException as e:
-			print(util.bold(util.color_red("Compilation of file %s was unsuccessful."
-								% self.extract_program_name(program))))
+		except CompilationException:
+			print(util.bold(util.color_red(f'Compilation of file {self.extract_program_name(program)} was unsuccessful.')))
 			os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
 			return False
 
@@ -199,14 +215,14 @@ class Command(BaseCommand):
 								self.extract_test_no(test)+".res")
 		hard_time_limit_in_s = math.ceil(2*time_limit / 1000.0)
 
-		command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
-				% (math.ceil(memory_limit), hard_time_limit_in_s,
-					hard_time_limit_in_s, timetool_path,
-					program, test, output_file, result_file)
+		command = f'MEM_LIMIT={math.ceil(memory_limit)}K MEASURE_MEM=true' \
+					f' timeout -k {hard_time_limit_in_s}s -s SIGKILL %d{hard_time_limit_in_s}s' \
+					f'{timetool_path} {program}' \
+					f'<{test} >{output_file} 2>{result_file}'
 		code = os.system(command)
 		result = {}
-		with open(result_file) as r:
-			for line in r:
+		with open(result_file, encoding='utf-8') as result:
+			for line in result:
 				line = line.strip()
 				if ": " in line:
 					(key, value) = line.split(": ")[:2]
@@ -220,8 +236,7 @@ class Command(BaseCommand):
 		elif "Status" not in result.keys():
 			result["Status"] = "RE"
 		elif result["Status"] == "OK":
-			if os.system("diff -q -Z %s %s >/dev/null"
-						% (output_file, self.get_output_file(test))):
+			if os.system(f'diff -q -Z {output_file} {self.get_output_file(test)} >/dev/null'):
 				result["Status"] = "WA"
 			elif result["Time"] > time_limit:
 				result["Status"] = "TL"
@@ -258,29 +273,28 @@ class Command(BaseCommand):
 				# else:
 				cursor_delta = len(self.groups) + 7
 				number_of_rows = (len(programs) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
-				sys.stdout.write('\033[%dA' % (cursor_delta * number_of_rows + 1))
+				sys.stdout.write(f'\033[{cursor_delta * number_of_rows + 1}A')
 			program_scores = collections.defaultdict(int)
 			program_times = collections.defaultdict(lambda: -1)
 			program_memory = collections.defaultdict(lambda: -1)
 			if output_file is not None:
-				sys.stdout = open(output_file, 'w')
+				sys.stdout = open(output_file, 'w', encoding='utf-8')
 			else:
 				time_remaining = (len(executions) - i - 1) * 2 * self.time_limit / self.cpus / 1000.0
-				print('Done %4d/%4d. Time remaining (in the worst case): %5d seconds.'
-					% (i+1, len(executions), time_remaining))
+				print(f'Done {i+1: >4}/{len(executions): >4}. Time remaining (in the worst case): {time_remaining: >5} seconds.')
 			for program_ix in range(0, len(names), self.PROGRAMS_IN_ROW):
 				# how to jump one line up
 				program_group = names[program_ix:program_ix + self.PROGRAMS_IN_ROW]
 				print("groups", end=" | ")
 				for program in program_group:
-					print("%10s" % program, end=" | ")
+					print(f'{program: >10}', end=" | ")
 				print()
 				print(6*"-", end=" | ")
 				for program in program_group:
 					print(10*"-", end=" | ")
 				print()
 				for group in self.groups:
-					print("%6s" % group, end=" | ")
+					print('{group: >6}', end=" | ")
 					for program in program_group:
 						results = all_results[program][group]
 						group_status = "OK"
@@ -311,7 +325,7 @@ class Command(BaseCommand):
 				print()
 				print("points", end=" | ")
 				for program in program_group:
-					print(util.bold("   %3s/%3s" % (program_scores[program], self.possible_score)), end=" | ")
+					print(util.bold(f'   {program_scores[program]: >3}/{self.possible_score: >3}'), end=" | ")
 				print()
 				print("  time", end=" | ")
 				for program in program_group:
@@ -357,10 +371,10 @@ class Command(BaseCommand):
 				print("Report has been saved to", util.bold(output_file))
 				print()
 
-		print("Performing %d executions..." % len(executions))
+		print(f'Performing {len(executions)} executions...')
 		with mp.Pool(self.cpus) as pool:
 			for i, result in enumerate(pool.imap(self.execute, executions)):
-				(name, program, test) = executions[i][:3]
+				(name, _, test) = executions[i][:3]
 				all_results[name][self.get_group(test)][test] = result
 				print_view()
 		if report_file:
@@ -379,13 +393,13 @@ class Command(BaseCommand):
 			score_checksum = 0
 			for group in  self.config["subtasks"][subtask]["groups"]:
 				if group not in self.scores.keys() or group == 0:
-					print(util.bold(util.color_red('Group %d was not defined.' % group)))
+					print(util.bold(util.color_red(f'Group {group} was not defined.')))
 					exit(1)
 
 				score_checksum += self.scores[group]
 			score_expected = self.config["subtasks"][subtask]["points"]
 			if score_checksum != score_expected:
-				print(util.bold(util.color_red('Subtask %s will grant %d points (expected %d).' % (subtask, score_checksum, score_expected))))
+				print(util.bold(util.color_red(f'Subtask {subtask} will grant {score_checksum} points (expected {score_expected}).')))
 				exit(1)
 
 			validator_program = self.config["subtasks"][subtask]["validator"].split()[0]
@@ -414,11 +428,11 @@ class Command(BaseCommand):
 
 	def run_programs(self):
 		programs = self.get_programs(self.args.programs)
-		print("The following %d programs will be executed:\n%s"
-			% (len(programs), [self.extract_program_name(program) for program in programs]))
-		print("on the following %d tests:\n%s"
-			% (len(self.tests), [self.extract_test_no(test) for test in self.tests] ))
-		print("in parallel on %d cpus." % self.cpus)
+		print(f'The following {len(programs)} programs will be executed:\n'
+			  f'{[self.extract_program_name(program) for program in programs]}')
+		print(f'on the following {len(self.tests)} tests:\n'
+			  f'{[self.extract_test_no(test) for test in self.tests]}')
+		print(f'in parallel on {self.cpus} cpus.')
 		print()
 		compilation_results = self.compile_programs(programs)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
@@ -431,14 +445,12 @@ class Command(BaseCommand):
 
 	def run(self, args):
 		if not util.check_if_project():
-			print(util.bold(util.color_yellow('You are not in a project directory (couldn\'t find config.yml in current directory).')))
+			print(util.bold(util.color_yellow('You are not in a project directory '
+				    		'(couldn\'t find config.yml in current directory).')))
 			exit(1)
 
 		self.args = args
-		try:
-			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
-		except AttributeError:
-			self.config = yaml.load(open("config.yml"))
+		self.config = yaml.load(open("config.yml", encoding='utf-8'), Loader=yaml.FullLoader)
 
 		if not 'title' in self.config.keys():
 			print(util.bold(util.color_red('Title was not defined in config.yml.')))
@@ -491,7 +503,8 @@ class Command(BaseCommand):
 				flag = '--java_compiler_path'
 
 			if compiler != "":
-				print(util.bold(util.color_red(f'Couldn\'t find a {compiler}. Tried {tried}. Try specyfing it with {flag}.')))
+				print(util.bold(util.color_red(f'Couldn\'t find a {compiler}. Tried {tried}. '
+				   							   f'Try specyfing it with {flag}.')))
 				exit(1)
 
 		self.compilers = {
@@ -513,7 +526,7 @@ class Command(BaseCommand):
 			exit(1)
 
 		title = self.config["title"]
-		print("Task %s (%s)" % (title, self.ID))
+		print(f'Task {title} ({self.ID})')
 		config_time_limit = self.config["time_limit"]
 		config_memory_limit = self.config["memory_limit"]
 		self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
@@ -523,21 +536,21 @@ class Command(BaseCommand):
 			print("Time limit (in ms):", self.time_limit)
 		else:
 			print("Time limit (in ms):", self.time_limit,
-				util.bold(util.color_yellow(("[originally was %.1f ms]" % config_time_limit))))
+				util.bold(util.color_yellow(f'[originally was {config_time_limit:.1f} ms]')))
 		if self.memory_limit == config_memory_limit:
 			print("Memory limit (in kb):", self.memory_limit)
 		else:
 			print("Memory limit (in kb):", self.memory_limit,
-				util.bold(util.color_yellow(("[originally was %.1f kb]" % config_memory_limit))))
+				util.bold(util.color_yellow((f'[originally was {config_memory_limit:.1f} kb]'))))
 		self.scores = collections.defaultdict(int)
 		print("Scores:")
 		total_score = 0
 		for group in self.config["scores"]:
 			self.scores[group] = self.config["scores"][group]
-			print("%2d: %3d" % (group, self.scores[group]))
+			print(f'{group: >2}: {self.scores[group]: >3}')
 			total_score += self.scores[group]
 		if total_score != 100:
-			print(util.bold(util.color_yellow("WARN: Scores sum up to %d (instead of 100)." % total_score)))
+			print(util.bold(util.color_yellow(f'WARN: Scores sum up to {total_score} (instead of 100).')))
 		print()
 
 		self.tests = self.get_tests(args.tests)
