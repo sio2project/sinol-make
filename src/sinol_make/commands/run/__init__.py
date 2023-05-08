@@ -3,7 +3,7 @@
 # Version 0.6 (2021-08-29)
 
 from sinol_make.interfaces.BaseCommand import BaseCommand
-from sinol_make.interfaces.Errors import CompilationError
+from sinol_make.interfaces.Exceptions import CompilationException
 from sinol_make.helpers import compile, compiler
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math
@@ -184,7 +184,7 @@ class Command(BaseCommand):
 			print(util.color_green("Compilation of file %s was successful."
 							% self.extract_program_name(program)))
 			return True
-		except CompilationError as e:
+		except CompilationException as e:
 			print(util.bold(util.color_red("Compilation of file %s was unsuccessful."
 								% self.extract_program_name(program))))
 			os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows

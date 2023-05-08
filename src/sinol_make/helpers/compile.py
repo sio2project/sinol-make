@@ -1,5 +1,5 @@
 import sinol_make.helpers.compiler as compiler
-from sinol_make.interfaces.Errors import CompilationError
+from sinol_make.interfaces.Exceptions import CompilationException
 import os, subprocess, sys
 
 def compile(program, output, compilers = None, compile_log = None):
@@ -27,7 +27,7 @@ def compile(program, output, compilers = None, compile_log = None):
 	elif ext == '.java':
 		raise NotImplementedError('Java compilation is not implemented')
 	else:
-		raise CompilationError('Unknown file extension: ' + ext)
+		raise CompilationException('Unknown file extension: ' + ext)
 
 	process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 	process.wait()
@@ -39,6 +39,6 @@ def compile(program, output, compilers = None, compile_log = None):
 		print(out.decode('utf-8'))
 
 	if process.returncode != 0:
-		raise CompilationError('Compilation failed')
+		raise CompilationException('Compilation failed')
 	else:
 		return True

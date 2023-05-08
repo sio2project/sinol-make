@@ -1,4 +1,12 @@
-import glob, importlib, os, sys, subprocess, requests, tarfile
+import glob
+import importlib
+import os
+import sys
+import subprocess
+import tarfile
+import requests
+
+from sinol_make.interfaces.Exceptions import InstallException
 
 def get_commands():
 	"""
@@ -38,12 +46,9 @@ def check_oiejq(path = None):
 
 	def check(path):
 		try:
-			p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			p.wait()
-			if p.returncode == 0:
-				return True
-			else:
-				return False
+			process = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			process.wait()
+			return process.returncode == 0
 		except FileNotFoundError:
 			return False
 
@@ -70,15 +75,22 @@ def install_oiejq():
 	if not os.path.exists(os.path.expanduser('~/.local/bin')):
 		os.makedirs(os.path.expanduser('~/.local/bin'))
 
-	request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz')
+	try:
+		request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz', timeout=5)
+	except requests.exceptions.ConnectTimeout as exc:
+		raise InstallException('Couldn\'t download oiejq '
+			 '(https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz connection timed out)') from exc
+
 	if request.status_code != 200:
-		raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
+		raise InstallException('Couldn\'t download oiejq '
+			 '(https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: '
+			 + str(request.status_code) + ')')
 	open('/tmp/oiejq.tar.gz', 'wb').write(request.content)
 
 	def strip(tar):
-		l = len('oiejq/')
+		length = len('oiejq/')
 		for member in tar.getmembers():
-			member.name = member.name[l:]
+			member.name = member.name[length:]
 			yield member
 
 	tar = tarfile.open('/tmp/oiejq.tar.gz')
@@ -95,12 +107,9 @@ def get_oiejq_path():
 		return None
 
 	def check(path):
-		p = subprocess.Popen([path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		p.wait()
-		if p.returncode == 0:
-			return True
-		else:
-			return False
+		process = subprocess.Popen([path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		process.wait()
+		return process.returncode == 0
 
 	if check(os.path.expanduser('~/.local/bin/oiejq')):
 		return os.path.expanduser('~/.local/bin/oiejq')
