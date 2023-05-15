@@ -402,7 +402,7 @@ class Command(BaseCommand):
 		for subtask in self.config["subtasks"]:
 			passed_groups = []
 			for group in self.config["scores"]:
-				if results[subtask][group] == "OK":
+				if group in results[subtask] and results[subtask][group] == "OK":
 					passed_groups.append(group)
 			passed_groups.sort()
 			should_pass = self.config["subtasks"][subtask]["groups"]
@@ -481,7 +481,7 @@ class Command(BaseCommand):
 					tried = 'g++-{9,10,11,12}'
 				else:
 					tried = 'g++'
-			elif ext == '.py' and args.python_intepreter_path:
+			elif ext == '.py' and args.python_interpreter_path is None:
 				compiler = 'Python interpreter'
 				tried = 'python3'
 				flag = '--python_interpreter_path'
