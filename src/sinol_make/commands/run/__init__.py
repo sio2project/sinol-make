@@ -129,11 +129,15 @@ class Command(BaseCommand):
 
 	def get_programs(self, arg_problems):
 		if arg_problems is None:
-			all_programs = [program for program in os.listdir("prog/")
+			all_programs = [self.get_executable(program) for program in os.listdir("prog/")
 							if self.PROGRAMS_RE.match(program)]
 			return sorted(all_programs, key=self.get_program_key)
 		else:
-			return sorted(list(set(arg_problems)), key=self.get_program_key)
+			all_programs = []
+			for program in arg_problems:
+				if os.path.isfile(program):
+					all_programs.append(self.get_executable(program))
+			return sorted(all_programs, key=self.get_program_key)
 
 
 	def get_solutions(self):
@@ -377,55 +381,11 @@ class Command(BaseCommand):
 		return program_groups_scores
 
 
-	def validate_expected_scores(self):
-		print("Validating expected scores...")
-		suggestions = False
-		if 'sinol_expected_scores' not in self.config.keys():
-			print(util.warning('Expected scores description not defined in config.yml. ' \
-				    	'The program will run all files on all tests and will print you the results. '))
-			suggestions = True
 
-			if self.args.apply_suggestions:
-				print(util.warning('Suggestions will be applied.'))
-			else:
-				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
 
-		expected_scores = self.config["sinol_expected_scores"] if 'sinol_expected_scores' in self.config.keys() else {}
 
-		programs = [] # Array of program exevutables that will be compiled and run
-		if suggestions:
-			solutions = self.get_solutions()
-			programs = [self.get_executable(solution) for solution in solutions]
-		else:
-			for program in expected_scores.keys():
-				score_checksum = 0
-				for group, expected_result in expected_scores[program]["expected"].items():
-					if group not in self.scores.keys():
-						print(util.error('Group %d was not defined.' % group))
-						exit(1)
-					if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
-						print(util.error('Expected result for group %d is not valid.' % group))
-						exit(1)
-
-					if expected_result == "OK":
-						score_checksum += self.scores[group]
-
-				score_expected = expected_scores[program]["points"]
-				if score_checksum != score_expected:
-					print(util.error('Program %s will get %d points (expected %d).' % (program, score_checksum, score_expected)))
-					exit(1)
-
-				programs.append(program)
-			programs = list(set(programs))
-
-		compilation_results = self.compile_programs(programs)
-		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-		compiled_commands = []
-		for program in programs:
-			path = os.path.join(self.EXECUTABLES_DIR, program)
-			compiled_commands.append((program, path, True))
-		names = programs
-		results = self.perform_executions(compiled_commands, names, programs, self.args.expected_scores_report)
+	def validate_expected_scores(self, results, programs):
+		expected_scores = self.config["sinol_expected_scores"]
 
 		if "sinol_expected_scores" not in self.config.keys():
 			print(util.bold("Suggested expected scores description:"))
@@ -496,21 +456,39 @@ class Command(BaseCommand):
 				print(util.info("Expected scores are valid."))
 
 
-	def run_programs(self):
-		programs = self.get_programs(self.args.programs)
-		print("The following %d programs will be executed:\n%s"
-			% (len(programs), [self.extract_program_name(program) for program in programs]))
-		print("on the following %d tests:\n%s"
-			% (len(self.tests), [self.extract_test_no(test) for test in self.tests] ))
-		print("in parallel on %d cpus." % self.cpus)
-		print()
+	def validate_config(self, programs):
+		print("Validating config...")
+		if "sinol_expected_scores" not in self.config:
+			return
+		expected_scores = self.config["sinol_expected_scores"]
+
+		for program in programs:
+			score_checksum = 0
+			for group, expected_result in expected_scores[program]["expected"].items():
+				if group not in self.scores.keys():
+					print(util.error('Group %d was not defined.' % group))
+					exit(1)
+				if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
+					print(util.error('Expected result for group %d is not valid.' % group))
+					exit(1)
+
+				if expected_result == "OK":
+					score_checksum += self.scores[group]
+
+			score_expected = expected_scores[program]["points"]
+			if score_checksum != score_expected:
+				print(util.error('Program %s will get %d points (expected %d).' % (program, score_checksum, score_expected)))
+				exit(1)
+
+
+	def run_programs(self, programs):
 		compilation_results = self.compile_programs(programs)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
 		program_executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(program))
 							for program in programs]
 		compiled_commands = zip(programs, program_executables, compilation_results)
 		names = programs
-		self.perform_executions(compiled_commands, names, programs, self.args.program_report)
+		return self.perform_executions(compiled_commands, names, programs, self.args.program_report)
 
 
 	def run(self, args):
@@ -625,5 +603,17 @@ class Command(BaseCommand):
 		self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
 		self.possible_score = self.get_possible_score(self.groups)
 
-		self.validate_expected_scores()
-		self.run_programs()
+
+		if 'sinol_expected_scores' not in self.config.keys():
+			print(util.warning('Expected scores description not defined in config.yml. ' \
+				    	'The program will run all files on all tests and will print you the results. '))
+
+			if self.args.apply_suggestions:
+				print(util.warning('Suggestions will be applied.'))
+			else:
+				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
+
+		programs = self.get_programs(self.args.programs)
+		self.validate_config(programs)
+		results = self.run_programs(programs)
+		self.validate_expected_scores(results, programs)
