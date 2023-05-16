@@ -469,6 +469,7 @@ class Command(BaseCommand):
 			expected_scores = {} # Expected scores from config only for programs and tests specified
 			error = False
 			new_programs = []
+			deleted_programs = []
 			for program in programs:
 				# Check if there is a new program
 				if program not in self.config["sinol_expected_scores"]:
@@ -492,10 +493,18 @@ class Command(BaseCommand):
 
 				expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
 
-			# Programs both in config and new results
-			common_programs = [program for program in programs if program not in new_programs]
+			# Check if any program was deleted
+			all_programs = self.get_programs(None)
+			for program in self.config["sinol_expected_scores"].keys():
+				if program not in all_programs:
+					print(util.warning(f'Program {program} was deleted.'))
+					error = True
+					deleted_programs.append(program)
 
 			if new_expected_scores != expected_scores:
+				# Programs both in config and new results
+				common_programs = [program for program in programs if program not in new_programs]
+
 				for program in common_programs:
 					for group, result in new_expected_scores[program]["expected"].items():
 						# Check if there is a new group
@@ -523,6 +532,10 @@ class Command(BaseCommand):
 						expected_scores[program]["expected"][group] = result
 
 					expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
+
+				# Remove deleted programs
+				for program in deleted_programs:
+					del expected_scores[program]
 
 				self.config["sinol_expected_scores"] = expected_scores
 				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
