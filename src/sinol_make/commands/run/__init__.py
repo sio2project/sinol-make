@@ -381,17 +381,23 @@ class Command(BaseCommand):
 		return program_groups_scores
 
 
-
+	def calculate_points(self, results):
+		points = 0
+		for group, result in results.items():
+			if group != 0 and group not in self.config["scores"]:
+				print(util.error(f'Group {group} doesn\'t have points specified in config file.'))
+				exit(1)
+			if result == "OK" and group != 0:
+				points += self.config["scores"][group]
+		return points
 
 
 	def validate_expected_scores(self, results, programs):
-		expected_scores = self.config["sinol_expected_scores"]
-
 		if "sinol_expected_scores" not in self.config.keys():
 			print(util.bold("Suggested expected scores description:"))
 			print("sinol_expected_scores:")
 
-			new_expected_scores = expected_scores
+			new_expected_scores = {}
 
 			for program in programs:
 				print("  %s:" % program)
@@ -401,10 +407,7 @@ class Command(BaseCommand):
 					"points": 0
 				}
 
-				points = 0
-				for group, result in results[program].items():
-					if result == "OK":
-						points += self.scores[group]
+				points = self.calculate_points(results[program])
 				print("    points: %d" % points)
 				new_expected_scores[program]["points"] = points
 
@@ -412,40 +415,78 @@ class Command(BaseCommand):
 				self.config["sinol_expected_scores"] = new_expected_scores
 				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
 					yaml.dump(self.config, f, default_flow_style=False)
+				print(util.info("Saved suggested expected scores description."))
 			else:
 				print(util.warning("Use flag --apply_suggestions to apply suggestions."))
 				exit(1)
 		else:
-			new_expected_scores = {}
-			error = False
+			new_expected_scores = {} # Expected scores based on results
 
 			for program in results.keys():
-				if program not in expected_scores.keys():
-					print(util.warning("Program %s is not defined in expected scores description." % program))
+				new_expected_scores[program] = {
+					"expected": results[program],
+					"points": self.calculate_points(results[program])
+				}
+
+			expected_scores = {} # Expected scores from config only for programs and tests specified
+			error = False
+			new_programs = []
+			for program in programs:
+				# Check if there is a new program
+				if program not in self.config["sinol_expected_scores"]:
+					if program in new_programs:
+						continue
+
+					print(util.warning(f'There seems to be a new program {program}'))
+					new_programs.append(program)
 					error = True
-					new_expected_scores[program] = {
-						"expected": results[program],
-						"points": 0
-					}
 					continue
 
-				for group, result in results[program].items():
+				# Get expected scores for given tests from config
+				expected_scores[program] = {
+					"expected": {},
+					"points": 0
+				}
+				for test in self.tests:
+					group = self.get_group(test)
 					if group not in expected_scores[program]["expected"]:
-						print(util.warning("Group %d is not defined for program %s in expected scores description." % (group, program)))
-						error = True
-						new_expected_scores[program]["expected"][group] = result
-						new_expected_scores[program]["points"] += self.scores[group] if result == "OK" else 0
-						continue
-					if expected_scores[program]["expected"][group] != result:
-						print(util.warning("Program %s passed group %d with status %s, while it should pass with status %s."
-			 								% (program, group, result, expected_scores[program]["expected"][group])))
-						error = True
-						new_expected_scores[program]["expected"][group] = result
-						new_expected_scores[program]["points"] += self.scores[group] if result == "OK" else 0
-						continue
+						expected_scores[program]["expected"][group] = self.config["sinol_expected_scores"][program]["expected"][group]
+
+				expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
+
+			# Programs both in config and new results
+			common_programs = [program for program in programs if program not in new_programs]
+
+			if new_expected_scores != expected_scores:
+				for program in common_programs:
+					for group, result in new_expected_scores[program]["expected"].items():
+						# Check if there is a new group
+						if group not in expected_scores[program]["expected"]:
+							print(util.warning(f'There seems to be a new group {group} for program {program}.'))
+							error = True
+							continue
+
+						# Check if programs passed with expected output
+						if result != expected_scores[program]["expected"][group]:
+							print(util.warning(f'Program {program} passed group {group} with status {result}, '
+								f'while it should pass with status {expected_scores[program]["expected"][group]}.'))
+							error = True
 
 			if self.args.apply_suggestions and error:
-				self.config["sinol_expected_scores"] = new_expected_scores
+				# Generate new config
+				expected_scores = self.config["sinol_expected_scores"]
+				for program in new_expected_scores.keys():
+					if program not in expected_scores: # if there is a new program found
+						expected_scores[program] = {
+							"expected": {},
+							"points": 0
+						}
+					for group, result in new_expected_scores[program]["expected"].items(): # Update expected results
+						expected_scores[program]["expected"][group] = result
+
+					expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
+
+				self.config["sinol_expected_scores"] = expected_scores
 				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
 					yaml.dump(self.config, f, default_flow_style=False)
 				print(util.info("Suggested expected scores description was applied."))
@@ -464,8 +505,11 @@ class Command(BaseCommand):
 
 		for program in programs:
 			score_checksum = 0
+			if program not in expected_scores:
+				continue
+
 			for group, expected_result in expected_scores[program]["expected"].items():
-				if group not in self.scores.keys():
+				if group not in self.scores.keys() and group != 0:
 					print(util.error('Group %d was not defined.' % group))
 					exit(1)
 				if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
