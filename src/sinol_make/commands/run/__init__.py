@@ -513,11 +513,23 @@ class Command(BaseCommand):
 		self.perform_executions(compiled_commands, names, programs, self.args.program_report)
 
 
+	def set_constants(self):
+		self.ID = os.path.split(os.getcwd())[-1]
+		self.TMP_DIR = os.path.join(os.getcwd(), "cache")
+		self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
+		self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
+		self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")
+		self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
+		self.PROGRAMS_IN_ROW = 8
+		self.PROGRAMS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
+
+
 	def run(self, args):
 		if not util.check_if_project():
 			print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
 			exit(1)
 
+		self.set_constants()
 		self.args = args
 		try:
 			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
@@ -536,15 +548,6 @@ class Command(BaseCommand):
 		if not 'scores' in self.config.keys():
 			print(util.error('Scores were not defined in config.yml.'))
 			exit(1)
-
-		self.ID = os.path.split(os.getcwd())[-1]
-		self.TMP_DIR = os.path.join(os.getcwd(), "cache")
-		self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
-		self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
-		self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")
-		self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
-		self.PROGRAMS_IN_ROW = 8
-		self.PROGRAMS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
 
 		for program in self.get_programs(None):
 			ext = os.path.splitext(program)[1]
