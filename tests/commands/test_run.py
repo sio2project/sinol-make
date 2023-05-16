@@ -1,6 +1,7 @@
 import tempfile, shutil, yaml, glob
 import multiprocessing as mp
 from sinol_make.helpers import compiler
+from sinol_make import configure_parsers
 from sinol_make import util
 from sinol_make.commands.run import Command
 from ..util import *
@@ -91,3 +92,21 @@ def test_execution():
 		os.makedirs(os.path.join(command.EXECUTIONS_DIR, program), exist_ok=True)
 		result = command.execute((program, os.path.join(command.EXECUTABLES_DIR, program), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
 		assert result["Status"] == "OK"
+
+
+def test_run_simple():
+	with tempfile.TemporaryDirectory() as tmpdir:
+		package_path = os.path.join(tmpdir, "abc")
+		shutil.copytree(get_simple_package_path(), package_path)
+
+		command = get_command()
+		create_ins(package_path, command)
+		os.chdir(package_path)
+		create_outs(package_path, command)
+		os.chdir(package_path)
+
+		parser = configure_parsers()
+
+		args = parser.parse_args(["run"])
+		command = Command()
+		command.run(args)

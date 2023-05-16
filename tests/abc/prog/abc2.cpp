@@ -10,11 +10,10 @@ int main() {
 	else if (a == 2 || a == 3)
 		cout << a + b - 1;
 	else if (a == 4) {
-		int sum;
-		for (int i = 0; i <= 100000; i++) {
-			for (int j = 0; j <= 10000; j++) {
-				sum += j;
-			}
+		time_t start = time(0);
+		int i = 0;
+		while (time(0) - start < 5) {
+			i++;
 		}
 		cout << a + b;
 	}

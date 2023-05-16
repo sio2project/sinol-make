@@ -403,8 +403,8 @@ class Command(BaseCommand):
 					if group not in self.scores.keys():
 						print(util.error('Group %d was not defined.' % group))
 						exit(1)
-					if expected_result not in ["TL", "ML", "RT", "WA", "OK"]:
-						print(util.error('Expected result for group %d is not valid.' % group))
+					if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
+						print(util.error('Expected result for group %d for program %s is not valid.' % (group, program)))
 						exit(1)
 
 					if expected_result == "OK":
@@ -456,7 +456,7 @@ class Command(BaseCommand):
 				print(util.warning("Use flag --apply_suggestions to apply suggestions."))
 				exit(1)
 		else:
-			new_expected_scores = {}
+			new_expected_scores = expected_scores
 			error = False
 
 			for program in results.keys():
