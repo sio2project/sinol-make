@@ -392,6 +392,44 @@ class Command(BaseCommand):
 		return points
 
 
+	def validate_config(self, programs):
+		print("Validating config...")
+		if "sinol_expected_scores" not in self.config:
+			return
+		expected_scores = self.config["sinol_expected_scores"]
+
+		for program in programs:
+			score_checksum = 0
+			if program not in expected_scores:
+				continue
+
+			for group, expected_result in expected_scores[program]["expected"].items():
+				if group not in self.scores.keys() and group != 0:
+					print(util.error('Group %d was not defined.' % group))
+					exit(1)
+				if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
+					print(util.error('Expected result for group %d is not valid.' % group))
+					exit(1)
+
+				if expected_result == "OK":
+					score_checksum += self.scores[group]
+
+			score_expected = expected_scores[program]["points"]
+			if score_checksum != score_expected:
+				print(util.error('Program %s will get %d points (expected %d).' % (program, score_checksum, score_expected)))
+				exit(1)
+
+
+	def run_programs(self, programs):
+		compilation_results = self.compile_programs(programs)
+		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
+		program_executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(program))
+							for program in programs]
+		compiled_commands = zip(programs, program_executables, compilation_results)
+		names = programs
+		return self.perform_executions(compiled_commands, names, programs, self.args.program_report)
+
+
 	def validate_expected_scores(self, results, programs):
 		if "sinol_expected_scores" not in self.config.keys():
 			print(util.bold("Suggested expected scores description:"))
@@ -495,44 +533,6 @@ class Command(BaseCommand):
 				exit(1)
 			else:
 				print(util.info("Expected scores are valid."))
-
-
-	def validate_config(self, programs):
-		print("Validating config...")
-		if "sinol_expected_scores" not in self.config:
-			return
-		expected_scores = self.config["sinol_expected_scores"]
-
-		for program in programs:
-			score_checksum = 0
-			if program not in expected_scores:
-				continue
-
-			for group, expected_result in expected_scores[program]["expected"].items():
-				if group not in self.scores.keys() and group != 0:
-					print(util.error('Group %d was not defined.' % group))
-					exit(1)
-				if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
-					print(util.error('Expected result for group %d is not valid.' % group))
-					exit(1)
-
-				if expected_result == "OK":
-					score_checksum += self.scores[group]
-
-			score_expected = expected_scores[program]["points"]
-			if score_checksum != score_expected:
-				print(util.error('Program %s will get %d points (expected %d).' % (program, score_checksum, score_expected)))
-				exit(1)
-
-
-	def run_programs(self, programs):
-		compilation_results = self.compile_programs(programs)
-		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-		program_executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(program))
-							for program in programs]
-		compiled_commands = zip(programs, program_executables, compilation_results)
-		names = programs
-		return self.perform_executions(compiled_commands, names, programs, self.args.program_report)
 
 
 	def run(self, args):
