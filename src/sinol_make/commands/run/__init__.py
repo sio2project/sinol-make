@@ -392,8 +392,10 @@ class Command(BaseCommand):
 
 		expected_scores = self.config["sinol_expected_scores"] if 'sinol_expected_scores' in self.config.keys() else {}
 
+		programs = [] # Array of program exevutables that will be compiled and run
 		if suggestions:
-			programs = self.get_solutions()
+			solutions = self.get_solutions()
+			programs = [self.get_executable(solution) for solution in solutions]
 		else:
 			for program in expected_scores.keys():
 				score_checksum = 0
@@ -429,12 +431,11 @@ class Command(BaseCommand):
 			print(util.bold("Suggested expected scores description:"))
 			print("sinol_expected_scores:")
 
-			new_config = self.config
 			new_expected_scores = {}
 
 			for program in programs:
 				print("  %s:" % program)
-				print("    expected: {" + ', '.join(results[program].items()) + "}")
+				print("    expected: " + str(results[program]))
 				new_expected_scores[program] = {
 					"expected": results[program],
 					"points": 0
