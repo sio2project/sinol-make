@@ -544,7 +544,9 @@ class Command(BaseCommand):
 				print(util.warning("Groups were removed: "), end='')
 				print(util.warning(", ".join([str(group) for group in removed_groups])))
 
-			if expected_scores == new_expected_scores:
+			if expected_scores == new_expected_scores and \
+			   len(added_programs) == 0 and len(removed_programs) == 0 and \
+			   len(added_groups) == 0 and len(removed_groups) == 0:
 				print(util.info("Expected scores are correct!"))
 			else:
 				if self.args.apply_suggestions:
