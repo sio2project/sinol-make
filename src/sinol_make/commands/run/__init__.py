@@ -6,7 +6,7 @@ from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler
 import sinol_make.util as util
-import yaml, os, collections, sys, re, math
+import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
 
 class Command(BaseCommand):
@@ -430,6 +430,14 @@ class Command(BaseCommand):
 		return self.perform_executions(compiled_commands, names, programs, self.args.program_report)
 
 
+	def print_expected_scores(self, expected_scores):
+		print("sinol_expected_scores:")
+		for program in expected_scores.keys():
+			print("  %s:" % program)
+			print("    points: %d" % expected_scores[program]["points"])
+			print("    expected: " + str(expected_scores[program]["expected"]))
+
+
 	def validate_expected_scores(self, results, programs):
 		if "sinol_expected_scores" not in self.config.keys():
 			print(util.bold("Suggested expected scores description:"))
@@ -466,87 +474,107 @@ class Command(BaseCommand):
 					"points": self.calculate_points(results[program])
 				}
 
-			expected_scores = {} # Expected scores from config only for programs and tests specified
-			error = False
-			new_programs = []
-			deleted_programs = []
-			for program in programs:
-				# Check if there is a new program
-				if program not in self.config["sinol_expected_scores"]:
-					if program in new_programs:
-						continue
+			expected_scores = {} # Expected scores from config with only programs and groups that were run
+			for program in results.keys():
+				if program in self.config["sinol_expected_scores"]:
+					expected_scores[program] = {
+						"expected": {},
+						"points": 0
+					}
 
-					print(util.warning(f'There seems to be a new program {program}'))
-					new_programs.append(program)
-					error = True
-					continue
-
-				# Get expected scores for given tests from config
-				expected_scores[program] = {
-					"expected": {},
-					"points": 0
-				}
-				for test in self.tests:
-					group = self.get_group(test)
-					if group not in expected_scores[program]["expected"]:
-						expected_scores[program]["expected"][group] = self.config["sinol_expected_scores"][program]["expected"][group]
-
-				expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
-
-			# Check if any program was deleted
-			all_programs = self.get_programs(None)
-			for program in self.config["sinol_expected_scores"].keys():
-				if program not in all_programs:
-					print(util.warning(f'Program {program} was deleted.'))
-					error = True
-					deleted_programs.append(program)
-
-			if new_expected_scores != expected_scores:
-				# Programs both in config and new results
-				common_programs = [program for program in programs if program not in new_programs]
-
-				for program in common_programs:
-					for group, result in new_expected_scores[program]["expected"].items():
-						# Check if there is a new group
-						if group not in expected_scores[program]["expected"]:
-							print(util.warning(f'There seems to be a new group {group} for program {program}.'))
-							error = True
-							continue
-
-						# Check if programs passed with expected output
-						if result != expected_scores[program]["expected"][group]:
-							print(util.warning(f'Program {program} passed group {group} with status {result}, '
-								f'while it should pass with status {expected_scores[program]["expected"][group]}.'))
-							error = True
-
-			if self.args.apply_suggestions and error:
-				# Generate new config
-				expected_scores = self.config["sinol_expected_scores"]
-				for program in new_expected_scores.keys():
-					if program not in expected_scores: # if there is a new program found
-						expected_scores[program] = {
-							"expected": {},
-							"points": 0
-						}
-					for group, result in new_expected_scores[program]["expected"].items(): # Update expected results
-						expected_scores[program]["expected"][group] = result
+					for group in results[program].keys():
+						if group in self.config["sinol_expected_scores"][program]["expected"]:
+							expected_scores[program]["expected"][group] = self.config["sinol_expected_scores"][program]["expected"][group]
 
 					expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
 
-				# Remove deleted programs
-				for program in deleted_programs:
-					del expected_scores[program]
+			print(util.bold("Expected scores from config:"))
+			self.print_expected_scores(expected_scores)
+			print(util.bold("\nExpected scores based on results:"))
+			self.print_expected_scores(new_expected_scores)
 
-				self.config["sinol_expected_scores"] = expected_scores
-				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
-					yaml.dump(self.config, f, default_flow_style=False)
-				print(util.info("Suggested expected scores description was applied."))
-			elif error:
-				print(util.error("Expected scores description is not valid. Use --apply_suggestions to apply results."))
-				exit(1)
+			expected_scores_diff = dictdiffer.diff(expected_scores, new_expected_scores)
+			added_programs = set()
+			removed_programs = set()
+			added_groups = set()
+			removed_groups = set()
+
+			for type, field, change in list(expected_scores_diff):
+				if type == "add":
+					if field == '': # Programs were added
+						for program in change:
+							added_programs.add(program[0])
+					elif field[1] == "expected": # Groups were added
+						for group in change:
+							added_groups.add(group[0])
+				elif type == "change":
+					if field[1] == "expected": # Result for group changed
+						program = field[0]
+						group = field[2]
+						old_result = change[0]
+						group = change[1]
+
+						print(util.warning("Program %s passed group %d with status %s while it should pass with status %s." %
+			 								(program, group, group, old_result)))
+
+			# Only if sinol_make was run on all programs we should check for removed programs
+			if self.args.programs == None:
+				for program in self.config["sinol_expected_scores"].keys():
+					if program not in new_expected_scores.keys():
+						removed_programs.add(program)
+
+			# Only if sinol_make was run on all groups we should check for removed groups
+			if self.args.tests == None:
+				for program in self.config["sinol_expected_scores"].keys():
+					for group in self.config["sinol_expected_scores"][program]["expected"].keys():
+						if program in new_expected_scores and group not in new_expected_scores[program]["expected"].keys():
+							removed_groups.add(group)
+
+			if len(added_programs) > 0:
+				print(util.warning("New programs were added: "), end='')
+				print(util.warning(", ".join(added_programs)))
+			if len(removed_programs) > 0:
+				print(util.warning("Programs were removed: "), end='')
+				print(util.warning(", ".join(removed_programs)))
+
+			if len(added_groups) > 0:
+				print(util.warning("New groups were added: "), end='')
+				print(util.warning(", ".join([str(group) for group in added_groups])))
+			if len(removed_groups) > 0:
+				print(util.warning("Groups were removed: "), end='')
+				print(util.warning(", ".join([str(group) for group in removed_groups])))
+
+			if expected_scores == new_expected_scores:
+				print(util.info("Expected scores are correct!"))
 			else:
-				print(util.info("Expected scores are valid."))
+				if self.args.apply_suggestions:
+					expected_scores = self.config["sinol_expected_scores"]
 
+					for program in removed_programs:
+						del expected_scores[program]
+
+					for program in expected_scores:
+						for group in removed_groups:
+							if group in expected_scores[program]["expected"]:
+								del expected_scores[program]["expected"][group]
+						expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
+
+					for program in new_expected_scores.keys():
+						if program in expected_scores:
+							for group, group in new_expected_scores[program]["expected"].items():
+								expected_scores[program]["expected"][group] = group
+							expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
+						else:
+							expected_scores[program] = new_expected_scores[program]
+
+
+					self.config["sinol_expected_scores"] = expected_scores
+					with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
+						yaml.dump(self.config, f, default_flow_style=False)
+					print(util.info("Saved suggested expected scores description."))
+				else:
+					print(util.error("Use flag --apply_suggestions to apply suggestions."))
+					exit(1)
 
 	def run(self, args):
 		if not util.check_if_project():
@@ -671,6 +699,6 @@ class Command(BaseCommand):
 				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
 
 		programs = self.get_programs(self.args.programs)
-		self.validate_config(programs)
+		# self.validate_config(programs)
 		results = self.run_programs(programs)
 		self.validate_expected_scores(results, programs)
