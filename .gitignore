@@ -4,4 +4,4 @@ dist
 build
 .vscode
 __pycache__
-cache
+/tests/packages/**/cache
