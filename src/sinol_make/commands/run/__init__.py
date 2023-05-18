@@ -471,14 +471,14 @@ class Command(BaseCommand):
 						removed_groups.add(group)
 
 		if len(added_programs) > 0:
-			print(util.warning("New programs were added: "), end='')
+			print(util.warning("Programs were added: "), end='')
 			print(util.warning(", ".join(added_programs)))
 		if len(removed_programs) > 0:
 			print(util.warning("Programs were removed: "), end='')
 			print(util.warning(", ".join(removed_programs)))
 
 		if len(added_groups) > 0:
-			print(util.warning("New groups were added: "), end='')
+			print(util.warning("Groups were added: "), end='')
 			print(util.warning(", ".join([str(group) for group in added_groups])))
 		if len(removed_groups) > 0:
 			print(util.warning("Groups were removed: "), end='')
