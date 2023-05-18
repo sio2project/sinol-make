@@ -35,8 +35,6 @@ class Command(BaseCommand):
 		parser.add_argument('--ml', type=float, help='memory limit (in MB)')
 		parser.add_argument('--hide_memory', dest='hide_memory', action='store_true',
 							help='hide memory usage in report')
-		parser.add_argument('--expected_scores_report', type=str,
-							help='file to store report from expected scores validation (in markdown)')
 		parser.add_argument('--program_report', type=str,
 							help='file to store report from program executions (in markdown)')
 		parser.add_argument('--oiejq_path', type=str,
