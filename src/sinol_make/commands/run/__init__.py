@@ -133,8 +133,9 @@ class Command(BaseCommand):
 		else:
 			all_programs = []
 			for program in arg_problems:
-				if os.path.isfile(program):
-					all_programs.append(self.get_executable(program))
+				if not os.path.isfile(program):
+					raise Exception("Program %s does not exist" % program)
+				all_programs.append(self.get_executable(program))
 			return sorted(all_programs, key=self.get_program_key)
 
 
