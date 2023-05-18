@@ -23,7 +23,7 @@ dependencies = [
 	"argparse",
 	"requests",
 	"PyYAML",
-  "dictdiffer"
+	"dictdiffer"
 ]
 
 [project.urls]
