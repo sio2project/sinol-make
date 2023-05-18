@@ -400,11 +400,8 @@ class Command(BaseCommand):
 
 
 	def print_expected_scores(self, expected_scores):
-		print("sinol_expected_scores:")
-		for program in expected_scores.keys():
-			print("  %s:" % program)
-			print("    points: %d" % expected_scores[program]["points"])
-			print("    expected: " + str(expected_scores[program]["expected"]))
+		yaml_dict = { "sinol_expected_scores": expected_scores }
+		print(yaml.dump(yaml_dict, default_flow_style=None))
 
 
 	def validate_expected_scores(self, results, programs):
@@ -518,7 +515,7 @@ class Command(BaseCommand):
 
 				self.config["sinol_expected_scores"] = expected_scores
 				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
-					yaml.dump(self.config, f, default_flow_style=False)
+					yaml.dump(self.config, f, default_flow_style=None)
 				print(util.info("Saved suggested expected scores description."))
 			else:
 				util.exit_with_error("Use flag --apply_suggestions to apply suggestions.")
