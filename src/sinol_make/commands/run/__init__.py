@@ -143,7 +143,7 @@ class Command(BaseCommand):
 		programs = self.get_programs(None)
 		solutions = []
 		for program in programs:
-			if not re.search("/inwer\./g", program) and not re.search("/ingen\./g", program) and not re.search("/chk\./g", program):
+			if "inwer" in program or "ingen" in program or "chk" in program:
 				solutions.append(program)
 		return solutions
 
