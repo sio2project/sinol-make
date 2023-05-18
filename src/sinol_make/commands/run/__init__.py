@@ -389,31 +389,6 @@ class Command(BaseCommand):
 		return points
 
 
-	def validate_config(self, programs):
-		print("Validating config...")
-		if "sinol_expected_scores" not in self.config:
-			return
-		expected_scores = self.config["sinol_expected_scores"]
-
-		for program in programs:
-			score_checksum = 0
-			if program not in expected_scores:
-				continue
-
-			for group, expected_result in expected_scores[program]["expected"].items():
-				if group not in self.scores.keys() and group != 0:
-					util.exit_with_error(f'Group {group} was not defined.')
-				if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
-					util.exit_with_error(f'Expected result for group {group} is not valid.')
-
-				if expected_result == "OK":
-					score_checksum += self.scores[group]
-
-			score_expected = expected_scores[program]["points"]
-			if score_checksum != score_expected:
-				util.exit_with_error(f'Program {program} will get {score_checksum} points (expected {score_expected}).')
-
-
 	def run_programs(self, programs):
 		compilation_results = self.compile_programs(programs)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
@@ -667,6 +642,5 @@ class Command(BaseCommand):
 				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
 
 		programs = self.get_programs(self.args.programs)
-		# self.validate_config(programs)
 		results = self.run_programs(programs)
 		self.validate_expected_scores(results, programs)
