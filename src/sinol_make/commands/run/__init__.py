@@ -177,8 +177,7 @@ class Command(BaseCommand):
 		with mp.Pool(self.cpus) as pool:
 			compilation_results = pool.map(self.compile, programs)
 		if not all(compilation_results):
-			print(util.error("\nCompilation failed."))
-			exit(1)
+			util.exit_with_error("\nCompilation failed.")
 		return compilation_results
 
 
@@ -384,8 +383,7 @@ class Command(BaseCommand):
 		points = 0
 		for group, result in results.items():
 			if group != 0 and group not in self.config["scores"]:
-				print(util.error(f'Group {group} doesn\'t have points specified in config file.'))
-				exit(1)
+				util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
 			if result == "OK" and group != 0:
 				points += self.config["scores"][group]
 		return points
@@ -404,19 +402,16 @@ class Command(BaseCommand):
 
 			for group, expected_result in expected_scores[program]["expected"].items():
 				if group not in self.scores.keys() and group != 0:
-					print(util.error('Group %d was not defined.' % group))
-					exit(1)
+					util.exit_with_error(f'Group {group} was not defined.')
 				if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
-					print(util.error('Expected result for group %d is not valid.' % group))
-					exit(1)
+					util.exit_with_error(f'Expected result for group {group} is not valid.')
 
 				if expected_result == "OK":
 					score_checksum += self.scores[group]
 
 			score_expected = expected_scores[program]["points"]
 			if score_checksum != score_expected:
-				print(util.error('Program %s will get %d points (expected %d).' % (program, score_checksum, score_expected)))
-				exit(1)
+				util.exit_with_error(f'Program {program} will get {score_checksum} points (expected {score_expected}).')
 
 
 	def run_programs(self, programs):
@@ -462,8 +457,7 @@ class Command(BaseCommand):
 					yaml.dump(self.config, f, default_flow_style=False)
 				print(util.info("Saved suggested expected scores description."))
 			else:
-				print(util.warning("Use flag --apply_suggestions to apply suggestions."))
-				exit(1)
+				util.exit_with_error("Expected scores description is not defined in config file.")
 		else:
 			new_expected_scores = {} # Expected scores based on results
 
@@ -574,8 +568,7 @@ class Command(BaseCommand):
 						yaml.dump(self.config, f, default_flow_style=False)
 					print(util.info("Saved suggested expected scores description."))
 				else:
-					print(util.error("Use flag --apply_suggestions to apply suggestions."))
-					exit(1)
+					util.exit_with_error("Use flag --apply_suggestions to apply suggestions.")
 
 	def run(self, args):
 		if not util.check_if_project():
@@ -589,17 +582,13 @@ class Command(BaseCommand):
 			self.config = yaml.load(open("config.yml"))
 
 		if not 'title' in self.config.keys():
-			print(util.error('Title was not defined in config.yml.'))
-			exit(1)
+			util.exit_with_error('Title was not defined in config.yml.')
 		if not 'time_limit' in self.config.keys():
-			print(util.error('Time limit was not defined in config.yml.'))
-			exit(1)
+			util.exit_with_error('Time limit was not defined in config.yml.')
 		if not 'memory_limit' in self.config.keys():
-			print(util.error('Memory limit was not defined in config.yml.'))
-			exit(1)
+			util.exit_with_error('Memory limit was not defined in config.yml.')
 		if not 'scores' in self.config.keys():
-			print(util.error('Scores were not defined in config.yml.'))
-			exit(1)
+			util.exit_with_error('Scores were not defined in config.yml.')
 
 		self.ID = os.path.split(os.getcwd())[-1]
 		self.TMP_DIR = os.path.join(os.getcwd(), "cache")
@@ -619,25 +608,27 @@ class Command(BaseCommand):
 				compiler = 'C compiler'
 				flag = '--c_compiler_path'
 				if sys.platform == 'darwin':
-					print(util.error('Couldn\'t find a C compiler. Tried gcc-{9,10,11,12}. Try specifying a compiler with --c_compiler_path.'))
-					exit(1)
+					tried = 'gcc-{9,10,11,12}'
 				else:
-					print(util.error('Couldn\'t find a C compiler. Tried gcc. Try specifying a compiler with --c_compiler_path.'))
+					tried = 'gcc'
 			elif ext == '.cpp' and args.cpp_compiler_path is None:
 				compiler = 'C++ compiler'
 				flag = '--cpp_compiler_path'
 				if sys.platform == 'darwin':
-					print(util.error('Couldn\'t find a C++ compiler. Tried g++-{9,10,11,12}. Try specifying a compiler with --cpp_compiler_path.'))
-					exit(1)
+					tried = 'g++-{9,10,11,12}'
 				else:
-					print(util.error('Couldn\'t find a C++ compiler. Tried g++. Try specifying a compiler with --cpp_compiler_path.'))
-					exit(1)
+					tried = 'g++'
 			elif ext == '.py' and args.python_interpreter_path is None:
-				print(util.error('Couldn\'t find a Python interpreter. Tried python3. Try specifying an interpreter with --python_interpreter_path.'))
-				exit(1)
+				compiler = 'Python interpreter'
+				flag = '--python_interpreter_path'
+				tried = 'python3'
 			elif ext == '.java' and args.java_compiler_path is None:
-				print(util.error('Couldn\'t find a Java compiler. Tried javac. Try specifying a compiler with --java_compiler_path.'))
-				exit(1)
+				compiler = 'Java compiler'
+				flag = '--java_compiler_path'
+				tried = 'javac'
+
+			if compiler != "":
+				util.exit_with_error('Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
 
 		self.compilers = {
 			'c_compiler_path': args.c_compiler_path,
@@ -648,14 +639,12 @@ class Command(BaseCommand):
 
 		if 'oiejq_path' in args and args.oiejq_path is not None:
 			if not util.check_oiejq(args.oiejq_path):
-				print(util.error('Invalid oiejq path.'))
-				exit(1)
+				util.exit_with_error('Invalid oiejq path.')
 			self.timetool_path = args.oiejq_path
 		else:
 			self.timetool_path = util.get_oiejq_path()
 		if self.timetool_path is None:
-			print(util.error('oiejq is not installed.'))
-			exit(1)
+			util.exit_with_error('oiejq is not installed.')
 
 		title = self.config["title"]
 		print("Task %s (%s)" % (title, self.ID))

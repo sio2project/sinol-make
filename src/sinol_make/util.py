@@ -119,3 +119,7 @@ def warning(text):
 	return bold(color_yellow(text))
 def error(text):
 	return bold(color_red(text))
+
+def exit_with_error(text):
+	print(error(text))
+	exit(1)
