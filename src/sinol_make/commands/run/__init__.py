@@ -88,8 +88,8 @@ class Command(BaseCommand):
 		return os.path.split(os.path.splitext(test_path)[0])[1][3:]
 
 
-	def extract_program_name(self, program_path):
-		return os.path.split(program_path)[1]
+	def extract_file_name(self, file_path):
+		return os.path.split(file_path)[1]
 
 
 	def get_group(self, test_path):
@@ -109,8 +109,8 @@ class Command(BaseCommand):
 			return sorted(list(set(arg_tests)), key=self.get_test_key)
 
 
-	def get_program_key(self, program):
-		name = self.extract_program_name(program)
+	def get_executable_key(self, executable):
+		name = self.extract_file_name(executable)
 		value = [0, 0]
 		if name[3] == 's':
 			value[0] = 1
@@ -125,27 +125,34 @@ class Command(BaseCommand):
 		return tuple(value)
 
 
-	def get_programs(self, arg_problems):
-		if arg_problems is None:
-			all_programs = [self.get_executable(program) for program in os.listdir("prog/")
-							if self.PROGRAMS_RE.match(program)]
-			return sorted(all_programs, key=self.get_program_key)
+	def get_solution_from_exe(self, executable):
+		file = os.path.splitext(executable)[0]
+		for ext in self.SOURCE_EXTENSIONS:
+			if os.path.isfile(os.path.join(os.getcwd(), "prog", file + ext)):
+				return file + ext
+		util.exit_with_error("Source file not found for executable %s" % executable)
+
+
+	def get_solutions(self, args_solutions):
+		if args_solutions is None:
+			solutions = [solution for solution in os.listdir("prog/")
+							if self.SOLUTIONS_RE.match(solution)]
+			return sorted(solutions, key=self.get_executable_key)
 		else:
-			all_programs = []
-			for program in arg_problems:
-				if not os.path.isfile(program):
-					raise Exception("Program %s does not exist" % program)
-				all_programs.append(self.get_executable(program))
-			return sorted(all_programs, key=self.get_program_key)
+			solutions = []
+			for solution in args_solutions:
+				if not os.path.isfile(solution):
+					util.exit_with_error("Solution %s does not exist" % solution)
+				solutions.append(self.get_executable(solution))
+			return sorted(solutions, key=self.get_executable_key)
 
 
-	def get_solutions(self):
-		programs = self.get_programs(None)
-		solutions = []
-		for program in programs:
-			if "inwer" in program or "ingen" in program or "chk" in program:
-				solutions.append(program)
-		return solutions
+	def get_executable(self, file):
+		return os.path.splitext(self.extract_file_name(file))[0] + ".e"
+
+
+	def get_executables(self, args_solutions):
+		return [os.get_executable(solution) for solution in self.get_solutions(args_solutions)]
 
 
 	def get_possible_score(self, groups):
@@ -154,52 +161,41 @@ class Command(BaseCommand):
 			possible_score += self.scores[group]
 		return possible_score
 
-	def get_executable(self, program):
-		return os.path.splitext(self.extract_program_name(program))[0] + ".e"
-
-
-	def get_source_file(self, executable):
-		file = os.path.splitext(executable)[0]
-		for ext in self.SOURCE_EXTENSIONS:
-			if os.path.isfile(file + ext):
-				return file + ext
-		raise Exception("Source file not found for executable %s" % executable)
-
 
 	def get_output_file(self, test_path):
 		return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
 
 
-	def compile_programs(self, programs):
+	def compile_solutions(self, solutions):
 		os.makedirs(self.COMPILATION_DIR, exist_ok=True)
 		os.makedirs(self.EXECUTABLES_DIR, exist_ok=True)
-		print("Compiling %d programs..." % len(programs))
+		print("Compiling %d solutions..." % len(solutions))
 		with mp.Pool(self.cpus) as pool:
-			compilation_results = pool.map(self.compile, programs)
+			compilation_results = pool.map(self.compile, solutions)
 		if not all(compilation_results):
 			util.exit_with_error("\nCompilation failed.")
 		return compilation_results
 
 
-	def compile(self, program):
+	def compile(self, solution):
 		compile_log_file = os.path.join(
-			self.COMPILATION_DIR, "%s.compile_log" % self.extract_program_name(program))
-		source_file = self.get_source_file(os.path.join(os.getcwd(), "prog", program))
-		output = os.path.join(self.EXECUTABLES_DIR, program)
+			self.COMPILATION_DIR, "%s.compile_log" % self.extract_file_name(solution))
+		source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
+		output = os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
 		try:
 			compile.compile(source_file, output, self.compilers, open(compile_log_file, "w"))
 			print(util.info("Compilation of file %s was successful."
-							% self.extract_program_name(program)))
+							% self.extract_file_name(solution)))
 			return True
 		except CompilationError as e:
 			print(util.error("Compilation of file %s was unsuccessful."
-								% self.extract_program_name(program)))
+								% self.extract_file_name(solution)))
 			os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
 			return False
 
 
 	def execute(self, execution):
-		(name, program, test, time_limit, memory_limit, timetool_path) = execution
+		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
 		output_file = os.path.join(self.EXECUTIONS_DIR, name,
 								self.extract_test_no(test)+".out")
 		result_file = os.path.join(self.EXECUTIONS_DIR, name,
@@ -209,7 +205,7 @@ class Command(BaseCommand):
 		command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
 				% (math.ceil(memory_limit), hard_time_limit_in_s,
 					hard_time_limit_in_s, timetool_path,
-					program, test, output_file, result_file)
+					executable, test, output_file, result_file)
 		code = os.system(command)
 		result = {}
 		with open(result_file) as r:
@@ -242,7 +238,7 @@ class Command(BaseCommand):
 			result["Status"] = result["Status"][:2]
 		return result
 
-	def perform_executions(self, compiled_commands, names, programs, report_file):
+	def perform_executions(self, compiled_commands, names, solutions, report_file):
 		executions = []
 		all_results = collections.defaultdict(
 			lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
@@ -256,7 +252,7 @@ class Command(BaseCommand):
 				for test in self.tests:
 					all_results[name][self.get_group(test)][test] = {"Status": "CE"}
 		print()
-		executions.sort(key = lambda x: (self.get_program_key(x[1]), x[2]))
+		executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
 		program_groups_scores = collections.defaultdict(dict)
 
 		def print_view(output_file=None):
@@ -268,7 +264,7 @@ class Command(BaseCommand):
 				# 		cursor_delta += len(self.tests)
 				# else:
 				cursor_delta = len(self.groups) + 7
-				number_of_rows = (len(programs) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
+				number_of_rows = (len(solutions) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
 				sys.stdout.write('\033[%dA' % (cursor_delta * number_of_rows + 1))
 			program_scores = collections.defaultdict(int)
 			program_times = collections.defaultdict(lambda: -1)
@@ -371,7 +367,7 @@ class Command(BaseCommand):
 		print("Performing %d executions..." % len(executions))
 		with mp.Pool(self.cpus) as pool:
 			for i, result in enumerate(pool.imap(self.execute, executions)):
-				(name, program, test) = executions[i][:3]
+				(name, executable, test) = executions[i][:3]
 				all_results[name][self.get_group(test)][test] = result
 				print_view()
 		if report_file:
@@ -389,14 +385,14 @@ class Command(BaseCommand):
 		return points
 
 
-	def run_programs(self, programs):
-		compilation_results = self.compile_programs(programs)
+	def run_solutions(self, solutions):
+		compilation_results = self.compile_solutions(solutions)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-		program_executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(program))
-							for program in programs]
-		compiled_commands = zip(programs, program_executables, compilation_results)
-		names = programs
-		return self.perform_executions(compiled_commands, names, programs, self.args.program_report)
+		executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+							for solution in solutions]
+		compiled_commands = zip(solutions, executables, compilation_results)
+		names = solutions
+		return self.perform_executions(compiled_commands, names, solutions, self.args.program_report)
 
 
 	def print_expected_scores(self, expected_scores):
@@ -404,29 +400,29 @@ class Command(BaseCommand):
 		print(yaml.dump(yaml_dict, default_flow_style=None))
 
 
-	def validate_expected_scores(self, results, programs):
+	def validate_expected_scores(self, results, solutions):
 		new_expected_scores = {} # Expected scores based on results
 
-		for program in results.keys():
-			new_expected_scores[program] = {
-				"expected": results[program],
-				"points": self.calculate_points(results[program])
+		for solution in results.keys():
+			new_expected_scores[solution] = {
+				"expected": results[solution],
+				"points": self.calculate_points(results[solution])
 			}
 
-		expected_scores = {} # Expected scores from config with only programs and groups that were run
+		expected_scores = {} # Expected scores from config with only solutions and groups that were run
 		if "sinol_expected_scores" in self.config:
-			for program in results.keys():
-				if program in self.config["sinol_expected_scores"]:
-					expected_scores[program] = {
+			for solution in results.keys():
+				if solution in self.config["sinol_expected_scores"]:
+					expected_scores[solution] = {
 						"expected": {},
 						"points": 0
 					}
 
-					for group in results[program].keys():
-						if group in self.config["sinol_expected_scores"][program]["expected"]:
-							expected_scores[program]["expected"][group] = self.config["sinol_expected_scores"][program]["expected"][group]
+					for group in results[solution].keys():
+						if group in self.config["sinol_expected_scores"][solution]["expected"]:
+							expected_scores[solution]["expected"][group] = self.config["sinol_expected_scores"][solution]["expected"][group]
 
-					expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
+					expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
 
 		print(util.bold("Expected scores from config:"))
 		self.print_expected_scores(expected_scores)
@@ -434,48 +430,48 @@ class Command(BaseCommand):
 		self.print_expected_scores(new_expected_scores)
 
 		expected_scores_diff = dictdiffer.diff(expected_scores, new_expected_scores)
-		added_programs = set()
-		removed_programs = set()
+		added_solutions = set()
+		removed_solutions = set()
 		added_groups = set()
 		removed_groups = set()
 
 		for type, field, change in list(expected_scores_diff):
 			if type == "add":
-				if field == '': # Programs were added
-					for program in change:
-						added_programs.add(program[0])
+				if field == '': # Solutions were added
+					for solution in change:
+						added_solutions.add(solution[0])
 				elif field[1] == "expected": # Groups were added
 					for group in change:
 						added_groups.add(group[0])
 			elif type == "change":
 				if field[1] == "expected": # Result for group changed
-					program = field[0]
+					solution = field[0]
 					group = field[2]
 					old_result = change[0]
-					group = change[1]
+					result = change[1]
 
-					print(util.warning("Program %s passed group %d with status %s while it should pass with status %s." %
-										(program, group, group, old_result)))
+					print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
+										(solution, group, result, old_result)))
 
-		# Only if sinol_make was run on all programs we should check for removed programs
+		# Only if sinol_make was run on all solutions we should check if any of them were removed
 		if self.args.programs == None and "sinol_expected_scores" in self.config:
-			for program in self.config["sinol_expected_scores"].keys():
-				if program not in new_expected_scores.keys():
-					removed_programs.add(program)
+			for solution in self.config["sinol_expected_scores"].keys():
+				if solution not in new_expected_scores.keys():
+					removed_solutions.add(solution)
 
-		# Only if sinol_make was run on all groups we should check for removed groups
+		# Only if sinol_make was run on all groups we should check if any of them were removed
 		if self.args.tests == None and "sinol_expected_scores" in self.config:
-			for program in self.config["sinol_expected_scores"].keys():
-				for group in self.config["sinol_expected_scores"][program]["expected"].keys():
-					if program in new_expected_scores and group not in new_expected_scores[program]["expected"].keys():
+			for solution in self.config["sinol_expected_scores"].keys():
+				for group in self.config["sinol_expected_scores"][solution]["expected"].keys():
+					if solution in new_expected_scores and group not in new_expected_scores[solution]["expected"].keys():
 						removed_groups.add(group)
 
-		if len(added_programs) > 0:
-			print(util.warning("Programs were added: "), end='')
-			print(util.warning(", ".join(added_programs)))
-		if len(removed_programs) > 0:
-			print(util.warning("Programs were removed: "), end='')
-			print(util.warning(", ".join(removed_programs)))
+		if len(added_solutions) > 0:
+			print(util.warning("Solutions were added: "), end='')
+			print(util.warning(", ".join(added_solutions)))
+		if len(removed_solutions) > 0:
+			print(util.warning("Solutions were removed: "), end='')
+			print(util.warning(", ".join(removed_solutions)))
 
 		if len(added_groups) > 0:
 			print(util.warning("Groups were added: "), end='')
@@ -485,7 +481,7 @@ class Command(BaseCommand):
 			print(util.warning(", ".join([str(group) for group in removed_groups])))
 
 		if expected_scores == new_expected_scores and \
-			len(added_programs) == 0 and len(removed_programs) == 0 and \
+			len(added_solutions) == 0 and len(removed_solutions) == 0 and \
 			len(added_groups) == 0 and len(removed_groups) == 0:
 			print(util.info("Expected scores are correct!"))
 		else:
@@ -495,22 +491,22 @@ class Command(BaseCommand):
 				else:
 					expected_scores = {}
 
-				for program in removed_programs:
-					del expected_scores[program]
+				for solution in removed_solutions:
+					del expected_scores[solution]
 
-				for program in expected_scores:
+				for solution in expected_scores:
 					for group in removed_groups:
-						if group in expected_scores[program]["expected"]:
-							del expected_scores[program]["expected"][group]
-					expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
+						if group in expected_scores[solution]["expected"]:
+							del expected_scores[solution]["expected"][group]
+					expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
 
-				for program in new_expected_scores.keys():
-					if program in expected_scores:
-						for group, group in new_expected_scores[program]["expected"].items():
-							expected_scores[program]["expected"][group] = group
-						expected_scores[program]["points"] = self.calculate_points(expected_scores[program]["expected"])
+				for solution in new_expected_scores.keys():
+					if solution in expected_scores:
+						for group, result in new_expected_scores[solution]["expected"].items():
+							expected_scores[solution]["expected"][group] = result
+						expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
 					else:
-						expected_scores[program] = new_expected_scores[program]
+						expected_scores[solution] = new_expected_scores[solution]
 
 
 				self.config["sinol_expected_scores"] = expected_scores
@@ -547,10 +543,10 @@ class Command(BaseCommand):
 		self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")
 		self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
 		self.PROGRAMS_IN_ROW = 8
-		self.PROGRAMS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
+		self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
 
-		for program in self.get_programs(None):
-			ext = os.path.splitext(program)[1]
+		for solution in self.get_solutions(None):
+			ext = os.path.splitext(solution)[1]
 			compiler = ""
 			tried = ""
 			flag = ""
@@ -638,6 +634,7 @@ class Command(BaseCommand):
 			else:
 				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
 
-		programs = self.get_programs(self.args.programs)
-		results = self.run_programs(programs)
-		self.validate_expected_scores(results, programs)
+
+		solutions = self.get_solutions(self.args.programs)
+		results = self.run_solutions(solutions)
+		self.validate_expected_scores(results, solutions)
