@@ -143,7 +143,7 @@ class Command(BaseCommand):
 			for solution in args_solutions:
 				if not os.path.isfile(solution):
 					util.exit_with_error("Solution %s does not exist" % solution)
-				solutions.append(self.get_executable(solution))
+				solutions.append(os.path.basename(solution))
 			return sorted(solutions, key=self.get_executable_key)
 
 
@@ -400,7 +400,7 @@ class Command(BaseCommand):
 		print(yaml.dump(yaml_dict, default_flow_style=None))
 
 
-	def validate_expected_scores(self, results, solutions):
+	def validate_expected_scores(self, results):
 		new_expected_scores = {} # Expected scores based on results
 
 		for solution in results.keys():
@@ -410,15 +410,30 @@ class Command(BaseCommand):
 			}
 
 		expected_scores = {} # Expected scores from config with only solutions and groups that were run
-		if "sinol_expected_scores" in self.config:
+		run_solutions = results.keys() # Solutions that were run
+		if self.args.programs == None and "sinol_expected_scores" in self.config: # If no solutions were specified, use all programs from config
+			run_solutions = self.config["sinol_expected_scores"].keys()
+
+		run_groups_set = set()
+		if self.args.tests == None and "sinol_expected_scores" in self.config: # If no groups were specified, use all groups from config
+			for solution in self.config["sinol_expected_scores"]:
+				for group in self.config["sinol_expected_scores"][solution]["expected"]:
+					run_groups_set.add(group)
+		else:
 			for solution in results.keys():
+				for group in results[solution].keys():
+					run_groups_set.add(group)
+		run_groups = list(run_groups_set) # Groups that were run
+
+		if "sinol_expected_scores" in self.config:
+			for solution in run_solutions:
 				if solution in self.config["sinol_expected_scores"]:
 					expected_scores[solution] = {
 						"expected": {},
 						"points": 0
 					}
 
-					for group in results[solution].keys():
+					for group in run_groups:
 						if group in self.config["sinol_expected_scores"][solution]["expected"]:
 							expected_scores[solution]["expected"][group] = self.config["sinol_expected_scores"][solution]["expected"][group]
 
@@ -443,6 +458,15 @@ class Command(BaseCommand):
 				elif field[1] == "expected": # Groups were added
 					for group in change:
 						added_groups.add(group[0])
+			elif type == "remove":
+				# Only if sinol_make was run on all solutions we should check if any of them were removed
+				if field == '' and self.args.programs == None and "sinol_expected_scores" in self.config:
+					for solution in change:
+						removed_solutions.add(solution[0])
+				# Only if sinol_make was run on all groups we should check if any of them were removed
+				elif field[1] == "expected" and self.args.tests == None and "sinol_expected_scores" in self.config:
+					for group in change:
+						removed_groups.add(group[0])
 			elif type == "change":
 				if field[1] == "expected": # Result for group changed
 					solution = field[0]
@@ -452,19 +476,6 @@ class Command(BaseCommand):
 
 					print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
 										(solution, group, result, old_result)))
-
-		# Only if sinol_make was run on all solutions we should check if any of them were removed
-		if self.args.programs == None and "sinol_expected_scores" in self.config:
-			for solution in self.config["sinol_expected_scores"].keys():
-				if solution not in new_expected_scores.keys():
-					removed_solutions.add(solution)
-
-		# Only if sinol_make was run on all groups we should check if any of them were removed
-		if self.args.tests == None and "sinol_expected_scores" in self.config:
-			for solution in self.config["sinol_expected_scores"].keys():
-				for group in self.config["sinol_expected_scores"][solution]["expected"].keys():
-					if solution in new_expected_scores and group not in new_expected_scores[solution]["expected"].keys():
-						removed_groups.add(group)
 
 		if len(added_solutions) > 0:
 			print(util.warning("Solutions were added: "), end='')
@@ -637,4 +648,4 @@ class Command(BaseCommand):
 
 		solutions = self.get_solutions(self.args.programs)
 		results = self.run_solutions(solutions)
-		self.validate_expected_scores(results, solutions)
+		self.validate_expected_scores(results)
