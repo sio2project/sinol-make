@@ -2,6 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
+from sinol_make.commands.run.structs import ResultChange, ValidationResult
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler
@@ -49,7 +50,6 @@ class Command(BaseCommand):
 		    				help='Java compiler to use (default: javac)')
 		parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
 		      				help='apply suggestions from expected scores report')
-
 
 
 	def color_memory(self, memory, limit):
@@ -409,35 +409,35 @@ class Command(BaseCommand):
 				"points": self.calculate_points(results[solution])
 			}
 
-		expected_scores = {} # Expected scores from config with only solutions and groups that were run
-		run_solutions = results.keys() # Solutions that were run
-		if self.args.programs == None and "sinol_expected_scores" in self.config: # If no solutions were specified, use all programs from config
-			run_solutions = self.config["sinol_expected_scores"].keys()
+		config_expected_scores = self.config.get("sinol_expected_scores", {})
+		used_solutions = results.keys()
+		if self.args.programs == None and config_expected_scores: # If no solutions were specified, use all programs from config
+			used_solutions = config_expected_scores.keys()
 
-		run_groups_set = set()
-		if self.args.tests == None and "sinol_expected_scores" in self.config: # If no groups were specified, use all groups from config
-			for solution in self.config["sinol_expected_scores"]:
-				for group in self.config["sinol_expected_scores"][solution]["expected"]:
-					run_groups_set.add(group)
+		used_groups = set()
+		if self.args.tests == None and config_expected_scores: # If no groups were specified, use all groups from config
+			for solution in config_expected_scores.keys():
+				for group in config_expected_scores[solution]["expected"]:
+					used_groups.add(group)
 		else:
 			for solution in results.keys():
 				for group in results[solution].keys():
-					run_groups_set.add(group)
-		run_groups = list(run_groups_set) # Groups that were run
+					used_groups.add(group)
+		used_groups = list(used_groups)
 
-		if "sinol_expected_scores" in self.config:
-			for solution in run_solutions:
-				if solution in self.config["sinol_expected_scores"]:
-					expected_scores[solution] = {
-						"expected": {},
-						"points": 0
-					}
+		expected_scores = {} # Expected scores from config with only solutions and groups that were run
+		for solution in used_solutions:
+			if solution in config_expected_scores.keys():
+				expected_scores[solution] = {
+					"expected": {},
+					"points": 0
+				}
 
-					for group in run_groups:
-						if group in self.config["sinol_expected_scores"][solution]["expected"]:
-							expected_scores[solution]["expected"][group] = self.config["sinol_expected_scores"][solution]["expected"][group]
+				for group in used_groups:
+					if group in config_expected_scores[solution]["expected"]:
+						expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
 
-					expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+				expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
 
 		print(util.bold("Expected scores from config:"))
 		self.print_expected_scores(expected_scores)
@@ -449,6 +449,7 @@ class Command(BaseCommand):
 		removed_solutions = set()
 		added_groups = set()
 		removed_groups = set()
+		changes = []
 
 		for type, field, change in list(expected_scores_diff):
 			if type == "add":
@@ -459,72 +460,86 @@ class Command(BaseCommand):
 					for group in change:
 						added_groups.add(group[0])
 			elif type == "remove":
-				# Only if sinol_make was run on all solutions we should check if any of them were removed
-				if field == '' and self.args.programs == None and "sinol_expected_scores" in self.config:
+				# We check whether a solution was removed only when sinol_make was run on all of them
+				if field == '' and self.args.programs == None and config_expected_scores:
 					for solution in change:
 						removed_solutions.add(solution[0])
-				# Only if sinol_make was run on all groups we should check if any of them were removed
-				elif field[1] == "expected" and self.args.tests == None and "sinol_expected_scores" in self.config:
+				# We check whether a group was removed only when sinol_make was run on all of them
+				elif field[1] == "expected" and self.args.tests == None and config_expected_scores:
 					for group in change:
 						removed_groups.add(group[0])
 			elif type == "change":
-				if field[1] == "expected": # Result for group changed
+				if field[1] == "expected": # Results for at least one group has changed
 					solution = field[0]
 					group = field[2]
 					old_result = change[0]
 					result = change[1]
+					changes.append(ResultChange(solution, group, result, old_result))
 
-					print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
-										(solution, group, result, old_result)))
+		return ValidationResult(
+			added_solutions,
+			removed_solutions,
+			added_groups,
+			removed_groups,
+			changes,
+			expected_scores,
+			new_expected_scores
+		)
 
-		if len(added_solutions) > 0:
-			print(util.warning("Solutions were added: "), end='')
-			print(util.warning(", ".join(added_solutions)))
-		if len(removed_solutions) > 0:
-			print(util.warning("Solutions were removed: "), end='')
-			print(util.warning(", ".join(removed_solutions)))
 
-		if len(added_groups) > 0:
-			print(util.warning("Groups were added: "), end='')
-			print(util.warning(", ".join([str(group) for group in added_groups])))
-		if len(removed_groups) > 0:
-			print(util.warning("Groups were removed: "), end='')
-			print(util.warning(", ".join([str(group) for group in removed_groups])))
+	def print_expected_scores_diff(self, validation_results: ValidationResult):
+		diff = validation_results
+		config_expected_scores = self.config.get("sinol_expected_scores", {})
 
-		if expected_scores == new_expected_scores and \
-			len(added_solutions) == 0 and len(removed_solutions) == 0 and \
-			len(added_groups) == 0 and len(removed_groups) == 0:
+		def warn_if_not_empty(set, message):
+			if len(set) > 0:
+				print(util.warning(message + ": "), end='')
+				print(util.warning(", ".join([str(x) for x in set])))
+
+		warn_if_not_empty(diff.added_solutions, "Solutions were added")
+		warn_if_not_empty(diff.removed_solutions, "Solutions were removed")
+		warn_if_not_empty(diff.added_groups, "Groups were added")
+		warn_if_not_empty(diff.removed_groups, "Groups were removed")
+
+		for change in diff.changes:
+			print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
+										(change.solution, change.group, change.result, change.old_result)))
+
+		if diff.expected_scores == diff.new_expected_scores:
 			print(util.info("Expected scores are correct!"))
 		else:
+			def delete_group(solution, group):
+				if group in config_expected_scores[solution]["expected"]:
+					del config_expected_scores[solution]["expected"][group]
+					config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+
+			def set_group_result(solution, group, result):
+				config_expected_scores[solution]["expected"][group] = result
+				config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+
+
 			if self.args.apply_suggestions:
-				if "sinol_expected_scores" in self.config:
-					expected_scores = self.config["sinol_expected_scores"]
-				else:
-					expected_scores = {}
+				for solution in diff.removed_solutions:
+					del config_expected_scores[solution]
 
-				for solution in removed_solutions:
-					del expected_scores[solution]
+				for solution in config_expected_scores:
+					for group in diff.removed_groups:
+						delete_group(solution, group)
 
-				for solution in expected_scores:
-					for group in removed_groups:
-						if group in expected_scores[solution]["expected"]:
-							del expected_scores[solution]["expected"][group]
-					expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
-
-				for solution in new_expected_scores.keys():
-					if solution in expected_scores:
-						for group, result in new_expected_scores[solution]["expected"].items():
-							expected_scores[solution]["expected"][group] = result
-						expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+				for solution in diff.new_expected_scores.keys():
+					if solution in config_expected_scores:
+						for group, result in diff.new_expected_scores[solution]["expected"].items():
+							set_group_result(solution, group, result)
 					else:
-						expected_scores[solution] = new_expected_scores[solution]
+						config_expected_scores[solution] = diff.new_expected_scores[solution]
 
 
-				self.config["sinol_expected_scores"] = expected_scores
+				self.config["sinol_expected_scores"] = config_expected_scores
 				util.save_config(self.config)
 				print(util.info("Saved suggested expected scores description."))
 			else:
 				util.exit_with_error("Use flag --apply_suggestions to apply suggestions.")
+
 
 	def run(self, args):
 		if not util.check_if_project():
@@ -634,17 +649,7 @@ class Command(BaseCommand):
 		self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
 		self.possible_score = self.get_possible_score(self.groups)
 
-
-		if 'sinol_expected_scores' not in self.config.keys():
-			print(util.warning('Expected scores description not defined in config.yml. ' \
-				    	'The program will run all files on all tests and will print you the results. '))
-
-			if self.args.apply_suggestions:
-				print(util.warning('Suggestions will be applied.'))
-			else:
-				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
-
-
 		solutions = self.get_solutions(self.args.programs)
 		results = self.run_solutions(solutions)
-		self.validate_expected_scores(results)
+		validation_results = self.validate_expected_scores(results)
+		self.print_expected_scores_diff(validation_results)
