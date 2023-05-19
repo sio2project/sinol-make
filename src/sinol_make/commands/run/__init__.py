@@ -459,16 +459,16 @@ class Command(BaseCommand):
 					for group in change:
 						added_groups.add(group[0])
 			elif type == "remove":
-				# Only if sinol_make was run on all solutions we should check if any of them were removed
+				# We check whether a solution was removed only when sinol_make was run on all of them
 				if field == '' and self.args.programs == None and "sinol_expected_scores" in self.config:
 					for solution in change:
 						removed_solutions.add(solution[0])
-				# Only if sinol_make was run on all groups we should check if any of them were removed
+				# We check whether a group was removed only when sinol_make was run on all of them
 				elif field[1] == "expected" and self.args.tests == None and "sinol_expected_scores" in self.config:
 					for group in change:
 						removed_groups.add(group[0])
 			elif type == "change":
-				if field[1] == "expected": # Result for group changed
+				if field[1] == "expected": # Results for at least one group has changed
 					solution = field[0]
 					group = field[2]
 					old_result = change[0]
