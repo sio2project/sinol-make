@@ -2,6 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
+from sinol_make.commands.run.structs import ResultChange, ValidationResult
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler
@@ -49,7 +50,6 @@ class Command(BaseCommand):
 		    				help='Java compiler to use (default: javac)')
 		parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
 		      				help='apply suggestions from expected scores report')
-
 
 
 	def color_memory(self, memory, limit):
@@ -449,7 +449,7 @@ class Command(BaseCommand):
 		removed_solutions = set()
 		added_groups = set()
 		removed_groups = set()
-		changes = [] # Array of tuples (solution, group, current_result, expected_result)
+		changes = []
 
 		for type, field, change in list(expected_scores_diff):
 			if type == "add":
@@ -474,27 +474,28 @@ class Command(BaseCommand):
 					group = field[2]
 					old_result = change[0]
 					result = change[1]
-					changes.append((solution, group, result, old_result))
+					changes.append(ResultChange(solution, group, result, old_result))
 
-		return {
-			"added_solutions": added_solutions,
-			"removed_solutions": removed_solutions,
-			"added_groups": added_groups,
-			"removed_groups": removed_groups,
-			"changes": changes,
-			"expected_scores": expected_scores,
-			"new_expected_scores": new_expected_scores,
-		}
+		return ValidationResult(
+			added_solutions,
+			removed_solutions,
+			added_groups,
+			removed_groups,
+			changes,
+			expected_scores,
+			new_expected_scores
+		)
 
 
-	def print_expected_scores_diff(self, validation_results):
-		added_solutions = validation_results["added_solutions"]
-		removed_solutions = validation_results["removed_solutions"]
-		added_groups = validation_results["added_groups"]
-		removed_groups = validation_results["removed_groups"]
-		changes = validation_results["changes"]
-		expected_scores = validation_results["expected_scores"]
-		new_expected_scores = validation_results["new_expected_scores"]
+	def print_expected_scores_diff(self, validation_results: ValidationResult):
+		added_solutions = validation_results.added_solutions
+		removed_solutions = validation_results.removed_solutions
+		added_groups = validation_results.added_groups
+		removed_groups = validation_results.removed_groups
+		changes = validation_results.changes
+		expected_scores = validation_results.expected_scores
+		new_expected_scores = validation_results.new_expected_scores
+
 		config_expected_scores = self.config["sinol_expected_scores"] if "sinol_expected_scores" in self.config else {}
 
 		def warn_if_not_empty(set, message):
@@ -509,7 +510,7 @@ class Command(BaseCommand):
 
 		for change in changes:
 			print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
-										(change[0], change[1], change[2], change[3])))
+										(change.solution, change.group, change.result, change.old_result)))
 
 		if expected_scores == new_expected_scores:
 			print(util.info("Expected scores are correct!"))
