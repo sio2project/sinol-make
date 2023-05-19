@@ -487,15 +487,7 @@ class Command(BaseCommand):
 		)
 
 
-	def print_expected_scores_diff(self, validation_results: ValidationResult):
-		added_solutions = validation_results.added_solutions
-		removed_solutions = validation_results.removed_solutions
-		added_groups = validation_results.added_groups
-		removed_groups = validation_results.removed_groups
-		changes = validation_results.changes
-		expected_scores = validation_results.expected_scores
-		new_expected_scores = validation_results.new_expected_scores
-
+	def print_expected_scores_diff(self, diff: ValidationResult):
 		config_expected_scores = self.config["sinol_expected_scores"] if "sinol_expected_scores" in self.config else {}
 
 		def warn_if_not_empty(set, message):
@@ -503,16 +495,16 @@ class Command(BaseCommand):
 				print(util.warning(message + ": "), end='')
 				print(util.warning(", ".join([str(x) for x in set])))
 
-		warn_if_not_empty(added_solutions, "Solutions were added")
-		warn_if_not_empty(removed_solutions, "Solutions were removed")
-		warn_if_not_empty(added_groups, "Groups were added")
-		warn_if_not_empty(removed_groups, "Groups were removed")
+		warn_if_not_empty(diff.added_solutions, "Solutions were added")
+		warn_if_not_empty(diff.removed_solutions, "Solutions were removed")
+		warn_if_not_empty(diff.added_groups, "Groups were added")
+		warn_if_not_empty(diff.removed_groups, "Groups were removed")
 
-		for change in changes:
+		for change in diff.changes:
 			print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
 										(change.solution, change.group, change.result, change.old_result)))
 
-		if expected_scores == new_expected_scores:
+		if diff.expected_scores == diff.new_expected_scores:
 			print(util.info("Expected scores are correct!"))
 		else:
 			def delete_group(solution, group):
@@ -526,19 +518,19 @@ class Command(BaseCommand):
 
 
 			if self.args.apply_suggestions:
-				for solution in removed_solutions:
+				for solution in diff.removed_solutions:
 					del config_expected_scores[solution]
 
 				for solution in config_expected_scores:
-					for group in removed_groups:
+					for group in diff.removed_groups:
 						delete_group(solution, group)
 
-				for solution in new_expected_scores.keys():
+				for solution in diff.new_expected_scores.keys():
 					if solution in config_expected_scores:
-						for group, result in new_expected_scores[solution]["expected"].items():
+						for group, result in diff.new_expected_scores[solution]["expected"].items():
 							set_group_result(solution, group, result)
 					else:
-						config_expected_scores[solution] = new_expected_scores[solution]
+						config_expected_scores[solution] = diff.new_expected_scores[solution]
 
 
 				self.config["sinol_expected_scores"] = config_expected_scores
