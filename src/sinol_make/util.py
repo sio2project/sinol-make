@@ -117,10 +117,15 @@ def save_config(config):
 	# The fields that are not in this list will be appended to the end of the file.
 	order = [
 		"title",
+		"title_pl",
+		"title_en",
 		"memory_limit",
+		"memory_limits",
 		"time_limit",
+		"time_limits",
 		"override_limits",
 		"scores",
+		"extra_compilation_files",
 		{
 			"key": "sinol_expected_scores",
 			"default_flow_style": None
