@@ -131,14 +131,14 @@ def save_config(config):
 			if isinstance(field, dict):
 				if field["key"] in config:
 					yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
-					del config[field["key"]]
+					del config[field["key"]] # Fields are deleted so that if there were any custom fields, they will be saved at the end of the file
 			else:
 				if field in config:
 					yaml.dump({field: config[field]}, config_file)
-					del config[field]
+					del config[field] # Same reason for deleting as above
 
 		if config != {}:
-			yaml.dump(config, config_file)
+			yaml.dump(config, config_file) # Save any custom fields
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)
