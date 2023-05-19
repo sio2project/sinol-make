@@ -499,13 +499,13 @@ class Command(BaseCommand):
 
 		def warn_if_not_empty(set, message):
 			if len(set) > 0:
-				print(util.warning(message), end='')
+				print(util.warning(message + ": "), end='')
 				print(util.warning(", ".join([str(x) for x in set])))
 
-		warn_if_not_empty(added_solutions, "Solutions were added: ")
-		warn_if_not_empty(removed_solutions, "Solutions were removed: ")
-		warn_if_not_empty(added_groups, "Groups were added: ")
-		warn_if_not_empty(removed_groups, "Groups were removed: ")
+		warn_if_not_empty(added_solutions, "Solutions were added")
+		warn_if_not_empty(removed_solutions, "Solutions were removed")
+		warn_if_not_empty(added_groups, "Groups were added")
+		warn_if_not_empty(removed_groups, "Groups were removed")
 
 		for change in changes:
 			print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
