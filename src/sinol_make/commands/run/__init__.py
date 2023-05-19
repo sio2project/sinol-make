@@ -631,17 +631,6 @@ class Command(BaseCommand):
 		self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
 		self.possible_score = self.get_possible_score(self.groups)
 
-
-		if 'sinol_expected_scores' not in self.config.keys():
-			print(util.warning('Expected scores description not defined in config.yml. ' \
-				    	'The program will run all files on all tests and will print you the results. '))
-
-			if self.args.apply_suggestions:
-				print(util.warning('Suggestions will be applied.'))
-			else:
-				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
-
-
 		solutions = self.get_solutions(self.args.programs)
 		results = self.run_solutions(solutions)
 		self.validate_expected_scores(results)
