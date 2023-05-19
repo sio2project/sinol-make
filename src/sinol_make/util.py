@@ -113,6 +113,8 @@ def save_config(config):
 	Function to save nicely formated config.yml
 	"""
 
+	# The order of the fields in the config.yml file for the sake of readability
+	# The fields that are not in this list will be appended to the end of the file
 	order = [
 		"title",
 		"memory_limit",
@@ -128,12 +130,12 @@ def save_config(config):
 	config = config.copy()
 	with open("config.yml", "w") as config_file:
 		for field in order:
-			if isinstance(field, dict):
+			if isinstance(field, dict): # If the field is a dict, it means that it has a custom property (for example default_flow_style)
 				if field["key"] in config:
 					yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
 					# The considered fields are deleted, thus `config` at then end will contain only custom fields written by the user
 					del config[field["key"]]
-			else:
+			else: # If the field is a string, it means that it doesn't have any custom properties, it's just a dict key
 				if field in config:
 					yaml.dump({field: config[field]}, config_file)
 					del config[field] # Same reason for deleting as above
