@@ -146,6 +146,7 @@ def save_config(config):
 					del config[field] # Same reason for deleting as above.
 
 		if config != {}:
+			print(warning("Found unknown fields in config.yml: " + ", ".join([str(x) for x in config])))
 			# All remaining non-considered fields are appended to the end of the file.
 			yaml.dump(config, config_file)
 
