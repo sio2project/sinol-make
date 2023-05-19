@@ -409,7 +409,7 @@ class Command(BaseCommand):
 				"points": self.calculate_points(results[solution])
 			}
 
-		config_expected_scores = self.config["sinol_expected_scores"] if "sinol_expected_scores" in self.config else {}
+		config_expected_scores = self.config.get("sinol_expected_scores", {})
 		used_solutions = results.keys()
 		if self.args.programs == None and config_expected_scores: # If no solutions were specified, use all programs from config
 			used_solutions = config_expected_scores.keys()
@@ -489,7 +489,7 @@ class Command(BaseCommand):
 
 	def print_expected_scores_diff(self, validation_results: ValidationResult):
 		diff = validation_results
-		config_expected_scores = self.config["sinol_expected_scores"] if "sinol_expected_scores" in self.config else {}
+		config_expected_scores = self.config.get("sinol_expected_scores", {})
 
 		def warn_if_not_empty(set, message):
 			if len(set) > 0:
