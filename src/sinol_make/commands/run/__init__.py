@@ -490,21 +490,28 @@ class Command(BaseCommand):
 		if expected_scores == new_expected_scores:
 			print(util.info("Expected scores are correct!"))
 		else:
+			def delete_group(solution, group):
+				if group in config_expected_scores[solution]["expected"]:
+					del config_expected_scores[solution]["expected"][group]
+					config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+
+			def set_group_result(solution, group, result):
+				config_expected_scores[solution]["expected"][group] = result
+				config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+
+
 			if self.args.apply_suggestions:
 				for solution in removed_solutions:
 					del config_expected_scores[solution]
 
 				for solution in config_expected_scores:
 					for group in removed_groups:
-						if group in config_expected_scores[solution]["expected"]:
-							del config_expected_scores[solution]["expected"][group]
-					config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+						delete_group(solution, group)
 
 				for solution in new_expected_scores.keys():
 					if solution in config_expected_scores:
 						for group, result in new_expected_scores[solution]["expected"].items():
-							config_expected_scores[solution]["expected"][group] = result
-						config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+							set_group_result(solution, group, result)
 					else:
 						config_expected_scores[solution] = new_expected_scores[solution]
 
