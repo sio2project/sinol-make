@@ -409,14 +409,15 @@ class Command(BaseCommand):
 				"points": self.calculate_points(results[solution])
 			}
 
+		config_expected_scores = self.config["sinol_expected_scores"] if "sinol_expected_scores" in self.config else {}
 		used_solutions = results.keys() # Solutions that were used
-		if self.args.programs == None and "sinol_expected_scores" in self.config: # If no solutions were specified, use all programs from config
-			used_solutions = self.config["sinol_expected_scores"].keys()
+		if self.args.programs == None and config_expected_scores: # If no solutions were specified, use all programs from config
+			used_solutions = config_expected_scores.keys()
 
 		used_groups = set()
-		if self.args.tests == None and "sinol_expected_scores" in self.config: # If no groups were specified, use all groups from config
-			for solution in self.config["sinol_expected_scores"]:
-				for group in self.config["sinol_expected_scores"][solution]["expected"]:
+		if self.args.tests == None and config_expected_scores: # If no groups were specified, use all groups from config
+			for solution in config_expected_scores.keys():
+				for group in config_expected_scores[solution]["expected"]:
 					used_groups.add(group)
 		else:
 			for solution in results.keys():
@@ -425,19 +426,18 @@ class Command(BaseCommand):
 		used_groups = list(used_groups)
 
 		expected_scores = {} # Expected scores from config with only solutions and groups that were run
-		if "sinol_expected_scores" in self.config:
-			for solution in used_solutions:
-				if solution in self.config["sinol_expected_scores"]:
-					expected_scores[solution] = {
-						"expected": {},
-						"points": 0
-					}
+		for solution in used_solutions:
+			if solution in config_expected_scores.keys():
+				expected_scores[solution] = {
+					"expected": {},
+					"points": 0
+				}
 
-					for group in used_groups:
-						if group in self.config["sinol_expected_scores"][solution]["expected"]:
-							expected_scores[solution]["expected"][group] = self.config["sinol_expected_scores"][solution]["expected"][group]
+				for group in used_groups:
+					if group in config_expected_scores[solution]["expected"]:
+						expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
 
-					expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+				expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
 
 		print(util.bold("Expected scores from config:"))
 		self.print_expected_scores(expected_scores)
@@ -460,11 +460,11 @@ class Command(BaseCommand):
 						added_groups.add(group[0])
 			elif type == "remove":
 				# We check whether a solution was removed only when sinol_make was run on all of them
-				if field == '' and self.args.programs == None and "sinol_expected_scores" in self.config:
+				if field == '' and self.args.programs == None and config_expected_scores:
 					for solution in change:
 						removed_solutions.add(solution[0])
 				# We check whether a group was removed only when sinol_make was run on all of them
-				elif field[1] == "expected" and self.args.tests == None and "sinol_expected_scores" in self.config:
+				elif field[1] == "expected" and self.args.tests == None and config_expected_scores:
 					for group in change:
 						removed_groups.add(group[0])
 			elif type == "change":
@@ -497,30 +497,25 @@ class Command(BaseCommand):
 			print(util.info("Expected scores are correct!"))
 		else:
 			if self.args.apply_suggestions:
-				if "sinol_expected_scores" in self.config:
-					expected_scores = self.config["sinol_expected_scores"]
-				else:
-					expected_scores = {}
-
 				for solution in removed_solutions:
-					del expected_scores[solution]
+					del config_expected_scores[solution]
 
-				for solution in expected_scores:
+				for solution in config_expected_scores:
 					for group in removed_groups:
-						if group in expected_scores[solution]["expected"]:
-							del expected_scores[solution]["expected"][group]
-					expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+						if group in config_expected_scores[solution]["expected"]:
+							del config_expected_scores[solution]["expected"][group]
+					config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
 
 				for solution in new_expected_scores.keys():
-					if solution in expected_scores:
+					if solution in config_expected_scores:
 						for group, result in new_expected_scores[solution]["expected"].items():
-							expected_scores[solution]["expected"][group] = result
-						expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+							config_expected_scores[solution]["expected"][group] = result
+						config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
 					else:
-						expected_scores[solution] = new_expected_scores[solution]
+						config_expected_scores[solution] = new_expected_scores[solution]
 
 
-				self.config["sinol_expected_scores"] = expected_scores
+				self.config["sinol_expected_scores"] = config_expected_scores
 				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
 					yaml.dump(self.config, f, default_flow_style=None)
 				print(util.info("Saved suggested expected scores description."))
