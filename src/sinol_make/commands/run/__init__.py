@@ -409,31 +409,31 @@ class Command(BaseCommand):
 				"points": self.calculate_points(results[solution])
 			}
 
-		expected_scores = {} # Expected scores from config with only solutions and groups that were run
-		run_solutions = results.keys() # Solutions that were run
+		used_solutions = results.keys() # Solutions that were used
 		if self.args.programs == None and "sinol_expected_scores" in self.config: # If no solutions were specified, use all programs from config
-			run_solutions = self.config["sinol_expected_scores"].keys()
+			used_solutions = self.config["sinol_expected_scores"].keys()
 
-		run_groups_set = set()
+		used_groups = set()
 		if self.args.tests == None and "sinol_expected_scores" in self.config: # If no groups were specified, use all groups from config
 			for solution in self.config["sinol_expected_scores"]:
 				for group in self.config["sinol_expected_scores"][solution]["expected"]:
-					run_groups_set.add(group)
+					used_groups.add(group)
 		else:
 			for solution in results.keys():
 				for group in results[solution].keys():
-					run_groups_set.add(group)
-		run_groups = list(run_groups_set) # Groups that were run
+					used_groups.add(group)
+		used_groups = list(used_groups)
 
+		expected_scores = {} # Expected scores from config with only solutions and groups that were run
 		if "sinol_expected_scores" in self.config:
-			for solution in run_solutions:
+			for solution in used_solutions:
 				if solution in self.config["sinol_expected_scores"]:
 					expected_scores[solution] = {
 						"expected": {},
 						"points": 0
 					}
 
-					for group in run_groups:
+					for group in used_groups:
 						if group in self.config["sinol_expected_scores"][solution]["expected"]:
 							expected_scores[solution]["expected"][group] = self.config["sinol_expected_scores"][solution]["expected"][group]
 
