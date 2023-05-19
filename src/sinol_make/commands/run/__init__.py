@@ -487,7 +487,8 @@ class Command(BaseCommand):
 		)
 
 
-	def print_expected_scores_diff(self, diff: ValidationResult):
+	def print_expected_scores_diff(self, validation_results: ValidationResult):
+		diff = validation_results
 		config_expected_scores = self.config["sinol_expected_scores"] if "sinol_expected_scores" in self.config else {}
 
 		def warn_if_not_empty(set, message):
