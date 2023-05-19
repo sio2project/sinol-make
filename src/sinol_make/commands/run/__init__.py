@@ -477,19 +477,15 @@ class Command(BaseCommand):
 					print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
 										(solution, group, result, old_result)))
 
-		if len(added_solutions) > 0:
-			print(util.warning("Solutions were added: "), end='')
-			print(util.warning(", ".join(added_solutions)))
-		if len(removed_solutions) > 0:
-			print(util.warning("Solutions were removed: "), end='')
-			print(util.warning(", ".join(removed_solutions)))
+		def warn_if_not_empty(set, message):
+			if len(set) > 0:
+				print(util.warning(message), end='')
+				print(util.warning(", ".join([str(x) for x in set])))
 
-		if len(added_groups) > 0:
-			print(util.warning("Groups were added: "), end='')
-			print(util.warning(", ".join([str(group) for group in added_groups])))
-		if len(removed_groups) > 0:
-			print(util.warning("Groups were removed: "), end='')
-			print(util.warning(", ".join([str(group) for group in removed_groups])))
+		warn_if_not_empty(added_solutions, "Solutions were added: ")
+		warn_if_not_empty(removed_solutions, "Solutions were removed: ")
+		warn_if_not_empty(added_groups, "Groups were added: ")
+		warn_if_not_empty(removed_groups, "Groups were removed: ")
 
 		if expected_scores == new_expected_scores and \
 			len(added_solutions) == 0 and len(removed_solutions) == 0 and \
