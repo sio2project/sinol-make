@@ -23,6 +23,12 @@ dependencies = [
 	"argparse",
 	"requests",
 	"PyYAML",
+	"dictdiffer"
+]
+
+[project.optional-dependencies]
+tests = [
+  "pytest"
 ]
 
 [project.urls]

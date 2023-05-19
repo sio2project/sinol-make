@@ -1,4 +1,4 @@
-import glob, importlib, os, sys, subprocess, requests, tarfile
+import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
 
 def get_commands():
 	"""
@@ -108,7 +108,61 @@ def get_oiejq_path():
 		return None
 
 
+def save_config(config):
+	"""
+	Function to save nicely formated config.yml.
+	"""
+
+	# We add the fields in the `config.yml`` in a particular order to make the config more readable.
+	# The fields that are not in this list will be appended to the end of the file.
+	order = [
+		"title",
+		"title_pl",
+		"title_en",
+		"memory_limit",
+		"memory_limits",
+		"time_limit",
+		"time_limits",
+		"override_limits",
+		"scores",
+		"extra_compilation_files",
+		{
+			"key": "sinol_expected_scores",
+			"default_flow_style": None
+		}
+	]
+
+	config = config.copy()
+	with open("config.yml", "w") as config_file:
+		for field in order:
+			if isinstance(field, dict): # If the field is a dict, it means that it has a custom property (for example default_flow_style).
+				if field["key"] in config:
+					yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
+					# The considered fields are deleted, thus `config` at the end will contain only custom fields written by the user.
+					del config[field["key"]]
+			else: # When the field is a string, it doesn't have any custom properties, so it's just a dict key.
+				if field in config:
+					yaml.dump({field: config[field]}, config_file)
+					del config[field] # Same reason for deleting as above.
+
+		if config != {}:
+			print(warning("Found unknown fields in config.yml: " + ", ".join([str(x) for x in config])))
+			# All remaining non-considered fields are appended to the end of the file.
+			yaml.dump(config, config_file)
+
+
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
 def bold(text): return "\033[01m{}\033[00m".format(text)
+
+def info(text):
+	return bold(color_green(text))
+def warning(text):
+	return bold(color_yellow(text))
+def error(text):
+	return bold(color_red(text))
+
+def exit_with_error(text):
+	print(error(text))
+	exit(1)
