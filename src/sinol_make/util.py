@@ -1,4 +1,4 @@
-import glob, importlib, os, sys, subprocess, requests, tarfile
+import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
 
 def get_commands():
 	"""
@@ -106,6 +106,38 @@ def get_oiejq_path():
 		return os.path.expanduser('~/.local/bin/oiejq')
 	else:
 		return None
+
+
+def save_config(config):
+	"""
+	Function to save nicely formated config.yml
+	"""
+
+	order = [
+		"title",
+		"memory_limit",
+		"time_limit",
+		"override_limits",
+		"scores",
+		{
+			"key": "sinol_expected_scores",
+			"default_flow_style": None
+		}
+	]
+	config_file = open("config.yml", "w")
+
+	for field in order:
+		if isinstance(field, dict):
+			if field["key"] in config:
+				yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
+				del config[field["key"]]
+		else:
+			if field in config:
+				yaml.dump({field: config[field]}, config_file)
+				del config[field]
+
+	yaml.dump(config, config_file)
+	config_file.close()
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)
