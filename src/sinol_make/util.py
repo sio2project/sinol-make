@@ -1,4 +1,4 @@
-import glob, importlib, os, sys, subprocess, tarfile
+import glob, importlib, os, sys, subprocess, requests, tarfile
 
 def get_commands():
 	"""
