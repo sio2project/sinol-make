@@ -2,11 +2,12 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
+from sinol_make.commands.run.structs import ResultChange, ValidationResult
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler
 import sinol_make.util as util
-import yaml, os, collections, sys, re, math
+import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
 
 class Command(BaseCommand):
@@ -35,8 +36,6 @@ class Command(BaseCommand):
 		parser.add_argument('--ml', type=float, help='memory limit (in MB)')
 		parser.add_argument('--hide_memory', dest='hide_memory', action='store_true',
 							help='hide memory usage in report')
-		parser.add_argument('--expected_scores_report', type=str,
-							help='file to store report from expected scores validation (in markdown)')
 		parser.add_argument('--program_report', type=str,
 							help='file to store report from program executions (in markdown)')
 		parser.add_argument('--oiejq_path', type=str,
@@ -51,7 +50,6 @@ class Command(BaseCommand):
 		    				help='Java compiler to use (default: javac)')
 		parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
 		      				help='apply suggestions from expected scores report')
-
 
 
 	def color_memory(self, memory, limit):
@@ -90,8 +88,8 @@ class Command(BaseCommand):
 		return os.path.split(os.path.splitext(test_path)[0])[1][3:]
 
 
-	def extract_program_name(self, program_path):
-		return os.path.split(program_path)[1]
+	def extract_file_name(self, file_path):
+		return os.path.split(file_path)[1]
 
 
 	def get_group(self, test_path):
@@ -111,8 +109,8 @@ class Command(BaseCommand):
 			return sorted(list(set(arg_tests)), key=self.get_test_key)
 
 
-	def get_program_key(self, program):
-		name = self.extract_program_name(program)
+	def get_executable_key(self, executable):
+		name = self.extract_file_name(executable)
 		value = [0, 0]
 		if name[3] == 's':
 			value[0] = 1
@@ -127,22 +125,34 @@ class Command(BaseCommand):
 		return tuple(value)
 
 
-	def get_programs(self, arg_problems):
-		if arg_problems is None:
-			all_programs = [program for program in os.listdir("prog/")
-							if self.PROGRAMS_RE.match(program)]
-			return sorted(all_programs, key=self.get_program_key)
+	def get_solution_from_exe(self, executable):
+		file = os.path.splitext(executable)[0]
+		for ext in self.SOURCE_EXTENSIONS:
+			if os.path.isfile(os.path.join(os.getcwd(), "prog", file + ext)):
+				return file + ext
+		util.exit_with_error("Source file not found for executable %s" % executable)
+
+
+	def get_solutions(self, args_solutions):
+		if args_solutions is None:
+			solutions = [solution for solution in os.listdir("prog/")
+							if self.SOLUTIONS_RE.match(solution)]
+			return sorted(solutions, key=self.get_executable_key)
 		else:
-			return sorted(list(set(arg_problems)), key=self.get_program_key)
+			solutions = []
+			for solution in args_solutions:
+				if not os.path.isfile(solution):
+					util.exit_with_error("Solution %s does not exist" % solution)
+				solutions.append(os.path.basename(solution))
+			return sorted(solutions, key=self.get_executable_key)
 
 
-	def get_solutions(self):
-		programs = self.get_programs(None)
-		solutions = []
-		for program in programs:
-			if not re.search("/inwer\./g", program) and not re.search("/ingen\./g", program) and not re.search("/chk\./g", program):
-				solutions.append(program)
-		return solutions
+	def get_executable(self, file):
+		return os.path.splitext(self.extract_file_name(file))[0] + ".e"
+
+
+	def get_executables(self, args_solutions):
+		return [os.get_executable(solution) for solution in self.get_solutions(args_solutions)]
 
 
 	def get_possible_score(self, groups):
@@ -151,53 +161,41 @@ class Command(BaseCommand):
 			possible_score += self.scores[group]
 		return possible_score
 
-	def get_executable(self, program):
-		return os.path.splitext(self.extract_program_name(program))[0] + ".e"
-
-
-	def get_source_file(self, executable):
-		file = os.path.splitext(executable)[0]
-		for ext in self.SOURCE_EXTENSIONS:
-			if os.path.isfile(file + ext):
-				return file + ext
-		raise Exception("Source file not found for executable %s" % executable)
-
 
 	def get_output_file(self, test_path):
 		return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
 
 
-	def compile_programs(self, programs):
+	def compile_solutions(self, solutions):
 		os.makedirs(self.COMPILATION_DIR, exist_ok=True)
 		os.makedirs(self.EXECUTABLES_DIR, exist_ok=True)
-		print("Compiling %d programs..." % len(programs))
+		print("Compiling %d solutions..." % len(solutions))
 		with mp.Pool(self.cpus) as pool:
-			compilation_results = pool.map(self.compile, programs)
+			compilation_results = pool.map(self.compile, solutions)
 		if not all(compilation_results):
-			print(util.error("\nCompilation failed."))
-			exit(1)
+			util.exit_with_error("\nCompilation failed.")
 		return compilation_results
 
 
-	def compile(self, program):
+	def compile(self, solution):
 		compile_log_file = os.path.join(
-			self.COMPILATION_DIR, "%s.compile_log" % self.extract_program_name(program))
-		source_file = self.get_source_file(os.path.join(os.getcwd(), "prog", program))
-		output = os.path.join(self.EXECUTABLES_DIR, program)
+			self.COMPILATION_DIR, "%s.compile_log" % self.extract_file_name(solution))
+		source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
+		output = os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
 		try:
 			compile.compile(source_file, output, self.compilers, open(compile_log_file, "w"))
 			print(util.info("Compilation of file %s was successful."
-							% self.extract_program_name(program)))
+							% self.extract_file_name(solution)))
 			return True
 		except CompilationError as e:
 			print(util.error("Compilation of file %s was unsuccessful."
-								% self.extract_program_name(program)))
+								% self.extract_file_name(solution)))
 			os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
 			return False
 
 
 	def execute(self, execution):
-		(name, program, test, time_limit, memory_limit, timetool_path) = execution
+		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
 		output_file = os.path.join(self.EXECUTIONS_DIR, name,
 								self.extract_test_no(test)+".out")
 		result_file = os.path.join(self.EXECUTIONS_DIR, name,
@@ -207,7 +205,7 @@ class Command(BaseCommand):
 		command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
 				% (math.ceil(memory_limit), hard_time_limit_in_s,
 					hard_time_limit_in_s, timetool_path,
-					program, test, output_file, result_file)
+					executable, test, output_file, result_file)
 		code = os.system(command)
 		result = {}
 		with open(result_file) as r:
@@ -240,7 +238,7 @@ class Command(BaseCommand):
 			result["Status"] = result["Status"][:2]
 		return result
 
-	def perform_executions(self, compiled_commands, names, programs, report_file):
+	def perform_executions(self, compiled_commands, names, solutions, report_file):
 		executions = []
 		all_results = collections.defaultdict(
 			lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
@@ -254,7 +252,7 @@ class Command(BaseCommand):
 				for test in self.tests:
 					all_results[name][self.get_group(test)][test] = {"Status": "CE"}
 		print()
-		executions.sort(key = lambda x: (self.get_program_key(x[1]), x[2]))
+		executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
 		program_groups_scores = collections.defaultdict(dict)
 
 		def print_view(output_file=None):
@@ -266,7 +264,7 @@ class Command(BaseCommand):
 				# 		cursor_delta += len(self.tests)
 				# else:
 				cursor_delta = len(self.groups) + 7
-				number_of_rows = (len(programs) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
+				number_of_rows = (len(solutions) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
 				sys.stdout.write('\033[%dA' % (cursor_delta * number_of_rows + 1))
 			program_scores = collections.defaultdict(int)
 			program_times = collections.defaultdict(lambda: -1)
@@ -369,7 +367,7 @@ class Command(BaseCommand):
 		print("Performing %d executions..." % len(executions))
 		with mp.Pool(self.cpus) as pool:
 			for i, result in enumerate(pool.imap(self.execute, executions)):
-				(name, program, test) = executions[i][:3]
+				(name, executable, test) = executions[i][:3]
 				all_results[name][self.get_group(test)][test] = result
 				print_view()
 		if report_file:
@@ -377,140 +375,170 @@ class Command(BaseCommand):
 		return program_groups_scores
 
 
-	def validate_expected_scores(self):
-		print("Validating expected scores...")
-		suggestions = False
-		if 'sinol_expected_scores' not in self.config.keys():
-			print(util.warning('Expected scores description not defined in config.yml. ' \
-				    	'The program will run all files on all tests and will print you the results. '))
-			suggestions = True
+	def calculate_points(self, results):
+		points = 0
+		for group, result in results.items():
+			if group != 0 and group not in self.config["scores"]:
+				util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
+			if result == "OK" and group != 0:
+				points += self.config["scores"][group]
+		return points
 
-			if self.args.apply_suggestions:
-				print(util.warning('Suggestions will be applied.'))
-			else:
-				print(util.warning('Use flag --apply_suggestions to apply suggestions.'))
 
-		expected_scores = self.config["sinol_expected_scores"] if 'sinol_expected_scores' in self.config.keys() else {}
-
-		programs = [] # Array of program exevutables that will be compiled and run
-		if suggestions:
-			solutions = self.get_solutions()
-			programs = [self.get_executable(solution) for solution in solutions]
-		else:
-			for program in expected_scores.keys():
-				score_checksum = 0
-				for group, expected_result in expected_scores[program]["expected"].items():
-					if group not in self.scores.keys():
-						print(util.error('Group %d was not defined.' % group))
-						exit(1)
-					if expected_result not in ["TL", "ML", "RE", "WA", "OK"]:
-						print(util.error('Expected result for group %d for program %s is not valid.' % (group, program)))
-						exit(1)
-
-					if expected_result == "OK":
-						score_checksum += self.scores[group]
-
-				score_expected = expected_scores[program]["points"]
-				if score_checksum != score_expected:
-					print(util.error('Program %s will get %d points (expected %d).' % (program, score_checksum, score_expected)))
-					exit(1)
-
-				programs.append(program)
-			programs = list(set(programs))
-
-		compilation_results = self.compile_programs(programs)
+	def run_solutions(self, solutions):
+		compilation_results = self.compile_solutions(solutions)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-		compiled_commands = []
-		for program in programs:
-			path = os.path.join(self.EXECUTABLES_DIR, program)
-			compiled_commands.append((program, path, True))
-		names = programs
-		results = self.perform_executions(compiled_commands, names, programs, self.args.expected_scores_report)
+		executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+							for solution in solutions]
+		compiled_commands = zip(solutions, executables, compilation_results)
+		names = solutions
+		return self.perform_executions(compiled_commands, names, solutions, self.args.program_report)
 
-		if "sinol_expected_scores" not in self.config.keys():
-			print(util.bold("Suggested expected scores description:"))
-			print("sinol_expected_scores:")
 
-			new_expected_scores = {}
+	def print_expected_scores(self, expected_scores):
+		yaml_dict = { "sinol_expected_scores": expected_scores }
+		print(yaml.dump(yaml_dict, default_flow_style=None))
 
-			for program in programs:
-				print("  %s:" % program)
-				print("    expected: " + str(results[program]))
-				new_expected_scores[program] = {
-					"expected": results[program],
+
+	def validate_expected_scores(self, results):
+		new_expected_scores = {} # Expected scores based on results
+
+		for solution in results.keys():
+			new_expected_scores[solution] = {
+				"expected": results[solution],
+				"points": self.calculate_points(results[solution])
+			}
+
+		config_expected_scores = self.config.get("sinol_expected_scores", {})
+		used_solutions = results.keys()
+		if self.args.programs == None and config_expected_scores: # If no solutions were specified, use all programs from config
+			used_solutions = config_expected_scores.keys()
+
+		used_groups = set()
+		if self.args.tests == None and config_expected_scores: # If no groups were specified, use all groups from config
+			for solution in config_expected_scores.keys():
+				for group in config_expected_scores[solution]["expected"]:
+					used_groups.add(group)
+		else:
+			for solution in results.keys():
+				for group in results[solution].keys():
+					used_groups.add(group)
+		used_groups = list(used_groups)
+
+		expected_scores = {} # Expected scores from config with only solutions and groups that were run
+		for solution in used_solutions:
+			if solution in config_expected_scores.keys():
+				expected_scores[solution] = {
+					"expected": {},
 					"points": 0
 				}
 
-				points = 0
-				for group, result in results[program].items():
-					if result == "OK":
-						points += self.scores[group]
-				print("    points: %d" % points)
-				new_expected_scores[program]["points"] = points
+				for group in used_groups:
+					if group in config_expected_scores[solution]["expected"]:
+						expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
+
+				expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+
+		print(util.bold("Expected scores from config:"))
+		self.print_expected_scores(expected_scores)
+		print(util.bold("\nExpected scores based on results:"))
+		self.print_expected_scores(new_expected_scores)
+
+		expected_scores_diff = dictdiffer.diff(expected_scores, new_expected_scores)
+		added_solutions = set()
+		removed_solutions = set()
+		added_groups = set()
+		removed_groups = set()
+		changes = []
+
+		for type, field, change in list(expected_scores_diff):
+			if type == "add":
+				if field == '': # Solutions were added
+					for solution in change:
+						added_solutions.add(solution[0])
+				elif field[1] == "expected": # Groups were added
+					for group in change:
+						added_groups.add(group[0])
+			elif type == "remove":
+				# We check whether a solution was removed only when sinol_make was run on all of them
+				if field == '' and self.args.programs == None and config_expected_scores:
+					for solution in change:
+						removed_solutions.add(solution[0])
+				# We check whether a group was removed only when sinol_make was run on all of them
+				elif field[1] == "expected" and self.args.tests == None and config_expected_scores:
+					for group in change:
+						removed_groups.add(group[0])
+			elif type == "change":
+				if field[1] == "expected": # Results for at least one group has changed
+					solution = field[0]
+					group = field[2]
+					old_result = change[0]
+					result = change[1]
+					changes.append(ResultChange(solution, group, result, old_result))
+
+		return ValidationResult(
+			added_solutions,
+			removed_solutions,
+			added_groups,
+			removed_groups,
+			changes,
+			expected_scores,
+			new_expected_scores
+		)
+
+
+	def print_expected_scores_diff(self, validation_results: ValidationResult):
+		diff = validation_results
+		config_expected_scores = self.config.get("sinol_expected_scores", {})
+
+		def warn_if_not_empty(set, message):
+			if len(set) > 0:
+				print(util.warning(message + ": "), end='')
+				print(util.warning(", ".join([str(x) for x in set])))
+
+		warn_if_not_empty(diff.added_solutions, "Solutions were added")
+		warn_if_not_empty(diff.removed_solutions, "Solutions were removed")
+		warn_if_not_empty(diff.added_groups, "Groups were added")
+		warn_if_not_empty(diff.removed_groups, "Groups were removed")
+
+		for change in diff.changes:
+			print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
+										(change.solution, change.group, change.result, change.old_result)))
+
+		if diff.expected_scores == diff.new_expected_scores:
+			print(util.info("Expected scores are correct!"))
+		else:
+			def delete_group(solution, group):
+				if group in config_expected_scores[solution]["expected"]:
+					del config_expected_scores[solution]["expected"][group]
+					config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+
+			def set_group_result(solution, group, result):
+				config_expected_scores[solution]["expected"][group] = result
+				config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+
 
 			if self.args.apply_suggestions:
-				self.config["sinol_expected_scores"] = new_expected_scores
-				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
-					yaml.dump(self.config, f, default_flow_style=False)
+				for solution in diff.removed_solutions:
+					del config_expected_scores[solution]
+
+				for solution in config_expected_scores:
+					for group in diff.removed_groups:
+						delete_group(solution, group)
+
+				for solution in diff.new_expected_scores.keys():
+					if solution in config_expected_scores:
+						for group, result in diff.new_expected_scores[solution]["expected"].items():
+							set_group_result(solution, group, result)
+					else:
+						config_expected_scores[solution] = diff.new_expected_scores[solution]
+
+
+				self.config["sinol_expected_scores"] = config_expected_scores
+				util.save_config(self.config)
+				print(util.info("Saved suggested expected scores description."))
 			else:
-				print(util.warning("Use flag --apply_suggestions to apply suggestions."))
-				exit(1)
-		else:
-			new_expected_scores = expected_scores
-			error = False
-
-			for program in results.keys():
-				if program not in expected_scores.keys():
-					print(util.warning("Program %s is not defined in expected scores description." % program))
-					error = True
-					new_expected_scores[program] = {
-						"expected": results[program],
-						"points": 0
-					}
-					continue
-
-				for group, result in results[program].items():
-					if group not in expected_scores[program]["expected"]:
-						print(util.warning("Group %d is not defined for program %s in expected scores description." % (group, program)))
-						error = True
-						new_expected_scores[program]["expected"][group] = result
-						new_expected_scores[program]["points"] += self.scores[group] if result == "OK" else 0
-						continue
-					if expected_scores[program]["expected"][group] != result:
-						print(util.warning("Program %s passed group %d with status %s, while it should pass with status %s."
-			 								% (program, group, result, expected_scores[program]["expected"][group])))
-						error = True
-						new_expected_scores[program]["expected"][group] = result
-						new_expected_scores[program]["points"] += self.scores[group] if result == "OK" else 0
-						continue
-
-			if self.args.apply_suggestions and error:
-				self.config["sinol_expected_scores"] = new_expected_scores
-				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
-					yaml.dump(self.config, f, default_flow_style=False)
-				print(util.info("Suggested expected scores description was applied."))
-			elif error:
-				print(util.error("Expected scores description is not valid. Use --apply_suggestions to apply results."))
-				exit(1)
-			else:
-				print(util.info("Expected scores are valid."))
-
-
-	def run_programs(self):
-		programs = self.get_programs(self.args.programs)
-		print("The following %d programs will be executed:\n%s"
-			% (len(programs), [self.extract_program_name(program) for program in programs]))
-		print("on the following %d tests:\n%s"
-			% (len(self.tests), [self.extract_test_no(test) for test in self.tests] ))
-		print("in parallel on %d cpus." % self.cpus)
-		print()
-		compilation_results = self.compile_programs(programs)
-		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-		program_executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(program))
-							for program in programs]
-		compiled_commands = zip(programs, program_executables, compilation_results)
-		names = programs
-		self.perform_executions(compiled_commands, names, programs, self.args.program_report)
+				util.exit_with_error("Use flag --apply_suggestions to apply suggestions.")
 
 
 	def set_constants(self):
@@ -521,7 +549,7 @@ class Command(BaseCommand):
 		self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")
 		self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
 		self.PROGRAMS_IN_ROW = 8
-		self.PROGRAMS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
+		self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
 
 
 	def run(self, args):
@@ -537,20 +565,24 @@ class Command(BaseCommand):
 			self.config = yaml.load(open("config.yml"))
 
 		if not 'title' in self.config.keys():
-			print(util.error('Title was not defined in config.yml.'))
-			exit(1)
+			util.exit_with_error('Title was not defined in config.yml.')
 		if not 'time_limit' in self.config.keys():
-			print(util.error('Time limit was not defined in config.yml.'))
-			exit(1)
+			util.exit_with_error('Time limit was not defined in config.yml.')
 		if not 'memory_limit' in self.config.keys():
-			print(util.error('Memory limit was not defined in config.yml.'))
-			exit(1)
+			util.exit_with_error('Memory limit was not defined in config.yml.')
 		if not 'scores' in self.config.keys():
-			print(util.error('Scores were not defined in config.yml.'))
-			exit(1)
+			util.exit_with_error('Scores were not defined in config.yml.')
 
-		for program in self.get_programs(None):
-			ext = os.path.splitext(program)[1]
+		self.ID = os.path.split(os.getcwd())[-1]
+		self.TMP_DIR = os.path.join(os.getcwd(), "cache")
+		self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
+		self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
+		self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")
+		self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
+		self.PROGRAMS_IN_ROW = 8
+
+		for solution in self.get_solutions(None):
+			ext = os.path.splitext(solution)[1]
 			compiler = ""
 			tried = ""
 			flag = ""
@@ -558,25 +590,27 @@ class Command(BaseCommand):
 				compiler = 'C compiler'
 				flag = '--c_compiler_path'
 				if sys.platform == 'darwin':
-					print(util.error('Couldn\'t find a C compiler. Tried gcc-{9,10,11,12}. Try specifying a compiler with --c_compiler_path.'))
-					exit(1)
+					tried = 'gcc-{9,10,11,12}'
 				else:
-					print(util.error('Couldn\'t find a C compiler. Tried gcc. Try specifying a compiler with --c_compiler_path.'))
+					tried = 'gcc'
 			elif ext == '.cpp' and args.cpp_compiler_path is None:
 				compiler = 'C++ compiler'
 				flag = '--cpp_compiler_path'
 				if sys.platform == 'darwin':
-					print(util.error('Couldn\'t find a C++ compiler. Tried g++-{9,10,11,12}. Try specifying a compiler with --cpp_compiler_path.'))
-					exit(1)
+					tried = 'g++-{9,10,11,12}'
 				else:
-					print(util.error('Couldn\'t find a C++ compiler. Tried g++. Try specifying a compiler with --cpp_compiler_path.'))
-					exit(1)
+					tried = 'g++'
 			elif ext == '.py' and args.python_interpreter_path is None:
-				print(util.error('Couldn\'t find a Python interpreter. Tried python3. Try specifying an interpreter with --python_interpreter_path.'))
-				exit(1)
+				compiler = 'Python interpreter'
+				flag = '--python_interpreter_path'
+				tried = 'python3'
 			elif ext == '.java' and args.java_compiler_path is None:
-				print(util.error('Couldn\'t find a Java compiler. Tried javac. Try specifying a compiler with --java_compiler_path.'))
-				exit(1)
+				compiler = 'Java compiler'
+				flag = '--java_compiler_path'
+				tried = 'javac'
+
+			if compiler != "":
+				util.exit_with_error('Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
 
 		self.compilers = {
 			'c_compiler_path': args.c_compiler_path,
@@ -587,14 +621,12 @@ class Command(BaseCommand):
 
 		if 'oiejq_path' in args and args.oiejq_path is not None:
 			if not util.check_oiejq(args.oiejq_path):
-				print(util.error('Invalid oiejq path.'))
-				exit(1)
+				util.exit_with_error('Invalid oiejq path.')
 			self.timetool_path = args.oiejq_path
 		else:
 			self.timetool_path = util.get_oiejq_path()
 		if self.timetool_path is None:
-			print(util.error('oiejq is not installed.'))
-			exit(1)
+			util.exit_with_error('oiejq is not installed.')
 
 		title = self.config["title"]
 		print("Task %s (%s)" % (title, self.ID))
@@ -628,5 +660,7 @@ class Command(BaseCommand):
 		self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
 		self.possible_score = self.get_possible_score(self.groups)
 
-		self.validate_expected_scores()
-		self.run_programs()
+		solutions = self.get_solutions(self.args.programs)
+		results = self.run_solutions(solutions)
+		validation_results = self.validate_expected_scores(results)
+		self.print_expected_scores_diff(validation_results)

@@ -5,8 +5,8 @@ from ...util import *
 
 def test_get_programs():
 	command = get_command()
-	programs = command.get_programs(None)
-	assert programs == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abc3.cpp", "abc4.cpp"]
+	solutions = command.get_solutions(None)
+	assert solutions == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abc3.cpp", "abc4.cpp"]
 
 
 def test_compile_programs():
@@ -14,9 +14,9 @@ def test_compile_programs():
 		shutil.copytree(get_simple_package_path(), os.path.join(tmpdir, "abc"))
 
 		command = get_command(os.path.join(tmpdir, "abc"))
-		programs = command.get_programs(None)
-		result = command.compile_programs(programs)
-		assert result == [True for _ in programs]
+		solutions = command.get_solutions(None)
+		result = command.compile_solutions(solutions)
+		assert result == [True for _ in solutions]
 
 
 def test_get_tests():
@@ -37,8 +37,9 @@ def test_execution():
 		shutil.copytree(get_simple_package_path(), package_path)
 
 		command = get_command(package_path)
-		program = "abc.e"
-		result = command.compile_programs([program])
+		solution = "abc.cpp"
+		executable = command.get_executable(solution)
+		result = command.compile_solutions([solution])
 		assert result == [True]
 
 		create_ins(package_path, command)
@@ -49,6 +50,6 @@ def test_execution():
 
 		config = yaml.load(open(os.path.join(package_path, "config.yml"), "r"), Loader=yaml.FullLoader)
 
-		os.makedirs(os.path.join(command.EXECUTIONS_DIR, program), exist_ok=True)
-		result = command.execute((program, os.path.join(command.EXECUTABLES_DIR, program), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
+		os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
+		result = command.execute((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
 		assert result["Status"] == "OK"

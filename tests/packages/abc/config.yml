@@ -9,18 +9,18 @@ scores:
   4: 25
 
 sinol_expected_scores:
-  abc.e:
+  abc.cpp:
     points: 100
     expected: {1: "OK", 2: "OK", 3: "OK", 4: "OK"}
-  abc1.e:
+  abc1.cpp:
     points: 75
     expected: {1: "OK", 2: "OK", 3: "OK", 4: "WA"}
-  abc2.e:
+  abc2.cpp:
     points: 25
     expected: {1: "OK", 2: "WA", 3: "WA", 4: "TL"}
-  abc3.e:
+  abc3.cpp:
     points: 25
     expected: {1: "OK", 2: "WA", 3: "WA", 4: "ML"}
-  abc4.e:
+  abc4.cpp:
     points: 50
     expected: {1: "OK", 2: "OK", 3: "WA", 4: "RE"}

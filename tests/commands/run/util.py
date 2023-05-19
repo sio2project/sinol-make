@@ -24,7 +24,7 @@ def get_command(path = None):
 	return command
 
 def create_ins(package_path, command):
-	result = command.compile_programs(["abcingen.e"])
+	result = command.compile_solutions(["abcingen.cpp"])
 	assert result == [True]
 
 	os.chdir(os.path.join(package_path, "in"))
@@ -32,7 +32,7 @@ def create_ins(package_path, command):
 
 
 def create_outs(package_path, command):
-	result = command.compile_programs(["abc.e"])
+	result = command.compile_solutions(["abc.cpp"])
 	assert result == [True]
 
 	os.chdir(os.path.join(package_path, "in"))
