@@ -487,9 +487,7 @@ class Command(BaseCommand):
 		warn_if_not_empty(added_groups, "Groups were added: ")
 		warn_if_not_empty(removed_groups, "Groups were removed: ")
 
-		if expected_scores == new_expected_scores and \
-			len(added_solutions) == 0 and len(removed_solutions) == 0 and \
-			len(added_groups) == 0 and len(removed_groups) == 0:
+		if expected_scores == new_expected_scores:
 			print(util.info("Expected scores are correct!"))
 		else:
 			if self.args.apply_suggestions:
