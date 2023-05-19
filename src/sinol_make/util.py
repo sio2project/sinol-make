@@ -124,20 +124,21 @@ def save_config(config):
 			"default_flow_style": None
 		}
 	]
-	config_file = open("config.yml", "w")
 
-	for field in order:
-		if isinstance(field, dict):
-			if field["key"] in config:
-				yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
-				del config[field["key"]]
-		else:
-			if field in config:
-				yaml.dump({field: config[field]}, config_file)
-				del config[field]
+	config = config.copy()
+	with open("config.yml", "w") as config_file:
+		for field in order:
+			if isinstance(field, dict):
+				if field["key"] in config:
+					yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
+					del config[field["key"]]
+			else:
+				if field in config:
+					yaml.dump({field: config[field]}, config_file)
+					del config[field]
 
-	yaml.dump(config, config_file)
-	config_file.close()
+		if config != {}:
+			yaml.dump(config, config_file)
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)
