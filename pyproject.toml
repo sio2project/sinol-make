@@ -26,6 +26,11 @@ dependencies = [
 	"dictdiffer"
 ]
 
+[project.optional-dependencies]
+tests = [
+  "pytest"
+]
+
 [project.urls]
 "Homepage" = "https://github.com/sio2project/sinol-make"
 "Bug Tracker" = "https://github.com/sio2project/sinol-make/issues"

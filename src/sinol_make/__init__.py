@@ -1,7 +1,7 @@
 import argparse
-from sinol_make.util import get_commands
+from sinol_make import util
 
-def main():
+def configure_parsers():
 	parser = argparse.ArgumentParser(
 		prog='sinol-make',
 		description='Tool for creating and testing sio2 tasks',
@@ -13,11 +13,16 @@ def main():
 	)
 	subparsers.required = False
 
-	commands = get_commands()
+	commands = util.get_commands()
 
 	for command in commands:
 		command.configure_subparser(subparsers)
+	return parser
 
+
+def main():
+	parser = configure_parsers()
+	commands = util.get_commands()
 	args = parser.parse_args()
 
 	for command in commands:
