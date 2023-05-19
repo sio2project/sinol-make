@@ -535,8 +535,7 @@ class Command(BaseCommand):
 
 
 				self.config["sinol_expected_scores"] = config_expected_scores
-				with open(os.path.join(os.getcwd(), "config.yml"), "w") as f:
-					yaml.dump(self.config, f, default_flow_style=None)
+				util.save_config(self.config)
 				print(util.info("Saved suggested expected scores description."))
 			else:
 				util.exit_with_error("Use flag --apply_suggestions to apply suggestions.")
