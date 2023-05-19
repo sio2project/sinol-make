@@ -131,7 +131,8 @@ def save_config(config):
 			if isinstance(field, dict):
 				if field["key"] in config:
 					yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
-					del config[field["key"]] # Fields are deleted so that if there were any custom fields, they will be saved at the end of the file
+					# The considered fields are deleted, thus `config` at then end will contain only custom fields written by the user
+					del config[field["key"]]
 			else:
 				if field in config:
 					yaml.dump({field: config[field]}, config_file)
