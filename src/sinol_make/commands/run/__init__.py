@@ -410,7 +410,7 @@ class Command(BaseCommand):
 			}
 
 		config_expected_scores = self.config["sinol_expected_scores"] if "sinol_expected_scores" in self.config else {}
-		used_solutions = results.keys() # Solutions that were used
+		used_solutions = results.keys()
 		if self.args.programs == None and config_expected_scores: # If no solutions were specified, use all programs from config
 			used_solutions = config_expected_scores.keys()
 
