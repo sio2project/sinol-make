@@ -11,6 +11,7 @@ jobs:
       - name: Prepare system
         run: |
           apt update
+          apt install -y software-properties-common
           export TZ=Europe/Warsaw
           ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
       - name: Set up Python 3.11 and pip
