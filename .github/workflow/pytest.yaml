@@ -1,0 +1,26 @@
+name: pytest
+run-name: Run pytest
+on: [push, pull_request]
+jobs:
+  pytest:
+    runs-on: self-hosted
+    container: ubuntu:latest
+    steps:
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          python -m pip3 install --upgrade pip
+          pip3 install .[tests]
+      - name: Install oiejq
+        run: |
+          sudo apt update
+          sudo apt install -y wget
+          wget https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz
+          mkdir -p ~/.local/bin
+          tar -xzf oiejq.tar.gz -C ~/.local/bin --strip-components=1
+      - name: Run pytest
+        run: |
+          pytest
