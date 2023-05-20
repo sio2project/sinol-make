@@ -22,7 +22,7 @@ jobs:
           apt install -y python3.11 python3-pip
       - name: Install dependencies
         run: |
-          python -m pip3 install --upgrade pip
+          python3 -m pip3 install --upgrade pip
           pip3 install .[tests]
       - name: Install oiejq
         run: |
