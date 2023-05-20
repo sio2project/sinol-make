@@ -8,11 +8,11 @@ jobs:
     steps:
       - name: Set up Python 3.11 and pip
         run: |
-          sudo apt update
-          sudo apt install -y wget build-essential libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev
-          sudo add-apt-repository ppa:deadsnakes/ppa
-          sudo apt update
-          sudo apt install -y python3.11 python3-pip
+          apt update
+          apt install -y wget build-essential libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev
+          add-apt-repository ppa:deadsnakes/ppa
+          apt update
+          apt install -y python3.11 python3-pip
       - name: Install dependencies
         run: |
           python -m pip3 install --upgrade pip
