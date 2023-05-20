@@ -4,6 +4,7 @@ from .util import *
 from ...util import *
 
 def test_get_programs():
+	os.chdir(get_simple_package_path())
 	command = get_command()
 	solutions = command.get_solutions(None)
 	assert solutions == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abc3.cpp", "abc4.cpp"]
@@ -12,6 +13,7 @@ def test_get_programs():
 def test_compile_programs():
 	with tempfile.TemporaryDirectory() as tmpdir:
 		shutil.copytree(get_simple_package_path(), os.path.join(tmpdir, "abc"))
+		os.chdir(os.path.join(tmpdir, "abc"))
 
 		command = get_command(os.path.join(tmpdir, "abc"))
 		solutions = command.get_solutions(None)
@@ -23,6 +25,7 @@ def test_get_tests():
 	with tempfile.TemporaryDirectory() as tmpdir:
 		package_path = os.path.join(tmpdir, "abc")
 		shutil.copytree(get_simple_package_path(), package_path)
+		os.chdir(package_path)
 
 		command = get_command(package_path)
 		create_ins(package_path, command)
@@ -35,6 +38,7 @@ def test_execution():
 	with tempfile.TemporaryDirectory() as tmpdir:
 		package_path = os.path.join(tmpdir, "abc")
 		shutil.copytree(get_simple_package_path(), package_path)
+		os.chdir(package_path)
 
 		command = get_command(package_path)
 		solution = "abc.cpp"

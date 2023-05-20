@@ -5,3 +5,5 @@ build
 .vscode
 __pycache__
 /tests/packages/**/cache
+/tests/packages/**/in/*.in
+/tests/packages/**/out/*.out

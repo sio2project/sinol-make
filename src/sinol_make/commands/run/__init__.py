@@ -256,6 +256,7 @@ class Command(BaseCommand):
 		program_groups_scores = collections.defaultdict(dict)
 
 		def print_view(output_file=None):
+			stdout = sys.stdout
 			if i != 0 and output_file is None:
 				# TODO: always display both tables
 				# if self.args.verbose:
@@ -358,7 +359,7 @@ class Command(BaseCommand):
 				# 			print()
 				# 	print()
 				print(10*len(program_group)*' ')
-			sys.stdout = sys.__stdout__
+			sys.stdout = stdout
 			if output_file is not None:
 				os.system('sed -i -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g" %s' % output_file) # TODO: make this work on Windows
 				print("Report has been saved to", util.bold(output_file))
@@ -474,7 +475,7 @@ class Command(BaseCommand):
 					group = field[2]
 					old_result = change[0]
 					result = change[1]
-					changes.append(ResultChange(solution, group, result, old_result))
+					changes.append(ResultChange(solution, group, old_result, result))
 
 		return ValidationResult(
 			added_solutions,
@@ -572,14 +573,6 @@ class Command(BaseCommand):
 			util.exit_with_error('Memory limit was not defined in config.yml.')
 		if not 'scores' in self.config.keys():
 			util.exit_with_error('Scores were not defined in config.yml.')
-
-		self.ID = os.path.split(os.getcwd())[-1]
-		self.TMP_DIR = os.path.join(os.getcwd(), "cache")
-		self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
-		self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
-		self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")
-		self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
-		self.PROGRAMS_IN_ROW = 8
 
 		for solution in self.get_solutions(None):
 			ext = os.path.splitext(solution)[1]
