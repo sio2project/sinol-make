@@ -6,9 +6,15 @@ jobs:
     runs-on: self-hosted
     container: ubuntu:latest
     steps:
-      - name: Set up Python 3.11 and pip
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Prepare system
         run: |
           apt update
+          export TZ=Europe/Warsaw
+          ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+      - name: Set up Python 3.11 and pip
+        run: |
           apt install -y wget build-essential libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev
           add-apt-repository ppa:deadsnakes/ppa
           apt update
