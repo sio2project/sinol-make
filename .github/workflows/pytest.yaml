@@ -4,7 +4,10 @@ on: [push, pull_request]
 jobs:
   pytest:
     runs-on: self-hosted
-    container: ubuntu:latest
+    container:
+      image: ubuntu:latest
+      options:
+        --network host
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -22,7 +25,7 @@ jobs:
           apt install -y python3.11 python3-pip
       - name: Install dependencies
         run: |
-          pip3 install .[tests]
+          pip3 --default-timeout=100 install .[tests]
       - name: Install oiejq
         run: |
           wget https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz
