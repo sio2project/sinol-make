@@ -5,6 +5,8 @@ jobs:
   pytest:
     runs-on: self-hosted
     steps:
+      - name: Clear repository
+        run: rm -fr $GITHUB_WORKSPACE && mkdir $GITHUB_WORKSPACE
       - name: Checkout
         uses: actions/checkout@v2
       - name: Prepare system
