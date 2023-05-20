@@ -1,11 +1,6 @@
 name: pytest
 run-name: Run pytest
-on:
-  push:
-    branches: '*'
-  pull_request:
-    branches: '*'
-
+on: [push, pull_request]
 jobs:
   pytest:
     runs-on: self-hosted
