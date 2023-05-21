@@ -1,5 +1,7 @@
 import multiprocessing as mp
 import os, glob
+
+import yaml
 from ...util import *
 from sinol_make.commands.run import Command
 from sinol_make.helpers import compiler
@@ -20,6 +22,7 @@ def get_command(path = None):
 		'python_interpreter_path': compiler.get_python_interpreter_path(),
 		'java_compiler_path': compiler.get_java_compiler_path()
 	}
+	command.config = yaml.load(open(os.path.join(path, "config.yml"), "r"), Loader=yaml.FullLoader)
 	return command
 
 def create_ins(package_path, command):
