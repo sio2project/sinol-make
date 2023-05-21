@@ -1,0 +1,33 @@
+name: pytest-ubuntu
+run-name: Run pytest on Ubuntu
+on: [push]
+jobs:
+  pytest:
+    runs-on: self-hosted
+    container:
+      image: ubuntu:latest
+      volumes:
+        - /home/actions/oiejq:/github/home/.local/bin
+      env:
+        DEB_PYTHON_INSTALL_LAYOUT: deb
+      options:
+        --privileged
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Prepare system
+        run: |
+          apt update
+          export TZ=Europe/Warsaw
+          ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+          sysctl kernel.perf_event_paranoid=-1
+      - name: Set up Python 3.11
+        run: |
+          apt install -y python3.11 python3.11-dev python3-pip
+          pip3 install -U setuptools
+      - name: Install dependencies
+        run: |
+          pip3 install .[tests]
+      - name: Run pytest
+        run: |
+          python3 -m pytest
