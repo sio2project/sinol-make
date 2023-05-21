@@ -20,10 +20,9 @@ jobs:
         run: |
           apt install -y wget build-essential libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libffi-dev zlib1g-dev
           apt install -y python3.11 python3-pip
+          pip3 install setuptools --upgrade
       - name: Install dependencies
         run: |
-          ls
-          pwd
           pip3 install .[tests]
       # - name: Install oiejq
       #   run: |
