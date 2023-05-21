@@ -1,4 +1,4 @@
-import tempfile, shutil, yaml, pytest
+import yaml, pytest
 from ...util import *
 from ...fixtures import *
 from .util import *
@@ -99,7 +99,7 @@ def test_incorrect_expected_scores(capsys, create_package):
 	assert "Solution abc.cpp passed group 1 with status OK while it should pass with status WA." in out
 
 
-def test_flag_tests(capsys, create_package):
+def test_flag_tests(create_package):
 	"""
 	Test flag --tests.
 	"""
