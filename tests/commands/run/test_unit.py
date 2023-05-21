@@ -5,6 +5,30 @@ from .util import *
 from ...util import *
 from ...fixtures import *
 
+def test_extract_test_no():
+	os.chdir(get_simple_package_path())
+	command = get_command()
+	assert command.extract_test_no("in/abc1a.in") == "1a"
+
+
+def test_extract_file_name():
+	os.chdir(get_simple_package_path())
+	command = get_command()
+	assert command.extract_file_name("in/abc1a.in") == "abc1a.in"
+
+
+def test_get_group():
+	os.chdir(get_simple_package_path())
+	command = get_command()
+	assert command.get_group("in/abc1a.in") == 1
+
+
+def test_get_output_file():
+	os.chdir(get_simple_package_path())
+	command = get_command()
+	assert command.get_output_file("in/abc1a.in") == "out/abc1a.out"
+
+
 def test_get_solutions():
 	os.chdir(get_simple_package_path())
 	command = get_command()
