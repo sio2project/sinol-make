@@ -17,4 +17,4 @@ jobs:
       #     tar -xzf oiejq.tar.gz -C ~/.local/bin --strip-components=1
       - name: Run pytest
         run: |
-          pytest
+          python3 -m pytest
