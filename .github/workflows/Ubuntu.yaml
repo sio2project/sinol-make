@@ -1,6 +1,6 @@
 name: pytest
 run-name: Run pytest
-on: [push, pull_request]
+on: [push]
 jobs:
   pytest:
     runs-on: self-hosted
