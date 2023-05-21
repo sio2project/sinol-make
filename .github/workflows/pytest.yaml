@@ -22,15 +22,9 @@ jobs:
         run: |
           apt install -y python3.11 python3.11-dev python3-pip
           pip3 install -U setuptools
-          echo $DEB_PYTHON_INSTALL_LAYOUT
       - name: Install dependencies
         run: |
           pip3 install .[tests]
-      # - name: Install oiejq
-      #   run: |
-      #     wget https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz
-      #     mkdir -p ~/.local/bin
-      #     tar -xzf oiejq.tar.gz -C ~/.local/bin --strip-components=1
       - name: Run pytest
         run: |
-          python3 -m pytest
+          python3 -m pytest tests/test.py
