@@ -10,11 +10,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install .[tests]
-      - name: Install oiejq
-        run: |
-          wget https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz
-          mkdir -p ~/.local/bin
-          tar -xzf oiejq.tar.gz -C ~/.local/bin --strip-components=1
+      # - name: Install oiejq
+      #   run: |
+      #     wget https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz
+      #     mkdir -p ~/.local/bin
+      #     tar -xzf oiejq.tar.gz -C ~/.local/bin --strip-components=1
       - name: Run pytest
         run: |
           pytest
