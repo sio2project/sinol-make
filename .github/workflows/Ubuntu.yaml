@@ -1,5 +1,5 @@
-name: pytest
-run-name: Run pytest
+name: pytest-ubuntu
+run-name: Run pytest on Ubuntu
 on: [push]
 jobs:
   pytest:
