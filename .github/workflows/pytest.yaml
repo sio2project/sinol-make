@@ -7,7 +7,7 @@ jobs:
     container:
       image: ubuntu:latest
       volumes:
-        - /home/actions/oiejq:/root/.local/bin
+        - /home/actions/oiejq:/github/home/.local/bin
       env:
         DEB_PYTHON_INSTALL_LAYOUT: deb
     steps:
@@ -27,4 +27,4 @@ jobs:
           pip3 install .[tests]
       - name: Run pytest
         run: |
-          python3 -m pytest tests/test.py
+          python3 -m pytest
