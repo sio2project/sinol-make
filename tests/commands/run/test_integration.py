@@ -23,6 +23,7 @@ def test_no_expected_scores(capsys, create_package):
 	"""
 	Test with no sinol_expected_scores in config.yml.
 	Should run, but exit with exit code 1.
+	Checks if a message about added solutions is printed.
 	"""
 	package_path = create_package
 	command = get_command()
@@ -51,6 +52,7 @@ def test_apply_suggestions(create_package):
 	"""
 	Test with no sinol_expected_scores in config.yml.
 	Verifies that suggestions are applied.
+	Checks if the genereated config.yml is correct.
 	"""
 	package_path = create_package
 	command = get_command()
@@ -74,6 +76,8 @@ def test_apply_suggestions(create_package):
 def test_incorrect_expected_scores(capsys, create_package):
 	"""
 	Test with incorrect sinol_expected_scores in config.yml.
+	Should exit with exit code 1.
+	Checks if a message about incorrect result is printed.
 	"""
 	package_path = create_package
 	command = get_command()
@@ -102,6 +106,7 @@ def test_incorrect_expected_scores(capsys, create_package):
 def test_flag_tests(create_package):
 	"""
 	Test flag --tests.
+	Checks if correct tests are run.
 	"""
 	package_path = create_package
 	command = get_command()
@@ -118,6 +123,7 @@ def test_flag_tests(create_package):
 def test_flag_programs(capsys, create_package):
 	"""
 	Test flag --programs.
+	Checks if correct programs are run (by checking the output).
 	"""
 	package_path = create_package
 	command = get_command()
