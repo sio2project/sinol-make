@@ -7,7 +7,7 @@ jobs:
     container:
       image: ubuntu:latest
       volumes:
-        - ~/oiejq:/root/.local/bin
+        - /home/actions/oiejq:/root/.local/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v3
