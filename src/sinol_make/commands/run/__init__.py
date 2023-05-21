@@ -256,7 +256,7 @@ class Command(BaseCommand):
 		program_groups_scores = collections.defaultdict(dict)
 
 		def print_view(output_file=None):
-			stdout = sys.stdout
+			stdout = sys.stdout # This is needed to restore stdout after printing to file. It must be a variable, because pytest can change default value of stdout.
 			if i != 0 and output_file is None:
 				# TODO: always display both tables
 				# if self.args.verbose:
