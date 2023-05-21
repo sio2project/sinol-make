@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python 3.11
         run: |
           apt install -y python3.11 python3.11-dev python3-pip
-          apt purge python3-setuptools
+          apt purge -y python3-setuptools
           pip3 install -U setuptools
       - name: Install dependencies
         run: |
