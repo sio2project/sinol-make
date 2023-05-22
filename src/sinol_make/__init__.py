@@ -6,6 +6,7 @@ def configure_parsers():
 		prog='sinol-make',
 		description='Tool for creating and testing sio2 tasks',
 	)
+	parser.add_argument("-v", "--version", action="version", version="%(prog)s 0.0.1")
 	subparsers = parser.add_subparsers(
 		title='commands',
 		description='sinol-make commands',
