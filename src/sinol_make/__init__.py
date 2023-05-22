@@ -1,4 +1,4 @@
-import argparse
+import argparse, pkg_resources
 from sinol_make import util
 
 def configure_parsers():
@@ -6,6 +6,7 @@ def configure_parsers():
 		prog='sinol-make',
 		description='Tool for creating and testing sio2 tasks',
 	)
+	parser.add_argument("-v", "--version", action="version", version="%(prog)s " + pkg_resources.get_distribution('sinol_make').version)
 	subparsers = parser.add_subparsers(
 		title='commands',
 		description='sinol-make commands',
