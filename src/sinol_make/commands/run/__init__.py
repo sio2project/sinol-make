@@ -256,7 +256,12 @@ class Command(BaseCommand):
 		program_groups_scores = collections.defaultdict(dict)
 
 		def print_view(output_file=None):
-			stdout = sys.stdout # This is needed to restore stdout after printing to file. It must be a variable, because pytest can change default value of stdout.
+			def print_stream(*values, end='\n'):
+				if output_file is not None:
+					print(*values, end=end, file=output_file)
+				else:
+					print(*values, end=end)
+
 			if i != 0 and output_file is None:
 				# TODO: always display both tables
 				# if self.args.verbose:
@@ -270,25 +275,23 @@ class Command(BaseCommand):
 			program_scores = collections.defaultdict(int)
 			program_times = collections.defaultdict(lambda: -1)
 			program_memory = collections.defaultdict(lambda: -1)
-			if output_file is not None:
-				sys.stdout = open(output_file, 'w')
-			else:
+			if output_file is None:
 				time_remaining = (len(executions) - i - 1) * 2 * self.time_limit / self.cpus / 1000.0
-				print('Done %4d/%4d. Time remaining (in the worst case): %5d seconds.'
+				print_stream('Done %4d/%4d. Time remaining (in the worst case): %5d seconds.'
 					% (i+1, len(executions), time_remaining))
 			for program_ix in range(0, len(names), self.PROGRAMS_IN_ROW):
 				# how to jump one line up
 				program_group = names[program_ix:program_ix + self.PROGRAMS_IN_ROW]
-				print("groups", end=" | ")
+				print_stream("groups", end=" | ")
 				for program in program_group:
-					print("%10s" % program, end=" | ")
-				print()
-				print(6*"-", end=" | ")
+					print_stream("%10s" % program, end=" | ")
+				print_stream()
+				print_stream(6*"-", end=" | ")
 				for program in program_group:
-					print(10*"-", end=" | ")
-				print()
+					print_stream(10*"-", end=" | ")
+				print_stream()
 				for group in self.groups:
-					print("%6s" % group, end=" | ")
+					print_stream("%6s" % group, end=" | ")
 					for program in program_group:
 						results = all_results[program][group]
 						group_status = "OK"
@@ -307,59 +310,59 @@ class Command(BaseCommand):
 							if status != "OK":
 								group_status = status
 								break
-						print("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(util.color_red(group_status)),
+						print_stream("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(util.color_red(group_status)),
 							"%3s/%3s" % (self.scores[group] if group_status == "OK" else "---", self.scores[group]),
 							end=" | ")
 						program_scores[program] += self.scores[group] if group_status == "OK" else 0
 						program_groups_scores[program][group] = group_status
-					print()
-				print(6*" ", end=" | ")
+					print_stream()
+				print_stream(6*" ", end=" | ")
 				for program in program_group:
-					print(10*" ", end=" | ")
-				print()
-				print("points", end=" | ")
+					print_stream(10*" ", end=" | ")
+				print_stream()
+				print_stream("points", end=" | ")
 				for program in program_group:
-					print(util.bold("   %3s/%3s" % (program_scores[program], self.possible_score)), end=" | ")
-				print()
-				print("  time", end=" | ")
+					print_stream(util.bold("   %3s/%3s" % (program_scores[program], self.possible_score)), end=" | ")
+				print_stream()
+				print_stream("  time", end=" | ")
 				for program in program_group:
 					program_time = program_times[program]
-					print(util.bold(("%20s" % self.color_time(program_time, self.time_limit))
+					print_stream(util.bold(("%20s" % self.color_time(program_time, self.time_limit))
 						if program_time < 2 * self.time_limit and program_time >= 0
 						else "   "+7*'-'), end=" | ")
-				print()
-				print("memory", end=" | ")
+				print_stream()
+				print_stream("memory", end=" | ")
 				for program in program_group:
 					program_mem = program_memory[program]
-					print(util.bold(("%20s" % self.color_memory(program_mem, self.memory_limit))
+					print_stream(util.bold(("%20s" % self.color_memory(program_mem, self.memory_limit))
 						if program_mem < 2 * self.memory_limit and program_mem >= 0
 						else "   "+7*'-'), end=" | ")
-				print()
+				print_stream()
 				# TODO: always display both tables
 				# if self.args.verbose:
-				# 	print(6*" ", end=" | ")
+				# 	print_stream(6*" ", end=" | ")
 				# 	for program in program_group:
-				# 		print(10*" ", end=" | ")
-				# 	print()
+				# 		print_stream(10*" ", end=" | ")
+				# 	print_stream()
 				# 	for test in self.tests:
-				# 		print("%6s" % self.extract_test_no(test), end=" | ")
+				# 		print_stream("%6s" % self.extract_test_no(test), end=" | ")
 				# 		for program in program_group:
 				# 			result = all_results[program][self.get_group(test)][test]
 				# 			status = result["Status"]
-				# 			if status == "  ": print(10*' ', end=" | ")
+				# 			if status == "  ": print_stream(10*' ', end=" | ")
 				# 			else:
-				# 				print("%3s" % self.colorize_status(status),
+				# 				print_stream("%3s" % self.colorize_status(status),
 				# 					("%17s" % self.color_time(result["Time"], self.time_limit)) if "Time" in result.keys() else 7*" ", end=" | ")
-				# 		print()
+				# 		print_stream()
 				# 		if not self.args.hide_memory:
-				# 			print(6*" ", end=" | ")
+				# 			print_stream(6*" ", end=" | ")
 				# 			for program in program_group:
 				# 				result = all_results[program][self.get_group(test)][test]
-				# 				print(("%20s" % self.color_memory(result["Memory"], self.memory_limit))  if "Memory" in result.keys() else 10*" ", end=" | ")
-				# 			print()
-				# 	print()
-				print(10*len(program_group)*' ')
-			sys.stdout = stdout
+				# 				print_stream(("%20s" % self.color_memory(result["Memory"], self.memory_limit))  if "Memory" in result.keys() else 10*" ", end=" | ")
+				# 			print_stream()
+				# 	print_stream()
+				print_stream(10*len(program_group)*' ')
+
 			if output_file is not None:
 				os.system('sed -i -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g" %s' % output_file) # TODO: make this work on Windows
 				print("Report has been saved to", util.bold(output_file))
