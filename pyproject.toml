@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sinol-make"
-version = "0.0.1"
+dynamic = ["version"]
 authors = [
   { name="Mateusz Masiarz", email="m.masiarz@fri.edu.pl" }
 ]
@@ -13,7 +13,7 @@ maintainers = [
 ]
 description = "CLI tool for creating sio2 task packages"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -37,3 +37,6 @@ tests = [
 
 [project.scripts]
 sinol-make = "sinol_make:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "sinol_make.__version__" }
