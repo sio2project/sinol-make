@@ -27,5 +27,5 @@ jobs:
         # if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.TOKEN }}
+          password: ${{ secrets.TEST_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
