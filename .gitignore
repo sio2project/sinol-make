@@ -5,3 +5,7 @@ build
 .vscode
 __pycache__
 /tests/packages/**/cache
+
+# pytest-cov
+.coverage
+coverage.xml
