@@ -23,7 +23,8 @@ A clear and concise description of what the bug is.
 Steps to reproduce the behavior:
 1. Run '...'
 2. See error
-If possible, please provide the task package you are using.
+If possible, please provide a simplified version of the task package you are using,
+but *don't* send any code that should be kept non-public, such as solutions to tasks that haven't been used yet.
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
