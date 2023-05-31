@@ -12,16 +12,27 @@ A clear and concise description of what the bug is.
 
 **To Reproduce**
 Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+1. Run '...'
+2. See error
+\
+If possible, please provide the task package you are using.
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Output**
+If applicable, add output from the command line. \
+You can wrap the output in a code block (```) to make it more readable. \
+For example: \
+\`\`\` \
+$ sinol-make --version \
+sinol-make 0.1.0 \
+\`\`\` \
+converts to:
+```
+$ sinol-make --version
+sinol-make 0.1.0
+```
 
 **System (please complete the following information):**
  - OS: [e.g. Ubuntu, MacOS, Windows WSL]
