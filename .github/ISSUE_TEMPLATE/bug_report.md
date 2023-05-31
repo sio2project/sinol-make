@@ -15,7 +15,8 @@ Steps to reproduce the behavior:
 1. Run '...'
 2. See error
 \
-If possible, please provide the task package you are using.
+If possible, please provide a simplified version of the task package you are using,
+but *don't* send any code that should be kept non-public, such as solutions to tasks that haven't been used yet.
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
@@ -36,7 +37,7 @@ sinol-make 0.1.0
 
 **System (please complete the following information):**
  - OS: [e.g. Ubuntu, MacOS, Windows WSL]
- - Version [check with `sinol-make --version`]
+ - Software version [check with `sinol-make --version`]
 
 **Additional context**
 Add any other context about the problem here.
