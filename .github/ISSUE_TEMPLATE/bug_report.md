@@ -30,7 +30,7 @@ A clear and concise description of what you expected to happen.
 
 **Output**
 If applicable, add output from the command line.
-You can wrap the output in a code block (```) to make it more readable.
+You can wrap the output in a code block (\`\`\`) to make it more readable.
 For example:
 \`\`\`
 $ sinol-make --version
