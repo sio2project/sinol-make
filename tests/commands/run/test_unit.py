@@ -72,6 +72,7 @@ def test_get_tests(create_package):
 def test_execution(create_package):
 	package_path = create_package
 	command = get_command(package_path)
+	command.args = argparse.Namespace(time_tool = 'oiejq')
 	solution = "abc.cpp"
 	executable = command.get_executable(solution)
 	result = command.compile_solutions([solution])
@@ -104,7 +105,7 @@ def test_calculate_points():
 def test_run_solutions(create_package):
 	package_path = create_package
 	command = get_command(package_path)
-	command.args = argparse.Namespace(program_report=False)
+	command.args = argparse.Namespace(program_report=False, time_tool='oiejq')
 	create_ins_outs(package_path, command)
 	command.tests = command.get_tests(None)
 	command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
