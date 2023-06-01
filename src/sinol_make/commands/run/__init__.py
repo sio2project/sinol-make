@@ -586,14 +586,14 @@ class Command(BaseCommand):
 				compiler = 'C compiler'
 				flag = '--c_compiler_path'
 				if sys.platform == 'darwin':
-					tried = 'gcc-{9,10,11,12}'
+					tried = 'gcc-{9,10,11,12,13}'
 				else:
 					tried = 'gcc'
 			elif ext == '.cpp' and args.cpp_compiler_path is None:
 				compiler = 'C++ compiler'
 				flag = '--cpp_compiler_path'
 				if sys.platform == 'darwin':
-					tried = 'g++-{9,10,11,12}'
+					tried = 'g++-{9,10,11,12,13}'
 				else:
 					tried = 'g++'
 			elif ext == '.py' and args.python_interpreter_path is None:
