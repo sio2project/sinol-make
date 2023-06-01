@@ -245,15 +245,16 @@ class Command(BaseCommand):
 			return result
 		elif self.args.time_tool == 'time':
 			if sys.platform == 'darwin':
-				command = 'launchctl limit memlock %s; gtimeout -k %ds %ds gtime -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s' \
+				command = 'launchctl limit memlock %s; gtimeout -k %ds %ds gtime -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s; launchctl limit memlock unlimited' \
 					% (math.ceil(memory_limit) * 1024, hard_time_limit_in_s,
 						hard_time_limit_in_s, result_file, executable, test, output_file)
 			elif sys.platform == 'linux':
-				command = 'ulimit -v %s; timeout -k %ds %ds time -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s' \
+				command = 'ulimit -v %s; timeout -k %ds %ds time -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s; ulimit -v unlimited' \
 					% (math.ceil(memory_limit), hard_time_limit_in_s,
 						hard_time_limit_in_s, result_file, executable, test, output_file)
 			elif sys.platform == 'win32' or sys.platform == 'cygwin':
 				raise Exception("Measuring time with GNU time on Windows is not supported.")
+			print(command)
 
 			timeout_exit_code = os.system(command)
 			result = {}
