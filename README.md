@@ -12,7 +12,7 @@ Download `oiejq` from [here](https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz
 `oiejq` doesn't support MacOS and WSL on Windows yet.
 
 ## Measuring time and memory with `time`
-### on Linux
+### on Linux and Windows (WSL)
 Download `time` and `timeout` from apt:
 ```
 apt install time timeout
