@@ -2,7 +2,6 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
-from email.policy import default
 from sinol_make.commands.run.structs import ResultChange, ValidationResult
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
