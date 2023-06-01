@@ -2,6 +2,10 @@
 
 using namespace std;
 
+int rnd(int a, int b) {
+	return a + rand() % (b - a + 1);
+}
+
 int main() {
 	int a, b;
 	cin >> a >> b;
@@ -12,5 +16,6 @@ int main() {
 	else if (a == 4) {
 		int c = 0;
 		cout << a + b / c;
+		return 1;
 	}
 }
