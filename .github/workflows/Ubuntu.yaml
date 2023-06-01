@@ -28,6 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install .[tests]
+          apt install -y time
       - name: Run pytest
         run: |
           python3 -m pytest -v
