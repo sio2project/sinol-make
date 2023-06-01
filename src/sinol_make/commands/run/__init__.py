@@ -245,29 +245,36 @@ class Command(BaseCommand):
 			return result
 		elif self.args.time_tool == 'time':
 			if sys.platform == 'darwin':
-				command = 'launchctl limit memlock %s; gtimeout -k %ds %ds gtime -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s; launchctl limit memlock unlimited' \
+				command = 'launchctl limit memlock %s; gtimeout -k %ds %ds gtime -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s' \
 					% (math.ceil(memory_limit) * 1024, hard_time_limit_in_s,
 						hard_time_limit_in_s, result_file, executable, test, output_file)
 			elif sys.platform == 'linux':
-				command = 'ulimit -v %s; timeout -k %ds %ds time -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s; ulimit -v unlimited' \
+				command = 'ulimit -v %s; timeout -k %ds %ds time -f "%%U\\n%%M\\n%%x" -o %s %s <%s >%s' \
 					% (math.ceil(memory_limit), hard_time_limit_in_s,
 						hard_time_limit_in_s, result_file, executable, test, output_file)
 			elif sys.platform == 'win32' or sys.platform == 'cygwin':
 				raise Exception("Measuring time with GNU time on Windows is not supported.")
-			print(command)
 
 			timeout_exit_code = os.system(command)
+			if sys.platform == 'darwin':
+				os.system('launchctl limit memlock unlimited')
+			elif sys.platform == 'linux':
+				os.system('ulimit -v unlimited')
+
 			result = {}
 			lines = open(result_file).readlines()
+			program_exit_code = None
 			if len(lines) == 3:
 				result["Time"] = round(float(lines[0].strip()) * 1000)
 				result["Memory"] = int(lines[1].strip())
 				program_exit_code = int(lines[2].strip())
+			if len(lines) > 0 and "Command terminated by signal " in lines[0]:
+				program_exit_code = int(lines[0].strip().split(" ")[-1])
 
-			if timeout_exit_code != 0:
-				result["Status"] = "TL"
-			elif program_exit_code != 0:
+			if program_exit_code != None and program_exit_code != 0:
 				result["Status"] = "RE"
+			elif timeout_exit_code != 0:
+				result["Status"] = "TL"
 			elif result["Time"] > time_limit:
 				result["Status"] = "TL"
 			elif result["Memory"] > memory_limit:
