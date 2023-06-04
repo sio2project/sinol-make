@@ -120,17 +120,17 @@ def test_flag_tests(create_package):
 	assert command.tests == ["in/abc1a.in"]
 
 
-def test_flag_programs(capsys, create_package):
+def test_flag_solutions(capsys, create_package):
 	"""
-	Test flag --programs.
-	Checks if correct programs are run (by checking the output).
+	Test flag --solutions.
+	Checks if correct solutions are run (by checking the output).
 	"""
 	package_path = create_package
 	command = get_command()
 	create_ins_outs(package_path, command)
 
 	parser = configure_parsers()
-	args = parser.parse_args(["run", "--programs", "prog/abc1.cpp", "prog/abc2.cpp"])
+	args = parser.parse_args(["run", "--solutions", "prog/abc1.cpp", "prog/abc2.cpp"])
 	command = Command()
 	command.run(args)
 

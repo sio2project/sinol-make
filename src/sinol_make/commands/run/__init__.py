@@ -400,7 +400,7 @@ class Command(BaseCommand):
 							for solution in solutions]
 		compiled_commands = zip(solutions, executables, compilation_results)
 		names = solutions
-		return self.perform_executions(compiled_commands, names, solutions, self.args.program_report)
+		return self.perform_executions(compiled_commands, names, solutions, self.args.solutions_report)
 
 
 	def print_expected_scores(self, expected_scores):
@@ -419,7 +419,7 @@ class Command(BaseCommand):
 
 		config_expected_scores = self.config.get("sinol_expected_scores", {})
 		used_solutions = results.keys()
-		if self.args.programs == None and config_expected_scores: # If no solutions were specified, use all programs from config
+		if self.args.solutions == None and config_expected_scores: # If no solutions were specified, use all solutions from config
 			used_solutions = config_expected_scores.keys()
 
 		used_groups = set()
@@ -469,7 +469,7 @@ class Command(BaseCommand):
 						added_groups.add(group[0])
 			elif type == "remove":
 				# We check whether a solution was removed only when sinol_make was run on all of them
-				if field == '' and self.args.programs == None and config_expected_scores:
+				if field == '' and self.args.solutions == None and config_expected_scores:
 					for solution in change:
 						removed_solutions.add(solution[0])
 				# We check whether a group was removed only when sinol_make was run on all of them
@@ -660,7 +660,7 @@ class Command(BaseCommand):
 		self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
 		self.possible_score = self.get_possible_score(self.groups)
 
-		solutions = self.get_solutions(self.args.programs)
+		solutions = self.get_solutions(self.args.solutions)
 		results = self.run_solutions(solutions)
 		validation_results = self.validate_expected_scores(results)
 		self.print_expected_scores_diff(validation_results)
