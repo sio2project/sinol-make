@@ -23,11 +23,15 @@ class Command(BaseCommand):
 	def configure_subparser(self, subparser):
 		parser = subparser.add_parser(
 			'run',
-			help='Run current task',
-			description='Run current task'
+			help='Runs solutions in parallel on tests and verifies the expected solutions\' scores with the config.',
+			description='Runs selected solutions (by default all solutions) \
+				on selected tests (by default all tests) \
+				with a given number of cpus. \
+				Measures the solutions\' time with oiejq, unless specified otherwise. \
+				After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
 		)
-		parser.add_argument('--programs', type=str, nargs='+',
-							help='programs to be run, for example prog/abc{b,s}*.{cpp,py}')
+		parser.add_argument('--solutions', type=str, nargs='+',
+							help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
 		parser.add_argument('--tests', type=str, nargs='+',
 							help='tests to be run, for example in/abc{0,1}*')
 		parser.add_argument('--cpus', type=int,
@@ -36,8 +40,8 @@ class Command(BaseCommand):
 		parser.add_argument('--ml', type=float, help='memory limit (in MB)')
 		parser.add_argument('--hide_memory', dest='hide_memory', action='store_true',
 							help='hide memory usage in report')
-		parser.add_argument('--program_report', type=str,
-							help='file to store report from program executions (in markdown)')
+		parser.add_argument('--solutions_report', type=str,
+							help='file to store report from solution executions (in markdown)')
 		parser.add_argument('--oiejq_path', type=str,
 		      				help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
 		parser.add_argument('--c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
