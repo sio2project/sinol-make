@@ -2,10 +2,6 @@
 
 using namespace std;
 
-int rnd(int a, int b) {
-	return a + rand() % (b - a + 1);
-}
-
 int main() {
 	int a, b;
 	cin >> a >> b;
