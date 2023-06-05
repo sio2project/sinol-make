@@ -88,7 +88,7 @@ def test_execution(create_package):
 
 	os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
 	result = command.execute((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
-	assert result["Status"] == "OK"
+	assert result.Status == "OK"
 
 
 def test_calculate_points():
