@@ -220,7 +220,7 @@ class Command(BaseCommand):
 		elif getattr(result, "Status") is None:
 			result.Status = "RE"
 		elif result.Status == "OK":
-			if result.Status > time_limit:
+			if result.Time > time_limit:
 				result.Status = "TL"
 			elif result.Memory > memory_limit:
 				result.Status = "ML"
