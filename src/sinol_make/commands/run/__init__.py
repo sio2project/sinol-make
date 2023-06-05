@@ -2,7 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
-from sinol_make.commands.run.structs import ResultChange, ValidationResult
+from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler
@@ -198,36 +198,37 @@ class Command(BaseCommand):
 
 	def execute_oiejq(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
 		timeout_exit_code = os.system(command)
-		result = {}
+		result = ExecutionResult(None, None, None)
 		with open(result_file) as r:
 			for line in r:
 				line = line.strip()
 				if ": " in line:
 					(key, value) = line.split(": ")[:2]
-					result[key] = value
-		if "Time" in result.keys():
-			result["Time"] = self.parse_time(result["Time"])
-		if "Memory" in result.keys():
-			result["Memory"] = self.parse_memory(result["Memory"])
+					if key == "Time":
+						result.Time = self.parse_time(value)
+					elif key == "Memory":
+						result.Memory = self.parse_memory(value)
+					else:
+						setattr(result, key, value)
 
 		if timeout_exit_code == 35072:
-			result["Status"] = "TL"
-		elif "Time" in result.keys() and result["Time"] > time_limit:
-			result["Status"] = "TL"
-		elif "Memory" in result.keys() and result["Memory"] > memory_limit:
-			result["Status"] = "ML"
-		elif "Status" not in result.keys():
-			result["Status"] = "RE"
-		elif result["Status"] == "OK":
-			if result["Time"] > time_limit:
-				result["Status"] = "TL"
-			elif result["Memory"] > memory_limit:
-				result["Status"] = "ML"
+			result.Status = "TL"
+		elif getattr(result, "Time") is not None and result.Time > time_limit:
+			result.Status = "TL"
+		elif getattr(result, "Memory") is not None and result.Memory > memory_limit:
+			result.Status = "ML"
+		elif getattr(result, "Status") is None:
+			result.Status = "RE"
+		elif result.Status == "OK":
+			if result.Status > time_limit:
+				result.Status = "TL"
+			elif result.Memory > memory_limit:
+				result.Status = "ML"
 			elif os.system("diff -q -Z %s %s >/dev/null"
 						% (output_file, answer_file)):
-				result["Status"] = "WA"
+				result.Status = "WA"
 		else:
-			result["Status"] = result["Status"][:2]
+			result.Status = result.Status[:2]
 
 		return result
 
@@ -235,7 +236,7 @@ class Command(BaseCommand):
 	def execute_time(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
 		timeout_exit_code = os.system(command)
 
-		result = {}
+		result = ExecutionResult(None, None, None)
 		lines = open(result_file).readlines()
 		program_exit_code = None
 		if len(lines) == 3:
@@ -246,8 +247,8 @@ class Command(BaseCommand):
 			 - third line is exit code
 			This format is defined by -f flag in time command.
 			"""
-			result["Time"] = round(float(lines[0].strip()) * 1000)
-			result["Memory"] = int(lines[1].strip())
+			result.Time = round(float(lines[0].strip()) * 1000)
+			result.Memory = int(lines[1].strip())
 			program_exit_code = int(lines[2].strip())
 		if len(lines) > 0 and "Command terminated by signal " in lines[0]:
 			"""
@@ -258,17 +259,17 @@ class Command(BaseCommand):
 			program_exit_code = int(lines[0].strip().split(" ")[-1])
 
 		if program_exit_code != None and program_exit_code != 0:
-			result["Status"] = "RE"
+			result.Status = "RE"
 		elif timeout_exit_code != 0:
-			result["Status"] = "TL"
-		elif result["Time"] > time_limit:
-			result["Status"] = "TL"
-		elif result["Memory"] > memory_limit:
-			result["Status"] = "ML"
+			result.Status = "TL"
+		elif result.Time > time_limit:
+			result.Status = "TL"
+		elif result.Memory > memory_limit:
+			result.Status = "ML"
 		elif os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file)):
-			result["Status"] = "WA"
+			result.Status = "WA"
 		else:
-			result["Status"] = "OK"
+			result.Status = "OK"
 
 		return result
 
@@ -311,11 +312,11 @@ class Command(BaseCommand):
 			if result:
 				for test in self.tests:
 					executions.append((name, executable, test, self.time_limit, self.memory_limit, self.timetool_path))
-					all_results[name][self.get_group(test)][test] = {"Status": "  "}
+					all_results[name][self.get_group(test)][test] = ExecutionResult("  ", None, None)
 				os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
 			else:
 				for test in self.tests:
-					all_results[name][self.get_group(test)][test] = {"Status": "CE"}
+					all_results[name][self.get_group(test)][test] = ExecutionResult("CE", None, None)
 		print()
 		executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
 		program_groups_scores = collections.defaultdict(dict)
@@ -361,15 +362,15 @@ class Command(BaseCommand):
 						results = all_results[program][group]
 						group_status = "OK"
 						for test in results:
-							status = results[test]["Status"]
-							if "Time" in results[test].keys():
+							status = results[test].Status
+							if getattr(results[test], "Time") is not None:
 								program_times[program] = max(
-									program_times[program], results[test]["Time"])
+									program_times[program], results[test].Time)
 							elif status == "TL":
 								program_times[program] = 2 * self.time_limit
-							if "Memory" in results[test].keys():
+							if getattr(results[test], "Memory") is not None:
 								program_memory[program] = max(
-									program_memory[program], results[test]["Memory"])
+									program_memory[program], results[test].Memory)
 							elif status == "ML":
 								program_memory[program] = 2 * self.memory_limit
 							if status != "OK":
@@ -413,17 +414,17 @@ class Command(BaseCommand):
 				# 		print_stream("%6s" % self.extract_test_no(test), end=" | ")
 				# 		for program in program_group:
 				# 			result = all_results[program][self.get_group(test)][test]
-				# 			status = result["Status"]
+				# 			status = result.Status
 				# 			if status == "  ": print_stream(10*' ', end=" | ")
 				# 			else:
 				# 				print_stream("%3s" % self.colorize_status(status),
-				# 					("%17s" % self.color_time(result["Time"], self.time_limit)) if "Time" in result.keys() else 7*" ", end=" | ")
+				# 					("%17s" % self.color_time(result.Time, self.time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
 				# 		print_stream()
 				# 		if not self.args.hide_memory:
 				# 			print_stream(6*" ", end=" | ")
 				# 			for program in program_group:
 				# 				result = all_results[program][self.get_group(test)][test]
-				# 				print_stream(("%20s" % self.color_memory(result["Memory"], self.memory_limit))  if "Memory" in result.keys() else 10*" ", end=" | ")
+				# 				print_stream(("%20s" % self.color_memory(result.Memory, self.memory_limit))  if getattr(result, "Memory") is not None else 10*" ", end=" | ")
 				# 			print_stream()
 				# 	print_stream()
 				print_stream(10*len(program_group)*' ')
