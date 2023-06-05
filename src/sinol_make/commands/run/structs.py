@@ -17,3 +17,13 @@ class ValidationResult:
 	changes: List[ResultChange]
 	expected_scores: dict
 	new_expected_scores: dict
+
+@dataclass
+class ExecutionResult:
+	# Result status of execution. Can be one of:
+	# "OK", "WA", "TL", "ML", "RE", "CE"
+	Status: str
+	# Time in milliseconds
+	Time: float
+	# Memory in Kbytes
+	Memory: float
