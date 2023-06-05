@@ -196,6 +196,71 @@ class Command(BaseCommand):
 			return False
 
 
+	def execute_oiejq(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
+		timeout_exit_code = os.system(command)
+		result = {}
+		with open(result_file) as r:
+			for line in r:
+				line = line.strip()
+				if ": " in line:
+					(key, value) = line.split(": ")[:2]
+					result[key] = value
+		if "Time" in result.keys():
+			result["Time"] = self.parse_time(result["Time"])
+		if "Memory" in result.keys():
+			result["Memory"] = self.parse_memory(result["Memory"])
+
+		if timeout_exit_code == 35072:
+			result["Status"] = "TL"
+		elif "Time" in result.keys() and result["Time"] > time_limit:
+			result["Status"] = "TL"
+		elif "Memory" in result.keys() and result["Memory"] > memory_limit:
+			result["Status"] = "ML"
+		elif "Status" not in result.keys():
+			result["Status"] = "RE"
+		elif result["Status"] == "OK":
+			if result["Time"] > time_limit:
+				result["Status"] = "TL"
+			elif result["Memory"] > memory_limit:
+				result["Status"] = "ML"
+			elif os.system("diff -q -Z %s %s >/dev/null"
+						% (output_file, answer_file)):
+				result["Status"] = "WA"
+		else:
+			result["Status"] = result["Status"][:2]
+
+		return result
+
+
+	def execute_time(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
+		timeout_exit_code = os.system(command)
+
+		result = {}
+		lines = open(result_file).readlines()
+		program_exit_code = None
+		if len(lines) == 3:
+			result["Time"] = round(float(lines[0].strip()) * 1000)
+			result["Memory"] = int(lines[1].strip())
+			program_exit_code = int(lines[2].strip())
+		if len(lines) > 0 and "Command terminated by signal " in lines[0]:
+			program_exit_code = int(lines[0].strip().split(" ")[-1])
+
+		if program_exit_code != None and program_exit_code != 0:
+			result["Status"] = "RE"
+		elif timeout_exit_code != 0:
+			result["Status"] = "TL"
+		elif result["Time"] > time_limit:
+			result["Status"] = "TL"
+		elif result["Memory"] > memory_limit:
+			result["Status"] = "ML"
+		elif os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file)):
+			result["Status"] = "WA"
+		else:
+			result["Status"] = "OK"
+
+		return result
+
+
 	def execute(self, execution):
 		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
 		output_file = os.path.join(self.EXECUTIONS_DIR, name,
@@ -209,39 +274,8 @@ class Command(BaseCommand):
 					% (math.ceil(memory_limit), hard_time_limit_in_s,
 						hard_time_limit_in_s, timetool_path,
 						executable, test, output_file, result_file)
-			timeout_exit_code = os.system(command)
-			result = {}
-			with open(result_file) as r:
-				for line in r:
-					line = line.strip()
-					if ": " in line:
-						(key, value) = line.split(": ")[:2]
-						result[key] = value
-			if "Time" in result.keys():
-				result["Time"] = self.parse_time(result["Time"])
-			if "Memory" in result.keys():
-				result["Memory"] = self.parse_memory(result["Memory"])
 
-			if timeout_exit_code == 35072:
-				result["Status"] = "TL"
-			elif "Time" in result.keys() and result["Time"] > time_limit:
-				result["Status"] = "TL"
-			elif "Memory" in result.keys() and result["Memory"] > memory_limit:
-				result["Status"] = "ML"
-			elif "Status" not in result.keys():
-				result["Status"] = "RE"
-			elif result["Status"] == "OK":
-				if result["Time"] > time_limit:
-					result["Status"] = "TL"
-				elif result["Memory"] > memory_limit:
-					result["Status"] = "ML"
-				elif os.system("diff -q -Z %s %s >/dev/null"
-							% (output_file, self.get_output_file(test))):
-					result["Status"] = "WA"
-			else:
-				result["Status"] = result["Status"][:2]
-
-			return result
+			return self.execute_oiejq(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
 		elif self.args.time_tool == 'time':
 			if sys.platform == 'darwin':
 				timeout_name = 'gtimeout'
@@ -254,33 +288,8 @@ class Command(BaseCommand):
 
 			command = f'{timeout_name} -k {hard_time_limit_in_s}s {hard_time_limit_in_s}s ' \
 						f'{time_name} -f "%U\\n%M\\n%x" -o {result_file} {executable} <{test} >{output_file}'
+			return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
 
-			timeout_exit_code = os.system(command)
-
-			result = {}
-			lines = open(result_file).readlines()
-			program_exit_code = None
-			if len(lines) == 3:
-				result["Time"] = round(float(lines[0].strip()) * 1000)
-				result["Memory"] = int(lines[1].strip())
-				program_exit_code = int(lines[2].strip())
-			if len(lines) > 0 and "Command terminated by signal " in lines[0]:
-				program_exit_code = int(lines[0].strip().split(" ")[-1])
-
-			if program_exit_code != None and program_exit_code != 0:
-				result["Status"] = "RE"
-			elif timeout_exit_code != 0:
-				result["Status"] = "TL"
-			elif result["Time"] > time_limit:
-				result["Status"] = "TL"
-			elif result["Memory"] > memory_limit:
-				result["Status"] = "ML"
-			elif os.system("diff -q -Z %s %s >/dev/null" % (output_file, self.get_output_file(test))):
-				result["Status"] = "WA"
-			else:
-				result["Status"] = "OK"
-
-			return result
 
 	def perform_executions(self, compiled_commands, names, solutions, report_file):
 		executions = []
