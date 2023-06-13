@@ -25,5 +25,5 @@ class ExecutionResult:
 	Status: str
 	# Time in milliseconds
 	Time: float
-	# Memory in Kbytes
+	# Memory in KB
 	Memory: float

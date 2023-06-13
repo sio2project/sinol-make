@@ -243,7 +243,7 @@ class Command(BaseCommand):
 			"""
 			If programs runs successfully, the output looks like this:
 			 - first line is CPU time in seconds
-			 - second line is memory in Kbytes
+			 - second line is memory in KB
 			 - third line is exit code
 			This format is defined by -f flag in time command.
 			"""
