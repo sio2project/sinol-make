@@ -277,10 +277,10 @@ class Command(BaseCommand):
 	def execute(self, execution):
 		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
 		output_file = os.path.join(self.EXECUTIONS_DIR, name,
-								self.extract_test_no(test)+".out")
+								self.extract_test_no(test) + ".out")
 		result_file = os.path.join(self.EXECUTIONS_DIR, name,
-								self.extract_test_no(test)+".res")
-		hard_time_limit_in_s = math.ceil(2*time_limit / 1000.0)
+								self.extract_test_no(test) + ".res")
+		hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
 		if self.args.time_tool == 'oiejq':
 			command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
