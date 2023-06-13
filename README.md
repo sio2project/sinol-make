@@ -24,6 +24,9 @@ and using a multitude of "good practices" recommendations.
 While there are several excellent CLI tools for creating tests and solutions,
 they lack some built-in mechanisms for verifying packages and finding mistakes
 before uploading the package to the judge system.
+As sinol-make was created specifically for the sio2 platform,
+by default it downloads and uses sio2's deterministic mechanism of measuring
+a solution's runtime, called `oiejq`.
 
 ### Installation
 
