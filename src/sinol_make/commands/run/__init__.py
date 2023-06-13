@@ -26,6 +26,9 @@ class Command(BaseCommand):
 			help='Run current task',
 			description='Run current task'
 		)
+
+		default_timetool = 'oiejq' if sys.platform == 'linux' else 'time'
+
 		parser.add_argument('--programs', type=str, nargs='+',
 							help='programs to be run, for example prog/abc{b,s}*.{cpp,py}')
 		parser.add_argument('--tests', type=str, nargs='+',
@@ -38,7 +41,7 @@ class Command(BaseCommand):
 							help='hide memory usage in report')
 		parser.add_argument('--program_report', type=str,
 							help='file to store report from program executions (in markdown)')
-		parser.add_argument('--time_tool', choices=['oiejq', 'time'], default='oiejq',
+		parser.add_argument('--time_tool', choices=['oiejq', 'time'], default=default_timetool,
 		      				help='tool to measure time and memory usage (default: oiejq)')
 		parser.add_argument('--oiejq_path', type=str,
 		      				help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
