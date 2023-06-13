@@ -42,7 +42,7 @@ class Command(BaseCommand):
 		parser.add_argument('--program_report', type=str,
 							help='file to store report from program executions (in markdown)')
 		parser.add_argument('--time_tool', choices=['oiejq', 'time'], default=default_timetool,
-		      				help='tool to measure time and memory usage (default: oiejq)')
+		      				help='tool to measure time and memory usage (default when possible: oiejq)')
 		parser.add_argument('--oiejq_path', type=str,
 		      				help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
 		parser.add_argument('--c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
