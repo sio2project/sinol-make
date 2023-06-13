@@ -277,7 +277,11 @@ class Command(BaseCommand):
 		return result
 
 
-	def execute(self, execution):
+	def run_execution(self, execution):
+		"""
+		Run an execution and return the result as ExecutionResult object.
+		"""
+
 		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
 		output_file = os.path.join(self.EXECUTIONS_DIR, name,
 								self.extract_test_no(test)+".out")
@@ -307,7 +311,11 @@ class Command(BaseCommand):
 			return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
 
 
-	def perform_executions(self, compiled_commands, names, solutions, report_file):
+	def run_solutions(self, compiled_commands, names, solutions, report_file):
+		"""
+		Run solutions on tests and print the results as a table to stdout.
+		"""
+
 		executions = []
 		all_results = collections.defaultdict(
 			lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
@@ -439,7 +447,7 @@ class Command(BaseCommand):
 
 		print("Performing %d executions..." % len(executions))
 		with mp.Pool(self.cpus) as pool:
-			for i, result in enumerate(pool.imap(self.execute, executions)):
+			for i, result in enumerate(pool.imap(self.run_execution, executions)):
 				(name, executable, test) = executions[i][:3]
 				all_results[name][self.get_group(test)][test] = result
 				print_view()
@@ -458,14 +466,14 @@ class Command(BaseCommand):
 		return points
 
 
-	def run_solutions(self, solutions):
+	def compile_and_run(self, solutions):
 		compilation_results = self.compile_solutions(solutions)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
 		executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
 							for solution in solutions]
 		compiled_commands = zip(solutions, executables, compilation_results)
 		names = solutions
-		return self.perform_executions(compiled_commands, names, solutions, self.args.program_report)
+		return self.run_solutions(compiled_commands, names, solutions, self.args.program_report)
 
 
 	def print_expected_scores(self, expected_scores):
@@ -734,6 +742,6 @@ class Command(BaseCommand):
 		self.possible_score = self.get_possible_score(self.groups)
 
 		solutions = self.get_solutions(self.args.programs)
-		results = self.run_solutions(solutions)
+		results = self.compile_and_run(solutions)
 		validation_results = self.validate_expected_scores(results)
 		self.print_expected_scores_diff(validation_results)
