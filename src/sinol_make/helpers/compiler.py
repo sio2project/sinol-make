@@ -43,7 +43,7 @@ def get_cpp_compiler_path():
 		else:
 			return 'g++'
 	elif sys.platform == 'darwin':
-		for i in range(9, 11):
+		for i in [9, 10]:
 			compiler = 'g++-' + str(i)
 			if check_if_installed(compiler):
 				return compiler
