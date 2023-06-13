@@ -35,6 +35,10 @@ through Python's package manager pip, which usually is installed alongside Pytho
 
 `pip3 install sinol-make`
 
+We support `Windows` and `macOS` through the usage of `time` instead of `oiejq`.
+As using `oiejq` is highly recommended, we suggest using a Linux-based
+operating system whenever possible.
+
 ### Usage
 
 The availabe commands (see `sinol-make --help`) are:
