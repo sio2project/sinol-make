@@ -24,6 +24,6 @@ class ExecutionResult:
 	# "OK", "WA", "TL", "ML", "RE", "CE"
 	Status: str
 	# Time in milliseconds
-	Time: float
+	Time: int
 	# Memory in KB
 	Memory: float

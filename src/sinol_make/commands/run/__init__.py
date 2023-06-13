@@ -291,7 +291,7 @@ class Command(BaseCommand):
 
 		if self.args.time_tool == 'oiejq':
 			command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
-					% (math.ceil(memory_limit), hard_time_limit_in_s,
+					% (memory_limit, hard_time_limit_in_s,
 						hard_time_limit_in_s, timetool_path,
 						executable, test, output_file, result_file)
 
@@ -714,7 +714,7 @@ class Command(BaseCommand):
 		config_time_limit = self.config["time_limit"]
 		config_memory_limit = self.config["memory_limit"]
 		self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
-		self.memory_limit = args.ml * 1024.0 if args.ml is not None else config_memory_limit
+		self.memory_limit = args.ml * 1024 if args.ml is not None else config_memory_limit
 		self.cpus = args.cpus or mp.cpu_count()
 		if self.time_limit == config_time_limit:
 			print("Time limit (in ms):", self.time_limit)
