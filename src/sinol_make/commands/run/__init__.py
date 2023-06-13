@@ -283,10 +283,9 @@ class Command(BaseCommand):
 		"""
 
 		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
-		output_file = os.path.join(self.EXECUTIONS_DIR, name,
-								self.extract_test_no(test) + ".out")
-		result_file = os.path.join(self.EXECUTIONS_DIR, name,
-								self.extract_test_no(test) + ".res")
+		file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_no(test))
+		output_file = file_no_ext + ".out"
+		result_file = file_no_ext + ".res"
 		hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
 		if self.args.time_tool == 'oiejq':
