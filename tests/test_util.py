@@ -1,9 +1,11 @@
 import os
 import sys
+import pytest
 
 from sinol_make import util
 
 
+@pytest.mark.oij_access
 def test_install_oiejq():
     if sys.platform != 'linux':
         return

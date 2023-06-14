@@ -41,3 +41,9 @@ sinol-make = "sinol_make:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "sinol_make.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "oij_access: Mark test that requires access to https://oij.edu.pl"
+]
