@@ -39,7 +39,10 @@ def main():
 					if util.install_oiejq():
 						print(util.info('`oiejq` was successfully installed.'))
 					else:
-						util.exit_with_error('`oiejq` could not be installed. You can try installing it manually.')
+						util.exit_with_error('`oiejq` could not be installed.\n'
+											 'You can download it from https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz'
+											 ', unpack it to `~/.local/bin/` and rename oiejq.sh to oiejq.\n'
+											 'You can also use --oiejq_path to specify path to your oiejq.')
 				except Exception as err:
 					util.exit_with_error('`oiejq` could not be installed.\n' + err)
 
