@@ -33,7 +33,7 @@ def main():
 	for command in commands:
 		if command.get_name() == args.command:
 			if sys.platform == 'linux' and not util.check_oiejq():
-				print(util.warning('`oiejq` is not installed. It will be installed now.'))
+				print(util.warning('`oiejq` in `~/.local/bin/` not detected, installing now...'))
 
 				try:
 					if util.install_oiejq():
