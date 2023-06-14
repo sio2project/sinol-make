@@ -87,7 +87,7 @@ def test_execution(create_package):
 	config = yaml.load(open(os.path.join(package_path, "config.yml"), "r"), Loader=yaml.FullLoader)
 
 	os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
-	result = command.run_execution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
+	result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
 	assert result.Status == "OK"
 
 

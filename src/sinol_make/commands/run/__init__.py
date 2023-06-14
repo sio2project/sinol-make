@@ -2,7 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
-from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult
+from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler
@@ -277,12 +277,12 @@ class Command(BaseCommand):
 		return result
 
 
-	def run_execution(self, execution):
+	def run_solution(self, data_for_execution: ExecutionData):
 		"""
 		Run an execution and return the result as ExecutionResult object.
 		"""
 
-		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
+		(name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
 		file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_no(test))
 		output_file = file_no_ext + ".out"
 		result_file = file_no_ext + ".res"
@@ -446,7 +446,7 @@ class Command(BaseCommand):
 
 		print("Performing %d executions..." % len(executions))
 		with mp.Pool(self.cpus) as pool:
-			for i, result in enumerate(pool.imap(self.run_execution, executions)):
+			for i, result in enumerate(pool.imap(self.run_solution, executions)):
 				(name, executable, test) = executions[i][:3]
 				all_results[name][self.get_group(test)][test] = result
 				print_view()
