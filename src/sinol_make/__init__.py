@@ -39,12 +39,9 @@ def main():
 					if util.install_oiejq():
 						print(util.info('`oiejq` was successfully installed.'))
 					else:
-						print(util.error('`oiejq` could not be installed. You can try installing it manually.'))
-						exit(1)
-				except Exception as e:
-					print(util.error('`oiejq` could not be installed.'))
-					print(util.error(e))
-					exit(1)
+						util.exit_with_error('`oiejq` could not be installed. You can try installing it manually.')
+				except Exception as err:
+					util.exit_with_error('`oiejq` could not be installed.\n' + err)
 
 			command.run(args)
 			exit(0)
