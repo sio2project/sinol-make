@@ -68,9 +68,12 @@ def install_oiejq():
 		return True
 
 	if not os.path.exists(os.path.expanduser('~/.local/bin')):
-		os.makedirs(os.path.expanduser('~/.local/bin'))
+		os.makedirs(os.path.expanduser('~/.local/bin'), exist_ok=True)
 
-	request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz')
+	try:
+		request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz')
+	except requests.exceptions.ConnectionError:
+		raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz couldn\'t connect)')
 	if request.status_code != 200:
 		raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
 	open('/tmp/oiejq.tar.gz', 'wb').write(request.content)
@@ -85,7 +88,7 @@ def install_oiejq():
 	tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
 	tar.close()
 	os.remove('/tmp/oiejq.tar.gz')
-	os.rename(os.path.expanduser('~/.local/bin/oiejq'), os.path.expanduser('~/.local/bin/oiejq'))
+	os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
 
 	return check_oiejq()
 
