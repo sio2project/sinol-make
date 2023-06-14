@@ -16,4 +16,4 @@ jobs:
           pip install .[tests]
       - name: Run pytest
         run: |
-          python -m pytest --oij-access
+          python -m pytest -v --github-runner

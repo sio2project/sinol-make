@@ -5,7 +5,7 @@ import pytest
 from sinol_make import util
 
 
-@pytest.mark.oij_access
+@pytest.mark.github_runner
 def test_install_oiejq():
     if sys.platform != 'linux':
         return

@@ -45,5 +45,5 @@ version = { attr = "sinol_make.__version__" }
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-    "oij_access: Mark test that requires access to https://oij.edu.pl"
+    "github_runner: Mark tests that require GitHub runner",
 ]
