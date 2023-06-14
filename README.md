@@ -1,4 +1,4 @@
-# <img src="https://avatars.githubusercontent.com/u/2264918?s=200&v=4" height=1em> sinol-make
+# <img src="https://avatars.githubusercontent.com/u/2264918?s=200&v=4" height=60em> sinol-make
 
 `sinol-make` is a CLI tool for creating and verifying problem packages
 for [sio2](https://github.com/sio2project/oioioi)
