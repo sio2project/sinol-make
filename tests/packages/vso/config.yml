@@ -21,3 +21,12 @@ sinol_expected_scores:
   vso4.cpp:
     points: 0
     expected: {1: "TL"}
+  vso5.cpp:
+    points: 0
+    expected: {1: "RE"}
+  vso6.cpp:
+    points: 0
+    expected: {1: "ML"}
+  vso7.cpp:
+    points: 0
+    expected: {1: "TL"}
