@@ -632,27 +632,7 @@ class Command(BaseCommand):
 		self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
 
 
-	def run(self, args):
-		if not util.check_if_project():
-			print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
-			exit(1)
-
-		self.set_constants()
-		self.args = args
-		try:
-			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
-		except AttributeError:
-			self.config = yaml.load(open("config.yml"))
-
-		if not 'title' in self.config.keys():
-			util.exit_with_error('Title was not defined in config.yml.')
-		if not 'time_limit' in self.config.keys():
-			util.exit_with_error('Time limit was not defined in config.yml.')
-		if not 'memory_limit' in self.config.keys():
-			util.exit_with_error('Memory limit was not defined in config.yml.')
-		if not 'scores' in self.config.keys():
-			util.exit_with_error('Scores were not defined in config.yml.')
-
+	def validate_arguments(self, args):
 		for solution in self.get_solutions(None):
 			ext = os.path.splitext(solution)[1]
 			compiler = ""
@@ -684,29 +664,54 @@ class Command(BaseCommand):
 			if compiler != "":
 				util.exit_with_error('Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
 
-		self.compilers = {
+		compilers = {
 			'c_compiler_path': args.c_compiler_path,
 			'cpp_compiler_path': args.cpp_compiler_path,
 			'python_interpreter_path': args.python_interpreter_path,
 			'java_compiler_path': args.java_compiler_path
 		}
 
+		timetool_path = None
 		if args.time_tool == 'oiejq':
 			if sys.platform != 'linux':
 				util.exit_with_error('oiejq is only available on Linux.')
 			if 'oiejq_path' in args and args.oiejq_path is not None:
 				if not util.check_oiejq(args.oiejq_path):
 					util.exit_with_error('Invalid oiejq path.')
-				self.timetool_path = args.oiejq_path
+				timetool_path = args.oiejq_path
 			else:
-				self.timetool_path = util.get_oiejq_path()
-			if self.timetool_path is None:
+				timetool_path = util.get_oiejq_path()
+			if timetool_path is None:
 				util.exit_with_error('oiejq is not installed.')
 		elif args.time_tool == 'time':
 			if sys.platform == 'win32' or sys.platform == 'cygwin':
 				util.exit_with_error('Measuring with `time` is not supported on Windows.')
-			self.timetool_path = None
+			timetool_path = 'time'
 
+		return compilers, timetool_path
+
+	def run(self, args):
+		if not util.check_if_project():
+			print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
+			exit(1)
+
+		self.set_constants()
+		self.args = args
+		try:
+			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
+		except AttributeError:
+			self.config = yaml.load(open("config.yml"))
+
+		if not 'title' in self.config.keys():
+			util.exit_with_error('Title was not defined in config.yml.')
+		if not 'time_limit' in self.config.keys():
+			util.exit_with_error('Time limit was not defined in config.yml.')
+		if not 'memory_limit' in self.config.keys():
+			util.exit_with_error('Memory limit was not defined in config.yml.')
+		if not 'scores' in self.config.keys():
+			util.exit_with_error('Scores were not defined in config.yml.')
+
+		self.compilers, self.timetool_path = self.validate_arguments(args)
 
 		title = self.config["title"]
 		print("Task %s (%s)" % (title, self.ID))
