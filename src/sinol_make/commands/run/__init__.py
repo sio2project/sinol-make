@@ -484,7 +484,6 @@ class Command(BaseCommand):
 							for solution in solutions]
 		compiled_commands = zip(solutions, executables, compilation_results)
 		names = solutions
-		return self.perform_executions(compiled_commands, names, solutions, self.args.solutions_report)
 		return self.run_solutions(compiled_commands, names, solutions, self.args.solutions_report)
 
 
