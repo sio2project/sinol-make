@@ -4,7 +4,9 @@ from ...fixtures import *
 from .util import *
 from sinol_make import configure_parsers
 
-def test_simple(create_package):
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+def test_simple(create_package, time_tool):
 	"""
 	Test a simple run.
 	"""
@@ -14,12 +16,13 @@ def test_simple(create_package):
 
 	parser = configure_parsers()
 
-	args = parser.parse_args(["run"])
+	args = parser.parse_args(["run", "--time_tool", time_tool])
 	command = Command()
 	command.run(args)
 
 
-def test_no_expected_scores(capsys, create_package):
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+def test_no_expected_scores(capsys, create_package, time_tool):
 	"""
 	Test with no sinol_expected_scores in config.yml.
 	Should run, but exit with exit code 1.
@@ -35,7 +38,7 @@ def test_no_expected_scores(capsys, create_package):
 	open(config_path, "w").write(yaml.dump(config))
 
 	parser = configure_parsers()
-	args = parser.parse_args(["run"])
+	args = parser.parse_args(["run", "--time_tool", time_tool])
 	command = Command()
 	with pytest.raises(SystemExit) as e:
 		command.run(args)
@@ -48,7 +51,8 @@ def test_no_expected_scores(capsys, create_package):
 	assert "abc.cpp" in out
 
 
-def test_apply_suggestions(create_package):
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+def test_apply_suggestions(create_package, time_tool):
 	"""
 	Test with no sinol_expected_scores in config.yml.
 	Verifies that suggestions are applied.
@@ -65,7 +69,7 @@ def test_apply_suggestions(create_package):
 	open(config_path, "w").write(yaml.dump(config))
 
 	parser = configure_parsers()
-	args = parser.parse_args(["run", "--apply_suggestions"])
+	args = parser.parse_args(["run", "--apply_suggestions", "--time_tool", time_tool])
 	command = Command()
 	command.run(args)
 
@@ -73,7 +77,7 @@ def test_apply_suggestions(create_package):
 	assert config["sinol_expected_scores"] == expected_scores
 
 
-def test_incorrect_expected_scores(capsys, create_package):
+def test_incorrect_expected_scores(capsys, create_package, time_tool):
 	"""
 	Test with incorrect sinol_expected_scores in config.yml.
 	Should exit with exit code 1.
@@ -90,7 +94,7 @@ def test_incorrect_expected_scores(capsys, create_package):
 	open(config_path, "w").write(yaml.dump(config))
 
 	parser = configure_parsers()
-	args = parser.parse_args(["run"])
+	args = parser.parse_args(["run", "--time_tool", time_tool])
 	command = Command()
 
 	with pytest.raises(SystemExit) as e:
@@ -103,7 +107,7 @@ def test_incorrect_expected_scores(capsys, create_package):
 	assert "Solution abc.cpp passed group 1 with status OK while it should pass with status WA." in out
 
 
-def test_flag_tests(create_package):
+def test_flag_tests(create_package, time_tool):
 	"""
 	Test flag --tests.
 	Checks if correct tests are run.
@@ -113,14 +117,14 @@ def test_flag_tests(create_package):
 	create_ins_outs(package_path, command)
 
 	parser = configure_parsers()
-	args = parser.parse_args(["run", "--tests", "in/abc1a.in"])
+	args = parser.parse_args(["run", "--tests", "in/abc1a.in", "--time_tool", time_tool])
 	command = Command()
 	command.run(args)
 
 	assert command.tests == ["in/abc1a.in"]
 
 
-def test_flag_solutions(capsys, create_package):
+def test_flag_solutions(capsys, create_package, time_tool):
 	"""
 	Test flag --solutions.
 	Checks if correct solutions are run (by checking the output).
@@ -130,7 +134,7 @@ def test_flag_solutions(capsys, create_package):
 	create_ins_outs(package_path, command)
 
 	parser = configure_parsers()
-	args = parser.parse_args(["run", "--solutions", "prog/abc1.cpp", "prog/abc2.cpp"])
+	args = parser.parse_args(["run", "--solutions", "prog/abc1.cpp", "prog/abc2.cpp", "--time_tool", time_tool])
 	command = Command()
 	command.run(args)
 

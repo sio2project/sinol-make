@@ -12,5 +12,6 @@ int main() {
 	else if (a == 4) {
 		int c = 0;
 		cout << a + b / c;
+		return 1;
 	}
 }

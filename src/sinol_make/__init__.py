@@ -1,7 +1,9 @@
 import argparse
+import sys
+
 from sinol_make import util
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 def configure_parsers():
 	parser = argparse.ArgumentParser(
@@ -30,6 +32,20 @@ def main():
 
 	for command in commands:
 		if command.get_name() == args.command:
+			if sys.platform == 'linux' and not util.check_oiejq():
+				print(util.warning('`oiejq` in `~/.local/bin/` not detected, installing now...'))
+
+				try:
+					if util.install_oiejq():
+						print(util.info('`oiejq` was successfully installed.'))
+					else:
+						util.exit_with_error('`oiejq` could not be installed.\n'
+											 'You can download it from https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz'
+											 ', unpack it to `~/.local/bin/` and rename oiejq.sh to oiejq.\n'
+											 'You can also use --oiejq_path to specify path to your oiejq.')
+				except Exception as err:
+					util.exit_with_error('`oiejq` could not be installed.\n' + err)
+
 			command.run(args)
 			exit(0)
 

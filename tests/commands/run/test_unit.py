@@ -69,9 +69,10 @@ def test_get_tests(create_package):
 	assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
 
 
-def test_execution(create_package):
+def test_execution(create_package, time_tool):
 	package_path = create_package
 	command = get_command(package_path)
+	command.args = argparse.Namespace(time_tool = time_tool)
 	solution = "abc.cpp"
 	executable = command.get_executable(solution)
 	result = command.compile_solutions([solution])
@@ -86,8 +87,8 @@ def test_execution(create_package):
 	config = yaml.load(open(os.path.join(package_path, "config.yml"), "r"), Loader=yaml.FullLoader)
 
 	os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
-	result = command.execute((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
-	assert result["Status"] == "OK"
+	result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
+	assert result.Status == "OK"
 
 
 def test_calculate_points():
@@ -101,10 +102,10 @@ def test_calculate_points():
 	assert command.calculate_points({1: "WA"}) == 0
 
 
-def test_run_solutions(create_package):
+def test_run_solutions(create_package, time_tool):
 	package_path = create_package
 	command = get_command(package_path)
-	command.args = argparse.Namespace(solutions_report=False)
+	command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool)
 	create_ins_outs(package_path, command)
 	command.tests = command.get_tests(None)
 	command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
@@ -114,9 +115,9 @@ def test_run_solutions(create_package):
 	command.time_limit = command.config["time_limit"]
 	command.timetool_path = util.get_oiejq_path()
 
-	print(command.run_solutions(["abc.cpp"]))
-	assert command.run_solutions(["abc.cpp"]) == {"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"}}
-	assert command.run_solutions(["abc.cpp", "abc4.cpp"]) == {
+	print(command.compile_and_run(["abc.cpp"]))
+	assert command.compile_and_run(["abc.cpp"]) == {"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"}}
+	assert command.compile_and_run(["abc.cpp", "abc4.cpp"]) == {
 		"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
 		"abc4.cpp": {1: "OK", 2: "OK", 3: "WA", 4: "RE"}
 	}
