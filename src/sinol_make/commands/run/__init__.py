@@ -310,6 +310,12 @@ class Command(BaseCommand):
 			return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
 
 
+	def update_group_status(self, group_status, new_status):
+		order = ["TL", "ML", "RE", "WA", "OK"]
+		if order.index(new_status) < order.index(group_status):
+			return new_status
+		return group_status
+
 	def run_solutions(self, compiled_commands, names, solutions, report_file):
 		"""
 		Run solutions on tests and print the results as a table to stdout.
@@ -383,9 +389,11 @@ class Command(BaseCommand):
 									program_memory[program], results[test].Memory)
 							elif status == "ML":
 								program_memory[program] = 2 * self.memory_limit
-							if status != "OK":
-								group_status = status
-								break
+							if status == "  ":
+								group_status = "  "
+							else:
+								group_status = self.update_group_status(group_status, status)
+
 						print_stream("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(util.color_red(group_status)),
 							"%3s/%3s" % (self.scores[group] if group_status == "OK" else "---", self.scores[group]),
 							end=" | ")
