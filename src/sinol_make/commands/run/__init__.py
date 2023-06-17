@@ -2,7 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
-from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult
+from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler
@@ -26,6 +26,9 @@ class Command(BaseCommand):
 			help='Run current task',
 			description='Run current task'
 		)
+
+		default_timetool = 'oiejq' if sys.platform == 'linux' else 'time'
+
 		parser.add_argument('--programs', type=str, nargs='+',
 							help='programs to be run, for example prog/abc{b,s}*.{cpp,py}')
 		parser.add_argument('--tests', type=str, nargs='+',
@@ -38,8 +41,8 @@ class Command(BaseCommand):
 							help='hide memory usage in report')
 		parser.add_argument('--program_report', type=str,
 							help='file to store report from program executions (in markdown)')
-		parser.add_argument('--time_tool', choices=['oiejq', 'time'], default='oiejq',
-		      				help='tool to measure time and memory usage (default: oiejq)')
+		parser.add_argument('--time_tool', choices=['oiejq', 'time'], default=default_timetool,
+		      				help='tool to measure time and memory usage (default when possible: oiejq)')
 		parser.add_argument('--oiejq_path', type=str,
 		      				help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
 		parser.add_argument('--c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
@@ -243,7 +246,7 @@ class Command(BaseCommand):
 			"""
 			If programs runs successfully, the output looks like this:
 			 - first line is CPU time in seconds
-			 - second line is memory in Kbytes
+			 - second line is memory in KB
 			 - third line is exit code
 			This format is defined by -f flag in time command.
 			"""
@@ -274,17 +277,20 @@ class Command(BaseCommand):
 		return result
 
 
-	def execute(self, execution):
-		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
-		output_file = os.path.join(self.EXECUTIONS_DIR, name,
-								self.extract_test_no(test)+".out")
-		result_file = os.path.join(self.EXECUTIONS_DIR, name,
-								self.extract_test_no(test)+".res")
-		hard_time_limit_in_s = math.ceil(2*time_limit / 1000.0)
+	def run_solution(self, data_for_execution: ExecutionData):
+		"""
+		Run an execution and return the result as ExecutionResult object.
+		"""
+
+		(name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
+		file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_no(test))
+		output_file = file_no_ext + ".out"
+		result_file = file_no_ext + ".res"
+		hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
 		if self.args.time_tool == 'oiejq':
 			command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
-					% (math.ceil(memory_limit), hard_time_limit_in_s,
+					% (memory_limit, hard_time_limit_in_s,
 						hard_time_limit_in_s, timetool_path,
 						executable, test, output_file, result_file)
 
@@ -304,7 +310,17 @@ class Command(BaseCommand):
 			return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
 
 
-	def perform_executions(self, compiled_commands, names, solutions, report_file):
+	def update_group_status(self, group_status, new_status):
+		order = ["TL", "ML", "RE", "WA", "OK"]
+		if order.index(new_status) < order.index(group_status):
+			return new_status
+		return group_status
+
+	def run_solutions(self, compiled_commands, names, solutions, report_file):
+		"""
+		Run solutions on tests and print the results as a table to stdout.
+		"""
+
 		executions = []
 		all_results = collections.defaultdict(
 			lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
@@ -373,9 +389,11 @@ class Command(BaseCommand):
 									program_memory[program], results[test].Memory)
 							elif status == "ML":
 								program_memory[program] = 2 * self.memory_limit
-							if status != "OK":
-								group_status = status
-								break
+							if status == "  ":
+								group_status = "  "
+							else:
+								group_status = self.update_group_status(group_status, status)
+
 						print_stream("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(util.color_red(group_status)),
 							"%3s/%3s" % (self.scores[group] if group_status == "OK" else "---", self.scores[group]),
 							end=" | ")
@@ -436,7 +454,7 @@ class Command(BaseCommand):
 
 		print("Performing %d executions..." % len(executions))
 		with mp.Pool(self.cpus) as pool:
-			for i, result in enumerate(pool.imap(self.execute, executions)):
+			for i, result in enumerate(pool.imap(self.run_solution, executions)):
 				(name, executable, test) = executions[i][:3]
 				all_results[name][self.get_group(test)][test] = result
 				print_view()
@@ -455,14 +473,14 @@ class Command(BaseCommand):
 		return points
 
 
-	def run_solutions(self, solutions):
+	def compile_and_run(self, solutions):
 		compilation_results = self.compile_solutions(solutions)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
 		executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
 							for solution in solutions]
 		compiled_commands = zip(solutions, executables, compilation_results)
 		names = solutions
-		return self.perform_executions(compiled_commands, names, solutions, self.args.program_report)
+		return self.run_solutions(compiled_commands, names, solutions, self.args.program_report)
 
 
 	def print_expected_scores(self, expected_scores):
@@ -622,27 +640,7 @@ class Command(BaseCommand):
 		self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
 
 
-	def run(self, args):
-		if not util.check_if_project():
-			print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
-			exit(1)
-
-		self.set_constants()
-		self.args = args
-		try:
-			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
-		except AttributeError:
-			self.config = yaml.load(open("config.yml"))
-
-		if not 'title' in self.config.keys():
-			util.exit_with_error('Title was not defined in config.yml.')
-		if not 'time_limit' in self.config.keys():
-			util.exit_with_error('Time limit was not defined in config.yml.')
-		if not 'memory_limit' in self.config.keys():
-			util.exit_with_error('Memory limit was not defined in config.yml.')
-		if not 'scores' in self.config.keys():
-			util.exit_with_error('Scores were not defined in config.yml.')
-
+	def validate_arguments(self, args):
 		for solution in self.get_solutions(None):
 			ext = os.path.splitext(solution)[1]
 			compiler = ""
@@ -674,36 +672,61 @@ class Command(BaseCommand):
 			if compiler != "":
 				util.exit_with_error('Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
 
-		self.compilers = {
+		compilers = {
 			'c_compiler_path': args.c_compiler_path,
 			'cpp_compiler_path': args.cpp_compiler_path,
 			'python_interpreter_path': args.python_interpreter_path,
 			'java_compiler_path': args.java_compiler_path
 		}
 
+		timetool_path = None
 		if args.time_tool == 'oiejq':
 			if sys.platform != 'linux':
 				util.exit_with_error('oiejq is only available on Linux.')
 			if 'oiejq_path' in args and args.oiejq_path is not None:
 				if not util.check_oiejq(args.oiejq_path):
 					util.exit_with_error('Invalid oiejq path.')
-				self.timetool_path = args.oiejq_path
+				timetool_path = args.oiejq_path
 			else:
-				self.timetool_path = util.get_oiejq_path()
-			if self.timetool_path is None:
+				timetool_path = util.get_oiejq_path()
+			if timetool_path is None:
 				util.exit_with_error('oiejq is not installed.')
 		elif args.time_tool == 'time':
 			if sys.platform == 'win32' or sys.platform == 'cygwin':
 				util.exit_with_error('Measuring with `time` is not supported on Windows.')
-			self.timetool_path = None
+			timetool_path = 'time'
 
+		return compilers, timetool_path
+
+	def run(self, args):
+		if not util.check_if_project():
+			print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
+			exit(1)
+
+		self.set_constants()
+		self.args = args
+		try:
+			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
+		except AttributeError:
+			self.config = yaml.load(open("config.yml"))
+
+		if not 'title' in self.config.keys():
+			util.exit_with_error('Title was not defined in config.yml.')
+		if not 'time_limit' in self.config.keys():
+			util.exit_with_error('Time limit was not defined in config.yml.')
+		if not 'memory_limit' in self.config.keys():
+			util.exit_with_error('Memory limit was not defined in config.yml.')
+		if not 'scores' in self.config.keys():
+			util.exit_with_error('Scores were not defined in config.yml.')
+
+		self.compilers, self.timetool_path = self.validate_arguments(args)
 
 		title = self.config["title"]
 		print("Task %s (%s)" % (title, self.ID))
 		config_time_limit = self.config["time_limit"]
 		config_memory_limit = self.config["memory_limit"]
 		self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
-		self.memory_limit = args.ml * 1024.0 if args.ml is not None else config_memory_limit
+		self.memory_limit = args.ml * 1024 if args.ml is not None else config_memory_limit
 		self.cpus = args.cpus or mp.cpu_count()
 		if self.time_limit == config_time_limit:
 			print("Time limit (in ms):", self.time_limit)
@@ -731,6 +754,6 @@ class Command(BaseCommand):
 		self.possible_score = self.get_possible_score(self.groups)
 
 		solutions = self.get_solutions(self.args.programs)
-		results = self.run_solutions(solutions)
+		results = self.compile_and_run(solutions)
 		validation_results = self.validate_expected_scores(results)
 		self.print_expected_scores_diff(validation_results)

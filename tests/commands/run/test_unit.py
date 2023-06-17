@@ -87,7 +87,7 @@ def test_execution(create_package, time_tool):
 	config = yaml.load(open(os.path.join(package_path, "config.yml"), "r"), Loader=yaml.FullLoader)
 
 	os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
-	result = command.execute((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
+	result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
 	assert result.Status == "OK"
 
 
@@ -115,9 +115,9 @@ def test_run_solutions(create_package, time_tool):
 	command.time_limit = command.config["time_limit"]
 	command.timetool_path = util.get_oiejq_path()
 
-	print(command.run_solutions(["abc.cpp"]))
-	assert command.run_solutions(["abc.cpp"]) == {"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"}}
-	assert command.run_solutions(["abc.cpp", "abc4.cpp"]) == {
+	print(command.compile_and_run(["abc.cpp"]))
+	assert command.compile_and_run(["abc.cpp"]) == {"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"}}
+	assert command.compile_and_run(["abc.cpp", "abc4.cpp"]) == {
 		"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
 		"abc4.cpp": {1: "OK", 2: "OK", 3: "WA", 4: "RE"}
 	}
