@@ -2,7 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 
-from sinol_make.commands.run.structs import ResultChange, ValidationResult
+from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler
@@ -26,6 +26,9 @@ class Command(BaseCommand):
 			help='Run current task',
 			description='Run current task'
 		)
+
+		default_timetool = 'oiejq' if sys.platform == 'linux' else 'time'
+
 		parser.add_argument('--programs', type=str, nargs='+',
 							help='programs to be run, for example prog/abc{b,s}*.{cpp,py}')
 		parser.add_argument('--tests', type=str, nargs='+',
@@ -38,6 +41,8 @@ class Command(BaseCommand):
 							help='hide memory usage in report')
 		parser.add_argument('--program_report', type=str,
 							help='file to store report from program executions (in markdown)')
+		parser.add_argument('--time_tool', choices=['oiejq', 'time'], default=default_timetool,
+		      				help='tool to measure time and memory usage (default when possible: oiejq)')
 		parser.add_argument('--oiejq_path', type=str,
 		      				help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
 		parser.add_argument('--c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
@@ -194,51 +199,128 @@ class Command(BaseCommand):
 			return False
 
 
-	def execute(self, execution):
-		(name, executable, test, time_limit, memory_limit, timetool_path) = execution
-		output_file = os.path.join(self.EXECUTIONS_DIR, name,
-								self.extract_test_no(test)+".out")
-		result_file = os.path.join(self.EXECUTIONS_DIR, name,
-								self.extract_test_no(test)+".res")
-		hard_time_limit_in_s = math.ceil(2*time_limit / 1000.0)
-
-		command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
-				% (math.ceil(memory_limit), hard_time_limit_in_s,
-					hard_time_limit_in_s, timetool_path,
-					executable, test, output_file, result_file)
-		code = os.system(command)
-		result = {}
+	def execute_oiejq(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
+		timeout_exit_code = os.system(command)
+		result = ExecutionResult(None, None, None)
 		with open(result_file) as r:
 			for line in r:
 				line = line.strip()
 				if ": " in line:
 					(key, value) = line.split(": ")[:2]
-					result[key] = value
-		if "Time" in result.keys():
-			result["Time"] = self.parse_time(result["Time"])
-		if "Memory" in result.keys():
-			result["Memory"] = self.parse_memory(result["Memory"])
-		if code == 35072:
-			result["Status"] = "TL"
-		elif "Time" in result.keys() and result["Time"] > time_limit:
-			result["Status"] = "TL"
-		elif "Memory" in result.keys() and result["Memory"] > memory_limit:
-			result["Status"] = "ML"
-		elif "Status" not in result.keys():
-			result["Status"] = "RE"
-		elif result["Status"] == "OK":
-			if result["Time"] > time_limit:
-				result["Status"] = "TL"
-			elif result["Memory"] > memory_limit:
-				result["Status"] = "ML"
+					if key == "Time":
+						result.Time = self.parse_time(value)
+					elif key == "Memory":
+						result.Memory = self.parse_memory(value)
+					else:
+						setattr(result, key, value)
+
+		if timeout_exit_code == 35072:
+			result.Status = "TL"
+		elif getattr(result, "Time") is not None and result.Time > time_limit:
+			result.Status = "TL"
+		elif getattr(result, "Memory") is not None and result.Memory > memory_limit:
+			result.Status = "ML"
+		elif getattr(result, "Status") is None:
+			result.Status = "RE"
+		elif result.Status == "OK":
+			if result.Time > time_limit:
+				result.Status = "TL"
+			elif result.Memory > memory_limit:
+				result.Status = "ML"
 			elif os.system("diff -q -Z %s %s >/dev/null"
-						% (output_file, self.get_output_file(test))):
-				result["Status"] = "WA"
+						% (output_file, answer_file)):
+				result.Status = "WA"
 		else:
-			result["Status"] = result["Status"][:2]
+			result.Status = result.Status[:2]
+
 		return result
 
-	def perform_executions(self, compiled_commands, names, solutions, report_file):
+
+	def execute_time(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
+		timeout_exit_code = os.system(command)
+
+		result = ExecutionResult(None, None, None)
+		lines = open(result_file).readlines()
+		program_exit_code = None
+		if len(lines) == 3:
+			"""
+			If programs runs successfully, the output looks like this:
+			 - first line is CPU time in seconds
+			 - second line is memory in KB
+			 - third line is exit code
+			This format is defined by -f flag in time command.
+			"""
+			result.Time = round(float(lines[0].strip()) * 1000)
+			result.Memory = int(lines[1].strip())
+			program_exit_code = int(lines[2].strip())
+		if len(lines) > 0 and "Command terminated by signal " in lines[0]:
+			"""
+			If there was a runtime error, the first line is the error message with signal number.
+			For example:
+				Command terminated by signal 11
+			"""
+			program_exit_code = int(lines[0].strip().split(" ")[-1])
+
+		if program_exit_code != None and program_exit_code != 0:
+			result.Status = "RE"
+		elif timeout_exit_code != 0:
+			result.Status = "TL"
+		elif result.Time > time_limit:
+			result.Status = "TL"
+		elif result.Memory > memory_limit:
+			result.Status = "ML"
+		elif os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file)):
+			result.Status = "WA"
+		else:
+			result.Status = "OK"
+
+		return result
+
+
+	def run_solution(self, data_for_execution: ExecutionData):
+		"""
+		Run an execution and return the result as ExecutionResult object.
+		"""
+
+		(name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
+		file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_no(test))
+		output_file = file_no_ext + ".out"
+		result_file = file_no_ext + ".res"
+		hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
+
+		if self.args.time_tool == 'oiejq':
+			command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
+					% (memory_limit, hard_time_limit_in_s,
+						hard_time_limit_in_s, timetool_path,
+						executable, test, output_file, result_file)
+
+			return self.execute_oiejq(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+		elif self.args.time_tool == 'time':
+			if sys.platform == 'darwin':
+				timeout_name = 'gtimeout'
+				time_name = 'gtime'
+			elif sys.platform == 'linux':
+				timeout_name = 'timeout'
+				time_name = 'time'
+			elif sys.platform == 'win32' or sys.platform == 'cygwin':
+				raise Exception("Measuring time with GNU time on Windows is not supported.")
+
+			command = f'{timeout_name} -k {hard_time_limit_in_s}s {hard_time_limit_in_s}s ' \
+						f'{time_name} -f "%U\\n%M\\n%x" -o {result_file} {executable} <{test} >{output_file}'
+			return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+
+
+	def update_group_status(self, group_status, new_status):
+		order = ["TL", "ML", "RE", "WA", "OK"]
+		if order.index(new_status) < order.index(group_status):
+			return new_status
+		return group_status
+
+	def run_solutions(self, compiled_commands, names, solutions, report_file):
+		"""
+		Run solutions on tests and print the results as a table to stdout.
+		"""
+
 		executions = []
 		all_results = collections.defaultdict(
 			lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
@@ -246,11 +328,11 @@ class Command(BaseCommand):
 			if result:
 				for test in self.tests:
 					executions.append((name, executable, test, self.time_limit, self.memory_limit, self.timetool_path))
-					all_results[name][self.get_group(test)][test] = {"Status": "  "}
+					all_results[name][self.get_group(test)][test] = ExecutionResult("  ", None, None)
 				os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
 			else:
 				for test in self.tests:
-					all_results[name][self.get_group(test)][test] = {"Status": "CE"}
+					all_results[name][self.get_group(test)][test] = ExecutionResult("CE", None, None)
 		print()
 		executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
 		program_groups_scores = collections.defaultdict(dict)
@@ -296,20 +378,22 @@ class Command(BaseCommand):
 						results = all_results[program][group]
 						group_status = "OK"
 						for test in results:
-							status = results[test]["Status"]
-							if "Time" in results[test].keys():
+							status = results[test].Status
+							if getattr(results[test], "Time") is not None:
 								program_times[program] = max(
-									program_times[program], results[test]["Time"])
+									program_times[program], results[test].Time)
 							elif status == "TL":
 								program_times[program] = 2 * self.time_limit
-							if "Memory" in results[test].keys():
+							if getattr(results[test], "Memory") is not None:
 								program_memory[program] = max(
-									program_memory[program], results[test]["Memory"])
+									program_memory[program], results[test].Memory)
 							elif status == "ML":
 								program_memory[program] = 2 * self.memory_limit
-							if status != "OK":
-								group_status = status
-								break
+							if status == "  ":
+								group_status = "  "
+							else:
+								group_status = self.update_group_status(group_status, status)
+
 						print_stream("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(util.color_red(group_status)),
 							"%3s/%3s" % (self.scores[group] if group_status == "OK" else "---", self.scores[group]),
 							end=" | ")
@@ -348,17 +432,17 @@ class Command(BaseCommand):
 				# 		print_stream("%6s" % self.extract_test_no(test), end=" | ")
 				# 		for program in program_group:
 				# 			result = all_results[program][self.get_group(test)][test]
-				# 			status = result["Status"]
+				# 			status = result.Status
 				# 			if status == "  ": print_stream(10*' ', end=" | ")
 				# 			else:
 				# 				print_stream("%3s" % self.colorize_status(status),
-				# 					("%17s" % self.color_time(result["Time"], self.time_limit)) if "Time" in result.keys() else 7*" ", end=" | ")
+				# 					("%17s" % self.color_time(result.Time, self.time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
 				# 		print_stream()
 				# 		if not self.args.hide_memory:
 				# 			print_stream(6*" ", end=" | ")
 				# 			for program in program_group:
 				# 				result = all_results[program][self.get_group(test)][test]
-				# 				print_stream(("%20s" % self.color_memory(result["Memory"], self.memory_limit))  if "Memory" in result.keys() else 10*" ", end=" | ")
+				# 				print_stream(("%20s" % self.color_memory(result.Memory, self.memory_limit))  if getattr(result, "Memory") is not None else 10*" ", end=" | ")
 				# 			print_stream()
 				# 	print_stream()
 				print_stream(10*len(program_group)*' ')
@@ -370,7 +454,7 @@ class Command(BaseCommand):
 
 		print("Performing %d executions..." % len(executions))
 		with mp.Pool(self.cpus) as pool:
-			for i, result in enumerate(pool.imap(self.execute, executions)):
+			for i, result in enumerate(pool.imap(self.run_solution, executions)):
 				(name, executable, test) = executions[i][:3]
 				all_results[name][self.get_group(test)][test] = result
 				print_view()
@@ -389,14 +473,14 @@ class Command(BaseCommand):
 		return points
 
 
-	def run_solutions(self, solutions):
+	def compile_and_run(self, solutions):
 		compilation_results = self.compile_solutions(solutions)
 		os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
 		executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
 							for solution in solutions]
 		compiled_commands = zip(solutions, executables, compilation_results)
 		names = solutions
-		return self.perform_executions(compiled_commands, names, solutions, self.args.program_report)
+		return self.run_solutions(compiled_commands, names, solutions, self.args.program_report)
 
 
 	def print_expected_scores(self, expected_scores):
@@ -556,27 +640,7 @@ class Command(BaseCommand):
 		self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
 
 
-	def run(self, args):
-		if not util.check_if_project():
-			print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
-			exit(1)
-
-		self.set_constants()
-		self.args = args
-		try:
-			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
-		except AttributeError:
-			self.config = yaml.load(open("config.yml"))
-
-		if not 'title' in self.config.keys():
-			util.exit_with_error('Title was not defined in config.yml.')
-		if not 'time_limit' in self.config.keys():
-			util.exit_with_error('Time limit was not defined in config.yml.')
-		if not 'memory_limit' in self.config.keys():
-			util.exit_with_error('Memory limit was not defined in config.yml.')
-		if not 'scores' in self.config.keys():
-			util.exit_with_error('Scores were not defined in config.yml.')
-
+	def validate_arguments(self, args):
 		for solution in self.get_solutions(None):
 			ext = os.path.splitext(solution)[1]
 			compiler = ""
@@ -608,28 +672,61 @@ class Command(BaseCommand):
 			if compiler != "":
 				util.exit_with_error('Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
 
-		self.compilers = {
+		compilers = {
 			'c_compiler_path': args.c_compiler_path,
 			'cpp_compiler_path': args.cpp_compiler_path,
 			'python_interpreter_path': args.python_interpreter_path,
 			'java_compiler_path': args.java_compiler_path
 		}
 
-		if 'oiejq_path' in args and args.oiejq_path is not None:
-			if not util.check_oiejq(args.oiejq_path):
-				util.exit_with_error('Invalid oiejq path.')
-			self.timetool_path = args.oiejq_path
-		else:
-			self.timetool_path = util.get_oiejq_path()
-		if self.timetool_path is None:
-			util.exit_with_error('oiejq is not installed.')
+		timetool_path = None
+		if args.time_tool == 'oiejq':
+			if sys.platform != 'linux':
+				util.exit_with_error('oiejq is only available on Linux.')
+			if 'oiejq_path' in args and args.oiejq_path is not None:
+				if not util.check_oiejq(args.oiejq_path):
+					util.exit_with_error('Invalid oiejq path.')
+				timetool_path = args.oiejq_path
+			else:
+				timetool_path = util.get_oiejq_path()
+			if timetool_path is None:
+				util.exit_with_error('oiejq is not installed.')
+		elif args.time_tool == 'time':
+			if sys.platform == 'win32' or sys.platform == 'cygwin':
+				util.exit_with_error('Measuring with `time` is not supported on Windows.')
+			timetool_path = 'time'
+
+		return compilers, timetool_path
+
+	def run(self, args):
+		if not util.check_if_project():
+			print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
+			exit(1)
+
+		self.set_constants()
+		self.args = args
+		try:
+			self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
+		except AttributeError:
+			self.config = yaml.load(open("config.yml"))
+
+		if not 'title' in self.config.keys():
+			util.exit_with_error('Title was not defined in config.yml.')
+		if not 'time_limit' in self.config.keys():
+			util.exit_with_error('Time limit was not defined in config.yml.')
+		if not 'memory_limit' in self.config.keys():
+			util.exit_with_error('Memory limit was not defined in config.yml.')
+		if not 'scores' in self.config.keys():
+			util.exit_with_error('Scores were not defined in config.yml.')
+
+		self.compilers, self.timetool_path = self.validate_arguments(args)
 
 		title = self.config["title"]
 		print("Task %s (%s)" % (title, self.ID))
 		config_time_limit = self.config["time_limit"]
 		config_memory_limit = self.config["memory_limit"]
 		self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
-		self.memory_limit = args.ml * 1024.0 if args.ml is not None else config_memory_limit
+		self.memory_limit = args.ml * 1024 if args.ml is not None else config_memory_limit
 		self.cpus = args.cpus or mp.cpu_count()
 		if self.time_limit == config_time_limit:
 			print("Time limit (in ms):", self.time_limit)
@@ -657,6 +754,6 @@ class Command(BaseCommand):
 		self.possible_score = self.get_possible_score(self.groups)
 
 		solutions = self.get_solutions(self.args.programs)
-		results = self.run_solutions(solutions)
+		results = self.compile_and_run(solutions)
 		validation_results = self.validate_expected_scores(results)
 		self.print_expected_scores_diff(validation_results)
