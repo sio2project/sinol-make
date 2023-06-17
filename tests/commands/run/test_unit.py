@@ -69,10 +69,10 @@ def test_get_tests(create_package):
 	assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
 
 
-def test_execution(create_package):
+def test_execution(create_package, time_tool):
 	package_path = create_package
 	command = get_command(package_path)
-	command.args = argparse.Namespace(time_tool = 'oiejq')
+	command.args = argparse.Namespace(time_tool = time_tool)
 	solution = "abc.cpp"
 	executable = command.get_executable(solution)
 	result = command.compile_solutions([solution])
@@ -102,10 +102,10 @@ def test_calculate_points():
 	assert command.calculate_points({1: "WA"}) == 0
 
 
-def test_run_solutions(create_package):
+def test_run_solutions(create_package, time_tool):
 	package_path = create_package
 	command = get_command(package_path)
-	command.args = argparse.Namespace(program_report=False, time_tool='oiejq')
+	command.args = argparse.Namespace(program_report=False, time_tool=time_tool)
 	create_ins_outs(package_path, command)
 	command.tests = command.get_tests(None)
 	command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
