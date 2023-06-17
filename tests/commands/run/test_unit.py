@@ -52,7 +52,7 @@ def test_get_executable():
 	assert command.get_executable("abc.cpp") == "abc.e"
 
 
-def test_compile_programs(create_package):
+def test_compile_solutions(create_package):
 	package_path = create_package
 	command = get_command(package_path)
 	solutions = command.get_solutions(None)
@@ -105,7 +105,7 @@ def test_calculate_points():
 def test_run_solutions(create_package, time_tool):
 	package_path = create_package
 	command = get_command(package_path)
-	command.args = argparse.Namespace(program_report=False, time_tool=time_tool)
+	command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool)
 	create_ins_outs(package_path, command)
 	command.tests = command.get_tests(None)
 	command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
@@ -157,7 +157,7 @@ def test_validate_expected_scores_success():
 	command.scores = command.config["scores"]
 
 	# Test with correct expected scores.
-	command.args = argparse.Namespace(programs=["prog/abc.cpp"], tests=None)
+	command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
 	results = {
     	"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
 	}
@@ -166,7 +166,7 @@ def test_validate_expected_scores_success():
 	assert results.removed_solutions == set()
 
 	# Test with incorrect result.
-	command.args = argparse.Namespace(programs=["prog/abc.cpp"], tests=None)
+	command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
 	results = {
 		"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "WA"},
 	}
@@ -175,7 +175,7 @@ def test_validate_expected_scores_success():
 	assert len(results.changes) == 1
 
 	# Test with removed solution.
-	command.args = argparse.Namespace(programs=None, tests=None)
+	command.args = argparse.Namespace(solutions=None, tests=None)
 	results = {
 		"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
 		"abc1.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "WA"},
@@ -188,7 +188,7 @@ def test_validate_expected_scores_success():
 
 	# Test with added solution and added group.
 	command.config["scores"][5] = 0
-	command.args = argparse.Namespace(programs=["prog/abc.cpp", "prog/abc5.cpp"], tests=None)
+	command.args = argparse.Namespace(solutions=["prog/abc.cpp", "prog/abc5.cpp"], tests=None)
 	results = {
 		"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK", 5: "WA"},
 		"abc5.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK", 5: "WA"},
@@ -199,7 +199,7 @@ def test_validate_expected_scores_success():
 	assert len(results.added_groups) == 1
 
 	# Test with removed group.
-	command.args = argparse.Namespace(programs=["prog/abc.cpp"], tests=None)
+	command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
 	results = {
 		"abc.cpp": {1: "OK", 2: "OK", 3: "OK"},
 	}
@@ -208,7 +208,7 @@ def test_validate_expected_scores_success():
 	assert len(results.removed_groups) == 1
 
 	# Test with correct expected scores and --tests flag.
-	command.args = argparse.Namespace(programs=["prog/abc.cpp"], tests=["in/abc1a.in", "in/abc2a.in"])
+	command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=["in/abc1a.in", "in/abc2a.in"])
 	results = {
 		"abc.cpp": {1: "OK", 2: "OK"},
 	}
@@ -222,7 +222,7 @@ def test_validate_expected_scores_fail(capsys):
 	command.scores = command.config["scores"]
 
 	# Test with missing points for group in config.
-	command.args = argparse.Namespace(programs=["prog/abc.cpp"], tests=None)
+	command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
 	results = {
 		"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK", 5: "OK"},
 	}

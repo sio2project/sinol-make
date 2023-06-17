@@ -23,14 +23,18 @@ class Command(BaseCommand):
 	def configure_subparser(self, subparser):
 		parser = subparser.add_parser(
 			'run',
-			help='Run current task',
-			description='Run current task'
+			help='Runs solutions in parallel on tests and verifies the expected solutions\' scores with the config.',
+			description='Runs selected solutions (by default all solutions) \
+				on selected tests (by default all tests) \
+				with a given number of cpus. \
+				Measures the solutions\' time with oiejq, unless specified otherwise. \
+				After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
 		)
 
 		default_timetool = 'oiejq' if sys.platform == 'linux' else 'time'
 
-		parser.add_argument('--programs', type=str, nargs='+',
-							help='programs to be run, for example prog/abc{b,s}*.{cpp,py}')
+		parser.add_argument('--solutions', type=str, nargs='+',
+							help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
 		parser.add_argument('--tests', type=str, nargs='+',
 							help='tests to be run, for example in/abc{0,1}*')
 		parser.add_argument('--cpus', type=int,
@@ -39,8 +43,8 @@ class Command(BaseCommand):
 		parser.add_argument('--ml', type=float, help='memory limit (in MB)')
 		parser.add_argument('--hide_memory', dest='hide_memory', action='store_true',
 							help='hide memory usage in report')
-		parser.add_argument('--program_report', type=str,
-							help='file to store report from program executions (in markdown)')
+		parser.add_argument('--solutions_report', type=str,
+							help='file to store report from solution executions (in markdown)')
 		parser.add_argument('--time_tool', choices=['oiejq', 'time'], default=default_timetool,
 		      				help='tool to measure time and memory usage (default when possible: oiejq)')
 		parser.add_argument('--oiejq_path', type=str,
@@ -480,7 +484,7 @@ class Command(BaseCommand):
 							for solution in solutions]
 		compiled_commands = zip(solutions, executables, compilation_results)
 		names = solutions
-		return self.run_solutions(compiled_commands, names, solutions, self.args.program_report)
+		return self.run_solutions(compiled_commands, names, solutions, self.args.solutions_report)
 
 
 	def print_expected_scores(self, expected_scores):
@@ -499,7 +503,7 @@ class Command(BaseCommand):
 
 		config_expected_scores = self.config.get("sinol_expected_scores", {})
 		used_solutions = results.keys()
-		if self.args.programs == None and config_expected_scores: # If no solutions were specified, use all programs from config
+		if self.args.solutions == None and config_expected_scores: # If no solutions were specified, use all solutions from config
 			used_solutions = config_expected_scores.keys()
 
 		used_groups = set()
@@ -549,7 +553,7 @@ class Command(BaseCommand):
 						added_groups.add(group[0])
 			elif type == "remove":
 				# We check whether a solution was removed only when sinol_make was run on all of them
-				if field == '' and self.args.programs == None and config_expected_scores:
+				if field == '' and self.args.solutions == None and config_expected_scores:
 					for solution in change:
 						removed_solutions.add(solution[0])
 				# We check whether a group was removed only when sinol_make was run on all of them
@@ -753,7 +757,7 @@ class Command(BaseCommand):
 		self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
 		self.possible_score = self.get_possible_score(self.groups)
 
-		solutions = self.get_solutions(self.args.programs)
+		solutions = self.get_solutions(self.args.solutions)
 		results = self.compile_and_run(solutions)
 		validation_results = self.validate_expected_scores(results)
 		self.print_expected_scores_diff(validation_results)
