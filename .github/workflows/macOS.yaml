@@ -16,7 +16,7 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@master
       - name: Install Python dependencies
         run: |
-          pip install .[tests]
+          pip3 install .[tests]
       - name: Install Homebrew dependencies
         run: |
           brew install gnu-time coreutils
