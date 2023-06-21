@@ -22,4 +22,4 @@ jobs:
           brew install gnu-time coreutils
       - name: Run pytest
         run: |
-          python -m pytest -v --time-tool time
+          python3 -m pytest -v --time-tool time
