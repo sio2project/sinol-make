@@ -17,17 +17,17 @@ jobs:
         uses: actions/checkout@v3
       - name: Prepare system
         run: |
+          apt update
+          export TZ=Europe/Warsaw
+          ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
           sysctl kernel.perf_event_paranoid=-1
-      - name: Install Python 3.11
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.11
-      - name: Install Python dependencies
+      - name: Set up Python 3.11
+        run: |
+          apt install -y python3.11 python3.11-dev python3-pip
+          pip3 install -U setuptools
+      - name: Install dependencies
         run: |
           pip3 install .[tests]
-      - name: Install apt dependencies
-        run: |
-          apt update
           apt install -y time
       - name: Run pytest
         run: |
