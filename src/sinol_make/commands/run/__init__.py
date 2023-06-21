@@ -726,21 +726,21 @@ class Command(BaseCommand):
 		self.compilers, self.timetool_path = self.validate_arguments(args)
 
 		title = self.config["title"]
-		print("Task %s (%s)" % (title, self.ID))
+		print("Task: %s (tag: %s)" % (title, self.ID))
 		config_time_limit = self.config["time_limit"]
 		config_memory_limit = self.config["memory_limit"]
 		self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
 		self.memory_limit = args.ml * 1024 if args.ml is not None else config_memory_limit
 		self.cpus = args.cpus or mp.cpu_count()
 		if self.time_limit == config_time_limit:
-			print("Time limit (in ms):", self.time_limit)
+			print(f'Time limit: {self.time_limit} ms')
 		else:
-			print("Time limit (in ms):", self.time_limit,
+			print(f'Time limit: {self.time_limit} ms',
 				util.warning(("[originally was %.1f ms]" % config_time_limit)))
 		if self.memory_limit == config_memory_limit:
-			print("Memory limit (in kb):", self.memory_limit)
+			print(f'Memory limit: {self.memory_limit} kB')
 		else:
-			print("Memory limit (in kb):", self.memory_limit,
+			print(f'Memory limit: {self.memory_limit} kB',
 				util.warning(("[originally was %.1f kb]" % config_memory_limit)))
 		self.scores = collections.defaultdict(int)
 		print("Scores:")
