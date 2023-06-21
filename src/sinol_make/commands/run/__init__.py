@@ -94,7 +94,7 @@ class Command(BaseCommand):
 
 
 	def extract_test_no(self, test_path):
-		return os.path.split(os.path.splitext(test_path)[0])[1][3:]
+		return os.path.split(os.path.splitext(test_path)[0])[1][len(self.ID):]
 
 
 	def extract_file_name(self, file_path):
@@ -754,6 +754,16 @@ class Command(BaseCommand):
 		print()
 
 		self.tests = self.get_tests(args.tests)
+
+		if len(self.tests) > 0:
+			print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
+
+			example_tests = [test for test in self.tests if self.get_group(test) == 0]
+			if len(example_tests) == len(self.tests):
+				print(util.warning('Running only on example tests.'))
+		else:
+			print(util.warning('There are no tests to run.'))
+
 		self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
 		self.possible_score = self.get_possible_score(self.groups)
 
