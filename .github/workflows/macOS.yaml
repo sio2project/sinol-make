@@ -1,0 +1,25 @@
+name: pytest-macos
+run-name: Run pytest on macOS
+on: [push]
+
+jobs:
+  pytest:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Python 3.11
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+      - name: Install Python dependencies
+        run: |
+          pip install .[tests]
+      - name: Install Homebrew dependencies
+        run: |
+          brew install gnu-time coreutils
+      - name: Run pytest
+        run: |
+          python -m pytest -v --time-tool time
