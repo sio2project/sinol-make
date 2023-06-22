@@ -25,10 +25,10 @@ class Command(BaseCommand):
             'run',
             help='Runs solutions in parallel on tests and verifies the expected solutions\' scores with the config.',
             description='Runs selected solutions (by default all solutions) \
-                        on selected tests (by default all tests) \
-                        with a given number of cpus. \
-                        Measures the solutions\' time with oiejq, unless specified otherwise. \
-                        After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
+                on selected tests (by default all tests) \
+                with a given number of cpus. \
+                Measures the solutions\' time with oiejq, unless specified otherwise. \
+                After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
         )
 
         default_timetool = 'oiejq' if sys.platform == 'linux' else 'time'
