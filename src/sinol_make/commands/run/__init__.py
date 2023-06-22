@@ -25,10 +25,10 @@ class Command(BaseCommand):
             'run',
             help='Runs solutions in parallel on tests and verifies the expected solutions\' scores with the config.',
             description='Runs selected solutions (by default all solutions) \
-				on selected tests (by default all tests) \
-				with a given number of cpus. \
-				Measures the solutions\' time with oiejq, unless specified otherwise. \
-				After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
+                        on selected tests (by default all tests) \
+                        with a given number of cpus. \
+                        Measures the solutions\' time with oiejq, unless specified otherwise. \
+                        After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
         )
 
         default_timetool = 'oiejq' if sys.platform == 'linux' else 'time'
@@ -351,9 +351,9 @@ class Command(BaseCommand):
             if i != 0 and output_file is None:
                 # TODO: always display both tables
                 # if self.args.verbose:
-                # 	cursor_delta = len(self.tests) + len(self.groups)+ 9
-                # 	if not self.args.hide_memory:
-                # 		cursor_delta += len(self.tests)
+                #   cursor_delta = len(self.tests) + len(self.groups)+ 9
+                #   if not self.args.hide_memory:
+                #       cursor_delta += len(self.tests)
                 # else:
                 cursor_delta = len(self.groups) + 7
                 number_of_rows = (len(solutions) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
@@ -428,27 +428,27 @@ class Command(BaseCommand):
                 print_stream()
                 # TODO: always display both tables
                 # if self.args.verbose:
-                # 	print_stream(6*" ", end=" | ")
-                # 	for program in program_group:
-                # 		print_stream(10*" ", end=" | ")
-                # 	print_stream()
-                # 	for test in self.tests:
-                # 		print_stream("%6s" % self.extract_test_no(test), end=" | ")
-                # 		for program in program_group:
-                # 			result = all_results[program][self.get_group(test)][test]
-                # 			status = result.Status
-                # 			if status == "  ": print_stream(10*' ', end=" | ")
-                # 			else:
-                # 				print_stream("%3s" % self.colorize_status(status),
-                # 					("%17s" % self.color_time(result.Time, self.time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
-                # 		print_stream()
-                # 		if not self.args.hide_memory:
-                # 			print_stream(6*" ", end=" | ")
-                # 			for program in program_group:
-                # 				result = all_results[program][self.get_group(test)][test]
-                # 				print_stream(("%20s" % self.color_memory(result.Memory, self.memory_limit))  if getattr(result, "Memory") is not None else 10*" ", end=" | ")
-                # 			print_stream()
-                # 	print_stream()
+                #   print_stream(6*" ", end=" | ")
+                #   for program in program_group:
+                #       print_stream(10*" ", end=" | ")
+                #   print_stream()
+                #   for test in self.tests:
+                #       print_stream("%6s" % self.extract_test_no(test), end=" | ")
+                #       for program in program_group:
+                #           result = all_results[program][self.get_group(test)][test]
+                #           status = result.Status
+                #           if status == "  ": print_stream(10*' ', end=" | ")
+                #           else:
+                #               print_stream("%3s" % self.colorize_status(status),
+                #                   ("%17s" % self.color_time(result.Time, self.time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
+                #       print_stream()
+                #       if not self.args.hide_memory:
+                #           print_stream(6*" ", end=" | ")
+                #           for program in program_group:
+                #               result = all_results[program][self.get_group(test)][test]
+                #               print_stream(("%20s" % self.color_memory(result.Memory, self.memory_limit))  if getattr(result, "Memory") is not None else 10*" ", end=" | ")
+                #           print_stream()
+                #   print_stream()
                 print_stream(10*len(program_group)*' ')
 
             if output_file is not None:
