@@ -57,46 +57,50 @@ def print_view(results: dict[str, TestResult], previous_vertical_height: int) ->
 
     sys.stdout.write(f'\033[{previous_vertical_height}A')
     previous_vertical_height = 2
-    column_lengths = [0, len('Status') + 1, 0]
+    column_lengths = [0, len('Group') + 1, len('Status') + 1, 0]
     sorted_test_paths = []
     for result in results.values():
         column_lengths[0] = max(column_lengths[0], len(result.test_name) + 1)
+        column_lengths[1] = max(column_lengths[1], len(result.test_group) + 1)
         sorted_test_paths.append(result.test_path)
     sorted_test_paths.sort()
 
     terminal_width = os.get_terminal_size().columns
-    column_lengths[2] = max(10, terminal_width - 20 - column_lengths[0] - column_lengths[1] - 6) # 6 is for " | " between columns
+    column_lengths[3] = max(10, terminal_width - 20 - column_lengths[0] - column_lengths[1] - column_lengths[2] - 9) # 9 is for " | " between columns
 
-    print("Test".ljust(column_lengths[0]) + " | " + "Status" + " | " + "Output".ljust(column_lengths[2]))
-    print("-" * (column_lengths[0] + 1) + "+" + "-" * (column_lengths[1] + 1) + "+" + "-" * (column_lengths[2] + 1))
+    print("Test".ljust(column_lengths[0]) + " | " + "Group".ljust(column_lengths[1] - 1) + " | " + "Status" + " | " + "Output".ljust(column_lengths[3]))
+    print("-" * (column_lengths[0] + 1) + "+" + "-" * (column_lengths[1] + 1) + "+" +
+          "-" * (column_lengths[2] + 1) + "+" + "-" * (column_lengths[3] + 1))
 
     for test_path in sorted_test_paths:
         result = results[test_path]
         print(result.test_name.ljust(column_lengths[0]) + " | ", end='')
+        print(result.test_group.ljust(column_lengths[1] - 1) + " | ", end='')
 
         if result.verified:
             if result.valid:
-                print(util.info("OK".ljust(column_lengths[1] - 1)), end='')
+                print(util.info("OK".ljust(column_lengths[2] - 1)), end='')
             else:
-                print(util.error("ERROR".ljust(column_lengths[1] - 1)), end='')
+                print(util.error("ERROR".ljust(column_lengths[2] - 1)), end='')
         else:
-            print(util.warning("...".ljust(column_lengths[1] - 1)), end='')
+            print(util.warning("...".ljust(column_lengths[2] - 1)), end='')
         print(" | ", end='')
 
         output = []
         if result.verified:
             split_output = result.output.split('\n')
             for line in split_output:
-                output += [line[i:i + column_lengths[2]] for i in range(0, len(line), column_lengths[2])]
+                output += [line[i:i + column_lengths[3]] for i in range(0, len(line), column_lengths[3])]
         else:
             output.append("")
 
-        print(output[0].ljust(column_lengths[2]))
+        print(output[0].ljust(column_lengths[3]))
         previous_vertical_height += 1
         output.pop(0)
 
         for line in output:
-            print(" " * (column_lengths[0]) + " | " + " " * (column_lengths[1] - 1) + " | " + line.ljust(column_lengths[2]))
+            print(" " * (column_lengths[0]) + " | " + " " * (column_lengths[1] - 1) + " | " +
+                  " " * (column_lengths[2] - 1) + " | " + line.ljust(column_lengths[3]))
             previous_vertical_height += 1
 
     return previous_vertical_height
