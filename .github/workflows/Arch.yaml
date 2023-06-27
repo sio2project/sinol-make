@@ -1,0 +1,29 @@
+name: pytest-arch
+run-name: Run pytest on Arch Linux
+on: [push]
+jobs:
+  pytest:
+    runs-on: self-hosted
+    container:
+      image: archlinux:latest
+      volumes:
+        - /home/actions/oiejq:/github/home/.local/bin
+      options:
+        --privileged
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Prepare system
+        run: |
+          sysctl kernel.perf_event_paranoid=-1
+          pacman -Syu --noconfirm difutils time gcc
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          pip3 install .[tests]
+      - name: Run pytest
+        run: |
+          python3 -m pytest
