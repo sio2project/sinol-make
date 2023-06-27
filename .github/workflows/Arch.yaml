@@ -16,7 +16,7 @@ jobs:
       - name: Prepare system
         run: |
           sysctl kernel.perf_event_paranoid=-1
-          pacman -Syu --noconfirm difutils time gcc
+          pacman -Syu --noconfirm diffutils time gcc
       - name: Set up Python 3.11
         uses: actions/setup-python@v2
         with:
