@@ -3,9 +3,10 @@
 # Version 0.6 (2021-08-29)
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
+from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
-from sinol_make.helpers import compile, compiler
+from sinol_make.helpers import compile, compiler, package_util
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
@@ -49,16 +50,9 @@ class Command(BaseCommand):
                             help='tool to measure time and memory usage (default when possible: oiejq)')
         parser.add_argument('--oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
-        parser.add_argument('--c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
-                            help='C compiler to use (default for Linux and Windows: gcc, default for Mac: gcc-9 or gcc-10)')
-        parser.add_argument('--cpp_compiler_path', type=str, default=compiler.get_cpp_compiler_path(),
-                            help='C++ compiler to use (default for Linux and Windows: g++, default for Mac: g++-9 or g++-10)')
-        parser.add_argument('--python_interpreter_path', type=str, default=compiler.get_python_interpreter_path(),
-                            help='Python interpreter to use (default: python3)')
-        parser.add_argument('--java_compiler_path', type=str, default=compiler.get_java_compiler_path(),
-                            help='Java compiler to use (default: javac)')
         parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
+        add_compilation_arguments(parser)
 
 
     def color_memory(self, memory, limit):
@@ -103,19 +97,6 @@ class Command(BaseCommand):
 
     def get_group(self, test_path):
         return int("".join(filter(str.isdigit, self.extract_test_no(test_path))))
-
-
-    def get_test_key(self, test):
-        return (self.get_group(test), test)
-
-
-    def get_tests(self, arg_tests):
-        if arg_tests is None:
-            all_tests = ["in/%s" % test for test in os.listdir("in/")
-                         if test[-3:] == ".in"]
-            return sorted(all_tests, key=self.get_test_key)
-        else:
-            return sorted(list(set(arg_tests)), key=self.get_test_key)
 
 
     def get_executable_key(self, executable):
@@ -634,7 +615,7 @@ class Command(BaseCommand):
 
 
     def set_constants(self):
-        self.ID = os.path.split(os.getcwd())[-1]
+        self.ID = package_util.get_task_id()
         self.TMP_DIR = os.path.join(os.getcwd(), "cache")
         self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
         self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
@@ -645,43 +626,7 @@ class Command(BaseCommand):
 
 
     def validate_arguments(self, args):
-        for solution in self.get_solutions(None):
-            ext = os.path.splitext(solution)[1]
-            compiler = ""
-            tried = ""
-            flag = ""
-            if ext == '.c' and args.c_compiler_path is None:
-                compiler = 'C compiler'
-                flag = '--c_compiler_path'
-                if sys.platform == 'darwin':
-                    tried = 'gcc-{9,10}'
-                else:
-                    tried = 'gcc'
-            elif ext == '.cpp' and args.cpp_compiler_path is None:
-                compiler = 'C++ compiler'
-                flag = '--cpp_compiler_path'
-                if sys.platform == 'darwin':
-                    tried = 'g++-{9,10}'
-                else:
-                    tried = 'g++'
-            elif ext == '.py' and args.python_interpreter_path is None:
-                compiler = 'Python interpreter'
-                flag = '--python_interpreter_path'
-                tried = 'python3'
-            elif ext == '.java' and args.java_compiler_path is None:
-                compiler = 'Java compiler'
-                flag = '--java_compiler_path'
-                tried = 'javac'
-
-            if compiler != "":
-                util.exit_with_error('Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
-
-        compilers = {
-            'c_compiler_path': args.c_compiler_path,
-            'cpp_compiler_path': args.cpp_compiler_path,
-            'python_interpreter_path': args.python_interpreter_path,
-            'java_compiler_path': args.java_compiler_path
-        }
+        compilers = compiler.verify_compilers(args, self.get_solutions(None))
 
         timetool_path = None
         if args.time_tool == 'oiejq':
@@ -753,7 +698,7 @@ class Command(BaseCommand):
             print(util.warning("WARN: Scores sum up to %d (instead of 100)." % total_score))
         print()
 
-        self.tests = self.get_tests(args.tests)
+        self.tests = package_util.get_tests(args.tests)
         self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
         self.possible_score = self.get_possible_score(self.groups)
 
