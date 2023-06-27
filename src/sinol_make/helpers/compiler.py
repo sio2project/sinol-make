@@ -1,5 +1,11 @@
+import argparse
+import os
+
 import sinol_make.util as util
 import sys, subprocess
+
+from sinol_make.structs.compiler_structs import Compilers
+
 
 def check_if_installed(compiler):
     """
@@ -32,6 +38,7 @@ def get_c_compiler_path():
 
         return None
 
+
 def get_cpp_compiler_path():
     """
     Get the C++ compiler
@@ -50,6 +57,7 @@ def get_cpp_compiler_path():
 
         return None
 
+
 def get_python_interpreter_path():
     """
     Get the Python interpreter
@@ -60,6 +68,7 @@ def get_python_interpreter_path():
     else:
         return 'python3'
 
+
 def get_java_compiler_path():
     """
     Get the Java compiler
@@ -69,3 +78,44 @@ def get_java_compiler_path():
         return None
     else:
         return 'javac'
+
+
+def verify_compilers(args: argparse.Namespace, solutions: list[str]) -> Compilers:
+    for solution in solutions:
+        ext = os.path.splitext(solution)[1]
+        compiler = ""
+        tried = ""
+        flag = ""
+        if ext == '.c' and args.c_compiler_path is None:
+            compiler = 'C compiler'
+            flag = '--c_compiler_path'
+            if sys.platform == 'darwin':
+                tried = 'gcc-{9,10}'
+            else:
+                tried = 'gcc'
+        elif ext == '.cpp' and args.cpp_compiler_path is None:
+            compiler = 'C++ compiler'
+            flag = '--cpp_compiler_path'
+            if sys.platform == 'darwin':
+                tried = 'g++-{9,10}'
+            else:
+                tried = 'g++'
+        elif ext == '.py' and args.python_interpreter_path is None:
+            compiler = 'Python interpreter'
+            flag = '--python_interpreter_path'
+            tried = 'python3'
+        elif ext == '.java' and args.java_compiler_path is None:
+            compiler = 'Java compiler'
+            flag = '--java_compiler_path'
+            tried = 'javac'
+
+        if compiler != "":
+            util.exit_with_error(
+                'Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
+
+    return Compilers(
+        c_compiler_path=args.c_compiler_path,
+        cpp_compiler_path=args.cpp_compiler_path,
+        python_interpreter_path=args.python_interpreter_path,
+        java_compiler_path=args.java_compiler_path
+    )

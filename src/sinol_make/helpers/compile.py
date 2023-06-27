@@ -1,8 +1,9 @@
 import sinol_make.helpers.compiler as compiler
 from sinol_make.interfaces.Errors import CompilationError
+from sinol_make.structs.compiler_structs import Compilers
 import os, subprocess, sys
 
-def compile(program, output, compilers = None, compile_log = None):
+def compile(program, output, compilers: Compilers = None, compile_log = None):
     """
     Compile a program
     compilers - A dictionary of compilers to use. If not set, the default compilers will be used
@@ -13,7 +14,7 @@ def compile(program, output, compilers = None, compile_log = None):
         arguments = [compilers['cpp_compiler_path'] or compiler.get_cpp_compiler_path(), program, '-o', output] + \
                     '--std=c++17 -O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
     elif ext == '.c':
-        arguments = [compilers['c_compiler_path'] or compiler.get_c_compiler_path(), program, '-o', output] + \
+        arguments = [compilers.c_compiler_path or compiler.get_c_compiler_path(), program, '-o', output] + \
                     '--std=c17 -O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
@@ -23,7 +24,7 @@ def compile(program, output, compilers = None, compile_log = None):
             open(output, 'w').write('#!/usr/bin/python3\n')
             open(output, 'a').write(open(program, 'r').read())
             subprocess.call(['chmod', '+x', output])
-        arguments = [compilers['python_interpreter_path'] or compiler.get_python_interpreter_path(), '-m', 'py_compile', program]
+        arguments = [compilers.python_interpreter_path or compiler.get_python_interpreter_path(), '-m', 'py_compile', program]
     elif ext == '.java':
         raise NotImplementedError('Java compilation is not implemented')
     else:
