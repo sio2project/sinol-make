@@ -26,26 +26,3 @@ def get_command(path = None):
     )
     command.config = yaml.load(open(os.path.join(path, "config.yml"), "r"), Loader=yaml.FullLoader)
     return command
-
-def create_ins(package_path, command):
-    result = command.compile_solutions(["abcingen.cpp"])
-    assert result == [True]
-
-    os.chdir(os.path.join(package_path, "in"))
-    os.system("../cache/executables/abcingen.e")
-    os.chdir(package_path)
-
-
-def create_outs(package_path, command):
-    result = command.compile_solutions(["abc.cpp"])
-    assert result == [True]
-
-    os.chdir(os.path.join(package_path, "in"))
-    for file in glob.glob("*.in"):
-        os.system(f'{os.path.join(command.EXECUTABLES_DIR, "abc.e")} < {file} > ../out/{file.replace(".in", ".out")}')
-    os.chdir(package_path)
-
-
-def create_ins_outs(package_path, command):
-    create_ins(package_path, command)
-    create_outs(package_path, command)
