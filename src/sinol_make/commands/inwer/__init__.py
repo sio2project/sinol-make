@@ -3,7 +3,7 @@ import os
 import multiprocessing as mp
 
 from sinol_make import util
-from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult
+from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult, TableData
 from sinol_make.helpers import package_util
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -69,12 +69,12 @@ class Command(BaseCommand):
         for test in sorted_tests:
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
 
-        previous_vertical_height = 0
+        table_data = TableData(results, 0)
         print('Verifying tests...\n\n')
         with mp.Pool(self.cpus) as pool:
             for i, result in enumerate(pool.imap(self.verify_test, executions)):
-                results[result.test_path].update_result(result.valid, result.output)
-                previous_vertical_height = inwer_util.print_view(results, previous_vertical_height)
+                table_data.results[result.test_path].update_result(result.valid, result.output)
+                inwer_util.print_view(table_data)
 
         return results
 

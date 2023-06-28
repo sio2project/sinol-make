@@ -30,6 +30,11 @@ class TestResult:
         self.output = output
 
 @dataclass
+class TableData:
+    results: dict[str, TestResult]
+    previous_vertical_height: int
+
+@dataclass
 class InwerExecution:
     test_path: str
     test_name: str

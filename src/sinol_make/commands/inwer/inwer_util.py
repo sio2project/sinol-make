@@ -5,7 +5,7 @@ import sys
 import argparse
 
 from sinol_make import util
-from sinol_make.commands.inwer import TestResult
+from sinol_make.commands.inwer import TestResult, TableData
 from sinol_make.helpers import compile
 from sinol_make.helpers.compiler import verify_compilers
 from sinol_make.interfaces.Errors import CompilationError
@@ -50,13 +50,15 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace) :
         return None, compile_log_path
 
 
-def print_view(results: dict[str, TestResult], previous_vertical_height: int) -> int:
+def print_view(table_data: TableData):
     """
     Prints current results of test verification.
     """
 
-    sys.stdout.write(f'\033[{previous_vertical_height}A')
-    previous_vertical_height = 2
+    sys.stdout.write(f'\033[{table_data.previous_vertical_height}A')
+    table_data.previous_vertical_height = 2
+
+    results = table_data.results
     column_lengths = [0, len('Group') + 1, len('Status') + 1, 0]
     sorted_test_paths = []
     for result in results.values():
@@ -95,12 +97,10 @@ def print_view(results: dict[str, TestResult], previous_vertical_height: int) ->
             output.append("")
 
         print(output[0].ljust(column_lengths[3]))
-        previous_vertical_height += 1
+        table_data.previous_vertical_height += 1
         output.pop(0)
 
         for line in output:
             print(" " * (column_lengths[0]) + " | " + " " * (column_lengths[1] - 1) + " | " +
                   " " * (column_lengths[2] - 1) + " | " + line.ljust(column_lengths[3]))
-            previous_vertical_height += 1
-
-    return previous_vertical_height
+            table_data.previous_vertical_height += 1
