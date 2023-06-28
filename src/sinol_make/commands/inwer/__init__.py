@@ -62,11 +62,9 @@ class Command(BaseCommand):
     def verify_and_print_table(self) -> dict[str, TestResult]:
         results = {}
         sorted_tests = sorted(self.tests, key=lambda x: x[0])
-        for test in sorted_tests:
-            results[test] = TestResult(test)
-
         executions: list[InwerExecution] = []
         for test in sorted_tests:
+            results[test] = TestResult(test)
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
 
         table_data = TableData(results, 0)
@@ -103,4 +101,15 @@ class Command(BaseCommand):
             print('Verifying tests: ' + util.bold(', '.join(self.tests)))
 
         self.compile_inwer(args)
-        self.verify_and_print_table()
+        results: dict[str, TestResult] = self.verify_and_print_table()
+        print('')
+
+        failed_tests = []
+        for result in results.values():
+            if not result.valid:
+                failed_tests.append(result.test_name)
+
+        if len(failed_tests) > 0:
+            util.exit_with_error(f'Verification failed for tests: {", ".join(failed_tests)}')
+        else:
+            print(util.info('Verification successful.'))
