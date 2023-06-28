@@ -2,6 +2,8 @@ import multiprocessing as mp
 import os, glob
 
 import yaml
+
+from sinol_make.structs.compiler_structs import Compilers
 from ...util import *
 from sinol_make.commands.run import Command
 from sinol_make.helpers import compiler
@@ -16,12 +18,12 @@ def get_command(path = None):
     command = Command()
     command.set_constants()
     command.cpus = mp.cpu_count()
-    command.compilers = {
-        'c_compiler_path': compiler.get_c_compiler_path(),
-        'cpp_compiler_path': compiler.get_cpp_compiler_path(),
-        'python_interpreter_path': compiler.get_python_interpreter_path(),
-        'java_compiler_path': compiler.get_java_compiler_path()
-    }
+    command.compilers = Compilers(
+        c_compiler_path=compiler.get_c_compiler_path(),
+        cpp_compiler_path=compiler.get_cpp_compiler_path(),
+        python_interpreter_path=compiler.get_python_interpreter_path(),
+        java_compiler_path=compiler.get_java_compiler_path()
+    )
     command.config = yaml.load(open(os.path.join(path, "config.yml"), "r"), Loader=yaml.FullLoader)
     return command
 

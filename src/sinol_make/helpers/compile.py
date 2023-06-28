@@ -6,7 +6,7 @@ import os, subprocess, sys
 def compile(program, output, compilers: Compilers = None, compile_log = None):
     """
     Compile a program
-    compilers - A dictionary of compilers to use. If not set, the default compilers will be used
+    compilers - A Compilers object with compilers to use. If None, default compilers will be used.
     """
     ext = os.path.splitext(program)[1]
     arguments = []
