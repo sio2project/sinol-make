@@ -27,7 +27,7 @@ def get_inwer(task_id: str, path = None) -> str or None:
         return None
 
 
-def compile_inwer(inwer_path: str, args: argparse.Namespace) :
+def compile_inwer(inwer_path: str, args: argparse.Namespace):
     """
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
