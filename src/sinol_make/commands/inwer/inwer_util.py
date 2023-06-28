@@ -5,9 +5,9 @@ import sys
 import argparse
 
 from sinol_make import util
-from sinol_make.commands.inwer import TestResult, TableData
+from sinol_make.commands.inwer import TableData
 from sinol_make.helpers import compile
-from sinol_make.helpers.compiler import verify_compilers
+from sinol_make.helpers import compiler
 from sinol_make.interfaces.Errors import CompilationError
 
 
@@ -27,7 +27,7 @@ def get_inwer(task_id: str, path = None) -> str or None:
         return None
 
 
-def compile_inwer(inwer_path: str, args: argparse.Namespace) :
+def compile_inwer(inwer_path: str, args: argparse.Namespace):
     """
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
@@ -36,7 +36,7 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace) :
     os.makedirs(executable_dir, exist_ok=True)
     os.makedirs(compile_log_dir, exist_ok=True)
 
-    compilers = verify_compilers(args, [inwer_path])
+    compilers = compiler.verify_compilers(args, [inwer_path])
     output = os.path.join(executable_dir, 'inwer.e')
     compile_log_path = os.path.join(compile_log_dir, 'inwer.compile_log')
     compile_log = open(compile_log_path, 'w')
@@ -67,7 +67,11 @@ def print_view(table_data: TableData):
         sorted_test_paths.append(result.test_path)
     sorted_test_paths.sort()
 
-    terminal_width = os.get_terminal_size().columns
+    try:
+        terminal_width = os.get_terminal_size().columns
+    except OSError:
+        terminal_width = 80
+
     column_lengths[3] = max(10, terminal_width - 20 - column_lengths[0] - column_lengths[1] - column_lengths[2] - 9) # 9 is for " | " between columns
 
     print("Test".ljust(column_lengths[0]) + " | " + "Group".ljust(column_lengths[1] - 1) + " | " + "Status" + " | " + "Output".ljust(column_lengths[3]))

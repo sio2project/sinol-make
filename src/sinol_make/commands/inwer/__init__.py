@@ -113,3 +113,4 @@ class Command(BaseCommand):
             util.exit_with_error(f'Verification failed for tests: {", ".join(failed_tests)}')
         else:
             print(util.info('Verification successful.'))
+            exit(0)
