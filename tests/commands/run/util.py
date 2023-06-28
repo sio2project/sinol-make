@@ -11,7 +11,6 @@ from sinol_make.helpers import compiler
 def get_command(path = None):
     """
     Helper to get a command object with the constants set.
-    Changes dir to simple test package.
     """
     if path is None:
         path = get_simple_package_path()
