@@ -1,5 +1,5 @@
 name: pytest-github-runner
-run-name: Run tests that don't work on self hosted runner
+run-name: Run tests for GitHub Runner
 on: [push]
 jobs:
   pytest:
