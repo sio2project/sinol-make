@@ -1,26 +1,16 @@
 import argparse, re, yaml
 from sinol_make import util
 from sinol_make.commands.run.structs import ResultChange, ValidationResult
+from sinol_make.helpers import package_util
 from .util import *
 from ...util import *
 from ...fixtures import *
-
-def test_extract_test_no():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.extract_test_no("in/abc1a.in") == "1a"
 
 
 def test_extract_file_name():
     os.chdir(get_simple_package_path())
     command = get_command()
     assert command.extract_file_name("in/abc1a.in") == "abc1a.in"
-
-
-def test_get_group():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.get_group("in/abc1a.in") == 1
 
 
 def test_get_output_file():
@@ -60,15 +50,6 @@ def test_compile_solutions(create_package):
     assert result == [True for _ in solutions]
 
 
-def test_get_tests(create_package):
-    package_path = create_package
-    command = get_command(package_path)
-    create_ins(package_path, command)
-    os.chdir(package_path)
-    tests = command.get_tests(None)
-    assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
-
-
 def test_execution(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
@@ -82,7 +63,7 @@ def test_execution(create_package, time_tool):
     os.chdir(package_path)
     create_outs(package_path, command)
     os.chdir(package_path)
-    test = command.get_tests(None)[0]
+    test = package_util.get_tests(None)[0]
 
     config = yaml.load(open(os.path.join(package_path, "config.yml"), "r"), Loader=yaml.FullLoader)
 
@@ -107,7 +88,7 @@ def test_run_solutions(create_package, time_tool):
     command = get_command(package_path)
     command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool)
     create_ins_outs(package_path, command)
-    command.tests = command.get_tests(None)
+    command.tests = package_util.get_tests(None)
     command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
     command.scores = command.config["scores"]
     command.possible_score = command.get_possible_score(command.groups)
