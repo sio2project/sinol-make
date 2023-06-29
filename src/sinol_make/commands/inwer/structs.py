@@ -24,7 +24,7 @@ class TestResult:
         self.valid = False
         self.output = ""
 
-    def update_result(self, valid, output):
+    def set_results(self, valid, output):
         self.verified = True
         self.valid = valid
         self.output = output

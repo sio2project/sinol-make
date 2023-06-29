@@ -71,7 +71,7 @@ class Command(BaseCommand):
         print('Verifying tests...\n\n')
         with mp.Pool(self.cpus) as pool:
             for i, result in enumerate(pool.imap(self.verify_test, executions)):
-                table_data.results[result.test_path].update_result(result.valid, result.output)
+                table_data.results[result.test_path].set_results(result.valid, result.output)
                 inwer_util.print_view(table_data)
 
         return results
