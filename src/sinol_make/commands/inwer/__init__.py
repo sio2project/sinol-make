@@ -25,8 +25,8 @@ class Command(BaseCommand):
             description='Verify if input files are correct'
         )
 
-        parser.add_argument('inwer', type=str, nargs='?',
-                            help='path to inwer executable')
+        parser.add_argument('inwer_path', type=str, nargs='?',
+                            help='path to inwer file')
         parser.add_argument('--tests', type=str, nargs='+',
                             help='test to verify, for example in/abc{0,1}*')
         parser.add_argument('--cpus', type=int,
@@ -82,12 +82,12 @@ class Command(BaseCommand):
             exit(1)
 
         self.task_id = package_util.get_task_id()
-        self.inwer = inwer_util.get_inwer(self.task_id, args.inwer)
+        self.inwer = inwer_util.get_inwer(self.task_id, args.inwer_path)
         if self.inwer is None:
-            if args.inwer is None:
+            if args.inwer_path is None:
                 util.exit_with_error('No inwer found in `prog/` directory.')
             else:
-                util.exit_with_error(f'Inwer "{args.inwer}" not found.')
+                util.exit_with_error(f'Inwer "{args.inwer_path}" not found.')
         relative_path = os.path.relpath(self.inwer, os.getcwd())
         print(f'Verifying with inwer {util.bold(relative_path)}')
 
