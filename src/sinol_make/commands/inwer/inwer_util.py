@@ -16,7 +16,7 @@ def get_inwer(task_id: str, path = None) -> str or None:
     Returns path to inwer executable for given task or None if no inwer was found.
     """
     if path is None:
-        inwers = glob.glob(os.path.join(os.getcwd(), 'prog', f'{task_id}inwer*'))
+        inwers = glob.glob(os.path.join(os.getcwd(), 'prog', f'{task_id}inwer.*'))
         if len(inwers) == 0:
             return None
         return inwers[0]
