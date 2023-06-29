@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
     def verify_test(self, execution: InwerExecution) -> VerificationResult:
         """
-        Veryfies test and returns results.
+        Verifies test and returns results.
         """
         output_dir = os.path.join(os.getcwd(), 'cache', 'executions', execution.test_name)
         os.makedirs(output_dir, exist_ok=True)
