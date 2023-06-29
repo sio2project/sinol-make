@@ -7,7 +7,7 @@ import argparse
 from sinol_make import util
 from sinol_make.commands.inwer import TestResult, TableData
 from sinol_make.helpers import compile
-from sinol_make.helpers.compiler import verify_compilers
+from sinol_make.helpers import compiler
 from sinol_make.interfaces.Errors import CompilationError
 
 
@@ -31,23 +31,8 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace):
     """
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
-    executable_dir = os.path.join(os.getcwd(), 'cache', 'executables')
-    compile_log_dir = os.path.join(os.getcwd(), 'cache', 'compilation')
-    os.makedirs(executable_dir, exist_ok=True)
-    os.makedirs(compile_log_dir, exist_ok=True)
-
-    compilers = verify_compilers(args, [inwer_path])
-    output = os.path.join(executable_dir, 'inwer.e')
-    compile_log_path = os.path.join(compile_log_dir, 'inwer.compile_log')
-    compile_log = open(compile_log_path, 'w')
-
-    try:
-        if compile.compile(inwer_path, output, compilers, compile_log):
-            return output, compile_log_path
-        else:
-            return None, compile_log_path
-    except CompilationError as e:
-        return None, compile_log_path
+    compilers = compiler.verify_compilers(args, [inwer_path])
+    return compile.compile(inwer_path, "inwer", compilers)
 
 
 def print_view(table_data: TableData):
