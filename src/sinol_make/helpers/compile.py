@@ -73,3 +73,16 @@ def compile_file(file_path: str, name: str, compilers: Compilers) -> Tuple[str o
             return None, compile_log_path
     except CompilationError:
         return None, compile_log_path
+
+
+def print_compile_log(compile_log_path: str):
+    """
+    Print the first 500 lines of compilation log
+    :param compile_log_path: path to the compilation log
+    """
+
+    compile_log = open(compile_log_path, 'r')
+    lines = compile_log.readlines()
+    compile_log.close()
+    for line in lines[:500]:
+        print(line, end='')

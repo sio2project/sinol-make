@@ -4,7 +4,7 @@ import multiprocessing as mp
 
 from sinol_make import util
 from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult, TableData
-from sinol_make.helpers import package_util
+from sinol_make.helpers import package_util, compile
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.inwer import inwer_util
@@ -37,8 +37,7 @@ class Command(BaseCommand):
         self.inwer_executable, compile_log_path = inwer_util.compile_inwer(self.inwer, args)
         if self.inwer_executable is None:
             print(util.error('Compilation failed.'))
-            compile_log = open(compile_log_path, 'r').readlines()
-            print(compile_log[:500])
+            compile.print_compile_log(compile_log_path)
             exit(1)
         else:
             print(util.info('Compilation successful.'))

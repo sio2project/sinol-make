@@ -172,8 +172,7 @@ class Command(BaseCommand):
         except CompilationError as e:
             print(util.error("Compilation of file %s was unsuccessful."
                              % package_util.extract_file_name(solution)))
-            compile_log = open(compile_log_file, "r").readlines()
-            print(compile_log[:500])
+            compile.print_compile_log(compile_log_file)
             return False
 
 
