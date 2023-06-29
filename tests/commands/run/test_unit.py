@@ -7,12 +7,6 @@ from ...util import *
 from ...fixtures import *
 
 
-def test_extract_file_name():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.extract_file_name("in/abc1a.in") == "abc1a.in"
-
-
 def test_get_output_file():
     os.chdir(get_simple_package_path())
     command = get_command()
@@ -36,12 +30,6 @@ def test_get_executable_key():
     assert command.get_executable_key("abc1.e") == (0, 1)
 
 
-def test_get_executable():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.get_executable("abc.cpp") == "abc.e"
-
-
 def test_compile_solutions(create_package):
     package_path = create_package
     command = get_command(package_path)
@@ -55,7 +43,7 @@ def test_execution(create_package, time_tool):
     command = get_command(package_path)
     command.args = argparse.Namespace(time_tool = time_tool)
     solution = "abc.cpp"
-    executable = command.get_executable(solution)
+    executable = package_util.get_executable(solution)
     result = command.compile_solutions([solution])
     assert result == [True]
 

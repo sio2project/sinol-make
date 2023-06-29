@@ -1,6 +1,8 @@
 import os
 from dataclasses import dataclass
 
+from sinol_make.helpers import package_util
+
 
 @dataclass
 class TestResult:
@@ -14,24 +16,27 @@ class TestResult:
     def __init__(self, test_path):
         self.test_path = test_path
         self.test_name = os.path.split(test_path)[-1]
-        group_number = "".join(filter(str.isdigit, self.test_name))
-        if self.test_name.split('.')[0].split(group_number)[1] == 'ocen':
-            self.test_group = group_number + 'ocen'
-        else:
-            self.test_group = group_number
+        self.test_group = package_util.extract_test_no(self.test_path)
 
         self.verified = False
         self.valid = False
         self.output = ""
 
-    def update_result(self, valid, output):
+    def set_results(self, valid, output):
         self.verified = True
         self.valid = valid
         self.output = output
 
 @dataclass
 class TableData:
+    """
+    Data used for printing table with verification results.
+    """
+
+    # Dictionary with test path as key and verification result as value.
     results: dict[str, TestResult]
+
+    # Previous vertical height of table, used for moving cursor up.
     previous_vertical_height: int
 
 @dataclass

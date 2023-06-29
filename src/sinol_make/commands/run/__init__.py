@@ -91,16 +91,12 @@ class Command(BaseCommand):
         return os.path.split(os.path.splitext(test_path)[0])[1][3:]
 
 
-    def extract_file_name(self, file_path):
-        return os.path.split(file_path)[1]
-
-
     def get_group(self, test_path):
         return int("".join(filter(str.isdigit, self.extract_test_no(test_path))))
 
 
     def get_executable_key(self, executable):
-        name = self.extract_file_name(executable)
+        name = package_util.extract_file_name(executable)
         value = [0, 0]
         if name[3] == 's':
             value[0] = 1
@@ -137,12 +133,8 @@ class Command(BaseCommand):
             return sorted(solutions, key=self.get_executable_key)
 
 
-    def get_executable(self, file):
-        return os.path.splitext(self.extract_file_name(file))[0] + ".e"
-
-
     def get_executables(self, args_solutions):
-        return [os.get_executable(solution) for solution in self.get_solutions(args_solutions)]
+        return [package_util.get_executable(solution) for solution in self.get_solutions(args_solutions)]
 
 
     def get_possible_score(self, groups):
@@ -169,18 +161,18 @@ class Command(BaseCommand):
 
     def compile(self, solution):
         compile_log_file = os.path.join(
-            self.COMPILATION_DIR, "%s.compile_log" % self.extract_file_name(solution))
+            self.COMPILATION_DIR, "%s.compile_log" % package_util.extract_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
-        output = os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+        output = os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
         try:
             compile.compile(source_file, output, self.compilers, open(compile_log_file, "w"))
             print(util.info("Compilation of file %s was successful."
-                            % self.extract_file_name(solution)))
+                            % package_util.extract_file_name(solution)))
             return True
         except CompilationError as e:
             print(util.error("Compilation of file %s was unsuccessful."
-                             % self.extract_file_name(solution)))
-            os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
+                             % package_util.extract_file_name(solution)))
+            compile.print_compile_log(compile_log_file)
             return False
 
 
@@ -461,7 +453,7 @@ class Command(BaseCommand):
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-        executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+        executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
                        for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
         names = solutions

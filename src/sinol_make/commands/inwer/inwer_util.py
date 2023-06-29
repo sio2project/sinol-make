@@ -5,8 +5,8 @@ import sys
 import argparse
 
 from sinol_make import util
-from sinol_make.commands.inwer import TableData
-from sinol_make.helpers import compile
+from sinol_make.commands.inwer import TestResult, TableData
+from sinol_make.helpers import compile, package_util
 from sinol_make.helpers import compiler
 from sinol_make.interfaces.Errors import CompilationError
 
@@ -16,7 +16,7 @@ def get_inwer(task_id: str, path = None) -> str or None:
     Returns path to inwer executable for given task or None if no inwer was found.
     """
     if path is None:
-        inwers = glob.glob(os.path.join(os.getcwd(), 'prog', f'{task_id}inwer*'))
+        inwers = glob.glob(os.path.join(os.getcwd(), 'prog', f'{task_id}inwer.*'))
         if len(inwers) == 0:
             return None
         return inwers[0]
@@ -31,23 +31,8 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace):
     """
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
-    executable_dir = os.path.join(os.getcwd(), 'cache', 'executables')
-    compile_log_dir = os.path.join(os.getcwd(), 'cache', 'compilation')
-    os.makedirs(executable_dir, exist_ok=True)
-    os.makedirs(compile_log_dir, exist_ok=True)
-
     compilers = compiler.verify_compilers(args, [inwer_path])
-    output = os.path.join(executable_dir, 'inwer.e')
-    compile_log_path = os.path.join(compile_log_dir, 'inwer.compile_log')
-    compile_log = open(compile_log_path, 'w')
-
-    try:
-        if compile.compile(inwer_path, output, compilers, compile_log):
-            return output, compile_log_path
-        else:
-            return None, compile_log_path
-    except CompilationError as e:
-        return None, compile_log_path
+    return compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers)
 
 
 def print_view(table_data: TableData):

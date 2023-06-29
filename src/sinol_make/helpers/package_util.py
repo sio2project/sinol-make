@@ -6,6 +6,12 @@ def get_task_id() -> str:
 
 
 def extract_test_no(test_path):
+    """
+    Extracts test group and number from test path.
+    For example for test abc1a.in it returns 1a.
+    :param test_path: Path to test file.
+    :return: Test group and number.
+    """
     return os.path.split(os.path.splitext(test_path)[0])[1][3:]
 
 
@@ -26,8 +32,16 @@ def get_tests(arg_tests: list[str] or None) -> list[str]:
         return sorted(list(set(arg_tests)), key=get_test_key)
 
 
+def extract_file_name(file_path):
+    return os.path.split(file_path)[1]
+
+
+def get_executable(file_path):
+    return os.path.splitext(extract_file_name(file_path))[0] + ".e"
+
+
 def get_executable_path(solution: str) -> str:
     """
     Returns path to compiled executable for given solution.
     """
-    return os.path.join(os.getcwd(), 'cache', 'executables', f'{os.path.splitext(os.path.basename(solution))[0]}.e')
+    return os.path.join(os.getcwd(), 'cache', 'executables', get_executable(solution))

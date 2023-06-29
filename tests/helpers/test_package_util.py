@@ -9,6 +9,9 @@ def test_get_task_id(create_package):
 
 def test_extract_test_no():
     assert package_util.extract_test_no("in/abc1a.in") == "1a"
+    assert package_util.extract_test_no("in/abc10a.in") == "10a"
+    assert package_util.extract_test_no("in/abc12ca.in") == "12ca"
+    assert package_util.extract_test_no("in/abc0ocen.in") == "0ocen"
 
 
 def test_get_group():
@@ -20,3 +23,11 @@ def test_get_tests(create_package):
     os.chdir(create_package)
     tests = package_util.get_tests(None)
     assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
+
+
+def test_extract_file_name():
+    assert package_util.extract_file_name("in/abc1a.in") == "abc1a.in"
+
+
+def test_get_executable():
+    assert package_util.get_executable("abc.cpp") == "abc.e"

@@ -1,7 +1,10 @@
+from typing import Tuple
+
 import sinol_make.helpers.compiler as compiler
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 import os, subprocess, sys
+
 
 def compile(program, output, compilers: Compilers = None, compile_log = None):
     """
@@ -46,3 +49,43 @@ def compile(program, output, compilers: Compilers = None, compile_log = None):
         raise CompilationError('Compilation failed')
     else:
         return True
+
+
+def compile_file(file_path: str, name: str, compilers: Compilers) -> Tuple[str or None, str]:
+    """
+    Compile a file
+    :param file_path: Path to the file to compile
+    :param name: Name of the executable
+    :param compilers: Compilers object
+    :return: Tuple of (executable path or None if compilation failed, log path)
+    """
+
+    executable_dir = os.path.join(os.getcwd(), 'cache', 'executables')
+    compile_log_dir = os.path.join(os.getcwd(), 'cache', 'compilation')
+    os.makedirs(executable_dir, exist_ok=True)
+    os.makedirs(compile_log_dir, exist_ok=True)
+
+    output = os.path.join(executable_dir, name)
+    compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')
+    compile_log = open(compile_log_path, 'w')
+
+    try:
+        if compile(file_path, output, compilers, compile_log):
+            return output, compile_log_path
+        else:
+            return None, compile_log_path
+    except CompilationError:
+        return None, compile_log_path
+
+
+def print_compile_log(compile_log_path: str):
+    """
+    Print the first 500 lines of compilation log
+    :param compile_log_path: path to the compilation log
+    """
+
+    compile_log = open(compile_log_path, 'r')
+    lines = compile_log.readlines()
+    compile_log.close()
+    for line in lines[:500]:
+        print(line, end='')
