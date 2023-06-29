@@ -180,7 +180,8 @@ class Command(BaseCommand):
         except CompilationError as e:
             print(util.error("Compilation of file %s was unsuccessful."
                              % self.extract_file_name(solution)))
-            os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
+            compile_log = open(compile_log_file, "r").readlines()
+            print(compile_log[:500])
             return False
 
 

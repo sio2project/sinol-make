@@ -34,10 +34,11 @@ class Command(BaseCommand):
         add_compilation_arguments(parser)
 
     def compile_inwer(self, args: argparse.Namespace):
-        self.inwer_executable, compile_log = inwer_util.compile_inwer(self.inwer, args)
+        self.inwer_executable, compile_log_path = inwer_util.compile_inwer(self.inwer, args)
         if self.inwer_executable is None:
             print(util.error('Compilation failed.'))
-            os.system("head -c 500 %s" % compile_log)
+            compile_log = open(compile_log_path, 'r').readlines()
+            print(compile_log[:500])
             exit(1)
         else:
             print(util.info('Compilation successful.'))
