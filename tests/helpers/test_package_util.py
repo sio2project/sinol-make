@@ -24,3 +24,11 @@ def test_get_tests(create_package):
     os.chdir(create_package)
     tests = package_util.get_tests(None)
     assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
+
+
+def test_extract_file_name():
+    assert package_util.extract_file_name("in/abc1a.in") == "abc1a.in"
+
+
+def test_get_executable():
+    assert package_util.get_executable("abc.cpp") == "abc.e"

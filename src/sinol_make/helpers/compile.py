@@ -48,11 +48,11 @@ def compile(program, output, compilers: Compilers = None, compile_log = None):
         return True
 
 
-def compile(file_path: str, name: str, compilers: Compilers) -> Tuple[str or None, str]:
+def compile_file(file_path: str, name: str, compilers: Compilers) -> Tuple[str or None, str]:
     """
     Compile a file
     :param file_path: Path to the file to compile
-    :param name: Name of the executable (without extension)
+    :param name: Name of the executable
     :param compilers: Compilers object
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
@@ -62,8 +62,8 @@ def compile(file_path: str, name: str, compilers: Compilers) -> Tuple[str or Non
     os.makedirs(executable_dir, exist_ok=True)
     os.makedirs(compile_log_dir, exist_ok=True)
 
-    output = os.path.join(executable_dir, name + ".e")
-    compile_log_path = os.path.join(compile_log_dir, name + '.compile_log')
+    output = os.path.join(executable_dir, name)
+    compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')
     compile_log = open(compile_log_path, 'w')
 
     try:

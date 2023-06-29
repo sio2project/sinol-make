@@ -32,8 +32,16 @@ def get_tests(arg_tests: list[str] or None) -> list[str]:
         return sorted(list(set(arg_tests)), key=get_test_key)
 
 
+def extract_file_name(file_path):
+    return os.path.split(file_path)[1]
+
+
+def get_executable(file_path):
+    return os.path.splitext(extract_file_name(file_path))[0] + ".e"
+
+
 def get_executable_path(solution: str) -> str:
     """
     Returns path to compiled executable for given solution.
     """
-    return os.path.join(os.getcwd(), 'cache', 'executables', f'{os.path.splitext(os.path.basename(solution))[0]}.e')
+    return os.path.join(os.getcwd(), 'cache', 'executables', get_executable(solution))

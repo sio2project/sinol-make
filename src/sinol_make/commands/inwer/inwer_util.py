@@ -6,7 +6,7 @@ import argparse
 
 from sinol_make import util
 from sinol_make.commands.inwer import TestResult, TableData
-from sinol_make.helpers import compile
+from sinol_make.helpers import compile, package_util
 from sinol_make.helpers import compiler
 from sinol_make.interfaces.Errors import CompilationError
 
@@ -32,7 +32,7 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace):
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
     compilers = compiler.verify_compilers(args, [inwer_path])
-    return compile.compile(inwer_path, "inwer", compilers)
+    return compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers)
 
 
 def print_view(table_data: TableData):
