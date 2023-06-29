@@ -96,7 +96,7 @@ class Command(BaseCommand):
 
 
     def get_executable_key(self, executable):
-        name = package_util.extract_file_name(executable)
+        name = package_util.get_file_name(executable)
         value = [0, 0]
         if name[3] == 's':
             value[0] = 1
@@ -161,17 +161,17 @@ class Command(BaseCommand):
 
     def compile(self, solution):
         compile_log_file = os.path.join(
-            self.COMPILATION_DIR, "%s.compile_log" % package_util.extract_file_name(solution))
+            self.COMPILATION_DIR, "%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
         try:
             compile.compile(source_file, output, self.compilers, open(compile_log_file, "w"))
             print(util.info("Compilation of file %s was successful."
-                            % package_util.extract_file_name(solution)))
+                            % package_util.get_file_name(solution)))
             return True
         except CompilationError as e:
             print(util.error("Compilation of file %s was unsuccessful."
-                             % package_util.extract_file_name(solution)))
+                             % package_util.get_file_name(solution)))
             compile.print_compile_log(compile_log_file)
             return False
 
