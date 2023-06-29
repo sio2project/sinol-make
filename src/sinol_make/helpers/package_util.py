@@ -6,6 +6,12 @@ def get_task_id() -> str:
 
 
 def extract_test_no(test_path):
+    """
+    Extracts test group and number from test path.
+    For example for test abc1a.in it returns 1a.
+    :param test_path: Path to test file.
+    :return: Test group and number.
+    """
     return os.path.split(os.path.splitext(test_path)[0])[1][3:]
 
 
