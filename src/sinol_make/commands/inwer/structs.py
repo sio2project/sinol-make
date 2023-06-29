@@ -31,7 +31,14 @@ class TestResult:
 
 @dataclass
 class TableData:
+    """
+    Data used for printing table with verification results.
+    """
+
+    # Dictionary with test path as key and verification result as value.
     results: dict[str, TestResult]
+
+    # Previous vertical height of table, used for moving cursor up.
     previous_vertical_height: int
 
 @dataclass
