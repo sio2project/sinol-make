@@ -78,8 +78,7 @@ class Command(BaseCommand):
 
     def run(self, args: argparse.Namespace):
         if not util.check_if_project():
-            print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
-            exit(1)
+            util.exit_with_error('You are not in a project directory (couldn\'t find config.yml in current directory).')
 
         self.task_id = package_util.get_task_id()
         self.inwer = inwer_util.get_inwer(self.task_id, args.inwer_path)
@@ -95,8 +94,7 @@ class Command(BaseCommand):
         self.tests = package_util.get_tests(args.tests)
 
         if len(self.tests) == 0:
-            print(util.warning('No tests found.'))
-            exit(0)
+            util.exit_with_error('No tests found.')
         else:
             print('Verifying tests: ' + util.bold(', '.join(self.tests)))
 
