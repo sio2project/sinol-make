@@ -32,12 +32,16 @@ def get_tests(arg_tests: list[str] or None) -> list[str]:
         return sorted(list(set(arg_tests)), key=get_test_key)
 
 
-def extract_file_name(file_path):
+def get_file_name(file_path):
     return os.path.split(file_path)[1]
 
 
+def get_file_name_without_extension(file_path):
+    return os.path.splitext(get_file_name(file_path))[0]
+
+
 def get_executable(file_path):
-    return os.path.splitext(extract_file_name(file_path))[0] + ".e"
+    return get_file_name_without_extension(file_path) + ".e"
 
 
 def get_executable_path(solution: str) -> str:

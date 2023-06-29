@@ -26,7 +26,7 @@ def test_get_tests(create_package):
 
 
 def test_extract_file_name():
-    assert package_util.extract_file_name("in/abc1a.in") == "abc1a.in"
+    assert package_util.get_file_name("in/abc1a.in") == "abc1a.in"
 
 
 def test_get_executable():
