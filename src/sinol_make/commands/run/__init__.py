@@ -685,8 +685,8 @@ class Command(BaseCommand):
                 print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
                                    (change.solution, change.group, change.result, change.old_result)))
             elif isinstance(change.result, int):
-                print(util.warning("Solution %s passed group %d with %d points while it should pass with %d points.") %
-                      (change.solution, change.group, change.result, change.old_result))
+                print(util.warning("Solution %s passed group %d with %d points while it should pass with %s points." %
+                                   (change.solution, change.group, change.result, change.old_result)))
 
         if diff.expected_scores == diff.new_expected_scores:
             print(util.info("Expected scores are correct!"))
