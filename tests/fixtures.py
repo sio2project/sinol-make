@@ -3,11 +3,19 @@ from .util import get_simple_package_path
 
 
 @pytest.fixture
-def create_package(path=None):
-    if path is None:
+def create_package(request):
+    """
+    Fixture to create a temporary directory with specified package (by default simple package).
+    Changes the current working directory to the package directory.
+    """
+    if hasattr(request, 'param') and request.param is not None:
+        path = request.param
+    else:
         path = get_simple_package_path()
+    task_id = os.path.basename(path)
+
     tmpdir = tempfile.TemporaryDirectory()
-    package_path = os.path.join(tmpdir.name, "abc")
+    package_path = os.path.join(tmpdir.name, task_id)
     shutil.copytree(path, package_path)
     os.chdir(package_path)
 

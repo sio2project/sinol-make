@@ -1,5 +1,3 @@
-import yaml, pytest
-from ...util import *
 from ...fixtures import *
 from .util import *
 from sinol_make import configure_parsers
@@ -12,7 +10,7 @@ def test_simple(create_package, time_tool):
     """
     package_path = create_package
     command = get_command()
-    create_ins_outs(package_path, command)
+    create_ins_outs(package_path)
 
     parser = configure_parsers()
 
@@ -30,7 +28,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
     """
     package_path = create_package
     command = get_command()
-    create_ins_outs(package_path, command)
+    create_ins_outs(package_path)
 
     config_path = os.path.join(package_path, "config.yml")
     config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
@@ -60,7 +58,7 @@ def test_apply_suggestions(create_package, time_tool):
     """
     package_path = create_package
     command = get_command()
-    create_ins_outs(package_path, command)
+    create_ins_outs(package_path)
 
     config_path = os.path.join(package_path, "config.yml")
     config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
@@ -85,7 +83,7 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
     """
     package_path = create_package
     command = get_command()
-    create_ins_outs(package_path, command)
+    create_ins_outs(package_path)
 
     config_path = os.path.join(package_path, "config.yml")
     config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
@@ -114,7 +112,7 @@ def test_flag_tests(create_package, time_tool):
     """
     package_path = create_package
     command = get_command()
-    create_ins_outs(package_path, command)
+    create_ins_outs(package_path)
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--tests", "in/abc1a.in", "--time_tool", time_tool])
@@ -131,7 +129,7 @@ def test_flag_solutions(capsys, create_package, time_tool):
     """
     package_path = create_package
     command = get_command()
-    create_ins_outs(package_path, command)
+    create_ins_outs(package_path)
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--solutions", "prog/abc1.cpp", "prog/abc2.cpp", "--time_tool", time_tool])
