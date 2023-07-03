@@ -1,6 +1,7 @@
 import multiprocessing as mp
 import os, glob
 
+import argparse
 import yaml
 from ...util import *
 from sinol_make.commands.run import Command
@@ -23,6 +24,7 @@ def get_command(path = None):
         'java_compiler_path': compiler.get_java_compiler_path()
     }
     command.config = yaml.load(open(os.path.join(path, "config.yml"), "r"), Loader=yaml.FullLoader)
+    set_default_args(command)
     return command
 
 def create_ins(package_path, command):
@@ -47,3 +49,9 @@ def create_outs(package_path, command):
 def create_ins_outs(package_path, command):
     create_ins(package_path, command)
     create_outs(package_path, command)
+
+
+def set_default_args(command):
+    command.args = argparse.Namespace(
+        weak_compilation_flags=False
+    )

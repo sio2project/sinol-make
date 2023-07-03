@@ -195,7 +195,7 @@ class Command(BaseCommand):
         output = os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
 
         weak_compilation_flags = False
-        if hasattr(self, "args") and self.args.weak_compilation_flags:
+        if self.args.weak_compilation_flags:
             weak_compilation_flags = True
 
         try:
