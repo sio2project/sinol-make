@@ -162,10 +162,6 @@ def file_diff(file1, file2):
 
     lines1 = open(file1, 'r').readlines()
     lines2 = open(file2, 'r').readlines()
-    while lines1[-1] == '\n':
-        lines1.pop()
-    while lines2[-1] == '\n':
-        lines2.pop()
 
     if len(lines1) != len(lines2):
         return False
