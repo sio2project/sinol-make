@@ -194,13 +194,9 @@ class Command(BaseCommand):
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
 
-        weak_compilation_flags = False
-        if self.args.weak_compilation_flags:
-            weak_compilation_flags = True
-
         try:
             compile.compile(source_file, output, self.compilers,
-                            open(compile_log_file, "w"), weak_compilation_flags)
+                            open(compile_log_file, "w"), self.args.weak_compilation_flags)
             print(util.info("Compilation of file %s was successful."
                             % self.extract_file_name(solution)))
             return True
