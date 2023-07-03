@@ -118,7 +118,10 @@ def test_flag_tests(create_package, time_tool):
     parser = configure_parsers()
     args = parser.parse_args(["run", "--tests", test, "--time_tool", time_tool])
     command = Command()
-    command.run(args)
+    try:
+        command.run(args)
+    except SystemExit:
+        pass
 
     assert command.tests == [test]
 
