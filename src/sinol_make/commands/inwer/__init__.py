@@ -82,7 +82,7 @@ class Command(BaseCommand):
             util.exit_with_error('You are not in a project directory (couldn\'t find config.yml in current directory).')
 
         self.task_id = package_util.get_task_id()
-        self.inwer = inwer_util.get_inwer(self.task_id, args.inwer_path)
+        self.inwer = inwer_util.get_inwer_path(self.task_id, args.inwer_path)
         if self.inwer is None:
             if args.inwer_path is None:
                 util.exit_with_error('No inwer found in `prog/` directory.')
