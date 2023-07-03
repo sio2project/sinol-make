@@ -154,6 +154,29 @@ def save_config(config):
             yaml.dump(config, config_file)
 
 
+def file_diff(file1, file2):
+    """
+    Function to compare two files.
+    Returns True if they are the same, False otherwise.
+    """
+
+    lines1 = open(file1, 'r').readlines()
+    lines2 = open(file2, 'r').readlines()
+    while lines1[-1] == '\n':
+        lines1.pop()
+    while lines2[-1] == '\n':
+        lines2.pop()
+
+    if len(lines1) != len(lines2):
+        return False
+
+    for i in range(len(lines1)):
+        if lines1[i].rstrip() != lines2[i].rstrip():
+            return False
+
+    return True
+
+
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)

@@ -207,7 +207,7 @@ class Command(BaseCommand):
         """
         Checks whether the output file and the answer file are the same.
         """
-        return not os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file))
+        return util.file_diff(output_file, answer_file)
 
 
     def check_output_checker(self, name, input_file, output_file, correct_answer_file):
