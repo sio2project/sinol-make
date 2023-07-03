@@ -27,6 +27,14 @@ class ExecutionResult:
     Time: float
     # Memory in KB
     Memory: int
+    # Points for this test
+    Points: int
+
+    def __init__(self, status=None):
+        self.Status = status
+        self.Time = None
+        self.Memory = None
+        self.Points = 0
 
 @dataclass
 class ExecutionData:

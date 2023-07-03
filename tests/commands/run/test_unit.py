@@ -115,9 +115,15 @@ def test_run_solutions(create_package, time_tool):
     command.time_limit = command.config["time_limit"]
     command.timetool_path = util.get_oiejq_path()
 
-    print(command.compile_and_run(["abc.cpp"]))
-    assert command.compile_and_run(["abc.cpp"]) == {"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"}}
-    assert command.compile_and_run(["abc.cpp", "abc4.cpp"]) == {
+    def flatten_results(results):
+        new_results = {}
+        for solution in results.keys():
+            new_results[solution] = dict((group, group_result["status"])
+                                         for group, group_result in results[solution].items())
+        return new_results
+
+    assert flatten_results(command.compile_and_run(["abc.cpp"])[0]) == {"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"}}
+    assert flatten_results(command.compile_and_run(["abc.cpp", "abc4.cpp"])[0]) == {
         "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
         "abc4.cpp": {1: "OK", 2: "OK", 3: "WA", 4: "RE"}
     }

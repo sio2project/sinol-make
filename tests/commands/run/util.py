@@ -23,6 +23,7 @@ def get_command(path = None):
         'java_compiler_path': compiler.get_java_compiler_path()
     }
     command.config = yaml.load(open(os.path.join(path, "config.yml"), "r"), Loader=yaml.FullLoader)
+    command.checker = None
     return command
 
 def create_ins(package_path, command):

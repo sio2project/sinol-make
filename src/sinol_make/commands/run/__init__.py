@@ -4,10 +4,10 @@
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
 from sinol_make.interfaces.BaseCommand import BaseCommand
-from sinol_make.interfaces.Errors import CompilationError
+from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException
 from sinol_make.helpers import compile, compiler
 import sinol_make.util as util
-import yaml, os, collections, sys, re, math, dictdiffer
+import yaml, os, collections, sys, re, math, dictdiffer, glob
 import multiprocessing as mp
 
 class Command(BaseCommand):
@@ -203,9 +203,59 @@ class Command(BaseCommand):
             return False
 
 
-    def execute_oiejq(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
+    def check_output_diff(self, output_file, answer_file):
+        """
+        Checks if the output file and the answer file are the same.
+        Returns True if they are the same, False otherwise.
+        """
+        return not os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file))
+
+
+    def check_output_checker(self, name, input_file, output_file, correct_answer_file):
+        """
+        Checks if the output file is correct with the checker.
+        Returns True if the output file is correct, False otherwise and number of points.
+        """
+        checker_output_file = os.path.join(self.EXECUTIONS_DIR, name,
+                                           os.path.splitext(os.path.basename(output_file))[0] + ".chk")
+        os.system(f'{self.checker_executable} {input_file} {output_file} {correct_answer_file} >{checker_output_file}')
+
+        checker_output = open(checker_output_file).readlines()
+        if len(checker_output) == 0:
+            raise CheckerOutputException("Checker output is empty.")
+
+        if checker_output[0].strip() == "OK":
+            points = 100
+            if len(checker_output) >= 3:
+                try:
+                    points = int(checker_output[2].strip())
+                except ValueError:
+                    pass
+
+            return True, points
+        elif checker_output[0].strip() == "WRONG":
+
+            return False, 0
+        else:
+            raise CheckerOutputException("Checker output is invalid.")
+
+
+    def check_output(self, name, input_file, output_file, answer_file):
+        """
+        Checks if the output file is correct.
+        Returns a tuple (correct, number of points).
+        """
+        if not hasattr(self, "checker") or self.checker is None:
+            correct = self.check_output_diff(output_file, answer_file)
+            return correct, 100 if correct else 0
+        else:
+            correct_answer_file = os.path.join(self.EXECUTIONS_DIR, self.correct_solution, os.path.basename(output_file))
+            return self.check_output_checker(name, input_file, output_file, correct_answer_file)
+
+
+    def execute_oiejq(self, command, name, result_file, input_file, output_file, answer_file, time_limit, memory_limit):
         timeout_exit_code = os.system(command)
-        result = ExecutionResult(None, None, None)
+        result = ExecutionResult()
         with open(result_file) as r:
             for line in r:
                 line = line.strip()
@@ -231,19 +281,20 @@ class Command(BaseCommand):
                 result.Status = "TL"
             elif result.Memory > memory_limit:
                 result.Status = "ML"
-            elif os.system("diff -q -Z %s %s >/dev/null"
-                           % (output_file, answer_file)):
-                result.Status = "WA"
+            else:
+                correct, result.Points = self.check_output(name, input_file, output_file, answer_file)
+                if not correct:
+                    result.Status = "WA"
         else:
             result.Status = result.Status[:2]
 
         return result
 
 
-    def execute_time(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
+    def execute_time(self, command, name, result_file, input_file, output_file, answer_file, time_limit, memory_limit):
         timeout_exit_code = os.system(command)
 
-        result = ExecutionResult(None, None, None)
+        result = ExecutionResult()
         lines = open(result_file).readlines()
         program_exit_code = None
         if len(lines) == 3:
@@ -273,10 +324,12 @@ class Command(BaseCommand):
             result.Status = "TL"
         elif result.Memory > memory_limit:
             result.Status = "ML"
-        elif os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file)):
-            result.Status = "WA"
         else:
-            result.Status = "OK"
+            correct, result.Points = self.check_output(name, input_file, output_file, answer_file)
+            if correct:
+                result.Status = "OK"
+            else:
+                result.Status = "WA"
 
         return result
 
@@ -298,7 +351,7 @@ class Command(BaseCommand):
                          hard_time_limit_in_s, timetool_path,
                          executable, test, output_file, result_file)
 
-            return self.execute_oiejq(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+            return self.execute_oiejq(command, name, result_file, test, output_file, self.get_output_file(test), time_limit, memory_limit)
         elif self.args.time_tool == 'time':
             if sys.platform == 'darwin':
                 timeout_name = 'gtimeout'
@@ -311,7 +364,7 @@ class Command(BaseCommand):
 
             command = f'{timeout_name} -k {hard_time_limit_in_s}s {hard_time_limit_in_s}s ' \
                       f'{time_name} -f "%U\\n%M\\n%x" -o {result_file} {executable} <{test} >{output_file}'
-            return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+            return self.execute_time(command, name, result_file, test, output_file, self.get_output_file(test), time_limit, memory_limit)
 
 
     def update_group_status(self, group_status, new_status):
@@ -332,11 +385,11 @@ class Command(BaseCommand):
             if result:
                 for test in self.tests:
                     executions.append((name, executable, test, self.time_limit, self.memory_limit, self.timetool_path))
-                    all_results[name][self.get_group(test)][test] = ExecutionResult("  ", None, None)
+                    all_results[name][self.get_group(test)][test] = ExecutionResult("  ")
                 os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
             else:
                 for test in self.tests:
-                    all_results[name][self.get_group(test)][test] = ExecutionResult("CE", None, None)
+                    all_results[name][self.get_group(test)][test] = ExecutionResult("CE")
         print()
         executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
         program_groups_scores = collections.defaultdict(dict)
@@ -381,7 +434,10 @@ class Command(BaseCommand):
                     for program in program_group:
                         results = all_results[program][group]
                         group_status = "OK"
+                        min_points = 100
+
                         for test in results:
+                            min_points = min(min_points, results[test].Points)
                             status = results[test].Status
                             if getattr(results[test], "Time") is not None:
                                 program_times[program] = max(
@@ -395,14 +451,16 @@ class Command(BaseCommand):
                                 program_memory[program] = 2 * self.memory_limit
                             if status == "  ":
                                 group_status = "  "
+                                min_points = 0
                             else:
                                 group_status = self.update_group_status(group_status, status)
 
+                        points = math.floor(min_points / 100 * self.scores[group])
                         print_stream("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(util.color_red(group_status)),
-                                     "%3s/%3s" % (self.scores[group] if group_status == "OK" else "---", self.scores[group]),
+                                     "%3s/%3s" % (points, self.scores[group]),
                                      end=" | ")
                         program_scores[program] += self.scores[group] if group_status == "OK" else 0
-                        program_groups_scores[program][group] = group_status
+                        program_groups_scores[program][group] = {"status": group_status, "points": points}
                     print_stream()
                 print_stream(6*" ", end=" | ")
                 for program in program_group:
@@ -464,7 +522,7 @@ class Command(BaseCommand):
                 print_view()
         if report_file:
             print_view(report_file)
-        return program_groups_scores
+        return program_groups_scores, all_results
 
 
     def calculate_points(self, results):
@@ -474,6 +532,14 @@ class Command(BaseCommand):
                 util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
             if result == "OK" and group != 0:
                 points += self.config["scores"][group]
+        return points
+
+    def calculate_points_checker(self, results):
+        points = 0
+        for group, result in results.items():
+            if group != 0 and group not in self.config["scores"]:
+                util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
+            points += result["points"]
         return points
 
 
@@ -495,11 +561,30 @@ class Command(BaseCommand):
     def validate_expected_scores(self, results):
         new_expected_scores = {} # Expected scores based on results
 
-        for solution in results.keys():
-            new_expected_scores[solution] = {
-                "expected": results[solution],
-                "points": self.calculate_points(results[solution])
-            }
+        def remove_points_from_results(results):
+            new_results = {}
+            for solution in results.keys():
+                new_results[solution] = {}
+                for group, item in results[solution].items():
+                    if isinstance(item, dict):
+                        new_results[solution][group] = item["status"]
+                    else:
+                        new_results[solution][group] = item
+            return new_results
+
+        if self.checker is None:
+            results = remove_points_from_results(results)
+            for solution in results.keys():
+                new_expected_scores[solution] = {
+                    "expected": results[solution],
+                    "points": self.calculate_points(results[solution])
+                }
+        else:
+            for solution in results.keys():
+                new_expected_scores[solution] = {
+                    "expected": remove_points_from_results(results[solution]),
+                    "points": self.calculate_points_checker(results[solution])
+                }
 
         config_expected_scores = self.config.get("sinol_expected_scores", {})
         used_solutions = results.keys()
@@ -529,7 +614,10 @@ class Command(BaseCommand):
                     if group in config_expected_scores[solution]["expected"]:
                         expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
 
-                expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+                if self.checker is None:
+                    expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+                else:
+                    expected_scores[solution]["points"] = self.calculate_points_checker(expected_scores[solution]["expected"])
 
         print(util.bold("Expected scores from config:"))
         self.print_expected_scores(expected_scores)
@@ -594,8 +682,12 @@ class Command(BaseCommand):
         warn_if_not_empty(diff.removed_groups, "Groups were removed")
 
         for change in diff.changes:
-            print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
-                               (change.solution, change.group, change.result, change.old_result)))
+            if isinstance(change.result, str):
+                print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
+                                   (change.solution, change.group, change.result, change.old_result)))
+            elif isinstance(change.result, int):
+                print(util.warning("Solution %s passed group %d with %d points while it should pass with %d points") %
+                      (change.solution, change.group, change.result, change.old_result))
 
         if diff.expected_scores == diff.new_expected_scores:
             print(util.info("Expected scores are correct!"))
@@ -753,11 +845,47 @@ class Command(BaseCommand):
             print(util.warning("WARN: Scores sum up to %d (instead of 100)." % total_score))
         print()
 
+        checker = glob.glob(os.path.join(os.getcwd(), "prog", f'{self.ID}chk.*'))
+        if len(checker) != 0:
+            print(util.info("Checker found. Running correct solution first."))
+            self.checker = checker[0]
+            checker_basename = os.path.basename(self.checker)
+            self.checker_executable = os.path.join(self.EXECUTABLES_DIR, os.path.splitext(checker_basename)[0] + ".e")
+        else:
+            self.checker = None
+
         self.tests = self.get_tests(args.tests)
         self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
         self.possible_score = self.get_possible_score(self.groups)
 
-        solutions = self.get_solutions(self.args.solutions)
-        results = self.compile_and_run(solutions)
+        if self.checker is None:
+            solutions = self.get_solutions(self.args.solutions)
+        else:
+            correct_solutions = self.get_solutions(glob.glob(os.path.join(os.getcwd(), "prog", f'{self.ID}.*')))
+            if len(correct_solutions) == 0:
+                util.exit_with_error('Correct solution not found.')
+            self.correct_solution = correct_solutions[0]
+
+            checker_compilation = self.compile_solutions([self.checker])
+            if checker_compilation[0] != True:
+                util.exit_with_error('Checker compilation failed.')
+
+            try:
+                results, verbose_results = self.compile_and_run([self.correct_solution])
+            except CheckerOutputException as e:
+                util.exit_with_error('Checker failed: ' + e.message)
+
+            for group, result in results[self.correct_solution].items():
+                if result["status"] != "OK":
+                    for test, res in verbose_results[self.correct_solution][group].items():
+                        if res.Status != "OK":
+                            util.exit_with_error(f'Correct solution failed on test {test}.')
+
+            print(util.info("Correct solution passed all tests. Running other solutions."))
+            solutions = self.get_solutions(self.args.solutions)
+            solutions = [solution for solution in solutions
+                         if os.path.basename(solution) != os.path.basename(self.correct_solution)]
+
+        results, _ = self.compile_and_run(solutions)
         validation_results = self.validate_expected_scores(results)
         self.print_expected_scores_diff(validation_results)
