@@ -1,0 +1,6 @@
+title: Package for testing --weak-compilation-flags
+memory_limit: 16000
+time_limit: 1000
+
+scores:
+  1: 100

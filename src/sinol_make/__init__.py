@@ -3,7 +3,7 @@ import sys
 
 from sinol_make import util
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 def configure_parsers():
     parser = argparse.ArgumentParser(
