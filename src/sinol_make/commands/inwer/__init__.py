@@ -22,15 +22,16 @@ class Command(BaseCommand):
         parser = subparser.add_parser(
             self.get_name(),
             help='Verify if input files are correct',
-            description='Verify if input files are correct'
+            description='Verify if input files are correct using inwer program '
+                        '(for example prog/abcinwer.cpp for abc task).'
         )
 
         parser.add_argument('inwer_path', type=str, nargs='?',
-                            help='path to inwer file')
+                            help='path to inwer source file, for example prog/abcinwer.cpp')
         parser.add_argument('--tests', type=str, nargs='+',
                             help='test to verify, for example in/abc{0,1}*')
         parser.add_argument('--cpus', type=int,
-                            help=f'number of cpus to use, you have {mp.cpu_count()} available')
+                            help=f'number of cpus to use, by default {mp.cpu_count()} (all available)')
         add_compilation_arguments(parser)
 
     def compile_inwer(self, args: argparse.Namespace):
