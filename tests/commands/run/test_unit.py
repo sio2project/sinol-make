@@ -63,7 +63,7 @@ def test_compile_solutions(create_package):
 def test_get_tests(create_package):
     package_path = create_package
     command = get_command(package_path)
-    create_ins(package_path, command)
+    create_ins(package_path)
     os.chdir(package_path)
     tests = command.get_tests(None)
     assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
@@ -78,10 +78,7 @@ def test_execution(create_package, time_tool):
     result = command.compile_solutions([solution])
     assert result == [True]
 
-    create_ins(package_path, command)
-    os.chdir(package_path)
-    create_outs(package_path, command)
-    os.chdir(package_path)
+    create_ins_outs(package_path)
     test = command.get_tests(None)[0]
 
     config = yaml.load(open(os.path.join(package_path, "config.yml"), "r"), Loader=yaml.FullLoader)
@@ -106,7 +103,7 @@ def test_run_solutions(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
     command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool)
-    create_ins_outs(package_path, command)
+    create_ins_outs(package_path)
     command.tests = command.get_tests(None)
     command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
     command.scores = command.config["scores"]
