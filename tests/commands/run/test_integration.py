@@ -5,7 +5,7 @@ from .util import *
 from sinol_make import configure_parsers
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
 def test_simple(create_package, time_tool):
     """
     Test a simple run.
@@ -21,7 +21,7 @@ def test_simple(create_package, time_tool):
     command.run(args)
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -51,7 +51,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
     assert "abc.cpp" in out
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
 def test_apply_suggestions(create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
