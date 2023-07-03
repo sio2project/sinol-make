@@ -1,0 +1,22 @@
+title: Package with output checker
+memory_limit: 16000
+time_limit: 1000
+scores:
+  1: 50
+  2: 50
+sinol_expected_scores:
+  chk1.cpp:
+    expected:
+      1: {points: 0, status: WA}
+      2: {points: 0, status: WA}
+    points: 0
+  chk2.cpp:
+    expected:
+      1: {points: 25, status: OK}
+      2: {points: 25, status: OK}
+    points: 50
+  chk3.cpp:
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 0, status: WA}
+    points: 50
