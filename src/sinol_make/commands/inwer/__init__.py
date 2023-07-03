@@ -51,7 +51,7 @@ class Command(BaseCommand):
         os.makedirs(output_dir, exist_ok=True)
         output_file = os.path.join(output_dir, package_util.get_file_name_without_extension(execution.inwer_exe_path) + ".out")
 
-        command = f'{execution.inwer_exe_path} < {execution.test_path} > {output_file}'
+        command = f'{execution.inwer_exe_path} {execution.test_name} < {execution.test_path} > {output_file}'
         exit_code = os.system(command)
 
         return VerificationResult(
