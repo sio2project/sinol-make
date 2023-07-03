@@ -87,12 +87,12 @@ class Command(BaseCommand):
         return int(memory_str[:-2])
 
 
-    def extract_test_no(self, test_path):
+    def extract_test_id(self, test_path):
         return os.path.split(os.path.splitext(test_path)[0])[1][3:]
 
 
     def get_group(self, test_path):
-        return int("".join(filter(str.isdigit, self.extract_test_no(test_path))))
+        return int("".join(filter(str.isdigit, self.extract_test_id(test_path))))
 
 
     def get_executable_key(self, executable):
@@ -260,7 +260,7 @@ class Command(BaseCommand):
         """
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
-        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_no(test))
+        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_id(test))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
@@ -406,7 +406,7 @@ class Command(BaseCommand):
                 #       print_stream(10*" ", end=" | ")
                 #   print_stream()
                 #   for test in self.tests:
-                #       print_stream("%6s" % self.extract_test_no(test), end=" | ")
+                #       print_stream("%6s" % self.extract_test_id(test), end=" | ")
                 #       for program in program_group:
                 #           result = all_results[program][self.get_group(test)][test]
                 #           status = result.Status

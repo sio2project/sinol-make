@@ -7,11 +7,11 @@ def test_get_task_id(create_package):
     assert package_util.get_task_id() == "abc"
 
 
-def test_extract_test_no():
-    assert package_util.extract_test_no("in/abc1a.in") == "1a"
-    assert package_util.extract_test_no("in/abc10a.in") == "10a"
-    assert package_util.extract_test_no("in/abc12ca.in") == "12ca"
-    assert package_util.extract_test_no("in/abc0ocen.in") == "0ocen"
+def test_extract_test_id():
+    assert package_util.extract_test_id("in/abc1a.in") == "1a"
+    assert package_util.extract_test_id("in/abc10a.in") == "10a"
+    assert package_util.extract_test_id("in/abc12ca.in") == "12ca"
+    assert package_util.extract_test_id("in/abc0ocen.in") == "0ocen"
 
 
 def test_get_group():

@@ -5,7 +5,7 @@ def get_task_id() -> str:
     return os.path.split(os.getcwd())[-1]
 
 
-def extract_test_no(test_path):
+def extract_test_id(test_path):
     """
     Extracts test group and number from test path.
     For example for test abc1a.in it returns 1a.
@@ -16,7 +16,7 @@ def extract_test_no(test_path):
 
 
 def get_group(test_path):
-    return int("".join(filter(str.isdigit, extract_test_no(test_path))))
+    return int("".join(filter(str.isdigit, extract_test_id(test_path))))
 
 
 def get_test_key(test):
