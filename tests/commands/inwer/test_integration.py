@@ -59,6 +59,28 @@ def test_specified_inwer(capsys, create_package):
     out = capsys.readouterr().out
     assert "Verification failed for tests: wer2a.in" in out
 
+
+@pytest.mark.parametrize("create_package", [util.get_inwer_package_path()], indirect=True)
+def test_asserting_inwer(capsys, create_package):
+    """
+    Test `inwer` command with inwer that uses assert for verifying.
+    """
+    package_path = create_package
+    util.create_ins(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["inwer", "prog/werinwer3.cpp"])
+    command = Command()
+
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+
+    assert e.type == SystemExit
+    assert e.value.code == 1
+
+    out = capsys.readouterr().out
+    assert "Verification failed for tests: wer2a.in" in out
+
+
 @pytest.mark.parametrize("create_package", [util.get_inwer_package_path()], indirect=True)
 def test_flag_tests(capsys, create_package):
     """
