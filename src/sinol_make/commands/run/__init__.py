@@ -314,7 +314,7 @@ class Command(BaseCommand):
                 raise Exception("Measuring time with GNU time on Windows is not supported.")
 
             command = f'{timeout_name} -k {hard_time_limit_in_s}s {hard_time_limit_in_s}s ' \
-                      f'{time_name} -f "%U\\n%M\\n%x" -o {result_file} {executable} <{test} >{output_file}'
+                      f'{time_name} -f "%U\\n%M\\n%x" -o {result_file} {executable} <{test} >{output_file} 2>/dev/null'
             return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
 
 
