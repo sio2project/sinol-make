@@ -474,10 +474,10 @@ class Command(BaseCommand):
     def calculate_points(self, results):
         points = 0
         for group, result in results.items():
-            if group != 0 and group not in self.config["scores"]:
+            if group != 0 and group not in self.scores:
                 util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
             if result == "OK" and group != 0:
-                points += self.config["scores"][group]
+                points += self.scores[group]
         return points
 
 
@@ -706,6 +706,42 @@ class Command(BaseCommand):
 
         return compilers, timetool_path
 
+    def set_scores(self):
+        self.tests = self.get_tests(self.args.tests)
+        self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
+        self.scores = collections.defaultdict(int)
+
+        if 'scores' not in self.config.keys():
+            print(util.warning('Scores are not defined in config.yml. Points will be assigned equally to all groups.'))
+            num_groups = len(self.groups)
+            self.scores = {}
+            if self.groups[0] == 0:
+                num_groups -= 1
+                self.scores[0] = 0
+
+            points_per_group = 100 // num_groups
+            for group in self.groups:
+                if group == 0:
+                    continue
+                self.scores[group] = points_per_group
+
+            if points_per_group * num_groups != 100:
+                self.scores[self.groups[-1]] += 100 - points_per_group * num_groups
+        else:
+            for group in self.config["scores"]:
+                self.scores[group] = self.config["scores"][group]
+
+        self.possible_score = self.get_possible_score(self.groups)
+
+        print("Scores:")
+        total_score = 0
+        for group in self.scores:
+            print("%2d: %3d" % (group, self.scores[group]))
+            total_score += self.scores[group]
+        if total_score != 100:
+            print(util.warning("WARN: Scores sum up to %d (instead of 100)." % total_score))
+        print()
+
     def run(self, args):
         if not util.check_if_project():
             print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
@@ -724,8 +760,6 @@ class Command(BaseCommand):
             util.exit_with_error('Time limit was not defined in config.yml.')
         if not 'memory_limit' in self.config.keys():
             util.exit_with_error('Memory limit was not defined in config.yml.')
-        if not 'scores' in self.config.keys():
-            util.exit_with_error('Scores were not defined in config.yml.')
 
         self.compilers, self.timetool_path = self.validate_arguments(args)
 
@@ -746,20 +780,8 @@ class Command(BaseCommand):
         else:
             print("Memory limit (in kb):", self.memory_limit,
                   util.warning(("[originally was %.1f kb]" % config_memory_limit)))
-        self.scores = collections.defaultdict(int)
-        print("Scores:")
-        total_score = 0
-        for group in self.config["scores"]:
-            self.scores[group] = self.config["scores"][group]
-            print("%2d: %3d" % (group, self.scores[group]))
-            total_score += self.scores[group]
-        if total_score != 100:
-            print(util.warning("WARN: Scores sum up to %d (instead of 100)." % total_score))
-        print()
 
-        self.tests = self.get_tests(args.tests)
-        self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
-        self.possible_score = self.get_possible_score(self.groups)
+        self.set_scores()
 
         solutions = self.get_solutions(self.args.solutions)
         results = self.compile_and_run(solutions)
