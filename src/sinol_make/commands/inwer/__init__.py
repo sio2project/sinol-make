@@ -1,3 +1,4 @@
+import subprocess
 import argparse
 import os
 import multiprocessing as mp
@@ -49,15 +50,17 @@ class Command(BaseCommand):
         """
         output_dir = os.path.join(os.getcwd(), 'cache', 'executions', execution.test_name)
         os.makedirs(output_dir, exist_ok=True)
-        output_file = os.path.join(output_dir, package_util.get_file_name_without_extension(execution.inwer_exe_path) + ".out")
 
-        command = f'{execution.inwer_exe_path} < {execution.test_path} > {output_file}'
-        exit_code = os.system(command)
+        command = f'{execution.inwer_exe_path} < {execution.test_path}'
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process.wait()
+        exit_code = process.returncode
+        out, _ = process.communicate()
 
         return VerificationResult(
             execution.test_path,
             exit_code == 0,
-            open(output_file, 'r').read()
+            out.decode('utf-8')
         )
 
     def verify_and_print_table(self) -> dict[str, TestResult]:
