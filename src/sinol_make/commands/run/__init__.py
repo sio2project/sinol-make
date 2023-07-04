@@ -61,6 +61,8 @@ class Command(BaseCommand):
                             help='use weaker compilation flags')
         parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
+        parser.add_argument('--ignore_compilation_errors', dest='ignore_compilation_errors', action='store_true',
+                            help='run compiled solutions, even if some of them did not compile')
 
 
     def color_memory(self, memory, limit):
@@ -183,7 +185,7 @@ class Command(BaseCommand):
         print("Compiling %d solutions..." % len(solutions))
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.map(self.compile, solutions)
-        if not all(compilation_results):
+        if not self.args.ignore_compilation_errors and not all(compilation_results):
             util.exit_with_error("\nCompilation failed.")
         return compilation_results
 
@@ -483,6 +485,14 @@ class Command(BaseCommand):
 
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
+        offset = 0
+        for i in range(len(solutions)):
+            if not compilation_results[i]:
+                self.failed_compilations.append(solutions[i - offset])
+                solutions.pop(i - offset)
+                offset += 1
+        compilation_results = [result for result in compilation_results if result]
+
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
         executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
                        for solution in solutions]
@@ -509,6 +519,11 @@ class Command(BaseCommand):
         used_solutions = results.keys()
         if self.args.solutions == None and config_expected_scores: # If no solutions were specified, use all solutions from config
             used_solutions = config_expected_scores.keys()
+        used_solutions = list(used_solutions)
+
+        for solution in self.failed_compilations:
+            if solution in used_solutions:
+                used_solutions.remove(solution)
 
         used_groups = set()
         if self.args.tests == None and config_expected_scores: # If no groups were specified, use all groups from config
@@ -760,6 +775,7 @@ class Command(BaseCommand):
         self.tests = self.get_tests(args.tests)
         self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
         self.possible_score = self.get_possible_score(self.groups)
+        self.failed_compilations = []
 
         solutions = self.get_solutions(self.args.solutions)
         results = self.compile_and_run(solutions)
