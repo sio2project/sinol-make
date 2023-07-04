@@ -163,3 +163,34 @@ def test_weak_compilation_flags(create_package):
     args = parser.parse_args(["run", "--weak_compilation_flags", "--time_tool", "time"])
     command = Command()
     command.run(args)
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+def test_ignore_compilation_errors_flag(capsys, create_package, time_tool):
+    """
+    Test flag --ignore-compilation-errors.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path, command)
+
+    solution = open(os.path.join(package_path, "prog", "abc.cpp"), "w+")
+    solution.write("a")
+    solution.close()
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time_tool", time_tool])
+    command = Command()
+
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+
+    assert e.type == SystemExit
+    assert e.value.code == 1
+
+    args = parser.parse_args(["run", "--ignore_compilation_errors", "--time_tool", "time"])
+    command = Command()
+    command.run(args)
+
+    out = capsys.readouterr().out
+    assert "abc.cpp" not in out
