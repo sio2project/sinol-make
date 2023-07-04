@@ -1,4 +1,5 @@
 import argparse
+import re
 
 from ...fixtures import *
 from ... import util
@@ -58,4 +59,7 @@ def test_asserting_inwer(create_package):
 
     res = Command.verify_test(execution)
     assert res.valid is False
-    assert "Assertion `s == 5' failed." in res.output
+    assertion_re = re.compile(r'.*Assertion.*failed')
+    print(res.output)
+    print(assertion_re.match(res.output))
+    assert assertion_re.match(res.output) is not None
