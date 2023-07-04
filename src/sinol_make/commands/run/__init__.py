@@ -739,7 +739,7 @@ class Command(BaseCommand):
             print("%2d: %3d" % (group, self.scores[group]))
             total_score += self.scores[group]
         if total_score != 100:
-            print(util.warning("WARN: Scores sum up to %d (instead of 100)." % total_score))
+            print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
         print()
 
     def run(self, args):
