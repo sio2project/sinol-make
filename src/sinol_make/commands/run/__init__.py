@@ -57,6 +57,8 @@ class Command(BaseCommand):
                             help='Python interpreter to use (default: python3)')
         parser.add_argument('--java_compiler_path', type=str, default=compiler.get_java_compiler_path(),
                             help='Java compiler to use (default: javac)')
+        parser.add_argument('--weak_compilation_flags', dest='weak_compilation_flags', action='store_true',
+                            help='use weaker compilation flags')
         parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
 
@@ -191,8 +193,10 @@ class Command(BaseCommand):
             self.COMPILATION_DIR, "%s.compile_log" % self.extract_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+
         try:
-            compile.compile(source_file, output, self.compilers, open(compile_log_file, "w"))
+            compile.compile(source_file, output, self.compilers,
+                            open(compile_log_file, "w"), self.args.weak_compilation_flags)
             print(util.info("Compilation of file %s was successful."
                             % self.extract_file_name(solution)))
             return True
