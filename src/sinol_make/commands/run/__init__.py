@@ -213,7 +213,9 @@ class Command(BaseCommand):
                 else:
                     setattr(result, key, value)
 
-        if timeout_exit_code == 137:
+        # If timeout kills the process, the exit code should be 137.
+        # But on Arch Linux it returns the negative value of the signal that killed the process.
+        if timeout_exit_code == 137 or timeout_exit_code == -9:
             result.Status = "TL"
         elif getattr(result, "Time") is not None and result.Time > time_limit:
             result.Status = "TL"
