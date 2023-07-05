@@ -1,5 +1,6 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
 
+
 def get_commands():
     """
     Function to get an array of all available commands.
@@ -152,6 +153,49 @@ def save_config(config):
             print(warning("Found unknown fields in config.yml: " + ", ".join([str(x) for x in config])))
             # All remaining non-considered fields are appended to the end of the file.
             yaml.dump(config, config_file)
+
+
+def check_for_updates(current_version) -> str | None:
+    """
+    Function to check if there is a new version of sinol-make.
+    :param current_version: current version of sinol-make
+    :return: returns new version if there is one, None otherwise
+    """
+    try:
+        request = requests.get("https://pypi.python.org/pypi/sinol-make/json")
+    except requests.exceptions.ConnectionError:
+        return
+
+    if request.status_code != 200:
+        return
+
+    data = request.json()
+    latest_version = data["info"]["version"]
+
+    if compare_versions(current_version, latest_version) == -1:
+        return latest_version
+    else:
+        return None
+
+
+def compare_versions(version_a, version_b):
+    """
+    Function to compare two versions.
+    Returns 1 if version_a > version_b, 0 if version_a == version_b, -1 if version_a < version_b.
+    """
+
+    def convert(version):
+        return tuple(map(int, version.split(".")))
+
+    version_a = convert(version_a)
+    version_b = convert(version_b)
+
+    if version_a > version_b:
+        return 1
+    elif version_a == version_b:
+        return 0
+    else:
+        return -1
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)
