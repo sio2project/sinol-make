@@ -1,5 +1,6 @@
 import os
 import glob
+import subprocess
 
 from sinol_make.helpers import compile
 
@@ -53,7 +54,13 @@ def create_outs(package_path):
     assert compile.compile(solution, solution_executable)
     os.chdir(os.path.join(package_path, "in"))
     for file in glob.glob("*.in"):
-        os.system(f'{os.path.join(package_path, "cache", "executables", "solution.e")} < {file} > ../out/{file.replace(".in", ".out")}')
+        in_file = open(file, "r")
+        out_file = open(os.path.join("../out", file.replace(".in", ".out")), "w")
+        subprocess.Popen([os.path.join(package_path, "cache", "executables", "solution.e")],
+                         stdin=in_file, stdout=out_file).wait()
+        in_file.close()
+        out_file.flush()
+        out_file.close()
     os.chdir(package_path)
 
 

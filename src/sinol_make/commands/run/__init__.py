@@ -1,6 +1,7 @@
 # Modified version of https://sinol3.dasie.mimuw.edu.pl/oij/jury/package/-/blob/master/runner.py
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
+import subprocess
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
 from sinol_make.helpers.parsers import add_compilation_arguments
@@ -184,20 +185,30 @@ class Command(BaseCommand):
             return False
 
 
-    def execute_oiejq(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
-        timeout_exit_code = os.system(command)
+    def execute_oiejq(self, command, input_file_path, output_file_path, answer_file_path,
+                      time_limit, memory_limit):
+        input_file = open(input_file_path, "r")
+        output_file = open(output_file_path, "w")
+        process = subprocess.Popen(command, stdin=input_file, stdout=output_file, stderr=subprocess.PIPE)
+        process.wait()
+        timeout_exit_code = process.returncode
+        input_file.close()
+        output_file.flush()
+        output_file.close()
+        lines = process.stderr.read().decode("utf-8").splitlines()
+
         result = ExecutionResult(None, None, None)
-        with open(result_file) as r:
-            for line in r:
-                line = line.strip()
-                if ": " in line:
-                    (key, value) = line.split(": ")[:2]
-                    if key == "Time":
-                        result.Time = self.parse_time(value)
-                    elif key == "Memory":
-                        result.Memory = self.parse_memory(value)
-                    else:
-                        setattr(result, key, value)
+
+        for line in lines:
+            line = line.strip()
+            if ": " in line:
+                (key, value) = line.split(": ")[:2]
+                if key == "Time":
+                    result.Time = self.parse_time(value)
+                elif key == "Memory":
+                    result.Memory = self.parse_memory(value)
+                else:
+                    setattr(result, key, value)
 
         if timeout_exit_code == 35072:
             result.Status = "TL"
@@ -212,8 +223,8 @@ class Command(BaseCommand):
                 result.Status = "TL"
             elif result.Memory > memory_limit:
                 result.Status = "ML"
-            elif os.system("diff -q -Z %s %s >/dev/null"
-                           % (output_file, answer_file)):
+            elif os.system("diff -q -Z \"%s\" \"%s\" >/dev/null"
+                           % (output_file_path, answer_file_path)):
                 result.Status = "WA"
         else:
             result.Status = result.Status[:2]
@@ -221,11 +232,19 @@ class Command(BaseCommand):
         return result
 
 
-    def execute_time(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
-        timeout_exit_code = os.system(command)
+    def execute_time(self, command, result_file_path, input_file_path, output_file_path, answer_file_path,
+                     time_limit, memory_limit):
+        input_file = open(input_file_path, "r")
+        output_file = open(output_file_path, "w")
+        process = subprocess.Popen(command, stdin=input_file, stdout=output_file, stderr=subprocess.DEVNULL)
+        process.wait()
+        timeout_exit_code = process.returncode
+        input_file.close()
+        output_file.flush()
+        output_file.close()
 
         result = ExecutionResult(None, None, None)
-        lines = open(result_file).readlines()
+        lines = open(result_file_path).readlines()
         program_exit_code = None
         if len(lines) == 3:
             """
@@ -254,7 +273,7 @@ class Command(BaseCommand):
             result.Status = "TL"
         elif result.Memory > memory_limit:
             result.Status = "ML"
-        elif os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file)):
+        elif os.system("diff -q -Z \"%s\" \"%s\" >/dev/null" % (output_file_path, answer_file_path)):
             result.Status = "WA"
         else:
             result.Status = "OK"
@@ -274,12 +293,10 @@ class Command(BaseCommand):
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
         if self.args.time_tool == 'oiejq':
-            command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
-                      % (memory_limit, hard_time_limit_in_s,
-                         hard_time_limit_in_s, timetool_path,
-                         executable, test, output_file, result_file)
+            command = ['/bin/bash', f'MEM_LIMIT={memory_limit}K', f'MEASURE_MEM=true', 'timeout', '-k',
+                       f'-{hard_time_limit_in_s}s', f'-s', 'SIGKILL', f'{hard_time_limit_in_s}s', timetool_path, executable]
 
-            return self.execute_oiejq(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+            return self.execute_oiejq(command, test, output_file, self.get_output_file(test), time_limit, memory_limit)
         elif self.args.time_tool == 'time':
             if sys.platform == 'darwin':
                 timeout_name = 'gtimeout'
@@ -290,9 +307,9 @@ class Command(BaseCommand):
             elif sys.platform == 'win32' or sys.platform == 'cygwin':
                 raise Exception("Measuring time with GNU time on Windows is not supported.")
 
-            command = f'{timeout_name} -k {hard_time_limit_in_s}s {hard_time_limit_in_s}s ' \
-                      f'{time_name} -f "%U\\n%M\\n%x" -o {result_file} {executable} <{test} >{output_file} 2>/dev/null'
-            return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+            command = [f'{timeout_name}', '-k', f'{hard_time_limit_in_s}s', f'{hard_time_limit_in_s}s',
+                       f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file, executable]
+            return self.execute_time(command, result_file, test, output_file, self.get_output_file(test), time_limit, memory_limit)
 
 
     def update_group_status(self, group_status, new_status):
