@@ -1,4 +1,4 @@
-from ..commands.run.util import get_command, create_ins
+from ..commands.run.util import create_ins
 from ..fixtures import *
 from sinol_make.helpers import package_util
 
@@ -19,8 +19,7 @@ def test_get_group():
 
 
 def test_get_tests(create_package):
-    command = get_command(create_package)
-    create_ins(create_package, command)
+    create_ins(create_package)
     os.chdir(create_package)
     tests = package_util.get_tests(None)
     assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]

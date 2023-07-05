@@ -44,7 +44,8 @@ class Command(BaseCommand):
         else:
             print(util.info('Compilation successful.'))
 
-    def verify_test(self, execution: InwerExecution) -> VerificationResult:
+    @staticmethod
+    def verify_test(execution: InwerExecution) -> VerificationResult:
         """
         Verifies a test and returns the result of inwer on this test.
         """
@@ -115,3 +116,4 @@ class Command(BaseCommand):
             util.exit_with_error(f'Verification failed for tests: {", ".join(failed_tests)}')
         else:
             print(util.info('Verification successful.'))
+            exit(0)

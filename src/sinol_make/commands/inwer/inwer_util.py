@@ -52,7 +52,11 @@ def print_view(table_data: TableData):
         sorted_test_paths.append(result.test_path)
     sorted_test_paths.sort()
 
-    terminal_width = os.get_terminal_size().columns
+    try:
+        terminal_width = os.get_terminal_size().columns
+    except OSError:
+        terminal_width = 80
+
     column_lengths[3] = max(10, terminal_width - 20 - column_lengths[0] - column_lengths[1] - column_lengths[2] - 9) # 9 is for " | " between columns
 
     print("Test".ljust(column_lengths[0]) + " | " + "Group".ljust(column_lengths[1] - 1) + " | " + "Status" + " | " + "Output".ljust(column_lengths[3]))
