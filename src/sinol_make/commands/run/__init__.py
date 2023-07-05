@@ -211,12 +211,12 @@ class Command(BaseCommand):
         return util.file_diff(output_file, answer_file)
 
 
-    def check_output_checker(self, name, input_file, output_file, correct_answer_file):
+    def check_output_checker(self, name, input_file, output_file, answer_file):
         """
         Checks if the output file is correct with the checker.
         Returns True if the output file is correct, False otherwise and number of points.
         """
-        command = f'{self.checker_executable} {input_file} {output_file} {correct_answer_file}'
+        command = f'{self.checker_executable} {input_file} {output_file} {answer_file}'
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         process.wait()
         checker_output = process.communicate()[0].decode("utf-8").splitlines()
@@ -249,8 +249,7 @@ class Command(BaseCommand):
             correct = self.check_output_diff(output_file, answer_file)
             return correct, 100 if correct else 0
         else:
-            correct_answer_file = os.path.join(self.EXECUTIONS_DIR, self.correct_solution, os.path.basename(output_file))
-            return self.check_output_checker(name, input_file, output_file, correct_answer_file)
+            return self.check_output_checker(name, input_file, output_file, answer_file)
 
 
     def execute_oiejq(self, command, name, result_file, input_file, output_file, answer_file, time_limit, memory_limit):
@@ -858,33 +857,16 @@ class Command(BaseCommand):
         self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
         self.possible_score = self.get_possible_score(self.groups)
 
-        if self.checker is None:
-            solutions = self.get_solutions(self.args.solutions)
-        else:
-            correct_solutions = self.get_solutions(glob.glob(os.path.join(os.getcwd(), "prog", f'{self.ID}.*')))
-            if len(correct_solutions) == 0:
-                util.exit_with_error('Correct solution not found.')
-            self.correct_solution = correct_solutions[0]
+        if self.checker is not None:
+            ins = glob.glob(os.path.join(os.getcwd(), "in", f'{self.ID}*.in'))
+            outs = glob.glob(os.path.join(os.getcwd(), "out", f'{self.ID}*.out'))
 
-            checker_compilation = self.compile_solutions([self.checker])
-            if checker_compilation[0] != True:
-                util.exit_with_error('Checker compilation failed.')
+            ins = set([self.extract_test_no(test) for test in ins])
+            outs = set([self.extract_test_no(test) for test in outs])
+            if ins != outs:
+                util.exit_with_error('In and out files do not match.')
 
-            try:
-                results, verbose_results = self.compile_and_run([self.correct_solution])
-            except CheckerOutputException as e:
-                util.exit_with_error('Checker failed: ' + e.message)
-
-            for group, result in results[self.correct_solution].items():
-                if result["status"] != "OK":
-                    for test, res in verbose_results[self.correct_solution][group].items():
-                        if res.Status != "OK":
-                            util.exit_with_error(f'Correct solution failed on test {test}.')
-
-            print(util.info("Correct solution passed all tests. Running other solutions."))
-            solutions = self.get_solutions(self.args.solutions)
-            solutions = [solution for solution in solutions
-                         if os.path.basename(solution) != os.path.basename(self.correct_solution)]
+        solutions = self.get_solutions(self.args.solutions)
 
         results, _ = self.compile_and_run(solutions)
         validation_results = self.validate_expected_scores(results)
