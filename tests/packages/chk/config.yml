@@ -5,6 +5,11 @@ scores:
   1: 50
   2: 50
 sinol_expected_scores:
+  chk.cpp:
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 50, status: OK}
+    points: 100
   chk1.cpp:
     expected:
       1: {points: 0, status: WA}
