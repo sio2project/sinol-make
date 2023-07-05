@@ -529,18 +529,12 @@ class Command(BaseCommand):
         for group, result in results.items():
             if group != 0 and group not in self.config["scores"]:
                 util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
-            if result == "OK" and group != 0:
-                points += self.config["scores"][group]
+            if isinstance(result, str):
+                if result == "OK":
+                    points += self.config["scores"][group]
+            elif isinstance(result, dict):
+                points += result["points"]
         return points
-
-    def calculate_points_checker(self, results):
-        points = 0
-        for group, result in results.items():
-            if group != 0 and group not in self.config["scores"]:
-                util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
-            points += result["points"]
-        return points
-
 
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
@@ -560,19 +554,23 @@ class Command(BaseCommand):
     def validate_expected_scores(self, results):
         new_expected_scores = {} # Expected scores based on results
 
-        def remove_points_from_results(results):
+        def convert_to_expected(results):
             new_results = {}
             for solution in results.keys():
                 new_results[solution] = {}
-                for group, item in results[solution].items():
-                    if isinstance(item, dict):
-                        new_results[solution][group] = item["status"]
+                for group, result in results[solution].items():
+                    if result["status"] == "OK":
+                        if result["points"] == self.scores[group]:
+                            new_results[solution][group] = "OK"
+                        else:
+                            new_results[solution][group] = result
                     else:
-                        new_results[solution][group] = item
+                        new_results[solution][group] = result["status"]
             return new_results
 
+        results = convert_to_expected(results)
+
         if self.checker is None:
-            results = remove_points_from_results(results)
             for solution in results.keys():
                 new_expected_scores[solution] = {
                     "expected": results[solution],
@@ -581,8 +579,8 @@ class Command(BaseCommand):
         else:
             for solution in results.keys():
                 new_expected_scores[solution] = {
-                    "expected": remove_points_from_results(results[solution]),
-                    "points": self.calculate_points_checker(results[solution])
+                    "expected": results[solution],
+                    "points": self.calculate_points(results[solution])
                 }
 
         config_expected_scores = self.config.get("sinol_expected_scores", {})
@@ -613,10 +611,7 @@ class Command(BaseCommand):
                     if group in config_expected_scores[solution]["expected"]:
                         expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
 
-                if self.checker is None:
-                    expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
-                else:
-                    expected_scores[solution]["points"] = self.calculate_points_checker(expected_scores[solution]["expected"])
+                expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
 
         print(util.bold("Expected scores from config:"))
         self.print_expected_scores(expected_scores)
@@ -694,17 +689,11 @@ class Command(BaseCommand):
             def delete_group(solution, group):
                 if group in config_expected_scores[solution]["expected"]:
                     del config_expected_scores[solution]["expected"][group]
-                    if self.checker is None:
-                        config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
-                    else:
-                        config_expected_scores[solution]["points"] = self.calculate_points_checker(config_expected_scores[solution]["expected"])
+                    config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
 
             def set_group_result(solution, group, result):
                 config_expected_scores[solution]["expected"][group] = result
-                if self.checker is None:
-                    config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
-                else:
-                    config_expected_scores[solution]["points"] = self.calculate_points_checker(config_expected_scores[solution]["expected"])
+                config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
 
 
             if self.args.apply_suggestions:
