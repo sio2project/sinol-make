@@ -25,7 +25,7 @@ class Command(BaseCommand):
             help='Verify if input files are correct',
             description='Verify if input files are correct using inwer program '
                         '(for example prog/abcinwer.cpp for abc task). You can also '
-                        'specify the inwer source file which will be used.'
+                        'specify your inwer source file which will be used.'
         )
 
         parser.add_argument('inwer_path', type=str, nargs='?',
