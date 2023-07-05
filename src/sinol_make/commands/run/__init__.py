@@ -185,17 +185,17 @@ class Command(BaseCommand):
             return False
 
 
-    def execute_oiejq(self, command, input_file_path, output_file_path, answer_file_path,
+    def execute_oiejq(self, command, input_file_path, answer_file_path,
                       time_limit, memory_limit):
         env = os.environ.copy()
         env["MEM_LIMIT"] = f'{memory_limit}K'
         env["MEASURE_MEM"] = "1"
-        with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
-            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=output_file, stderr=subprocess.PIPE, env=env)
+        with open(input_file_path, "r") as input_file:
+            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
             process.wait()
-            output_file.flush()
         timeout_exit_code = process.returncode
         lines = process.stderr.read().decode("utf-8").splitlines()
+        output = process.stdout.read().decode("utf-8").splitlines()
 
         result = ExecutionResult(None, None, None)
 
@@ -225,8 +225,7 @@ class Command(BaseCommand):
                 result.Status = "TL"
             elif result.Memory > memory_limit:
                 result.Status = "ML"
-            elif os.system("diff -q -Z \"%s\" \"%s\" >/dev/null"
-                           % (output_file_path, answer_file_path)):
+            elif not util.lines_diff(output, open(answer_file_path).readlines()):
                 result.Status = "WA"
         else:
             result.Status = result.Status[:2]
@@ -234,13 +233,13 @@ class Command(BaseCommand):
         return result
 
 
-    def execute_time(self, command, result_file_path, input_file_path, output_file_path, answer_file_path,
+    def execute_time(self, command, result_file_path, input_file_path, answer_file_path,
                      time_limit, memory_limit):
-        with open(output_file_path, "w") as output_file, open(input_file_path, "r") as input_file:
-            process = subprocess.Popen(command, stdin=input_file, stdout=output_file, stderr=subprocess.DEVNULL)
+        with open(input_file_path, "r") as input_file:
+            process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             process.wait()
-            output_file.flush()
         timeout_exit_code = process.returncode
+        output = process.stdout.read().decode("utf-8").splitlines()
 
         result = ExecutionResult(None, None, None)
         lines = open(result_file_path).readlines()
@@ -272,7 +271,7 @@ class Command(BaseCommand):
             result.Status = "TL"
         elif result.Memory > memory_limit:
             result.Status = "ML"
-        elif os.system("diff -q -Z \"%s\" \"%s\" >/dev/null" % (output_file_path, answer_file_path)):
+        elif not util.lines_diff(output, open(answer_file_path).readlines()):
             result.Status = "WA"
         else:
             result.Status = "OK"
@@ -287,14 +286,13 @@ class Command(BaseCommand):
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
         file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_id(test))
-        output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
         if self.args.time_tool == 'oiejq':
             command = f'timeout -k {hard_time_limit_in_s}s -s SIGKILL {hard_time_limit_in_s}s "{timetool_path}" "{executable}"'
 
-            return self.execute_oiejq(command, test, output_file, self.get_output_file(test), time_limit, memory_limit)
+            return self.execute_oiejq(command, test, self.get_output_file(test), time_limit, memory_limit)
         elif self.args.time_tool == 'time':
             if sys.platform == 'darwin':
                 timeout_name = 'gtimeout'
@@ -307,7 +305,7 @@ class Command(BaseCommand):
 
             command = [f'{timeout_name}', '-k', f'{hard_time_limit_in_s}s', f'{hard_time_limit_in_s}s',
                        f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file, executable]
-            return self.execute_time(command, result_file, test, output_file, self.get_output_file(test), time_limit, memory_limit)
+            return self.execute_time(command, result_file, test, self.get_output_file(test), time_limit, memory_limit)
 
 
     def update_group_status(self, group_status, new_status):
