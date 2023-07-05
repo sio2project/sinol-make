@@ -61,8 +61,8 @@ class Command(BaseCommand):
                             help='use weaker compilation flags')
         parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
-        parser.add_argument('--ignore_compilation_errors', dest='ignore_compilation_errors', action='store_true',
-                            help='run compiled solutions, even if some of them did not compile')
+        parser.add_argument('--exit_on_compilation_errors', dest='exit_on_compilation_errors', action='store_true',
+                            help='exit when compilation error occurs')
 
 
     def color_memory(self, memory, limit):
@@ -185,7 +185,7 @@ class Command(BaseCommand):
         print("Compiling %d solutions..." % len(solutions))
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.map(self.compile, solutions)
-        if not self.args.ignore_compilation_errors and not all(compilation_results):
+        if self.args.exit_on_compilation_errors and not all(compilation_results):
             util.exit_with_error("\nCompilation failed.")
         return compilation_results
 

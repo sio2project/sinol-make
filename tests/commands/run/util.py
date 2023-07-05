@@ -55,5 +55,5 @@ def create_ins_outs(package_path, command):
 def set_default_args(command):
     command.args = argparse.Namespace(
         weak_compilation_flags=False,
-        ignore_compilation_errors=False
+        exit_on_compilation_errors=True
     )
