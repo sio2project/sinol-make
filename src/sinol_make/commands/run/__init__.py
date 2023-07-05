@@ -3,9 +3,10 @@
 # Version 0.6 (2021-08-29)
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
+from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
-from sinol_make.helpers import compile, compiler
+from sinol_make.helpers import compile, compiler, package_util
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
@@ -49,14 +50,7 @@ class Command(BaseCommand):
                             help='tool to measure time and memory usage (default when possible: oiejq)')
         parser.add_argument('--oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
-        parser.add_argument('--c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
-                            help='C compiler to use (default for Linux and Windows: gcc, default for Mac: gcc-9 or gcc-10)')
-        parser.add_argument('--cpp_compiler_path', type=str, default=compiler.get_cpp_compiler_path(),
-                            help='C++ compiler to use (default for Linux and Windows: g++, default for Mac: g++-9 or g++-10)')
-        parser.add_argument('--python_interpreter_path', type=str, default=compiler.get_python_interpreter_path(),
-                            help='Python interpreter to use (default: python3)')
-        parser.add_argument('--java_compiler_path', type=str, default=compiler.get_java_compiler_path(),
-                            help='Java compiler to use (default: javac)')
+        add_compilation_arguments(parser)
         parser.add_argument('--weak_compilation_flags', dest='weak_compilation_flags', action='store_true',
                             help='use weaker compilation flags')
         parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
@@ -95,8 +89,8 @@ class Command(BaseCommand):
         return int(memory_str[:-2])
 
 
-    def extract_test_no(self, test_path):
-        return os.path.split(os.path.splitext(test_path)[0])[1][3:]
+    def extract_test_id(self, test_path):
+        return os.path.split(os.path.splitext(test_path)[0])[1][len(self.ID):]
 
 
     def extract_file_name(self, file_path):
@@ -104,24 +98,11 @@ class Command(BaseCommand):
 
 
     def get_group(self, test_path):
-        return int("".join(filter(str.isdigit, self.extract_test_no(test_path))))
-
-
-    def get_test_key(self, test):
-        return (self.get_group(test), test)
-
-
-    def get_tests(self, arg_tests):
-        if arg_tests is None:
-            all_tests = ["in/%s" % test for test in os.listdir("in/")
-                         if test[-3:] == ".in"]
-            return sorted(all_tests, key=self.get_test_key)
-        else:
-            return sorted(list(set(arg_tests)), key=self.get_test_key)
+        return int("".join(filter(str.isdigit, self.extract_test_id(test_path))))
 
 
     def get_executable_key(self, executable):
-        name = self.extract_file_name(executable)
+        name = package_util.get_file_name(executable)
         value = [0, 0]
         if name[3] == 's':
             value[0] = 1
@@ -158,12 +139,8 @@ class Command(BaseCommand):
             return sorted(solutions, key=self.get_executable_key)
 
 
-    def get_executable(self, file):
-        return os.path.splitext(self.extract_file_name(file))[0] + ".e"
-
-
     def get_executables(self, args_solutions):
-        return [os.get_executable(solution) for solution in self.get_solutions(args_solutions)]
+        return [package_util.get_executable(solution) for solution in self.get_solutions(args_solutions)]
 
 
     def get_possible_score(self, groups):
@@ -190,20 +167,20 @@ class Command(BaseCommand):
 
     def compile(self, solution):
         compile_log_file = os.path.join(
-            self.COMPILATION_DIR, "%s.compile_log" % self.extract_file_name(solution))
+            self.COMPILATION_DIR, "%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
-        output = os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+        output = os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
 
         try:
             compile.compile(source_file, output, self.compilers,
                             open(compile_log_file, "w"), self.args.weak_compilation_flags)
             print(util.info("Compilation of file %s was successful."
-                            % self.extract_file_name(solution)))
+                            % package_util.get_file_name(solution)))
             return True
         except CompilationError as e:
             print(util.error("Compilation of file %s was unsuccessful."
-                             % self.extract_file_name(solution)))
-            os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
+                             % package_util.get_file_name(solution)))
+            compile.print_compile_log(compile_log_file)
             return False
 
 
@@ -291,7 +268,7 @@ class Command(BaseCommand):
         """
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
-        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_no(test))
+        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_id(test))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
@@ -437,7 +414,7 @@ class Command(BaseCommand):
                 #       print_stream(10*" ", end=" | ")
                 #   print_stream()
                 #   for test in self.tests:
-                #       print_stream("%6s" % self.extract_test_no(test), end=" | ")
+                #       print_stream("%6s" % self.extract_test_id(test), end=" | ")
                 #       for program in program_group:
                 #           result = all_results[program][self.get_group(test)][test]
                 #           status = result.Status
@@ -484,7 +461,7 @@ class Command(BaseCommand):
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-        executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+        executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
                        for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
         names = solutions
@@ -638,7 +615,7 @@ class Command(BaseCommand):
 
 
     def set_constants(self):
-        self.ID = os.path.split(os.getcwd())[-1]
+        self.ID = package_util.get_task_id()
         self.TMP_DIR = os.path.join(os.getcwd(), "cache")
         self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
         self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
@@ -649,43 +626,7 @@ class Command(BaseCommand):
 
 
     def validate_arguments(self, args):
-        for solution in self.get_solutions(None):
-            ext = os.path.splitext(solution)[1]
-            compiler = ""
-            tried = ""
-            flag = ""
-            if ext == '.c' and args.c_compiler_path is None:
-                compiler = 'C compiler'
-                flag = '--c_compiler_path'
-                if sys.platform == 'darwin':
-                    tried = 'gcc-{9,10}'
-                else:
-                    tried = 'gcc'
-            elif ext == '.cpp' and args.cpp_compiler_path is None:
-                compiler = 'C++ compiler'
-                flag = '--cpp_compiler_path'
-                if sys.platform == 'darwin':
-                    tried = 'g++-{9,10}'
-                else:
-                    tried = 'g++'
-            elif ext == '.py' and args.python_interpreter_path is None:
-                compiler = 'Python interpreter'
-                flag = '--python_interpreter_path'
-                tried = 'python3'
-            elif ext == '.java' and args.java_compiler_path is None:
-                compiler = 'Java compiler'
-                flag = '--java_compiler_path'
-                tried = 'javac'
-
-            if compiler != "":
-                util.exit_with_error('Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
-
-        compilers = {
-            'c_compiler_path': args.c_compiler_path,
-            'cpp_compiler_path': args.cpp_compiler_path,
-            'python_interpreter_path': args.python_interpreter_path,
-            'java_compiler_path': args.java_compiler_path
-        }
+        compilers = compiler.verify_compilers(args, self.get_solutions(None))
 
         timetool_path = None
         if args.time_tool == 'oiejq':
@@ -707,7 +648,7 @@ class Command(BaseCommand):
         return compilers, timetool_path
 
     def set_scores(self):
-        self.tests = self.get_tests(self.args.tests)
+        self.tests = package_util.get_tests(self.args.tests)
         self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
         self.scores = collections.defaultdict(int)
 
@@ -768,24 +709,33 @@ class Command(BaseCommand):
         self.compilers, self.timetool_path = self.validate_arguments(args)
 
         title = self.config["title"]
-        print("Task %s (%s)" % (title, self.ID))
+        print("Task: %s (tag: %s)" % (title, self.ID))
         config_time_limit = self.config["time_limit"]
         config_memory_limit = self.config["memory_limit"]
         self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
         self.memory_limit = args.ml * 1024 if args.ml is not None else config_memory_limit
         self.cpus = args.cpus or mp.cpu_count()
         if self.time_limit == config_time_limit:
-            print("Time limit (in ms):", self.time_limit)
+            print(f'Time limit: {self.time_limit} ms')
         else:
-            print("Time limit (in ms):", self.time_limit,
+            print(f'Time limit: {self.time_limit} ms',
                   util.warning(("[originally was %.1f ms]" % config_time_limit)))
         if self.memory_limit == config_memory_limit:
-            print("Memory limit (in kb):", self.memory_limit)
+            print(f'Memory limit: {self.memory_limit} kB')
         else:
-            print("Memory limit (in kb):", self.memory_limit,
+            print(f'Memory limit: {self.memory_limit} kB',
                   util.warning(("[originally was %.1f kb]" % config_memory_limit)))
 
         self.set_scores()
+
+        if len(self.tests) > 0:
+            print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
+
+            example_tests = [test for test in self.tests if self.get_group(test) == 0]
+            if len(example_tests) == len(self.tests):
+                print(util.warning('Running only on example tests.'))
+        else:
+            print(util.warning('There are no tests to run.'))
 
         solutions = self.get_solutions(self.args.solutions)
         results = self.compile_and_run(solutions)
