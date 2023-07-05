@@ -727,20 +727,20 @@ class Command(BaseCommand):
 
             if points_per_group * num_groups != 100:
                 self.scores[self.groups[-1]] += 100 - points_per_group * num_groups
+
+            print("Points will be assigned as follows:")
+            total_score = 0
+            for group in self.scores:
+                print("%2d: %3d" % (group, self.scores[group]))
+                total_score += self.scores[group]
+            if total_score != 100:
+                print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
+            print()
         else:
             for group in self.config["scores"]:
                 self.scores[group] = self.config["scores"][group]
 
         self.possible_score = self.get_possible_score(self.groups)
-
-        print("Scores:")
-        total_score = 0
-        for group in self.scores:
-            print("%2d: %3d" % (group, self.scores[group]))
-            total_score += self.scores[group]
-        if total_score != 100:
-            print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
-        print()
 
     def run(self, args):
         if not util.check_if_project():
