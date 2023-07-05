@@ -59,4 +59,3 @@ Run `sinol-make run --help` to see available flags.
 
 - Want to report a bug or request a feature? [Open an issue](https://github.com/sio2project/sinol-make/issues).
 - Want to help us build `sinol-make`? Create a Pull Request and we will gladly review it.
-

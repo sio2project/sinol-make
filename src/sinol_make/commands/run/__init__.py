@@ -90,7 +90,7 @@ class Command(BaseCommand):
 
 
     def extract_test_id(self, test_path):
-        return os.path.split(os.path.splitext(test_path)[0])[1][3:]
+        return os.path.split(os.path.splitext(test_path)[0])[1][len(self.ID):]
 
 
     def extract_file_name(self, file_path):
@@ -671,21 +671,21 @@ class Command(BaseCommand):
         self.compilers, self.timetool_path = self.validate_arguments(args)
 
         title = self.config["title"]
-        print("Task %s (%s)" % (title, self.ID))
+        print("Task: %s (tag: %s)" % (title, self.ID))
         config_time_limit = self.config["time_limit"]
         config_memory_limit = self.config["memory_limit"]
         self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
         self.memory_limit = args.ml * 1024 if args.ml is not None else config_memory_limit
         self.cpus = args.cpus or mp.cpu_count()
         if self.time_limit == config_time_limit:
-            print("Time limit (in ms):", self.time_limit)
+            print(f'Time limit: {self.time_limit} ms')
         else:
-            print("Time limit (in ms):", self.time_limit,
+            print(f'Time limit: {self.time_limit} ms',
                   util.warning(("[originally was %.1f ms]" % config_time_limit)))
         if self.memory_limit == config_memory_limit:
-            print("Memory limit (in kb):", self.memory_limit)
+            print(f'Memory limit: {self.memory_limit} kB')
         else:
-            print("Memory limit (in kb):", self.memory_limit,
+            print(f'Memory limit: {self.memory_limit} kB',
                   util.warning(("[originally was %.1f kb]" % config_memory_limit)))
         self.scores = collections.defaultdict(int)
         print("Scores:")
@@ -699,6 +699,16 @@ class Command(BaseCommand):
         print()
 
         self.tests = package_util.get_tests(args.tests)
+
+        if len(self.tests) > 0:
+            print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
+
+            example_tests = [test for test in self.tests if self.get_group(test) == 0]
+            if len(example_tests) == len(self.tests):
+                print(util.warning('Running only on example tests.'))
+        else:
+            print(util.warning('There are no tests to run.'))
+
         self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
         self.possible_score = self.get_possible_score(self.groups)
 
