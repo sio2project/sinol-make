@@ -190,14 +190,11 @@ class Command(BaseCommand):
         env = os.environ.copy()
         env["MEM_LIMIT"] = f'{memory_limit}K'
         env["MEASURE_MEM"] = "1"
-        input_file = open(input_file_path, "r")
-        output_file = open(output_file_path, "w")
-        process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=output_file, stderr=subprocess.PIPE, env=env)
-        process.wait()
+        with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
+            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=output_file, stderr=subprocess.PIPE, env=env)
+            process.wait()
+            output_file.flush()
         timeout_exit_code = process.returncode
-        input_file.close()
-        output_file.flush()
-        output_file.close()
         lines = process.stderr.read().decode("utf-8").splitlines()
 
         result = ExecutionResult(None, None, None)
@@ -239,14 +236,11 @@ class Command(BaseCommand):
 
     def execute_time(self, command, result_file_path, input_file_path, output_file_path, answer_file_path,
                      time_limit, memory_limit):
-        input_file = open(input_file_path, "r")
-        output_file = open(output_file_path, "w")
-        process = subprocess.Popen(command, stdin=input_file, stdout=output_file, stderr=subprocess.DEVNULL)
-        process.wait()
+        with open(output_file_path, "w") as output_file, open(input_file_path, "r") as input_file:
+            process = subprocess.Popen(command, stdin=input_file, stdout=output_file, stderr=subprocess.DEVNULL)
+            process.wait()
+            output_file.flush()
         timeout_exit_code = process.returncode
-        input_file.close()
-        output_file.flush()
-        output_file.close()
 
         result = ExecutionResult(None, None, None)
         lines = open(result_file_path).readlines()
