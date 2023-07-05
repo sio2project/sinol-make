@@ -60,6 +60,7 @@ def test_execution(create_package, time_tool):
 def test_calculate_points():
     os.chdir(get_simple_package_path())
     command = get_command()
+    command.scores = command.config["scores"]
 
     assert command.calculate_points({1: "OK", 2: "OK", 3: "OK", 4: "OK"}) == 100
     assert command.calculate_points({1: "OK", 2: "OK", 3: "OK", 4: "WA"}) == 75
@@ -393,4 +394,26 @@ def test_print_expected_scores_diff(capsys, create_package):
             "expected": {1: "OK", 2: "OK", 3: "OK", 5: "OK"},
             "points": 75
         }
+    }
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=["create_package"])
+def test_set_scores(create_package):
+    """
+    Test set_scores function.
+    """
+    package_path = create_package
+    command = get_command(package_path)
+    command.args = argparse.Namespace(tests=["in/abc0a.in", "in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in",
+                                             "in/abc5a.in", "in/abc6a.in"])
+    del command.config["scores"]
+    command.set_scores()
+    assert command.scores == {
+        0: 0,
+        1: 16,
+        2: 16,
+        3: 16,
+        4: 16,
+        5: 16,
+        6: 20
     }
