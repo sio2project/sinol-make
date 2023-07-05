@@ -57,7 +57,6 @@ def create_outs(package_path):
         with open(file, "r") as in_file, open(os.path.join("../out", file.replace(".in", ".out")), "w") as out_file:
             subprocess.Popen([os.path.join(package_path, "cache", "executables", "solution.e")],
                              stdin=in_file, stdout=out_file).wait()
-            out_file.flush()
     os.chdir(package_path)
 
 
