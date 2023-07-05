@@ -744,7 +744,6 @@ class Command(BaseCommand):
                 print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
                 print()
 
-
         self.possible_score = self.get_possible_score(self.groups)
 
     def run(self, args):
