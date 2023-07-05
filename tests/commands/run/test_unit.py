@@ -165,7 +165,7 @@ def test_validate_expected_scores_success():
     # Test with correct expected scores.
     command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
     results = {
-        "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+        "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}, 4: {"status": "OK", "points": 25}},
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores == results.new_expected_scores
@@ -174,7 +174,7 @@ def test_validate_expected_scores_success():
     # Test with incorrect result.
     command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
     results = {
-        "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "WA"},
+        "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}, 4: {"status": "WA", "points": 0}},
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores != results.new_expected_scores
@@ -183,10 +183,10 @@ def test_validate_expected_scores_success():
     # Test with removed solution.
     command.args = argparse.Namespace(solutions=None, tests=None)
     results = {
-        "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
-        "abc1.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "WA"},
-        "abc2.cpp": {1: "OK", 2: "WA", 3: "WA", 4: "TL"},
-        "abc3.cpp": {1: "OK", 2: "WA", 3: "WA", 4: "ML"},
+        "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}, 4: {"status": "OK", "points": 25}},
+        "abc1.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}, 4: {"status": "WA", "points": 0}},
+        "abc2.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "WA", "points": 0}, 3: {"status": "WA", "points": 0}, 4: {"status": "TL", "points": 0}},
+        "abc3.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "WA", "points": 0}, 3: {"status": "WA", "points": 0}, 4: {"status": "ML", "points": 0}},
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores != results.new_expected_scores
@@ -196,8 +196,8 @@ def test_validate_expected_scores_success():
     command.config["scores"][5] = 0
     command.args = argparse.Namespace(solutions=["prog/abc.cpp", "prog/abc5.cpp"], tests=None)
     results = {
-        "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK", 5: "WA"},
-        "abc5.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK", 5: "WA"},
+        "abc.cpp": {1: {"status": "OK", "points": 20}, 2: {"status": "OK", "points": 20}, 3: {"status": "OK", "points": 20}, 4: {"status": "OK", "points": 20}, 5: {"status": "WA", "points": 0}},
+        "abc5.cpp": {1: {"status": "OK", "points": 20}, 2: {"status": "OK", "points": 20}, 3: {"status": "OK", "points": 20}, 4: {"status": "OK", "points": 20}, 5: {"status": "WA", "points": 0}},
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores != results.new_expected_scores
@@ -207,7 +207,7 @@ def test_validate_expected_scores_success():
     # Test with removed group.
     command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
     results = {
-        "abc.cpp": {1: "OK", 2: "OK", 3: "OK"},
+        "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}},
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores != results.new_expected_scores
@@ -216,7 +216,7 @@ def test_validate_expected_scores_success():
     # Test with correct expected scores and --tests flag.
     command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=["in/abc1a.in", "in/abc2a.in"])
     results = {
-        "abc.cpp": {1: "OK", 2: "OK"},
+        "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}},
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores == results.new_expected_scores
@@ -225,12 +225,12 @@ def test_validate_expected_scores_success():
 def test_validate_expected_scores_fail(capsys):
     command = get_command()
     os.chdir(get_simple_package_path())
-    command.scores = command.config["scores"]
+    command.scores = {1: 20, 2: 20, 3: 20, 4: 20, 5: 20}
 
     # Test with missing points for group in config.
     command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
     results = {
-        "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK", 5: "OK"},
+        "abc.cpp": {1: {"status": "OK", "points": 20}, 2: {"status": "OK", "points": 20}, 3: {"status": "OK", "points": 20}, 4: {"status": "OK", "points": 20}, 5: {"status": "OK", "points": 20}},
     }
     with pytest.raises(SystemExit) as e:
         command.validate_expected_scores(results)
