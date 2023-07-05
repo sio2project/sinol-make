@@ -733,12 +733,17 @@ class Command(BaseCommand):
             for group in self.scores:
                 print("%2d: %3d" % (group, self.scores[group]))
                 total_score += self.scores[group]
-            if total_score != 100:
-                print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
             print()
         else:
+            total_score = 0
             for group in self.config["scores"]:
                 self.scores[group] = self.config["scores"][group]
+                total_score += self.scores[group]
+
+            if total_score != 100:
+                print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
+                print()
+
 
         self.possible_score = self.get_possible_score(self.groups)
 
