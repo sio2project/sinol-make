@@ -54,9 +54,10 @@ The availabe commands (see `sinol-make --help`) are:
 of CPUs. Measures the solutions' time with oiejq, unless specified otherwise. After running the solutions, it
 compares the solutions' scores with the ones saved in config.yml.
 Run `sinol-make run --help` to see available flags.
+- `sinol-make inwer` -- Verifies whether input files are correct using your "inwer.cpp" program. You can specify what inwer
+program to use, what tests to check and how many CPUs to use. Run `sinol-make inwer --help` to see available flags.
 
 ### Reporting bugs and contributing code
 
 - Want to report a bug or request a feature? [Open an issue](https://github.com/sio2project/sinol-make/issues).
 - Want to help us build `sinol-make`? Create a Pull Request and we will gladly review it.
-
