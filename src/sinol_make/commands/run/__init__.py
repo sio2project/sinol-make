@@ -50,9 +50,11 @@ class Command(BaseCommand):
                             help='tool to measure time and memory usage (default when possible: oiejq)')
         parser.add_argument('--oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
+        add_compilation_arguments(parser)
+        parser.add_argument('--weak_compilation_flags', dest='weak_compilation_flags', action='store_true',
+                            help='use weaker compilation flags')
         parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
-        add_compilation_arguments(parser)
 
 
     def color_memory(self, memory, limit):
@@ -89,6 +91,10 @@ class Command(BaseCommand):
 
     def extract_test_id(self, test_path):
         return os.path.split(os.path.splitext(test_path)[0])[1][3:]
+
+
+    def extract_file_name(self, file_path):
+        return os.path.split(file_path)[1]
 
 
     def get_group(self, test_path):
@@ -164,8 +170,10 @@ class Command(BaseCommand):
             self.COMPILATION_DIR, "%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
+
         try:
-            compile.compile(source_file, output, self.compilers, open(compile_log_file, "w"))
+            compile.compile(source_file, output, self.compilers,
+                            open(compile_log_file, "w"), self.args.weak_compilation_flags)
             print(util.info("Compilation of file %s was successful."
                             % package_util.get_file_name(solution)))
             return True

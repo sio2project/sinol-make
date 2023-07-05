@@ -21,7 +21,7 @@ def test_simple(create_package, time_tool):
     command.run(args)
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -48,10 +48,9 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 
     out = capsys.readouterr().out
     assert "Solutions were added:" in out
-    assert "abc.cpp" in out
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
 def test_apply_suggestions(create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -143,3 +142,23 @@ def test_flag_solutions(capsys, create_package, time_tool):
     assert "abc1.cpp" in out
     assert "abc2.cpp" in out
     assert "abc3.cpp" not in out
+
+
+@pytest.mark.parametrize("create_package", [get_weak_compilation_flags_package_path()], indirect=True)
+def test_weak_compilation_flags(create_package):
+    """
+    Test flag --weak-compilation-flags.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time_tool", "time"])
+    command = Command()
+
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+
+    assert e.type == SystemExit
+    assert e.value.code == 1
+
+    args = parser.parse_args(["run", "--weak_compilation_flags", "--time_tool", "time"])
+    command = Command()
+    command.run(args)

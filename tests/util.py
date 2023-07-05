@@ -16,6 +16,13 @@ def get_verify_status_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "vso")
 
 
+def get_weak_compilation_flags_package_path():
+    """
+    Get path to package for testing weak compilation flags (/test/packages/wcf)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "wcf")
+
+
 def get_inwer_package_path():
     """
     Get path to package for inwer command (/test/packages/wer)

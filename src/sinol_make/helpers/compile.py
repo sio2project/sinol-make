@@ -5,12 +5,15 @@ from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 import os, subprocess, sys
 
-
-def compile(program, output, compilers: Compilers = None, compile_log = None):
+def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False):
     """
     Compile a program
     compilers - A Compilers object with compilers to use. If None, default compilers will be used.
     """
+    gcc_compilation_flags = '-Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
+    if weak_compilation_flags:
+        gcc_compilation_flags = '-w' # Disable all warnings
+
     if compilers is None:
         compilers = Compilers()
 
@@ -18,10 +21,10 @@ def compile(program, output, compilers: Compilers = None, compile_log = None):
     arguments = []
     if ext == '.cpp':
         arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program, '-o', output] + \
-                    '--std=c++17 -O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
+                    f'--std=c++17 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
     elif ext == '.c':
         arguments = [compilers.c_compiler_path, program, '-o', output] + \
-                    '--std=c17 -O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'.split(' ')
+                    f'--std=c17 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             # TODO: Make this work on Windows

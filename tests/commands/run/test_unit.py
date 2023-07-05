@@ -41,7 +41,7 @@ def test_compile_solutions(create_package):
 def test_execution(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
-    command.args = argparse.Namespace(time_tool = time_tool)
+    command.args = argparse.Namespace(time_tool=time_tool, weak_compilation_flags=False)
     solution = "abc.cpp"
     executable = package_util.get_executable(solution)
     result = command.compile_solutions([solution])
@@ -71,7 +71,7 @@ def test_calculate_points():
 def test_run_solutions(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
-    command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool)
+    command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool, weak_compilation_flags=False)
     create_ins_outs(package_path)
     command.tests = package_util.get_tests(None)
     command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
