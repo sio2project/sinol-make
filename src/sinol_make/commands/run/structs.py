@@ -9,6 +9,13 @@ class ResultChange:
     result: str
 
 @dataclass
+class PointsChange:
+    solution: str
+    group: int
+    old_points: int
+    new_points: int
+
+@dataclass
 class ValidationResult:
     added_solutions: set
     removed_solutions: set

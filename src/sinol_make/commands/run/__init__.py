@@ -3,7 +3,7 @@
 # Version 0.6 (2021-08-29)
 import subprocess
 
-from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
+from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, PointsChange
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException
 from sinol_make.helpers import compile, compiler
@@ -644,11 +644,33 @@ class Command(BaseCommand):
                         removed_groups.add(group[0])
             elif type == "change":
                 if field[1] == "expected": # Results for at least one group has changed
-                    solution = field[0]
-                    group = field[2]
-                    old_result = change[0]
-                    result = change[1]
-                    changes.append(ResultChange(solution, group, old_result, result))
+                    if isinstance(change[0], str) and isinstance(change[1], dict):
+                        changes.append(PointsChange(
+                            solution=field[0],
+                            group=field[2],
+                            old_points=self.scores[field[2]],
+                            new_points=change[1]["points"]
+                        ))
+                    elif isinstance(change[0], dict) and isinstance(change[1], str):
+                        changes.append(PointsChange(
+                            solution=field[0],
+                            group=field[2],
+                            old_points=change[0]["points"],
+                            new_points=self.scores[field[2]]
+                        ))
+                    elif isinstance(change[0], dict) and isinstance(change[1], dict):
+                        changes.append(PointsChange(
+                            solution=field[0],
+                            group=field[2],
+                            old_points=change[0]["points"],
+                            new_points=change[1]["points"]
+                        ))
+                    else:
+                        solution = field[0]
+                        group = field[2]
+                        old_result = change[0]
+                        result = change[1]
+                        changes.append(ResultChange(solution, group, old_result, result))
 
         return ValidationResult(
             added_solutions,
@@ -676,12 +698,16 @@ class Command(BaseCommand):
         warn_if_not_empty(diff.removed_groups, "Groups were removed")
 
         for change in diff.changes:
-            if isinstance(change.result, str):
-                print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
-                                   (change.solution, change.group, change.result, change.old_result)))
-            elif isinstance(change.result, int):
-                print(util.warning("Solution %s passed group %d with %d points while it should pass with %s points." %
-                                   (change.solution, change.group, change.result, change.old_result)))
+            if isinstance(change, ResultChange):
+                if isinstance(change.result, str):
+                    print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
+                                       (change.solution, change.group, change.result, change.old_result)))
+                elif isinstance(change.result, int):
+                    print(util.warning("Solution %s passed group %d with %d points while it should pass with %s points." %
+                                       (change.solution, change.group, change.result, change.old_result)))
+            elif isinstance(change, PointsChange):
+                print(util.warning("Solution %s passed group %d with %d points while it should pass with %d points." %
+                                   (change.solution, change.group, change.new_points, change.old_points)))
 
         if diff.expected_scores == diff.new_expected_scores:
             print(util.info("Expected scores are correct!"))
