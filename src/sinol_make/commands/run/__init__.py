@@ -694,11 +694,17 @@ class Command(BaseCommand):
             def delete_group(solution, group):
                 if group in config_expected_scores[solution]["expected"]:
                     del config_expected_scores[solution]["expected"][group]
-                    config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+                    if self.checker is None:
+                        config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+                    else:
+                        config_expected_scores[solution]["points"] = self.calculate_points_checker(config_expected_scores[solution]["expected"])
 
             def set_group_result(solution, group, result):
                 config_expected_scores[solution]["expected"][group] = result
-                config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+                if self.checker is None:
+                    config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+                else:
+                    config_expected_scores[solution]["points"] = self.calculate_points_checker(config_expected_scores[solution]["expected"])
 
 
             if self.args.apply_suggestions:
@@ -846,7 +852,7 @@ class Command(BaseCommand):
 
         checker = glob.glob(os.path.join(os.getcwd(), "prog", f'{self.ID}chk.*'))
         if len(checker) != 0:
-            print(util.info("Checker found. Running correct solution first."))
+            print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
             checker_basename = os.path.basename(self.checker)
             self.checker_executable = os.path.join(self.EXECUTABLES_DIR, os.path.splitext(checker_basename)[0] + ".e")
@@ -858,6 +864,10 @@ class Command(BaseCommand):
         self.possible_score = self.get_possible_score(self.groups)
 
         if self.checker is not None:
+            checker_compilation = self.compile_solutions([self.checker])
+            if not checker_compilation[0]:
+                util.exit_with_error('Checker compilation failed.')
+
             ins = glob.glob(os.path.join(os.getcwd(), "in", f'{self.ID}*.in'))
             outs = glob.glob(os.path.join(os.getcwd(), "out", f'{self.ID}*.out'))
 
