@@ -1,6 +1,7 @@
 # Modified version of https://sinol3.dasie.mimuw.edu.pl/oij/jury/package/-/blob/master/runner.py
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
+import subprocess
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -215,11 +216,11 @@ class Command(BaseCommand):
         Checks if the output file is correct with the checker.
         Returns True if the output file is correct, False otherwise and number of points.
         """
-        checker_output_file = os.path.join(self.EXECUTIONS_DIR, name,
-                                           os.path.splitext(os.path.basename(output_file))[0] + ".chk")
-        os.system(f'{self.checker_executable} {input_file} {output_file} {correct_answer_file} >{checker_output_file}')
+        command = f'{self.checker_executable} {input_file} {output_file} {correct_answer_file}'
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        process.wait()
+        checker_output = process.communicate()[0].decode("utf-8").splitlines()
 
-        checker_output = open(checker_output_file).readlines()
         if len(checker_output) == 0:
             raise CheckerOutputException("Checker output is empty.")
 
