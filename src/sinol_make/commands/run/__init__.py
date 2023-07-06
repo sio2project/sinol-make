@@ -717,7 +717,26 @@ class Command(BaseCommand):
                 valid_input_files.append(test)
         return valid_input_files
 
+    def validate_existance_of_outputs(self):
+        """
+        Checks if all input files have corresponding output files.
+        """
+        valid_input_files = self.get_valid_input_files()
+        if len(valid_input_files) != len(self.tests):
+            missing_tests = list(set(self.tests) - set(valid_input_files))
+            missing_tests.sort()
+
+            print(util.warning('Missing output files for tests: ' + ', '.join(
+                [self.extract_file_name(test) for test in missing_tests])))
+            print(util.warning('Running only on tests with output files.'))
+            self.tests = valid_input_files
+            self.groups = self.get_groups(self.tests)
+
     def validate_tests(self):
+        """
+        Checks if there are any tests to run and prints them and checks
+        if all input files have corresponding output files.
+        """
         if len(self.tests) > 0:
             print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
 
@@ -725,16 +744,7 @@ class Command(BaseCommand):
             if len(example_tests) == len(self.tests):
                 print(util.warning('Running only on example tests.'))
 
-            valid_input_files = self.get_valid_input_files()
-            if len(valid_input_files) != len(self.tests):
-                missing_tests = list(set(self.tests) - set(valid_input_files))
-                missing_tests.sort()
-
-                print(util.warning('Missing output files for tests: ' + ', '.join(
-                    [self.extract_file_name(test) for test in missing_tests])))
-                print(util.warning('Running only on tests with output files.'))
-                self.tests = valid_input_files
-                self.groups = self.get_groups(self.tests)
+            self.validate_existance_of_outputs()
         else:
             print(util.warning('There are no tests to run.'))
 
