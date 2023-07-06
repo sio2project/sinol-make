@@ -719,7 +719,7 @@ class Command(BaseCommand):
 
     def exit(self):
         if len(self.failed_compilations) > 0:
-            util.exit_with_error('Compilation failed for %d solution(s).' % len(self.failed_compilations))
+            util.exit_with_error('Compilation failed for {cnt} solution{letter}.'.format(cnt=len(self.failed_compilations), letter='' if self.failed_compilations.empty() else 's'))
 
     def run(self, args):
         if not util.check_if_project():
