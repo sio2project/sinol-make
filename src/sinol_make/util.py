@@ -167,9 +167,11 @@ def check_for_updates(current_version) -> str | None:
     if not data_dir.is_dir():
         os.mkdir(data_dir)
 
+    # We check for new version asynchronously, so that it doesn't slow down the program.
     thread = threading.Thread(target=check_version)
     thread.start()
     version_file = data_dir.joinpath("version")
+
     if version_file.is_file():
         version = version_file.read_text()
         try:
@@ -177,13 +179,17 @@ def check_for_updates(current_version) -> str | None:
                 return version
             else:
                 return None
-        except:
+        except ValueError:
             return None
     else:
         return None
 
 
 def check_version():
+    """
+    Function that asynchronously checks for new version of sinol-make.
+    Writes the newest version to data/version file.
+    """
     try:
         request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)
     except requests.exceptions.RequestException:
