@@ -1,4 +1,7 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
+import importlib.resources
+import threading
+
 
 def get_commands():
     """
@@ -152,6 +155,74 @@ def save_config(config):
             print(warning("Found unknown fields in config.yml: " + ", ".join([str(x) for x in config])))
             # All remaining non-considered fields are appended to the end of the file.
             yaml.dump(config, config_file)
+
+
+def check_for_updates(current_version) -> str | None:
+    """
+    Function to check if there is a new version of sinol-make.
+    :param current_version: current version of sinol-make
+    :return: returns new version if there is one, None otherwise
+    """
+    data_dir = importlib.resources.files("sinol_make").joinpath("data")
+    if not data_dir.is_dir():
+        os.mkdir(data_dir)
+
+    # We check for new version asynchronously, so that it doesn't slow down the program.
+    thread = threading.Thread(target=check_version)
+    thread.start()
+    version_file = data_dir.joinpath("version")
+
+    if version_file.is_file():
+        version = version_file.read_text()
+        try:
+            if compare_versions(current_version, version) == -1:
+                return version
+            else:
+                return None
+        except ValueError:  # If the version file is corrupted, we just ignore it.
+            return None
+    else:
+        return None
+
+
+def check_version():
+    """
+    Function that asynchronously checks for new version of sinol-make.
+    Writes the newest version to data/version file.
+    """
+    try:
+        request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)
+    except requests.exceptions.RequestException:
+        return
+
+    if request.status_code != 200:
+        return
+
+    data = request.json()
+    latest_version = data["info"]["version"]
+
+    version_file = importlib.resources.files("sinol_make").joinpath("data/version")
+    version_file.write_text(latest_version)
+
+
+def compare_versions(version_a, version_b):
+    """
+    Function to compare two versions.
+    Returns 1 if version_a > version_b, 0 if version_a == version_b, -1 if version_a < version_b.
+    """
+
+    def convert(version):
+        return tuple(map(int, version.split(".")))
+
+    version_a = convert(version_a)
+    version_b = convert(version_b)
+
+    if version_a > version_b:
+        return 1
+    elif version_a == version_b:
+        return 0
+    else:
+        return -1
 
 
 def lines_diff(lines1, lines2):
