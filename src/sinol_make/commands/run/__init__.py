@@ -234,7 +234,6 @@ class Command(BaseCommand):
 
             return True, points
         elif checker_output[0].strip() == "WRONG":
-
             return False, 0
         else:
             raise CheckerOutputException("Checker output is invalid.")
@@ -889,7 +888,7 @@ class Command(BaseCommand):
             ins = set([self.extract_test_no(test) for test in ins])
             outs = set([self.extract_test_no(test) for test in outs])
             if ins != outs:
-                util.exit_with_error('In and out files do not match.')
+                util.exit_with_error('The list of names of input files is different than of output files.')
 
         solutions = self.get_solutions(self.args.solutions)
 
