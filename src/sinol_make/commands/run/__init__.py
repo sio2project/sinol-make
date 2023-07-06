@@ -156,6 +156,10 @@ class Command(BaseCommand):
         return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
 
 
+    def get_groups(self, tests):
+        return sorted(list(set([self.get_group(test) for test in tests])))
+
+
     def compile_solutions(self, solutions):
         os.makedirs(self.COMPILATION_DIR, exist_ok=True)
         os.makedirs(self.EXECUTABLES_DIR, exist_ok=True)
@@ -663,7 +667,7 @@ class Command(BaseCommand):
 
     def set_scores(self):
         self.tests = package_util.get_tests(self.args.tests)
-        self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
+        self.groups = self.get_groups(self.tests)
         self.scores = collections.defaultdict(int)
 
         if 'scores' not in self.config.keys():
@@ -700,6 +704,39 @@ class Command(BaseCommand):
                 print()
 
         self.possible_score = self.get_possible_score(self.groups)
+
+    def get_valid_input_files(self):
+        """
+        Returns list of input files that have corresponding output file.
+        """
+        output_tests = glob.glob(os.path.join(os.getcwd(), "out", "*.out"))
+        output_tests_ids = [self.extract_test_id(test) for test in output_tests]
+        valid_input_files = []
+        for test in self.tests:
+            if self.extract_test_id(test) in output_tests_ids:
+                valid_input_files.append(test)
+        return valid_input_files
+
+    def validate_tests(self):
+        if len(self.tests) > 0:
+            print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
+
+            example_tests = [test for test in self.tests if self.get_group(test) == 0]
+            if len(example_tests) == len(self.tests):
+                print(util.warning('Running only on example tests.'))
+
+            valid_input_files = self.get_valid_input_files()
+            if len(valid_input_files) != len(self.tests):
+                missing_tests = list(set(self.tests) - set(valid_input_files))
+                missing_tests.sort()
+
+                print(util.warning('Missing output files for tests: ' + ', '.join(
+                    [self.extract_file_name(test) for test in missing_tests])))
+                print(util.warning('Running only on tests with output files.'))
+                self.tests = valid_input_files
+                self.groups = self.get_groups(self.tests)
+        else:
+            print(util.warning('There are no tests to run.'))
 
     def run(self, args):
         if not util.check_if_project():
@@ -741,34 +778,7 @@ class Command(BaseCommand):
                   util.warning(("[originally was %.1f kb]" % config_memory_limit)))
 
         self.set_scores()
-
-        if len(self.tests) > 0:
-            print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
-
-            example_tests = [test for test in self.tests if self.get_group(test) == 0]
-            if len(example_tests) == len(self.tests):
-                print(util.warning('Running only on example tests.'))
-
-            output_tests = glob.glob(os.path.join(os.getcwd(), "out", "*.out"))
-            output_tests_ids = [self.extract_test_id(test) for test in output_tests]
-            valid_input_files = []
-            for test in self.tests:
-                if self.extract_test_id(test) in output_tests_ids:
-                    valid_input_files.append(test)
-
-            if len(valid_input_files) != len(self.tests):
-                missing_tests = list(set(self.tests) - set(valid_input_files))
-                missing_tests.sort()
-                print(util.warning('Missing output files for tests: ' + ', '.join([self.extract_file_name(test) for test in missing_tests])))
-                print(util.warning('Running only on tests with output files.'))
-                self.tests = valid_input_files
-                new_groups = []
-                for group in self.groups:
-                    if group in [self.get_group(test) for test in self.tests]:
-                        new_groups.append(group)
-                self.groups = new_groups
-        else:
-            print(util.warning('There are no tests to run.'))
+        self.validate_tests()
 
         solutions = self.get_solutions(self.args.solutions)
         results = self.compile_and_run(solutions)
