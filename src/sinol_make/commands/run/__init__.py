@@ -788,7 +788,7 @@ class Command(BaseCommand):
                   util.warning(("[originally was %.1f kb]" % config_memory_limit)))
 
         self.set_scores()
-        self.validate_tests()
+        self.check_are_any_tests_to_run()
 
         solutions = self.get_solutions(self.args.solutions)
         results = self.compile_and_run(solutions)
