@@ -2,6 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 import subprocess
+import glob
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, PointsChange
 from sinol_make.helpers.parsers import add_compilation_arguments
@@ -153,6 +154,10 @@ class Command(BaseCommand):
 
     def get_output_file(self, test_path):
         return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
+
+
+    def get_groups(self, tests):
+        return sorted(list(set([self.get_group(test) for test in tests])))
 
 
     def compile_solutions(self, solutions):
@@ -808,7 +813,7 @@ class Command(BaseCommand):
 
     def set_scores(self):
         self.tests = package_util.get_tests(self.args.tests)
-        self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
+        self.groups = self.get_groups(self.tests)
         self.scores = collections.defaultdict(int)
 
         if 'scores' not in self.config.keys():
@@ -845,6 +850,49 @@ class Command(BaseCommand):
                 print()
 
         self.possible_score = self.get_possible_score(self.groups)
+
+    def get_valid_input_files(self):
+        """
+        Returns list of input files that have corresponding output file.
+        """
+        output_tests = glob.glob(os.path.join(os.getcwd(), "out", "*.out"))
+        output_tests_ids = [self.extract_test_id(test) for test in output_tests]
+        valid_input_files = []
+        for test in self.tests:
+            if self.extract_test_id(test) in output_tests_ids:
+                valid_input_files.append(test)
+        return valid_input_files
+
+    def validate_existence_of_outputs(self):
+        """
+        Checks if all input files have corresponding output files.
+        """
+        valid_input_files = self.get_valid_input_files()
+        if len(valid_input_files) != len(self.tests):
+            missing_tests = list(set(self.tests) - set(valid_input_files))
+            missing_tests.sort()
+
+            print(util.warning('Missing output files for tests: ' + ', '.join(
+                [self.extract_file_name(test) for test in missing_tests])))
+            print(util.warning('Running only on tests with output files.'))
+            self.tests = valid_input_files
+            self.groups = self.get_groups(self.tests)
+
+    def check_are_any_tests_to_run(self):
+        """
+        Checks if there are any tests to run and prints them and checks
+        if all input files have corresponding output files.
+        """
+        if len(self.tests) > 0:
+            print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
+
+            example_tests = [test for test in self.tests if self.get_group(test) == 0]
+            if len(example_tests) == len(self.tests):
+                print(util.warning('Running only on example tests.'))
+
+            self.validate_existence_of_outputs()
+        else:
+            print(util.warning('There are no tests to run.'))
 
     def check_errors(self, results: dict[str, dict[str, dict[str, ExecutionResult]]]):
         error_msg = ""
@@ -909,15 +957,7 @@ class Command(BaseCommand):
             self.checker = None
 
         self.set_scores()
-
-        if len(self.tests) > 0:
-            print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
-
-            example_tests = [test for test in self.tests if self.get_group(test) == 0]
-            if len(example_tests) == len(self.tests):
-                print(util.warning('Running only on example tests.'))
-        else:
-            print(util.warning('There are no tests to run.'))
+        self.check_are_any_tests_to_run()
 
         self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
