@@ -61,8 +61,6 @@ class Command(BaseCommand):
                             help='use weaker compilation flags')
         parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
-        parser.add_argument('--exit_on_compilation_errors', dest='exit_on_compilation_errors', action='store_true',
-                            help='exit when compilation error occurs')
 
 
     def color_memory(self, memory, limit):
@@ -185,8 +183,8 @@ class Command(BaseCommand):
         print("Compiling %d solutions..." % len(solutions))
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.map(self.compile, solutions)
-        if self.args.exit_on_compilation_errors and not all(compilation_results):
-            util.exit_with_error("\nCompilation failed.")
+        if len(list(filter(lambda x: x, compilation_results))) == 0:
+            util.exit_with_error("\nNo solutions were compiled.")
         return compilation_results
 
 
@@ -721,6 +719,10 @@ class Command(BaseCommand):
 
         return compilers, timetool_path
 
+    def exit(self):
+        if len(self.failed_compilations) > 0:
+            util.exit_with_error('Compilation failed for %d solution(s).' % len(self.failed_compilations))
+
     def run(self, args):
         if not util.check_if_project():
             print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
@@ -781,3 +783,4 @@ class Command(BaseCommand):
         results = self.compile_and_run(solutions)
         validation_results = self.validate_expected_scores(results)
         self.print_expected_scores_diff(validation_results)
+        self.exit()
