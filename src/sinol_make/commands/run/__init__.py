@@ -183,8 +183,6 @@ class Command(BaseCommand):
         print("Compiling %d solutions..." % len(solutions))
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.map(self.compile, solutions)
-        if len(list(filter(lambda x: x, compilation_results))) == 0:
-            util.exit_with_error("\nNo solutions were compiled.")
         return compilation_results
 
 

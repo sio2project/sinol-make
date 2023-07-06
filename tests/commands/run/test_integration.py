@@ -146,7 +146,7 @@ def test_flag_solutions(capsys, create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_weak_compilation_flags_package_path()], indirect=True)
-def test_weak_compilation_flags(capsys, create_package):
+def test_weak_compilation_flags(create_package):
     """
     Test flag --weak-compilation-flags.
     """
@@ -157,8 +157,6 @@ def test_weak_compilation_flags(capsys, create_package):
     with pytest.raises(SystemExit) as e:
         command.run(args)
 
-    out = capsys.readouterr().out
-    assert "No solutions were compiled." in out
     assert e.type == SystemExit
     assert e.value.code == 1
 
