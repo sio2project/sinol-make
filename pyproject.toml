@@ -29,7 +29,8 @@ dependencies = [
 [project.optional-dependencies]
 tests = [
   "pytest",
-  "pytest-cov"
+  "pytest-cov",
+  "requests-mock",
 ]
 
 [project.urls]
