@@ -700,16 +700,18 @@ class Command(BaseCommand):
         warn_if_not_empty(diff.removed_groups, "Groups were removed")
 
         for change in diff.changes:
+            def print_points_change(solution, group, new_points, old_points):
+                print(util.warning("Solution %s passed group %d with %d points while it should pass with %d points." %
+                                   (solution, group, new_points, old_points)))
+
             if isinstance(change, ResultChange):
                 if isinstance(change.result, str):
                     print(util.warning("Solution %s passed group %d with status %s while it should pass with status %s." %
                                        (change.solution, change.group, change.result, change.old_result)))
                 elif isinstance(change.result, int):
-                    print(util.warning("Solution %s passed group %d with %d points while it should pass with %s points." %
-                                       (change.solution, change.group, change.result, change.old_result)))
+                    print_points_change(change.solution, change.group, change.result, change.old_result)
             elif isinstance(change, PointsChange):
-                print(util.warning("Solution %s passed group %d with %d points while it should pass with %d points." %
-                                   (change.solution, change.group, change.new_points, change.old_points)))
+                print_points_change(change.solution, change.group, change.new_points, change.old_points)
 
         if diff.expected_scores == diff.new_expected_scores:
             print(util.info("Expected scores are correct!"))
