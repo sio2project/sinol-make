@@ -732,7 +732,7 @@ class Command(BaseCommand):
             self.tests = valid_input_files
             self.groups = self.get_groups(self.tests)
 
-    def validate_tests(self):
+    def check_are_any_tests_to_run(self):
         """
         Checks if there are any tests to run and prints them and checks
         if all input files have corresponding output files.
