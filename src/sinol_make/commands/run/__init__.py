@@ -643,33 +643,36 @@ class Command(BaseCommand):
                         removed_groups.add(group[0])
             elif type == "change":
                 if field[1] == "expected": # Results for at least one group has changed
+                    solution = field[0]
+                    group = field[2]
                     if isinstance(change[0], str) and isinstance(change[1], dict):
                         changes.append(PointsChange(
-                            solution=field[0],
-                            group=field[2],
+                            solution=solution,
+                            group=group,
                             old_points=self.scores[field[2]],
                             new_points=change[1]["points"]
                         ))
                     elif isinstance(change[0], dict) and isinstance(change[1], str):
                         changes.append(PointsChange(
-                            solution=field[0],
-                            group=field[2],
+                            solution=solution,
+                            group=group,
                             old_points=change[0]["points"],
                             new_points=self.scores[field[2]]
                         ))
                     elif isinstance(change[0], dict) and isinstance(change[1], dict):
                         changes.append(PointsChange(
-                            solution=field[0],
-                            group=field[2],
+                            solution=solution,
+                            group=group,
                             old_points=change[0]["points"],
                             new_points=change[1]["points"]
                         ))
                     else:
-                        solution = field[0]
-                        group = field[2]
-                        old_result = change[0]
-                        result = change[1]
-                        changes.append(ResultChange(solution, group, old_result, result))
+                        changes.append(ResultChange(
+                            solution=solution,
+                            group=group,
+                            old_result=change[0],
+                            result=change[1]
+                        ))
 
         return ValidationResult(
             added_solutions,
