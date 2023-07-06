@@ -203,7 +203,6 @@ def check_version():
 
     version_file = importlib.resources.files("sinol_make").joinpath("data/version")
     version_file.write_text(latest_version)
-    print("finished")
 
 
 def compare_versions(version_a, version_b):
