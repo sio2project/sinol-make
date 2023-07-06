@@ -41,7 +41,7 @@ def test_compile_solutions(create_package):
 def test_execution(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
-    command.args = argparse.Namespace(time_tool=time_tool, weak_compilation_flags=False)
+    command.args.time_tool = time_tool
     solution = "abc.cpp"
     executable = package_util.get_executable(solution)
     result = command.compile_solutions([solution])

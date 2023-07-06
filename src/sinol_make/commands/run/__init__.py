@@ -161,8 +161,6 @@ class Command(BaseCommand):
         print("Compiling %d solutions..." % len(solutions))
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.map(self.compile, solutions)
-        if not all(compilation_results):
-            util.exit_with_error("\nCompilation failed.")
         return compilation_results
 
 
@@ -473,12 +471,20 @@ class Command(BaseCommand):
 
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
+        compiled_solutions = []
+        for i in range(len(solutions)):
+            if compilation_results[i]:
+                compiled_solutions.append(solutions[i])
+            else:
+                self.failed_compilations.append(solutions[i])
+        compilation_results = [result for result in compilation_results if result]
+
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
         executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
-                       for solution in solutions]
-        compiled_commands = zip(solutions, executables, compilation_results)
-        names = solutions
-        return self.run_solutions(compiled_commands, names, solutions, self.args.solutions_report)
+                       for solution in compiled_solutions]
+        compiled_commands = zip(compiled_solutions, executables, compilation_results)
+        names = compiled_solutions
+        return self.run_solutions(compiled_commands, names, compiled_solutions, self.args.solutions_report)
 
 
     def print_expected_scores(self, expected_scores):
@@ -499,6 +505,11 @@ class Command(BaseCommand):
         used_solutions = results.keys()
         if self.args.solutions == None and config_expected_scores: # If no solutions were specified, use all solutions from config
             used_solutions = config_expected_scores.keys()
+        used_solutions = list(used_solutions)
+
+        for solution in self.failed_compilations:
+            if solution in used_solutions:
+                used_solutions.remove(solution)
 
         used_groups = set()
         if self.args.tests == None and config_expected_scores: # If no groups were specified, use all groups from config
@@ -660,6 +671,11 @@ class Command(BaseCommand):
 
         return compilers, timetool_path
 
+    def exit(self):
+        if len(self.failed_compilations) > 0:
+            util.exit_with_error('Compilation failed for {cnt} solution{letter}.'.format(
+                cnt=len(self.failed_compilations), letter='' if len(self.failed_compilations) == 1 else 's'))
+
     def set_scores(self):
         self.tests = package_util.get_tests(self.args.tests)
         self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
@@ -750,7 +766,9 @@ class Command(BaseCommand):
         else:
             print(util.warning('There are no tests to run.'))
 
+        self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
         results = self.compile_and_run(solutions)
         validation_results = self.validate_expected_scores(results)
         self.print_expected_scores_diff(validation_results)
+        self.exit()
