@@ -1,4 +1,7 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
+import importlib.resources
+import threading
+
 
 def get_commands():
     """
@@ -154,15 +157,79 @@ def save_config(config):
             yaml.dump(config, config_file)
 
 
-def file_diff(file1, file2):
+def check_for_updates(current_version) -> str | None:
     """
-    Function to compare two files.
+    Function to check if there is a new version of sinol-make.
+    :param current_version: current version of sinol-make
+    :return: returns new version if there is one, None otherwise
+    """
+    data_dir = importlib.resources.files("sinol_make").joinpath("data")
+    if not data_dir.is_dir():
+        os.mkdir(data_dir)
+
+    # We check for new version asynchronously, so that it doesn't slow down the program.
+    thread = threading.Thread(target=check_version)
+    thread.start()
+    version_file = data_dir.joinpath("version")
+
+    if version_file.is_file():
+        version = version_file.read_text()
+        try:
+            if compare_versions(current_version, version) == -1:
+                return version
+            else:
+                return None
+        except ValueError:  # If the version file is corrupted, we just ignore it.
+            return None
+    else:
+        return None
+
+
+def check_version():
+    """
+    Function that asynchronously checks for new version of sinol-make.
+    Writes the newest version to data/version file.
+    """
+    try:
+        request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)
+    except requests.exceptions.RequestException:
+        return
+
+    if request.status_code != 200:
+        return
+
+    data = request.json()
+    latest_version = data["info"]["version"]
+
+    version_file = importlib.resources.files("sinol_make").joinpath("data/version")
+    version_file.write_text(latest_version)
+
+
+def compare_versions(version_a, version_b):
+    """
+    Function to compare two versions.
+    Returns 1 if version_a > version_b, 0 if version_a == version_b, -1 if version_a < version_b.
+    """
+
+    def convert(version):
+        return tuple(map(int, version.split(".")))
+
+    version_a = convert(version_a)
+    version_b = convert(version_b)
+
+    if version_a > version_b:
+        return 1
+    elif version_a == version_b:
+        return 0
+    else:
+        return -1
+
+
+def lines_diff(lines1, lines2):
+    """
+    Function to compare two lists of lines.
     Returns True if they are the same, False otherwise.
     """
-
-    lines1 = open(file1, 'r').readlines()
-    lines2 = open(file2, 'r').readlines()
-
     if len(lines1) != len(lines2):
         return False
 
@@ -171,6 +238,14 @@ def file_diff(file1, file2):
             return False
 
     return True
+
+
+def file_diff(file1, file2):
+    """
+    Function to compare two files.
+    Returns True if they are the same, False otherwise.
+    """
+    return lines_diff(open(file1).readlines(), open(file2).readlines())
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

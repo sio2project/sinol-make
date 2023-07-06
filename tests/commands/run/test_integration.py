@@ -146,3 +146,46 @@ def test_flag_solutions(capsys, create_package, time_tool):
 
     assert os.path.basename(solutions[0]) in out
     assert os.path.basename(solutions[1]) not in out
+
+
+@pytest.mark.parametrize("create_package", [get_weak_compilation_flags_package_path()], indirect=True)
+def test_weak_compilation_flags(create_package):
+    """
+    Test flag --weak-compilation-flags.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time_tool", "time"])
+    command = Command()
+
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+
+    assert e.type == SystemExit
+    assert e.value.code == 1
+
+    args = parser.parse_args(["run", "--weak_compilation_flags", "--time_tool", "time"])
+    command = Command()
+    command.run(args)
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+def test_no_scores(capsys, create_package, time_tool):
+    """
+    Test with no scores key in config.yml.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+
+    config_path = os.path.join(package_path, "config.yml")
+    config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
+    del config["scores"]
+    open(config_path, "w").write(yaml.dump(config))
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time_tool", time_tool])
+    command = Command()
+    command.run(args)
+
+    out = capsys.readouterr().out
+    assert "Scores are not defined in config.yml. Points will be assigned equally to all groups." in out

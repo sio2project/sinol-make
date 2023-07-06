@@ -3,7 +3,7 @@ import sys
 
 from sinol_make import util
 
-__version__ = "1.1.1"
+__version__ = "1.2.2"
 
 def configure_parsers():
     parser = argparse.ArgumentParser(
@@ -32,6 +32,11 @@ def main():
 
     for command in commands:
         if command.get_name() == args.command:
+            new_version = util.check_for_updates(__version__)
+            if new_version is not None:
+                print(util.warning(f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
+                                   f' You can update it by running `pip3 install sinol-make --upgrade`.'))
+
             if sys.platform == 'linux' and not util.check_oiejq():
                 print(util.warning('`oiejq` in `~/.local/bin/` not detected, installing now...'))
 
