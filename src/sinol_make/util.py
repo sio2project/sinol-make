@@ -162,7 +162,7 @@ def check_for_updates(current_version) -> str | None:
     :return: returns new version if there is one, None otherwise
     """
     try:
-        request = requests.get("https://pypi.python.org/pypi/sinol-make/json")
+        request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)
     except requests.exceptions.ConnectionError:
         return
 
