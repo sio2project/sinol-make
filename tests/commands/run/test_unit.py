@@ -397,7 +397,7 @@ def test_print_expected_scores_diff(capsys, create_package):
     }
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=["create_package"])
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
 def test_set_scores(create_package):
     """
     Test set_scores function.
@@ -417,3 +417,19 @@ def test_set_scores(create_package):
         5: 16,
         6: 20
     }
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+def test_get_valid_input_files(create_package):
+    """
+    Test get_valid_input_files function.
+    """
+    package_path = create_package
+    command = get_command(package_path)
+
+    outputs = glob.glob(os.path.join(package_path, "out", "*.out"))
+    os.unlink(outputs[0])
+    valid_inputs = command.get_valid_input_files()
+    assert len(valid_inputs) == len(outputs) - 1
+    assert os.path.basename(outputs[0].replace(".out", ".in")) not in valid_inputs
+    assert os.path.basename(outputs[1].replace(".out", ".in")) in valid_inputs
