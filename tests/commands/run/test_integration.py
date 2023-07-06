@@ -185,3 +185,29 @@ def test_no_scores(capsys, create_package, time_tool):
 
     out = capsys.readouterr().out
     assert "Scores are not defined in config.yml. Points will be assigned equally to all groups." in out
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+def test_missing_output_files(capsys, create_package):
+    """
+    Test with missing output files.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+
+    outs = glob.glob(os.path.join(package_path, "out", "*.out"))
+    outs.sort()
+    os.unlink(outs[0])
+    os.unlink(outs[1])
+    out1 = command.extract_file_name(outs[0]).replace(".out", ".in")
+    out2 = command.extract_file_name(outs[1]).replace(".out", ".in")
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time_tool", "time"])
+    command = Command()
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+    out = capsys.readouterr().out
+    assert f'Missing output files for tests: {out1}, {out2}' in out
