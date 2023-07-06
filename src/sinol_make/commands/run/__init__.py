@@ -1,11 +1,13 @@
 # Modified version of https://sinol3.dasie.mimuw.edu.pl/oij/jury/package/-/blob/master/runner.py
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
+import subprocess
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
+from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError
-from sinol_make.helpers import compile, compiler
+from sinol_make.helpers import compile, compiler, package_util
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
@@ -49,14 +51,7 @@ class Command(BaseCommand):
                             help='tool to measure time and memory usage (default when possible: oiejq)')
         parser.add_argument('--oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
-        parser.add_argument('--c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
-                            help='C compiler to use (default for Linux and Windows: gcc, default for Mac: gcc-9 or gcc-10)')
-        parser.add_argument('--cpp_compiler_path', type=str, default=compiler.get_cpp_compiler_path(),
-                            help='C++ compiler to use (default for Linux and Windows: g++, default for Mac: g++-9 or g++-10)')
-        parser.add_argument('--python_interpreter_path', type=str, default=compiler.get_python_interpreter_path(),
-                            help='Python interpreter to use (default: python3)')
-        parser.add_argument('--java_compiler_path', type=str, default=compiler.get_java_compiler_path(),
-                            help='Java compiler to use (default: javac)')
+        add_compilation_arguments(parser)
         parser.add_argument('--weak_compilation_flags', dest='weak_compilation_flags', action='store_true',
                             help='use weaker compilation flags')
         parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
@@ -95,8 +90,8 @@ class Command(BaseCommand):
         return int(memory_str[:-2])
 
 
-    def extract_test_no(self, test_path):
-        return os.path.split(os.path.splitext(test_path)[0])[1][3:]
+    def extract_test_id(self, test_path):
+        return os.path.split(os.path.splitext(test_path)[0])[1][len(self.ID):]
 
 
     def extract_file_name(self, file_path):
@@ -104,24 +99,11 @@ class Command(BaseCommand):
 
 
     def get_group(self, test_path):
-        return int("".join(filter(str.isdigit, self.extract_test_no(test_path))))
-
-
-    def get_test_key(self, test):
-        return (self.get_group(test), test)
-
-
-    def get_tests(self, arg_tests):
-        if arg_tests is None:
-            all_tests = ["in/%s" % test for test in os.listdir("in/")
-                         if test[-3:] == ".in"]
-            return sorted(all_tests, key=self.get_test_key)
-        else:
-            return sorted(list(set(arg_tests)), key=self.get_test_key)
+        return int("".join(filter(str.isdigit, self.extract_test_id(test_path))))
 
 
     def get_executable_key(self, executable):
-        name = self.extract_file_name(executable)
+        name = package_util.get_file_name(executable)
         value = [0, 0]
         if name[3] == 's':
             value[0] = 1
@@ -158,12 +140,8 @@ class Command(BaseCommand):
             return sorted(solutions, key=self.get_executable_key)
 
 
-    def get_executable(self, file):
-        return os.path.splitext(self.extract_file_name(file))[0] + ".e"
-
-
     def get_executables(self, args_solutions):
-        return [os.get_executable(solution) for solution in self.get_solutions(args_solutions)]
+        return [package_util.get_executable(solution) for solution in self.get_solutions(args_solutions)]
 
 
     def get_possible_score(self, groups):
@@ -188,39 +166,51 @@ class Command(BaseCommand):
 
     def compile(self, solution):
         compile_log_file = os.path.join(
-            self.COMPILATION_DIR, "%s.compile_log" % self.extract_file_name(solution))
+            self.COMPILATION_DIR, "%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
-        output = os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+        output = os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
 
         try:
             compile.compile(source_file, output, self.compilers,
                             open(compile_log_file, "w"), self.args.weak_compilation_flags)
             print(util.info("Compilation of file %s was successful."
-                            % self.extract_file_name(solution)))
+                            % package_util.get_file_name(solution)))
             return True
         except CompilationError as e:
             print(util.error("Compilation of file %s was unsuccessful."
-                             % self.extract_file_name(solution)))
-            os.system("head -c 500 %s" % compile_log_file) # TODO: make this work on Windows
+                             % package_util.get_file_name(solution)))
+            compile.print_compile_log(compile_log_file)
             return False
 
 
-    def execute_oiejq(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
-        timeout_exit_code = os.system(command)
-        result = ExecutionResult(None, None, None)
-        with open(result_file) as r:
-            for line in r:
-                line = line.strip()
-                if ": " in line:
-                    (key, value) = line.split(": ")[:2]
-                    if key == "Time":
-                        result.Time = self.parse_time(value)
-                    elif key == "Memory":
-                        result.Memory = self.parse_memory(value)
-                    else:
-                        setattr(result, key, value)
+    def execute_oiejq(self, command, input_file_path, answer_file_path,
+                      time_limit, memory_limit):
+        env = os.environ.copy()
+        env["MEM_LIMIT"] = f'{memory_limit}K'
+        env["MEASURE_MEM"] = "1"
+        with open(input_file_path, "r") as input_file:
+            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+            process.wait()
+        timeout_exit_code = process.returncode
+        lines = process.stderr.read().decode("utf-8").splitlines()
+        output = process.stdout.read().decode("utf-8").splitlines()
 
-        if timeout_exit_code == 35072:
+        result = ExecutionResult(None, None, None)
+
+        for line in lines:
+            line = line.strip()
+            if ": " in line:
+                (key, value) = line.split(": ")[:2]
+                if key == "Time":
+                    result.Time = self.parse_time(value)
+                elif key == "Memory":
+                    result.Memory = self.parse_memory(value)
+                else:
+                    setattr(result, key, value)
+
+        # If timeout kills the process, the exit code should be 137.
+        # But on Arch Linux it returns the negative value of the signal that killed the process.
+        if timeout_exit_code == 137 or timeout_exit_code == -9:
             result.Status = "TL"
         elif getattr(result, "Time") is not None and result.Time > time_limit:
             result.Status = "TL"
@@ -233,8 +223,7 @@ class Command(BaseCommand):
                 result.Status = "TL"
             elif result.Memory > memory_limit:
                 result.Status = "ML"
-            elif os.system("diff -q -Z %s %s >/dev/null"
-                           % (output_file, answer_file)):
+            elif not util.lines_diff(output, open(answer_file_path).readlines()):
                 result.Status = "WA"
         else:
             result.Status = result.Status[:2]
@@ -242,11 +231,16 @@ class Command(BaseCommand):
         return result
 
 
-    def execute_time(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
-        timeout_exit_code = os.system(command)
+    def execute_time(self, command, result_file_path, input_file_path, answer_file_path,
+                     time_limit, memory_limit):
+        with open(input_file_path, "r") as input_file:
+            process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            process.wait()
+        timeout_exit_code = process.returncode
+        output = process.stdout.read().decode("utf-8").splitlines()
 
         result = ExecutionResult(None, None, None)
-        lines = open(result_file).readlines()
+        lines = open(result_file_path).readlines()
         program_exit_code = None
         if len(lines) == 3:
             """
@@ -275,7 +269,7 @@ class Command(BaseCommand):
             result.Status = "TL"
         elif result.Memory > memory_limit:
             result.Status = "ML"
-        elif os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file)):
+        elif not util.lines_diff(output, open(answer_file_path).readlines()):
             result.Status = "WA"
         else:
             result.Status = "OK"
@@ -289,18 +283,14 @@ class Command(BaseCommand):
         """
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
-        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_no(test))
-        output_file = file_no_ext + ".out"
+        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_id(test))
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
         if self.args.time_tool == 'oiejq':
-            command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
-                      % (memory_limit, hard_time_limit_in_s,
-                         hard_time_limit_in_s, timetool_path,
-                         executable, test, output_file, result_file)
+            command = f'timeout -k {hard_time_limit_in_s}s -s SIGKILL {hard_time_limit_in_s}s "{timetool_path}" "{executable}"'
 
-            return self.execute_oiejq(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+            return self.execute_oiejq(command, test, self.get_output_file(test), time_limit, memory_limit)
         elif self.args.time_tool == 'time':
             if sys.platform == 'darwin':
                 timeout_name = 'gtimeout'
@@ -311,9 +301,9 @@ class Command(BaseCommand):
             elif sys.platform == 'win32' or sys.platform == 'cygwin':
                 raise Exception("Measuring time with GNU time on Windows is not supported.")
 
-            command = f'{timeout_name} -k {hard_time_limit_in_s}s {hard_time_limit_in_s}s ' \
-                      f'{time_name} -f "%U\\n%M\\n%x" -o {result_file} {executable} <{test} >{output_file}'
-            return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+            command = [f'{timeout_name}', '-k', f'{hard_time_limit_in_s}s', f'{hard_time_limit_in_s}s',
+                       f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file, executable]
+            return self.execute_time(command, result_file, test, self.get_output_file(test), time_limit, memory_limit)
 
 
     def update_group_status(self, group_status, new_status):
@@ -435,7 +425,7 @@ class Command(BaseCommand):
                 #       print_stream(10*" ", end=" | ")
                 #   print_stream()
                 #   for test in self.tests:
-                #       print_stream("%6s" % self.extract_test_no(test), end=" | ")
+                #       print_stream("%6s" % self.extract_test_id(test), end=" | ")
                 #       for program in program_group:
                 #           result = all_results[program][self.get_group(test)][test]
                 #           status = result.Status
@@ -472,10 +462,10 @@ class Command(BaseCommand):
     def calculate_points(self, results):
         points = 0
         for group, result in results.items():
-            if group != 0 and group not in self.config["scores"]:
+            if group != 0 and group not in self.scores:
                 util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
             if result == "OK" and group != 0:
-                points += self.config["scores"][group]
+                points += self.scores[group]
         return points
 
 
@@ -490,7 +480,7 @@ class Command(BaseCommand):
         compilation_results = [result for result in compilation_results if result]
 
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-        executables = [os.path.join(self.EXECUTABLES_DIR, self.get_executable(solution))
+        executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
                        for solution in compiled_solutions]
         compiled_commands = zip(compiled_solutions, executables, compilation_results)
         names = compiled_solutions
@@ -649,7 +639,7 @@ class Command(BaseCommand):
 
 
     def set_constants(self):
-        self.ID = os.path.split(os.getcwd())[-1]
+        self.ID = package_util.get_task_id()
         self.TMP_DIR = os.path.join(os.getcwd(), "cache")
         self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
         self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
@@ -660,43 +650,7 @@ class Command(BaseCommand):
 
 
     def validate_arguments(self, args):
-        for solution in self.get_solutions(None):
-            ext = os.path.splitext(solution)[1]
-            compiler = ""
-            tried = ""
-            flag = ""
-            if ext == '.c' and args.c_compiler_path is None:
-                compiler = 'C compiler'
-                flag = '--c_compiler_path'
-                if sys.platform == 'darwin':
-                    tried = 'gcc-{9,10}'
-                else:
-                    tried = 'gcc'
-            elif ext == '.cpp' and args.cpp_compiler_path is None:
-                compiler = 'C++ compiler'
-                flag = '--cpp_compiler_path'
-                if sys.platform == 'darwin':
-                    tried = 'g++-{9,10}'
-                else:
-                    tried = 'g++'
-            elif ext == '.py' and args.python_interpreter_path is None:
-                compiler = 'Python interpreter'
-                flag = '--python_interpreter_path'
-                tried = 'python3'
-            elif ext == '.java' and args.java_compiler_path is None:
-                compiler = 'Java compiler'
-                flag = '--java_compiler_path'
-                tried = 'javac'
-
-            if compiler != "":
-                util.exit_with_error('Couldn\'t find a %s. Tried %s. Try specifying a compiler with %s.' % (compiler, tried, flag))
-
-        compilers = {
-            'c_compiler_path': args.c_compiler_path,
-            'cpp_compiler_path': args.cpp_compiler_path,
-            'python_interpreter_path': args.python_interpreter_path,
-            'java_compiler_path': args.java_compiler_path
-        }
+        compilers = compiler.verify_compilers(args, self.get_solutions(None))
 
         timetool_path = None
         if args.time_tool == 'oiejq':
@@ -722,6 +676,46 @@ class Command(BaseCommand):
             util.exit_with_error('Compilation failed for {cnt} solution{letter}.'.format(
                 cnt=len(self.failed_compilations), letter='' if len(self.failed_compilations) == 1 else 's'))
 
+    def set_scores(self):
+        self.tests = package_util.get_tests(self.args.tests)
+        self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
+        self.scores = collections.defaultdict(int)
+
+        if 'scores' not in self.config.keys():
+            print(util.warning('Scores are not defined in config.yml. Points will be assigned equally to all groups.'))
+            num_groups = len(self.groups)
+            self.scores = {}
+            if self.groups[0] == 0:
+                num_groups -= 1
+                self.scores[0] = 0
+
+            points_per_group = 100 // num_groups
+            for group in self.groups:
+                if group == 0:
+                    continue
+                self.scores[group] = points_per_group
+
+            if points_per_group * num_groups != 100:
+                self.scores[self.groups[-1]] += 100 - points_per_group * num_groups
+
+            print("Points will be assigned as follows:")
+            total_score = 0
+            for group in self.scores:
+                print("%2d: %3d" % (group, self.scores[group]))
+                total_score += self.scores[group]
+            print()
+        else:
+            total_score = 0
+            for group in self.config["scores"]:
+                self.scores[group] = self.config["scores"][group]
+                total_score += self.scores[group]
+
+            if total_score != 100:
+                print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
+                print()
+
+        self.possible_score = self.get_possible_score(self.groups)
+
     def run(self, args):
         if not util.check_if_project():
             print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
@@ -740,44 +734,39 @@ class Command(BaseCommand):
             util.exit_with_error('Time limit was not defined in config.yml.')
         if not 'memory_limit' in self.config.keys():
             util.exit_with_error('Memory limit was not defined in config.yml.')
-        if not 'scores' in self.config.keys():
-            util.exit_with_error('Scores were not defined in config.yml.')
 
         self.compilers, self.timetool_path = self.validate_arguments(args)
 
         title = self.config["title"]
-        print("Task %s (%s)" % (title, self.ID))
+        print("Task: %s (tag: %s)" % (title, self.ID))
         config_time_limit = self.config["time_limit"]
         config_memory_limit = self.config["memory_limit"]
         self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
         self.memory_limit = args.ml * 1024 if args.ml is not None else config_memory_limit
         self.cpus = args.cpus or mp.cpu_count()
         if self.time_limit == config_time_limit:
-            print("Time limit (in ms):", self.time_limit)
+            print(f'Time limit: {self.time_limit} ms')
         else:
-            print("Time limit (in ms):", self.time_limit,
+            print(f'Time limit: {self.time_limit} ms',
                   util.warning(("[originally was %.1f ms]" % config_time_limit)))
         if self.memory_limit == config_memory_limit:
-            print("Memory limit (in kb):", self.memory_limit)
+            print(f'Memory limit: {self.memory_limit} kB')
         else:
-            print("Memory limit (in kb):", self.memory_limit,
+            print(f'Memory limit: {self.memory_limit} kB',
                   util.warning(("[originally was %.1f kb]" % config_memory_limit)))
-        self.scores = collections.defaultdict(int)
-        print("Scores:")
-        total_score = 0
-        for group in self.config["scores"]:
-            self.scores[group] = self.config["scores"][group]
-            print("%2d: %3d" % (group, self.scores[group]))
-            total_score += self.scores[group]
-        if total_score != 100:
-            print(util.warning("WARN: Scores sum up to %d (instead of 100)." % total_score))
-        print()
 
-        self.tests = self.get_tests(args.tests)
-        self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
-        self.possible_score = self.get_possible_score(self.groups)
+        self.set_scores()
+
+        if len(self.tests) > 0:
+            print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
+
+            example_tests = [test for test in self.tests if self.get_group(test) == 0]
+            if len(example_tests) == len(self.tests):
+                print(util.warning('Running only on example tests.'))
+        else:
+            print(util.warning('There are no tests to run.'))
+
         self.failed_compilations = []
-
         solutions = self.get_solutions(self.args.solutions)
         results = self.compile_and_run(solutions)
         validation_results = self.validate_expected_scores(results)
