@@ -36,12 +36,15 @@ class ExecutionResult:
     Memory: int
     # Points for this test
     Points: int
+    # Error message
+    Error: str
 
     def __init__(self, status=None):
         self.Status = status
         self.Time = None
         self.Memory = None
         self.Points = 0
+        self.Error = None
 
 @dataclass
 class ExecutionData:

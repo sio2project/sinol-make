@@ -270,9 +270,13 @@ class Command(BaseCommand):
             elif result.Memory > memory_limit:
                 result.Status = "ML"
             else:
-                correct, result.Points = self.check_output(name, input_file_path, output_file_path, output, answer_file_path)
-                if not correct:
-                    result.Status = "WA"
+                try:
+                    correct, result.Points = self.check_output(name, input_file_path, output_file_path, output, answer_file_path)
+                    if not correct:
+                        result.Status = "WA"
+                except CheckerOutputException as e:
+                    result.Status = "CE"
+                    result.Error = e.message
         else:
             result.Status = result.Status[:2]
 
@@ -318,11 +322,16 @@ class Command(BaseCommand):
         elif result.Memory > memory_limit:
             result.Status = "ML"
         else:
-            correct, result.Points = self.check_output(name, input_file_path, output_file_path, output, answer_file_path)
-            if correct:
-                result.Status = "OK"
-            else:
-                result.Status = "WA"
+            try:
+                correct, result.Points = self.check_output(name, input_file_path, output_file_path, output,
+                                                           answer_file_path)
+                if correct:
+                    result.Status = "OK"
+                else:
+                    result.Status = "WA"
+            except CheckerOutputException as e:
+                result.Status = "CE"
+                result.Error = e.message
 
         return result
 
@@ -358,7 +367,7 @@ class Command(BaseCommand):
 
 
     def update_group_status(self, group_status, new_status):
-        order = ["TL", "ML", "RE", "WA", "OK"]
+        order = ["CE", "TL", "ML", "RE", "WA", "OK"]
         if order.index(new_status) < order.index(group_status):
             return new_status
         return group_status
@@ -837,6 +846,16 @@ class Command(BaseCommand):
 
         self.possible_score = self.get_possible_score(self.groups)
 
+    def check_errors(self, results: dict[str, dict[str, dict[str, ExecutionResult]]]):
+        error_msg = ""
+        for solution in results:
+            for group in results[solution]:
+                for test in results[solution][group]:
+                    if results[solution][group][test].Status == "CE":
+                        error_msg += f'Solution {solution} had an error on test {test}: {results[solution][group][test].Error}\n'
+        if error_msg != "":
+            util.exit_with_error(error_msg)
+
     def run(self, args):
         if not util.check_if_project():
             print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
@@ -903,7 +922,8 @@ class Command(BaseCommand):
         self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
 
-        results, _ = self.compile_and_run(solutions)
+        results, all_results = self.compile_and_run(solutions)
+        self.check_errors(all_results)
         validation_results = self.validate_expected_scores(results)
         self.print_expected_scores_diff(validation_results)
         self.exit()
