@@ -9,6 +9,13 @@ class ResultChange:
     result: str
 
 @dataclass
+class PointsChange:
+    solution: str
+    group: int
+    old_points: int
+    new_points: int
+
+@dataclass
 class ValidationResult:
     added_solutions: set
     removed_solutions: set
@@ -27,6 +34,17 @@ class ExecutionResult:
     Time: float
     # Memory in KB
     Memory: int
+    # Points for this test
+    Points: int
+    # Error message
+    Error: str
+
+    def __init__(self, status=None):
+        self.Status = status
+        self.Time = None
+        self.Memory = None
+        self.Points = 0
+        self.Error = None
 
 @dataclass
 class ExecutionData:

@@ -7,6 +7,7 @@ from sinol_make.structs.compiler_structs import Compilers
 from ...util import *
 from sinol_make.commands.run import Command
 from sinol_make.helpers import compiler
+from sinol_make.helpers import compile
 
 
 def get_command(path = None):
@@ -25,6 +26,7 @@ def get_command(path = None):
         java_compiler_path=compiler.get_java_compiler_path()
     )
     command.config = yaml.load(open(os.path.join(path, "config.yml"), "r"), Loader=yaml.FullLoader)
+    command.checker = None
     command.failed_compilations = []
     set_default_args(command)
     return command
