@@ -717,7 +717,7 @@ class Command(BaseCommand):
                 valid_input_files.append(test)
         return valid_input_files
 
-    def validate_existance_of_outputs(self):
+    def validate_existence_of_outputs(self):
         """
         Checks if all input files have corresponding output files.
         """
@@ -744,7 +744,7 @@ class Command(BaseCommand):
             if len(example_tests) == len(self.tests):
                 print(util.warning('Running only on example tests.'))
 
-            self.validate_existance_of_outputs()
+            self.validate_existence_of_outputs()
         else:
             print(util.warning('There are no tests to run.'))
 
