@@ -179,7 +179,7 @@ def check_for_updates(current_version) -> str | None:
                 return version
             else:
                 return None
-        except ValueError:
+        except ValueError:  # If the version file is corrupted, we just ignore it.
             return None
     else:
         return None
