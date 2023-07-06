@@ -1,4 +1,6 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
+import importlib.resources
+import threading
 
 
 def get_commands():
@@ -161,6 +163,27 @@ def check_for_updates(current_version) -> str | None:
     :param current_version: current version of sinol-make
     :return: returns new version if there is one, None otherwise
     """
+    data_dir = importlib.resources.files("sinol_make").joinpath("data")
+    if not data_dir.is_dir():
+        os.mkdir(data_dir)
+
+    thread = threading.Thread(target=check_version)
+    thread.start()
+    version_file = data_dir.joinpath("version")
+    if version_file.is_file():
+        version = version_file.read_text()
+        try:
+            if compare_versions(current_version, version) == -1:
+                return version
+            else:
+                return None
+        except:
+            return None
+    else:
+        return None
+
+
+def check_version():
     try:
         request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)
     except requests.exceptions.RequestException:
@@ -172,10 +195,9 @@ def check_for_updates(current_version) -> str | None:
     data = request.json()
     latest_version = data["info"]["version"]
 
-    if compare_versions(current_version, latest_version) == -1:
-        return latest_version
-    else:
-        return None
+    version_file = importlib.resources.files("sinol_make").joinpath("data/version")
+    version_file.write_text(latest_version)
+    print("finished")
 
 
 def compare_versions(version_a, version_b):
