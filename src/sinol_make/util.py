@@ -163,7 +163,7 @@ def check_for_updates(current_version) -> str | None:
     """
     try:
         request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.RequestException:
         return
 
     if request.status_code != 200:
