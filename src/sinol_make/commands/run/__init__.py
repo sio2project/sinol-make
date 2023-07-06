@@ -2,6 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 import subprocess
+import glob
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
 from sinol_make.helpers.parsers import add_compilation_arguments
@@ -747,6 +748,25 @@ class Command(BaseCommand):
             example_tests = [test for test in self.tests if self.get_group(test) == 0]
             if len(example_tests) == len(self.tests):
                 print(util.warning('Running only on example tests.'))
+
+            output_tests = glob.glob(os.path.join(os.getcwd(), "out", "*.out"))
+            output_tests_ids = [self.extract_test_id(test) for test in output_tests]
+            valid_input_files = []
+            for test in self.tests:
+                if self.extract_test_id(test) in output_tests_ids:
+                    valid_input_files.append(test)
+
+            if len(valid_input_files) != len(self.tests):
+                missing_tests = list(set(self.tests) - set(valid_input_files))
+                missing_tests.sort()
+                print(util.warning('Missing output files for tests: ' + ', '.join([self.extract_file_name(test) for test in missing_tests])))
+                print(util.warning('Running only on tests with output files.'))
+                self.tests = valid_input_files
+                new_groups = []
+                for group in self.groups:
+                    if group in [self.get_group(test) for test in self.tests]:
+                        new_groups.append(group)
+                self.groups = new_groups
         else:
             print(util.warning('There are no tests to run.'))
 
