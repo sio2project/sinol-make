@@ -426,10 +426,12 @@ def test_get_valid_input_files(create_package):
     """
     package_path = create_package
     command = get_command(package_path)
+    create_ins_outs(package_path)
+    command.tests = package_util.get_tests(None)
 
     outputs = glob.glob(os.path.join(package_path, "out", "*.out"))
     os.unlink(outputs[0])
     valid_inputs = command.get_valid_input_files()
     assert len(valid_inputs) == len(outputs) - 1
-    assert os.path.basename(outputs[0].replace(".out", ".in")) not in valid_inputs
-    assert os.path.basename(outputs[1].replace(".out", ".in")) in valid_inputs
+    assert "in/" + os.path.basename(outputs[0].replace(".out", ".in")) not in valid_inputs
+    assert "in/" + os.path.basename(outputs[1].replace(".out", ".in")) in valid_inputs
