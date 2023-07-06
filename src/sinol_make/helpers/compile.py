@@ -7,6 +7,14 @@ def compile(program, output, compilers = None, compile_log = None):
     Compile a program
     compilers - A dictionary of compilers to use. If not set, the default compilers will be used
     """
+    if compilers is None:
+        compilers = {
+            'c_compiler_path': compiler.get_c_compiler_path(),
+            'cpp_compiler_path': compiler.get_cpp_compiler_path(),
+            'python_interpreter_path': compiler.get_python_interpreter_path(),
+            'java_compiler_path': compiler.get_java_compiler_path()
+        }
+
     ext = os.path.splitext(program)[1]
     arguments = []
     if ext == '.cpp':

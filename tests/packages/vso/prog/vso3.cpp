@@ -19,6 +19,9 @@ int main() {
         vector<int*> v;
 		for (int i = 0; i <= 10000; i++) {
 			int *tmp = new int[1000];
+			for (int j = 0; j <= 1000; j++) {
+                tmp[j] = rnd();
+            }
 			v.push_back(tmp);
 		}
 		cout << a + b;

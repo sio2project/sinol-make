@@ -5,6 +5,7 @@ import yaml
 from ...util import *
 from sinol_make.commands.run import Command
 from sinol_make.helpers import compiler
+from sinol_make.helpers import compile
 
 def get_command(path = None):
     """
@@ -26,25 +27,38 @@ def get_command(path = None):
     command.checker = None
     return command
 
-def create_ins(package_path, command):
-    result = command.compile_solutions(["abcingen.cpp"])
-    assert result == [True]
-
+def create_ins(package_path):
+    """
+    Create .in files for package.
+    """
+    ingen = glob.glob(os.path.join(package_path, "prog", "*ingen.*"))[0]
+    ingen_executable = os.path.join(package_path, "cache", "executables", "ingen.e")
+    os.makedirs(os.path.join(package_path, "cache", "executables"), exist_ok=True)
+    assert compile.compile(ingen, ingen_executable)
     os.chdir(os.path.join(package_path, "in"))
-    os.system("../cache/executables/abcingen.e")
+    os.system("../cache/executables/ingen.e")
     os.chdir(package_path)
 
 
-def create_outs(package_path, command):
-    result = command.compile_solutions(["abc.cpp"])
-    assert result == [True]
-
+def create_outs(package_path):
+    """
+    Create .out files for package.
+    """
+    solution = glob.glob(os.path.join(package_path, "prog", "???.*"))[0]
+    solution_executable = os.path.join(package_path, "cache", "executables", "solution.e")
+    os.makedirs(os.path.join(package_path, "cache", "executables"), exist_ok=True)
+    assert compile.compile(solution, solution_executable)
     os.chdir(os.path.join(package_path, "in"))
     for file in glob.glob("*.in"):
-        os.system(f'{os.path.join(command.EXECUTABLES_DIR, "abc.e")} < {file} > ../out/{file.replace(".in", ".out")}')
+        os.system(f'{os.path.join(package_path, "cache", "executables", "solution.e")} < {file} > ../out/{file.replace(".in", ".out")}')
     os.chdir(package_path)
 
 
-def create_ins_outs(package_path, command):
-    create_ins(package_path, command)
-    create_outs(package_path, command)
+def create_ins_outs(package_path):
+    """
+    Create .in and .out files for package.
+    """
+    create_ins(package_path)
+    checker = glob.glob(os.path.join(package_path, "prog", "???chk.*"))
+    if len(checker) == 0:
+        create_outs(package_path)
