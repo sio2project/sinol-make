@@ -53,9 +53,10 @@ class Command(BaseCommand):
         output_dir = os.path.join(os.getcwd(), 'cache', 'executions', execution.test_name)
         os.makedirs(output_dir, exist_ok=True)
 
-        command = f'{execution.inwer_exe_path} < {execution.test_path}'
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        process.wait()
+        command = [execution.inwer_exe_path]
+        with open(execution.test_path, 'r') as test:
+            process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process.wait()
         exit_code = process.returncode
         out, _ = process.communicate()
 

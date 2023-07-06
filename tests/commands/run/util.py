@@ -25,11 +25,12 @@ def get_command(path = None):
         java_compiler_path=compiler.get_java_compiler_path()
     )
     command.config = yaml.load(open(os.path.join(path, "config.yml"), "r"), Loader=yaml.FullLoader)
+    command.failed_compilations = []
     set_default_args(command)
     return command
 
 
 def set_default_args(command):
     command.args = argparse.Namespace(
-        weak_compilation_flags=False
+        weak_compilation_flags=False,
     )

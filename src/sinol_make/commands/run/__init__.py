@@ -1,6 +1,7 @@
 # Modified version of https://sinol3.dasie.mimuw.edu.pl/oij/jury/package/-/blob/master/runner.py
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
+import subprocess
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData
 from sinol_make.helpers.parsers import add_compilation_arguments
@@ -160,8 +161,6 @@ class Command(BaseCommand):
         print("Compiling %d solutions..." % len(solutions))
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.map(self.compile, solutions)
-        if not all(compilation_results):
-            util.exit_with_error("\nCompilation failed.")
         return compilation_results
 
 
@@ -184,22 +183,34 @@ class Command(BaseCommand):
             return False
 
 
-    def execute_oiejq(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
-        timeout_exit_code = os.system(command)
-        result = ExecutionResult(None, None, None)
-        with open(result_file) as r:
-            for line in r:
-                line = line.strip()
-                if ": " in line:
-                    (key, value) = line.split(": ")[:2]
-                    if key == "Time":
-                        result.Time = self.parse_time(value)
-                    elif key == "Memory":
-                        result.Memory = self.parse_memory(value)
-                    else:
-                        setattr(result, key, value)
+    def execute_oiejq(self, command, input_file_path, answer_file_path,
+                      time_limit, memory_limit):
+        env = os.environ.copy()
+        env["MEM_LIMIT"] = f'{memory_limit}K'
+        env["MEASURE_MEM"] = "1"
+        with open(input_file_path, "r") as input_file:
+            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+            process.wait()
+        timeout_exit_code = process.returncode
+        lines = process.stderr.read().decode("utf-8").splitlines()
+        output = process.stdout.read().decode("utf-8").splitlines()
 
-        if timeout_exit_code == 35072:
+        result = ExecutionResult(None, None, None)
+
+        for line in lines:
+            line = line.strip()
+            if ": " in line:
+                (key, value) = line.split(": ")[:2]
+                if key == "Time":
+                    result.Time = self.parse_time(value)
+                elif key == "Memory":
+                    result.Memory = self.parse_memory(value)
+                else:
+                    setattr(result, key, value)
+
+        # If timeout kills the process, the exit code should be 137.
+        # But on Arch Linux it returns the negative value of the signal that killed the process.
+        if timeout_exit_code == 137 or timeout_exit_code == -9:
             result.Status = "TL"
         elif getattr(result, "Time") is not None and result.Time > time_limit:
             result.Status = "TL"
@@ -212,8 +223,7 @@ class Command(BaseCommand):
                 result.Status = "TL"
             elif result.Memory > memory_limit:
                 result.Status = "ML"
-            elif os.system("diff -q -Z %s %s >/dev/null"
-                           % (output_file, answer_file)):
+            elif not util.lines_diff(output, open(answer_file_path).readlines()):
                 result.Status = "WA"
         else:
             result.Status = result.Status[:2]
@@ -221,11 +231,16 @@ class Command(BaseCommand):
         return result
 
 
-    def execute_time(self, command, result_file, output_file, answer_file, time_limit, memory_limit):
-        timeout_exit_code = os.system(command)
+    def execute_time(self, command, result_file_path, input_file_path, answer_file_path,
+                     time_limit, memory_limit):
+        with open(input_file_path, "r") as input_file:
+            process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            process.wait()
+        timeout_exit_code = process.returncode
+        output = process.stdout.read().decode("utf-8").splitlines()
 
         result = ExecutionResult(None, None, None)
-        lines = open(result_file).readlines()
+        lines = open(result_file_path).readlines()
         program_exit_code = None
         if len(lines) == 3:
             """
@@ -254,7 +269,7 @@ class Command(BaseCommand):
             result.Status = "TL"
         elif result.Memory > memory_limit:
             result.Status = "ML"
-        elif os.system("diff -q -Z %s %s >/dev/null" % (output_file, answer_file)):
+        elif not util.lines_diff(output, open(answer_file_path).readlines()):
             result.Status = "WA"
         else:
             result.Status = "OK"
@@ -269,17 +284,13 @@ class Command(BaseCommand):
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
         file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_id(test))
-        output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
         if self.args.time_tool == 'oiejq':
-            command = "MEM_LIMIT=%sK MEASURE_MEM=true timeout -k %ds -s SIGKILL %ds %s %s <%s >%s 2>%s" \
-                      % (memory_limit, hard_time_limit_in_s,
-                         hard_time_limit_in_s, timetool_path,
-                         executable, test, output_file, result_file)
+            command = f'timeout -k {hard_time_limit_in_s}s -s SIGKILL {hard_time_limit_in_s}s "{timetool_path}" "{executable}"'
 
-            return self.execute_oiejq(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+            return self.execute_oiejq(command, test, self.get_output_file(test), time_limit, memory_limit)
         elif self.args.time_tool == 'time':
             if sys.platform == 'darwin':
                 timeout_name = 'gtimeout'
@@ -290,9 +301,9 @@ class Command(BaseCommand):
             elif sys.platform == 'win32' or sys.platform == 'cygwin':
                 raise Exception("Measuring time with GNU time on Windows is not supported.")
 
-            command = f'{timeout_name} -k {hard_time_limit_in_s}s {hard_time_limit_in_s}s ' \
-                      f'{time_name} -f "%U\\n%M\\n%x" -o {result_file} {executable} <{test} >{output_file} 2>/dev/null'
-            return self.execute_time(command, result_file, output_file, self.get_output_file(test), time_limit, memory_limit)
+            command = [f'{timeout_name}', '-k', f'{hard_time_limit_in_s}s', f'{hard_time_limit_in_s}s',
+                       f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file, executable]
+            return self.execute_time(command, result_file, test, self.get_output_file(test), time_limit, memory_limit)
 
 
     def update_group_status(self, group_status, new_status):
@@ -460,12 +471,20 @@ class Command(BaseCommand):
 
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
+        compiled_solutions = []
+        for i in range(len(solutions)):
+            if compilation_results[i]:
+                compiled_solutions.append(solutions[i])
+            else:
+                self.failed_compilations.append(solutions[i])
+        compilation_results = [result for result in compilation_results if result]
+
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
         executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
-                       for solution in solutions]
-        compiled_commands = zip(solutions, executables, compilation_results)
-        names = solutions
-        return self.run_solutions(compiled_commands, names, solutions, self.args.solutions_report)
+                       for solution in compiled_solutions]
+        compiled_commands = zip(compiled_solutions, executables, compilation_results)
+        names = compiled_solutions
+        return self.run_solutions(compiled_commands, names, compiled_solutions, self.args.solutions_report)
 
 
     def print_expected_scores(self, expected_scores):
@@ -486,6 +505,11 @@ class Command(BaseCommand):
         used_solutions = results.keys()
         if self.args.solutions == None and config_expected_scores: # If no solutions were specified, use all solutions from config
             used_solutions = config_expected_scores.keys()
+        used_solutions = list(used_solutions)
+
+        for solution in self.failed_compilations:
+            if solution in used_solutions:
+                used_solutions.remove(solution)
 
         used_groups = set()
         if self.args.tests == None and config_expected_scores: # If no groups were specified, use all groups from config
@@ -647,6 +671,11 @@ class Command(BaseCommand):
 
         return compilers, timetool_path
 
+    def exit(self):
+        if len(self.failed_compilations) > 0:
+            util.exit_with_error('Compilation failed for {cnt} solution{letter}.'.format(
+                cnt=len(self.failed_compilations), letter='' if len(self.failed_compilations) == 1 else 's'))
+
     def set_scores(self):
         self.tests = package_util.get_tests(self.args.tests)
         self.groups = list(sorted(set([self.get_group(test) for test in self.tests])))
@@ -737,7 +766,9 @@ class Command(BaseCommand):
         else:
             print(util.warning('There are no tests to run.'))
 
+        self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
         results = self.compile_and_run(solutions)
         validation_results = self.validate_expected_scores(results)
         self.print_expected_scores_diff(validation_results)
+        self.exit()
