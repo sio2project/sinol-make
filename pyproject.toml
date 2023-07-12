@@ -20,11 +20,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-	"argparse",
+    "argparse",
     "argcomplete",
-	"requests",
-	"PyYAML",
-	"dictdiffer"
+    "requests",
+    "PyYAML",
+    "dictdiffer"
 ]
 
 [project.optional-dependencies]
