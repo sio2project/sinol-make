@@ -48,6 +48,8 @@ class Command(BaseCommand):
                             help='hide memory usage in report')
         parser.add_argument('--solutions_report', type=str,
                             help='file to store report from solution executions (in markdown)')
+        parser.add_argument('--extended_table', dest='extended_table', action='store_true',
+                            help='show a second table with more details about the solutions')
         parser.add_argument('--time_tool', choices=['oiejq', 'time'], default=default_timetool,
                             help='tool to measure time and memory usage (default when possible: oiejq)')
         parser.add_argument('--oiejq_path', type=str,
@@ -406,13 +408,12 @@ class Command(BaseCommand):
                     print(*values, end=end)
 
             if i != 0 and output_file is None:
-                # TODO: always display both tables
-                # if self.args.verbose:
-                #   cursor_delta = len(self.tests) + len(self.groups)+ 9
-                #   if not self.args.hide_memory:
-                #       cursor_delta += len(self.tests)
-                # else:
-                cursor_delta = len(self.groups) + 7
+                if self.args.extended_table:
+                    cursor_delta = len(self.tests) + len(self.groups)+ 9
+                    if not self.args.hide_memory:
+                        cursor_delta += len(self.tests)
+                else:
+                    cursor_delta = len(self.groups) + 7
                 number_of_rows = (len(solutions) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
                 sys.stdout.write('\033[%dA' % (cursor_delta * number_of_rows + 1))
             program_scores = collections.defaultdict(int)
@@ -488,29 +489,28 @@ class Command(BaseCommand):
                                            if program_mem < 2 * self.memory_limit and program_mem >= 0
                                            else "   "+7*'-'), end=" | ")
                 print_stream()
-                # TODO: always display both tables
-                # if self.args.verbose:
-                #   print_stream(6*" ", end=" | ")
-                #   for program in program_group:
-                #       print_stream(10*" ", end=" | ")
-                #   print_stream()
-                #   for test in self.tests:
-                #       print_stream("%6s" % self.extract_test_id(test), end=" | ")
-                #       for program in program_group:
-                #           result = all_results[program][self.get_group(test)][test]
-                #           status = result.Status
-                #           if status == "  ": print_stream(10*' ', end=" | ")
-                #           else:
-                #               print_stream("%3s" % self.colorize_status(status),
-                #                   ("%17s" % self.color_time(result.Time, self.time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
-                #       print_stream()
-                #       if not self.args.hide_memory:
-                #           print_stream(6*" ", end=" | ")
-                #           for program in program_group:
-                #               result = all_results[program][self.get_group(test)][test]
-                #               print_stream(("%20s" % self.color_memory(result.Memory, self.memory_limit))  if getattr(result, "Memory") is not None else 10*" ", end=" | ")
-                #           print_stream()
-                #   print_stream()
+                if self.args.extended_table:
+                    print_stream(6*" ", end=" | ")
+                    for program in program_group:
+                        print_stream(10*" ", end=" | ")
+                    print_stream()
+                    for test in self.tests:
+                        print_stream("%6s" % self.extract_test_id(test), end=" | ")
+                        for program in program_group:
+                            result = all_results[program][self.get_group(test)][test]
+                            status = result.Status
+                            if status == "  ": print_stream(10*' ', end=" | ")
+                            else:
+                                print_stream("%3s" % self.colorize_status(status),
+                                            ("%17s" % self.color_time(result.Time, self.time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
+                        print_stream()
+                        if not self.args.hide_memory:
+                            print_stream(6*" ", end=" | ")
+                            for program in program_group:
+                                result = all_results[program][self.get_group(test)][test]
+                                print_stream(("%20s" % self.color_memory(result.Memory, self.memory_limit))  if getattr(result, "Memory") is not None else 10*" ", end=" | ")
+                            print_stream()
+                    print_stream()
                 print_stream(10*len(program_group)*' ')
 
             if output_file is not None:
