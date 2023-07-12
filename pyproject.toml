@@ -21,6 +21,7 @@ classifiers = [
 ]
 dependencies = [
 	"argparse",
+    "argcomplete",
 	"requests",
 	"PyYAML",
 	"dictdiffer"
@@ -28,9 +29,9 @@ dependencies = [
 
 [project.optional-dependencies]
 tests = [
-  "pytest",
-  "pytest-cov",
-  "requests-mock",
+    "pytest",
+    "pytest-cov",
+    "requests-mock",
 ]
 
 [project.urls]
