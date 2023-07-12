@@ -88,25 +88,25 @@ def verify_compilers(args: argparse.Namespace, solutions: list[str]) -> Compiler
         flag = ""
         if ext == '.c' and args.c_compiler_path is None:
             compiler = 'C compiler'
-            flag = '--c_compiler_path'
+            flag = '--c-compiler-path'
             if sys.platform == 'darwin':
                 tried = 'gcc-{9,10}'
             else:
                 tried = 'gcc'
         elif ext == '.cpp' and args.cpp_compiler_path is None:
             compiler = 'C++ compiler'
-            flag = '--cpp_compiler_path'
+            flag = '--cpp-compiler-path'
             if sys.platform == 'darwin':
                 tried = 'g++-{9,10}'
             else:
                 tried = 'g++'
         elif ext == '.py' and args.python_interpreter_path is None:
             compiler = 'Python interpreter'
-            flag = '--python_interpreter_path'
+            flag = '--python-interpreter-path'
             tried = 'python3'
         elif ext == '.java' and args.java_compiler_path is None:
             compiler = 'Java compiler'
-            flag = '--java_compiler_path'
+            flag = '--java-compiler-path'
             tried = 'javac'
 
         if compiler != "":

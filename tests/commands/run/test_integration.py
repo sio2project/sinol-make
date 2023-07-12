@@ -14,7 +14,7 @@ def test_simple(create_package, time_tool):
 
     parser = configure_parsers()
 
-    args = parser.parse_args(["run", "--time_tool", time_tool])
+    args = parser.parse_args(["run", "--time-tool", time_tool])
     command = Command()
     command.run(args)
 
@@ -36,7 +36,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
     open(config_path, "w").write(yaml.dump(config))
 
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--time_tool", time_tool])
+    args = parser.parse_args(["run", "--time-tool", time_tool])
     command = Command()
     with pytest.raises(SystemExit) as e:
         command.run(args)
@@ -68,7 +68,7 @@ def test_apply_suggestions(create_package, time_tool):
     open(config_path, "w").write(yaml.dump(config))
 
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--apply_suggestions", "--time_tool", time_tool])
+    args = parser.parse_args(["run", "--apply-suggestions", "--time-tool", time_tool])
     command = Command()
     command.run(args)
 
@@ -92,7 +92,7 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
     open(config_path, "w").write(yaml.dump(config))
 
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--time_tool", time_tool])
+    args = parser.parse_args(["run", "--time-tool", time_tool])
     command = Command()
 
     with pytest.raises(SystemExit) as e:
@@ -116,7 +116,7 @@ def test_flag_tests(create_package, time_tool):
 
     test = glob.glob(os.path.join(package_path, "in", "???*.in"))[0]
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--tests", test, "--time_tool", time_tool])
+    args = parser.parse_args(["run", "--tests", test, "--time-tool", time_tool])
     command = Command()
     try:
         command.run(args)
@@ -138,7 +138,7 @@ def test_flag_solutions(capsys, create_package, time_tool):
 
     solutions = glob.glob(os.path.join(package_path, "prog", "????.*"))
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--solutions", solutions[0], "--time_tool", time_tool])
+    args = parser.parse_args(["run", "--solutions", solutions[0], "--time-tool", time_tool])
     command = Command()
     command.run(args)
 
@@ -154,7 +154,7 @@ def test_weak_compilation_flags(create_package):
     Test flag --weak-compilation-flags.
     """
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--time_tool", "time"])
+    args = parser.parse_args(["run", "--time-tool", "time"])
     command = Command()
 
     with pytest.raises(SystemExit) as e:
@@ -163,7 +163,7 @@ def test_weak_compilation_flags(create_package):
     assert e.type == SystemExit
     assert e.value.code == 1
 
-    args = parser.parse_args(["run", "--weak_compilation_flags", "--time_tool", "time"])
+    args = parser.parse_args(["run", "--weak-compilation-flags", "--time-tool", "time"])
     command = Command()
     command.run(args)
 
@@ -183,7 +183,7 @@ def test_no_scores(capsys, create_package, time_tool):
     open(config_path, "w").write(yaml.dump(config))
 
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--time_tool", time_tool])
+    args = parser.parse_args(["run", "--time-tool", time_tool])
     command = Command()
     command.run(args)
 
@@ -208,7 +208,7 @@ def test_missing_output_files(capsys, create_package):
     out2 = command.extract_file_name(outs[1]).replace(".out", ".in")
 
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--time_tool", "time"])
+    args = parser.parse_args(["run", "--time-tool", "time"])
     command = Command()
     with pytest.raises(SystemExit):
         command.run(args)
