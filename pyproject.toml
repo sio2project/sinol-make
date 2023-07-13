@@ -6,10 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "sinol-make"
 dynamic = ["version"]
 authors = [
-  { name="Mateusz Masiarz", email="m.masiarz@fri.edu.pl" }
+    { name="Mateusz Masiarz", email="m.masiarz@fri.edu.pl" }
 ]
 maintainers = [
-  { name="Tomasz Nowak", email="tomasz.nowak@tonowak.com" }
+    { name="Tomasz Nowak", email="tomasz.nowak@tonowak.com" }
 ]
 description = "CLI tool for creating sio2 task packages"
 readme = "README.md"
