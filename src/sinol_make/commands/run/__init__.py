@@ -301,18 +301,18 @@ class Command(BaseCommand):
 
         timeout = False
         with open(input_file_path, "r") as input_file:
-            process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                       preexec_fn=os.setsid)
             try:
                 output, _ = process.communicate(timeout=hard_time_limit)
             except subprocess.TimeoutExpired:
                 timeout = True
-                process.kill()
-                process.communicate()
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
 
         result = ExecutionResult()
         program_exit_code = None
         if not timeout:
-            output = process.stdout.read().decode("utf-8").splitlines()
+            output = output.decode("utf-8").splitlines()
             lines = open(result_file_path).readlines()
             if len(lines) == 3:
                 """
