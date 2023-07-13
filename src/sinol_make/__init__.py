@@ -1,3 +1,6 @@
+# PYTHON_ARCOMPLETE_OK
+
+import argcomplete
 import argparse
 import sys
 
@@ -22,13 +25,15 @@ def configure_parsers():
 
     for command in commands:
         command.configure_subparser(subparsers)
+
+    argcomplete.autocomplete(parser)
     return parser
 
 
 def main():
     parser = configure_parsers()
-    commands = util.get_commands()
     args = parser.parse_args()
+    commands = util.get_commands()
 
     for command in commands:
         if command.get_name() == args.command:

@@ -46,6 +46,18 @@ other tools for measuring time (which are non-deterministic and produce reports 
 - Windows (WSL): `apt install time timeout`
 - macOS: `brew install gnu-time coreutils`
 
+If you would like to have autocomplete for `sinol-make` commands,
+add the following line to your `~/.bashrc` (or `~/.zshrc`) file:
+
+```shell
+eval "$(register-python-argcomplete sinol-make)"
+```
+or run the following command:
+
+```shell
+activate-global-python-argcomplete
+```
+
 ### Usage
 
 The availabe commands (see `sinol-make --help`) are:
