@@ -2,6 +2,7 @@
 # Author of the original code: Bartosz Kostka <kostka@oij.edu.pl>
 # Version 0.6 (2021-08-29)
 import subprocess
+import signal
 import glob
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, PointsChange
@@ -235,33 +236,40 @@ class Command(BaseCommand):
 
 
     def execute_oiejq(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
-                      time_limit, memory_limit):
+                      time_limit, memory_limit, hard_time_limit):
         env = os.environ.copy()
         env["MEM_LIMIT"] = f'{memory_limit}K'
         env["MEASURE_MEM"] = "1"
+
+        timeout = False
         with open(input_file_path, "r") as input_file:
-            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-            process.wait()
-        timeout_exit_code = process.returncode
-        lines = process.stderr.read().decode("utf-8").splitlines()
-        output = process.stdout.read().decode("utf-8").splitlines()
+            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE, env=env, preexec_fn=os.setsid)
+            try:
+                output, lines = process.communicate(timeout=hard_time_limit)
+            except subprocess.TimeoutExpired:
+                timeout = True
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                process.communicate()
 
         result = ExecutionResult()
 
-        for line in lines:
-            line = line.strip()
-            if ": " in line:
-                (key, value) = line.split(": ")[:2]
-                if key == "Time":
-                    result.Time = self.parse_time(value)
-                elif key == "Memory":
-                    result.Memory = self.parse_memory(value)
-                else:
-                    setattr(result, key, value)
+        if not timeout:
+            lines = lines.decode('utf-8').splitlines()
+            output = output.decode('utf-8').splitlines()
 
-        # If timeout kills the process, the exit code should be 137.
-        # But on Arch Linux it returns the negative value of the signal that killed the process.
-        if timeout_exit_code == 137 or timeout_exit_code == -9:
+            for line in lines:
+                line = line.strip()
+                if ": " in line:
+                    (key, value) = line.split(": ")[:2]
+                    if key == "Time":
+                        result.Time = self.parse_time(value)
+                    elif key == "Memory":
+                        result.Memory = self.parse_memory(value)
+                    else:
+                        setattr(result, key, value)
+
+        if timeout:
             result.Status = "TL"
         elif getattr(result, "Time") is not None and result.Time > time_limit:
             result.Status = "TL"
@@ -289,38 +297,45 @@ class Command(BaseCommand):
 
 
     def execute_time(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
-                      time_limit, memory_limit):
+                      time_limit, memory_limit, hard_time_limit):
+
+        timeout = False
         with open(input_file_path, "r") as input_file:
             process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-            process.wait()
-        timeout_exit_code = process.returncode
-        output = process.stdout.read().decode("utf-8").splitlines()
+            try:
+                output, _ = process.communicate(timeout=hard_time_limit)
+            except subprocess.TimeoutExpired:
+                timeout = True
+                process.kill()
+                process.communicate()
 
         result = ExecutionResult()
-        lines = open(result_file_path).readlines()
         program_exit_code = None
-        if len(lines) == 3:
-            """
-            If programs runs successfully, the output looks like this:
-             - first line is CPU time in seconds
-             - second line is memory in KB
-             - third line is exit code
-            This format is defined by -f flag in time command.
-            """
-            result.Time = round(float(lines[0].strip()) * 1000)
-            result.Memory = int(lines[1].strip())
-            program_exit_code = int(lines[2].strip())
-        if len(lines) > 0 and "Command terminated by signal " in lines[0]:
-            """
-            If there was a runtime error, the first line is the error message with signal number.
-            For example:
-                Command terminated by signal 11
-            """
-            program_exit_code = int(lines[0].strip().split(" ")[-1])
+        if not timeout:
+            output = process.stdout.read().decode("utf-8").splitlines()
+            lines = open(result_file_path).readlines()
+            if len(lines) == 3:
+                """
+                If programs runs successfully, the output looks like this:
+                 - first line is CPU time in seconds
+                 - second line is memory in KB
+                 - third line is exit code
+                This format is defined by -f flag in time command.
+                """
+                result.Time = round(float(lines[0].strip()) * 1000)
+                result.Memory = int(lines[1].strip())
+                program_exit_code = int(lines[2].strip())
+            if len(lines) > 0 and "Command terminated by signal " in lines[0]:
+                """
+                If there was a runtime error, the first line is the error message with signal number.
+                For example:
+                    Command terminated by signal 11
+                """
+                program_exit_code = int(lines[0].strip().split(" ")[-1])
 
-        if program_exit_code != None and program_exit_code != 0:
+        if program_exit_code is not None and program_exit_code != 0:
             result.Status = "RE"
-        elif timeout_exit_code != 0:
+        elif timeout:
             result.Status = "TL"
         elif result.Time > time_limit:
             result.Status = "TL"
@@ -353,9 +368,10 @@ class Command(BaseCommand):
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
         if self.args.time_tool == 'oiejq':
-            command = f'timeout -k {hard_time_limit_in_s}s -s SIGKILL {hard_time_limit_in_s}s "{timetool_path}" "{executable}"'
+            command = f'"{timetool_path}" "{executable}"'
 
-            return self.execute_oiejq(command,  name, result_file, test, output_file, self.get_output_file(test), time_limit, memory_limit)
+            return self.execute_oiejq(command, name, result_file, test, output_file, self.get_output_file(test),
+                                      time_limit, memory_limit, hard_time_limit_in_s)
         elif self.args.time_tool == 'time':
             if sys.platform == 'darwin':
                 timeout_name = 'gtimeout'
@@ -366,9 +382,9 @@ class Command(BaseCommand):
             elif sys.platform == 'win32' or sys.platform == 'cygwin':
                 raise Exception("Measuring time with GNU time on Windows is not supported.")
 
-            command = [f'{timeout_name}', '-k', f'{hard_time_limit_in_s}s', f'{hard_time_limit_in_s}s',
-                       f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file, executable]
-            return self.execute_time(command,  name, result_file, test, output_file, self.get_output_file(test), time_limit, memory_limit)
+            command = [f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file, executable]
+            return self.execute_time(command, name, result_file, test, output_file, self.get_output_file(test),
+                                     time_limit, memory_limit, hard_time_limit_in_s)
 
 
     def update_group_status(self, group_status, new_status):
