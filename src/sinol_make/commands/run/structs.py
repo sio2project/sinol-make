@@ -63,3 +63,12 @@ class ExecutionData:
     memory_limit: int
     # Path to the timetool executable
     timetool_path: str
+
+
+@dataclass
+class PrintData:
+    """
+    Represents data for printing results of execution.
+    """
+
+    i: int
