@@ -536,18 +536,20 @@ class Command(BaseCommand):
                                                                     self.args.hide_memory))
         thr.start()
 
+        pool = mp.Pool(self.cpus)
         try:
             print("Performing %d executions..." % len(executions))
-            with mp.Pool(self.cpus) as pool:
-                for i, result in enumerate(pool.imap(self.run_solution, executions)):
-                    (name, executable, test) = executions[i][:3]
-                    all_results[name][self.get_group(test)][test] = result
-                    print_data.i = i
+            for i, result in enumerate(pool.imap(self.run_solution, executions)):
+                (name, executable, test) = executions[i][:3]
+                all_results[name][self.get_group(test)][test] = result
+                print_data.i = i
         except KeyboardInterrupt:
+            pool.terminate()
             run_event.clear()
             thr.join()
             util.exit_with_error("Stopped due to keyboard interrupt.")
 
+        pool.terminate()
         run_event.clear()
         thr.join()
         print("\n".join(print_view(os.get_terminal_size().columns, os.get_terminal_size().lines, program_groups_scores,
