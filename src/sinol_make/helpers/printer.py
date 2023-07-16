@@ -12,10 +12,7 @@ def printer(func, *args, **kwargs):
     :param args: args for func
     :param kwargs: kwargs for func
     """
-    try:
-        wrapper(_printer, None, func, *args, **kwargs)
-    except KeyboardInterrupt:
-        return
+    wrapper(_printer, None, func, *args, **kwargs)
 
 
 def printer_thread(run_event, func, *args, **kwargs):
@@ -26,10 +23,7 @@ def printer_thread(run_event, func, *args, **kwargs):
     :param args: args for func
     :param kwargs: kwargs for func
     """
-    try:
-        wrapper(_printer, run_event, func, *args, **kwargs)
-    except KeyboardInterrupt:
-        return
+    wrapper(_printer, run_event, func, *args, **kwargs)
 
 
 def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
@@ -81,7 +75,10 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
 
             if last_output[curr_row:curr_row + height - 1] != output[curr_row:curr_row + height - 1]:
                 stdscr.erase()
+                start = datetime.now()
                 _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + height - 1]))
+                end = datetime.now()
+                open("log.txt", "a").write("Run: " + str(end - start) + "\n")
                 stdscr.refresh()
             last_output = output
     except KeyboardInterrupt:
