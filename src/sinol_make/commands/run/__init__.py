@@ -354,7 +354,7 @@ class Command(BaseCommand):
 
 
     def execute_oiejq(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
-                      time_limit, memory_limit, hard_time_limit):
+                      time_limit, memory_limit, hard_time_limit, execution_pids):
         env = os.environ.copy()
         env["MEM_LIMIT"] = f'{memory_limit}K'
         env["MEASURE_MEM"] = "1"
@@ -363,6 +363,7 @@ class Command(BaseCommand):
         with open(input_file_path, "r") as input_file:
             process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE, env=env, preexec_fn=os.setsid)
+            execution_pids[name][input_file_path] = process.pid
             try:
                 output, lines = process.communicate(timeout=hard_time_limit)
             except subprocess.TimeoutExpired:
@@ -415,12 +416,13 @@ class Command(BaseCommand):
 
 
     def execute_time(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
-                      time_limit, memory_limit, hard_time_limit):
+                      time_limit, memory_limit, hard_time_limit, execution_pids):
 
         timeout = False
         with open(input_file_path, "r") as input_file:
             process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                        preexec_fn=os.setsid)
+            execution_pids[name][input_file_path] = process.pid
             try:
                 output, _ = process.communicate(timeout=hard_time_limit)
             except subprocess.TimeoutExpired:
@@ -479,7 +481,7 @@ class Command(BaseCommand):
         Run an execution and return the result as ExecutionResult object.
         """
 
-        (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
+        (name, executable, test, time_limit, memory_limit, timetool_path, execution_pids) = data_for_execution
         file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, package_util.extract_test_id(test))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
@@ -489,7 +491,7 @@ class Command(BaseCommand):
             command = f'"{timetool_path}" "{executable}"'
 
             return self.execute_oiejq(command, name, result_file, test, output_file, self.get_output_file(test),
-                                      time_limit, memory_limit, hard_time_limit_in_s)
+                                      time_limit, memory_limit, hard_time_limit_in_s, execution_pids)
         elif self.args.time_tool == 'time':
             if sys.platform == 'darwin':
                 timeout_name = 'gtimeout'
@@ -502,7 +504,7 @@ class Command(BaseCommand):
 
             command = [f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file, executable]
             return self.execute_time(command, name, result_file, test, output_file, self.get_output_file(test),
-                                     time_limit, memory_limit, hard_time_limit_in_s)
+                                     time_limit, memory_limit, hard_time_limit_in_s, execution_pids)
 
     def run_solutions(self, compiled_commands, names, solutions):
         """
@@ -510,12 +512,16 @@ class Command(BaseCommand):
         """
 
         executions = []
+        execution_pids = {}
         all_results = collections.defaultdict(
             lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
         for (name, executable, result) in compiled_commands:
             if result:
+                execution_pids[name] = {}
                 for test in self.tests:
-                    executions.append((name, executable, test, self.time_limit, self.memory_limit, self.timetool_path))
+                    execution_pids[name][test] = None
+                    executions.append((name, executable, test, self.time_limit, self.memory_limit, self.timetool_path,
+                                       execution_pids))
                     all_results[name][self.get_group(test)][test] = ExecutionResult("  ")
                 os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
             else:
@@ -557,6 +563,13 @@ class Command(BaseCommand):
             if has_terminal:
                 run_event.clear()
                 thr.join()
+            for program, tests in execution_pids.items():
+                for test, pid in tests.items():
+                    if pid is not None:
+                        try:
+                            os.killpg(os.getpgid(pid))
+                        except ProcessLookupError:
+                            pass
             util.exit_with_error("Stopped due to keyboard interrupt.")
 
         pool.terminate()
