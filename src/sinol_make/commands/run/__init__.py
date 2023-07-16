@@ -618,6 +618,9 @@ class Command(BaseCommand):
 
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
+        for i in range(len(solutions)):
+            if not compilation_results[i]:
+                self.failed_compilations.append(solutions[i])
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
         executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
                        for solution in solutions]
