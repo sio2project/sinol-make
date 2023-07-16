@@ -54,7 +54,10 @@ def update_group_status(group_status, new_status):
 
 def print_view(term_width, term_height, program_groups_scores, all_results, print_data: PrintData, names, executions,
                groups, scores, tests, possible_score, time_limit, memory_limit, cpus, hide_memory):
-    programs_in_row = 8
+    width = term_width - 9  # First column has 6 characters and the " | " separator has 3 characters
+    programs_in_row = width // 13  # Each program has 10 characters and the " | " separator has 3 characters
+    open("abc", "a").write(str(term_width) + " " + str(width) + " " + str(programs_in_row) + "\n")
+
     previous_stdout = sys.stdout
     output = StringIO()
     sys.stdout = output
