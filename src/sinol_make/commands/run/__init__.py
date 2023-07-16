@@ -525,15 +525,26 @@ class Command(BaseCommand):
         executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
         program_groups_scores = collections.defaultdict(dict)
         print_data = PrintData(0)
-        run_event = threading.Event()
-        run_event.set()
-        thr = threading.Thread(target=printer.printer_thread, args=(run_event, print_view, program_groups_scores,
-                                                                    all_results, print_data, names, executions,
-                                                                    self.groups, self.scores, self.tests,
-                                                                    self.possible_score, self.time_limit,
-                                                                    self.memory_limit, self.cpus,
-                                                                    self.args.hide_memory))
-        thr.start()
+
+        has_terminal = True
+        try:
+            terminal_width = os.get_terminal_size().columns
+            terminal_height = os.get_terminal_size().lines
+        except OSError:
+            has_terminal = False
+            terminal_width = 80
+            terminal_height = 30
+
+        if has_terminal:
+            run_event = threading.Event()
+            run_event.set()
+            thr = threading.Thread(target=printer.printer_thread, args=(run_event, print_view, program_groups_scores,
+                                                                        all_results, print_data, names, executions,
+                                                                        self.groups, self.scores, self.tests,
+                                                                        self.possible_score, self.time_limit,
+                                                                        self.memory_limit, self.cpus,
+                                                                        self.args.hide_memory))
+            thr.start()
 
         pool = mp.Pool(self.cpus)
         try:
@@ -543,17 +554,18 @@ class Command(BaseCommand):
                 print_data.i = i
         except KeyboardInterrupt:
             pool.terminate()
-            run_event.clear()
-            thr.join()
+            if has_terminal:
+                run_event.clear()
+                thr.join()
             util.exit_with_error("Stopped due to keyboard interrupt.")
 
         pool.terminate()
-        run_event.clear()
-        thr.join()
-        print("\n".join(print_view(os.get_terminal_size().columns, os.get_terminal_size().lines, program_groups_scores,
-                                   all_results, print_data, names, executions, self.groups, self.scores, self.tests,
-                                   self.possible_score, self.time_limit, self.memory_limit, self.cpus,
-                                   self.args.hide_memory)))
+        if has_terminal:
+            run_event.clear()
+            thr.join()
+        print("\n".join(print_view(terminal_width, terminal_height, program_groups_scores, all_results, print_data,
+                                   names, executions, self.groups, self.scores, self.tests, self.possible_score,
+                                   self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory)))
 
         return program_groups_scores, all_results
 
