@@ -616,20 +616,12 @@ class Command(BaseCommand):
 
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
-        compiled_solutions = []
-        for i in range(len(solutions)):
-            if compilation_results[i]:
-                compiled_solutions.append(solutions[i])
-            else:
-                self.failed_compilations.append(solutions[i])
-        compilation_results = [result for result in compilation_results if result]
-
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
         executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
-                       for solution in compiled_solutions]
-        compiled_commands = zip(compiled_solutions, executables, compilation_results)
-        names = compiled_solutions
-        return self.run_solutions(compiled_commands, names, compiled_solutions)
+                       for solution in solutions]
+        compiled_commands = zip(solutions, executables, compilation_results)
+        names = solutions
+        return self.run_solutions(compiled_commands, names, solutions)
 
 
     def print_expected_scores(self, expected_scores):
