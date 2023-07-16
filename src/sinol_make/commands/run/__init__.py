@@ -155,7 +155,6 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
         print()
         print(10 * len(program_group) * ' ')
 
-    print_data.i += 1
     sys.stdout = previous_stdout
     return output.getvalue().splitlines()
 
@@ -538,7 +537,6 @@ class Command(BaseCommand):
 
         pool = mp.Pool(self.cpus)
         try:
-            print("Performing %d executions..." % len(executions))
             for i, result in enumerate(pool.imap(self.run_solution, executions)):
                 (name, executable, test) = executions[i][:3]
                 all_results[name][self.get_group(test)][test] = result
