@@ -136,7 +136,19 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
         for program in program_group:
             print(10*" ", end=" | ")
         print()
+
+        last_group = None
         for test in tests:
+            group = package_util.get_group(test)
+            if last_group != group:
+                if last_group is not None:
+                    last_group = group
+                    print(6 * "-", end=" | ")
+                    for program in program_group:
+                        print(10 * "-", end=" | ")
+                    print()
+                last_group = group
+
             print("%6s" % package_util.extract_test_id(test), end=" | ")
             for program in program_group:
                 result = all_results[program][package_util.get_group(test)][test]
