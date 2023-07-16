@@ -553,16 +553,16 @@ class Command(BaseCommand):
             thr.start()
 
         pool = mp.Pool(self.cpus)
+        keyboard_interrupt = False
         try:
             for i, result in enumerate(pool.imap(self.run_solution, executions)):
                 (name, executable, test) = executions[i][:3]
                 all_results[name][self.get_group(test)][test] = result
                 print_data.i = i
-        except KeyboardInterrupt:
             pool.terminate()
-            if has_terminal:
-                run_event.clear()
-                thr.join()
+        except KeyboardInterrupt:
+            keyboard_interrupt = True
+            pool.terminate()
             for program, tests in execution_pids.items():
                 for test, pid in tests.items():
                     if pid is not None:
@@ -570,15 +570,17 @@ class Command(BaseCommand):
                             os.killpg(os.getpgid(pid))
                         except ProcessLookupError:
                             pass
-            util.exit_with_error("Stopped due to keyboard interrupt.")
+        finally:
+            if has_terminal:
+                run_event.clear()
+                thr.join()
 
-        pool.terminate()
-        if has_terminal:
-            run_event.clear()
-            thr.join()
         print("\n".join(print_view(terminal_width, terminal_height, program_groups_scores, all_results, print_data,
                                    names, executions, self.groups, self.scores, self.tests, self.possible_score,
                                    self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory)))
+
+        if keyboard_interrupt:
+            util.exit_with_error("Stopped due to keyboard interrupt.")
 
         return program_groups_scores, all_results
 
