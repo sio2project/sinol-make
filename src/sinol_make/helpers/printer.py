@@ -26,7 +26,10 @@ def printer_thread(run_event, func, *args, **kwargs):
     :param args: args for func
     :param kwargs: kwargs for func
     """
-    wrapper(_printer, run_event, func, *args, **kwargs)
+    try:
+        wrapper(_printer, run_event, func, *args, **kwargs)
+    except KeyboardInterrupt:
+        return
 
 
 def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
@@ -39,6 +42,8 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
 
     curses.start_color()
     curses.curs_set(0)
+    stdscr.idcok(False)
+    stdscr.idlok(False)
     stdscr.erase()
     stdscr.refresh()
     stdscr.nodelay(True)
@@ -74,10 +79,10 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
                     elif inpt == curses.KEY_HOME:
                         curr_row = 0
 
-            if last_output != output:
+            if last_output[curr_row:curr_row + height - 1] != output[curr_row:curr_row + height - 1]:
                 stdscr.erase()
-                stdscr.refresh()
                 _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + height - 1]))
+                stdscr.refresh()
             last_output = output
     except KeyboardInterrupt:
         return
