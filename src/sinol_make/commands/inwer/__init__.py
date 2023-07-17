@@ -1,4 +1,6 @@
 import subprocess
+import sys
+import signal
 import threading
 import argparse
 import os
@@ -56,7 +58,17 @@ class Command(BaseCommand):
 
         command = [execution.inwer_exe_path]
         with open(execution.test_path, 'r') as test:
-            process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                       preexec_fn=os.setsid())
+
+            def sigint_handler(signum, frame):
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                sys.exit(1)
+            signal.signal(signal.SIGINT, sigint_handler)
+
             process.wait()
         exit_code = process.returncode
         out, _ = process.communicate()
