@@ -8,7 +8,11 @@ def printer(func, *args, **kwargs):
     """
     Prints output of func (called every 0.1 seconds with terminal width and height, then args and kwargs)
     to terminal in less-style.
-    :param func: function called to get output
+    :param func: function called to get output. Should return a triple (output, title, footer),
+                 where output is a list of lines to print,
+                 title is a string printed at the top of the terminal,
+                 and footer is a string printed at the bottom of the terminal.
+                 Title and footer can be None.
     :param args: args for func
     :param kwargs: kwargs for func
     """
@@ -19,7 +23,11 @@ def printer_thread(run_event, func, *args, **kwargs):
     """
     Same as printer, but with threading.Event to stop printing.
     :param run_event: threading.Event that is set when printer should stop
-    :param func: function called to get output
+    :param func: function called to get output. Should return a triple (output, title, footer),
+                 where output is a list of lines to print,
+                 title is a string printed at the top of the terminal,
+                 and footer is a string printed at the bottom of the terminal.
+                 Title and footer can be None.
     :param args: args for func
     :param kwargs: kwargs for func
     """
@@ -29,7 +37,11 @@ def printer_thread(run_event, func, *args, **kwargs):
 def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
     """
     Function called by curses.wrapper to print output of func (called with terminal width and height, then args and kwargs) to terminal in less-style.
-    :param func: function called to get output
+    :param func: function called to get output. Should return a triple (output, title, footer),
+                 where output is a list of lines to print,
+                 title is a string printed at the top of the terminal,
+                 and footer is a string printed at the bottom of the terminal.
+                 Title and footer can be None.
     :param args: args for func
     :param kwargs: kwargs for func
     """
@@ -44,10 +56,15 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     curr_row = 0
     last_output = []
+    last_title = None
+    last_footer = None
     output = ['']
+    title = None
+    footer = None
     time = datetime.now()
     try:
         while run_event is None or run_event.is_set():
@@ -56,7 +73,7 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
 
             if datetime.now() - time > timedelta(seconds=0.1):
                 time = datetime.now()
-                output: list[str] = func(width, height, *args, **kwargs)
+                output, title, footer = func(width, height, *args, **kwargs)
 
             row_change = False
             if len(output) > height:
@@ -77,22 +94,37 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
                     else:
                         row_change = False
 
-            if last_output[curr_row:curr_row + height - 1] != output[curr_row:curr_row + height - 1] or row_change:
+            if last_output[curr_row:curr_row + height - 1] != output[curr_row:curr_row + height - 1] or row_change \
+                    or last_title != title or last_footer != footer:
                 stdscr.erase()
-                _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + height - 1]))
+
+                if title is not None:
+                    stdscr.addnstr(0, 0, title.ljust(width), width, curses.color_pair(4))
+                _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + height - 1]), title, footer)
+                if footer is not None:
+                    try:
+                        stdscr.addnstr(height - 1, 0, footer.ljust(width), width, curses.color_pair(4))
+                    except curses.error:  # Curses raises error when trying to write in the lower right corner, but it can be ignored
+                        pass
+
                 stdscr.refresh()
             last_output = output
+            last_title = title
+            last_footer = footer
     except KeyboardInterrupt:
         return
 
 
-def _print_to_scr(scr: curses.window, output):
+def _print_to_scr(scr: curses.window, output, title, footer):
     """
     Prints output to scr. Replaces color escape sequences with curses color escape sequences.
     """
     s = ""
     y = 0
     new_y = 0
+    if title is not None:
+        y = 1
+        new_y = 1
     x = 0
     new_x = 0
     color = curses.A_NORMAL

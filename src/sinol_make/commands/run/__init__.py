@@ -65,8 +65,8 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
     program_times = collections.defaultdict(lambda: -1)
     program_memory = collections.defaultdict(lambda: -1)
     time_remaining = (len(executions) - print_data.i - 1) * 2 * time_limit / cpus / 1000.0
-    print('Done %4d/%4d. Time remaining (in the worst case): %5d seconds.'
-          % (print_data.i + 1, len(executions), time_remaining))
+    title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
+            % (print_data.i + 1, len(executions), time_remaining)
     for program_ix in range(0, len(names), programs_in_row):
         # how to jump one line up
         program_group = names[program_ix:program_ix + programs_in_row]
@@ -170,7 +170,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
         print(10 * len(program_group) * ' ')
 
     sys.stdout = previous_stdout
-    return output.getvalue().splitlines()
+    return output.getvalue().splitlines(), title, "Use arrows to move."
 
 
 class Command(BaseCommand):
@@ -596,7 +596,7 @@ class Command(BaseCommand):
 
         print("\n".join(print_view(terminal_width, terminal_height, program_groups_scores, all_results, print_data,
                                    names, executions, self.groups, self.scores, self.tests, self.possible_score,
-                                   self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory)))
+                                   self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory)[0]))
 
         if keyboard_interrupt:
             util.exit_with_error("Stopped due to keyboard interrupt.")
