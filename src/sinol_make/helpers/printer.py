@@ -138,7 +138,10 @@ def _print_to_scr(scr: curses.window, output, title, footer):
                 y = new_y
                 color = curses.A_NORMAL
             else:
-                scr.addstr(y, x, s, color)
+                try:
+                    scr.addstr(y, x, s, color)
+                except curses.error:  # Curses raises error when trying to write in the lower right corner, but it can be ignored
+                    pass
                 s = ""
                 x = new_x
                 y = new_y
@@ -164,4 +167,7 @@ def _print_to_scr(scr: curses.window, output, title, footer):
 
         i += 1
 
-    scr.addstr(y, x, s, color)
+    try:
+        scr.addstr(y, x, s, color)
+    except curses.error:  # Curses raises error when trying to write in the lower right corner, but it can be ignored
+        pass
