@@ -58,8 +58,10 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
                 time = datetime.now()
                 output: list[str] = func(width, height, *args, **kwargs)
 
+            row_change = False
             if len(output) > height:
                 if inpt != curses.ERR:
+                    row_change = True
                     if inpt == curses.KEY_DOWN:
                         curr_row = min(curr_row + 1, len(output) - height)
                     elif inpt == curses.KEY_UP:
@@ -72,13 +74,12 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
                         curr_row = len(output) - height
                     elif inpt == curses.KEY_HOME:
                         curr_row = 0
+                    else:
+                        row_change = False
 
-            if last_output[curr_row:curr_row + height - 1] != output[curr_row:curr_row + height - 1]:
+            if last_output[curr_row:curr_row + height - 1] != output[curr_row:curr_row + height - 1] or row_change:
                 stdscr.erase()
-                start = datetime.now()
                 _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + height - 1]))
-                end = datetime.now()
-                open("log.txt", "a").write("Run: " + str(end - start) + "\n")
                 stdscr.refresh()
             last_output = output
     except KeyboardInterrupt:
