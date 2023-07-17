@@ -89,4 +89,4 @@ def print_view(term_width, term_height, table_data: TableData):
                   " " * (column_lengths[2] - 1) + " | " + line.ljust(column_lengths[3]))
 
     sys.stdout = previous_stdout
-    return new_stdout.getvalue().splitlines(), None, None
+    return new_stdout.getvalue().splitlines(), None, "Use arrows to move."
