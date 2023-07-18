@@ -30,9 +30,9 @@ class Command(BaseCommand):
 
         parser.add_argument('inwer_path', type=str, nargs='?',
                             help='path to inwer source file, for example prog/abcinwer.cpp')
-        parser.add_argument('--tests', type=str, nargs='+',
+        parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='test to verify, for example in/abc{0,1}*')
-        parser.add_argument('--cpus', type=int,
+        parser.add_argument('-c', '--cpus', type=int,
                             help=f'number of cpus to use, by default {mp.cpu_count()} (all available)')
         add_compilation_arguments(parser)
 

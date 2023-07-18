@@ -37,26 +37,26 @@ class Command(BaseCommand):
 
         default_timetool = 'oiejq' if sys.platform == 'linux' else 'time'
 
-        parser.add_argument('--solutions', type=str, nargs='+',
+        parser.add_argument('-s', '--solutions', type=str, nargs='+',
                             help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
-        parser.add_argument('--tests', type=str, nargs='+',
+        parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='tests to be run, for example in/abc{0,1}*')
-        parser.add_argument('--cpus', type=int,
+        parser.add_argument('-c', '--cpus', type=int,
                             help='number of cpus to use, you have %d avaliable' % mp.cpu_count())
         parser.add_argument('--tl', type=float, help='time limit (in s)')
         parser.add_argument('--ml', type=float, help='memory limit (in MB)')
-        parser.add_argument('--hide_memory', dest='hide_memory', action='store_true',
+        parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
                             help='hide memory usage in report')
-        parser.add_argument('--solutions_report', type=str,
+        parser.add_argument('--solutions-report', dest='solutions_report', type=str,
                             help='file to store report from solution executions (in markdown)')
-        parser.add_argument('--time_tool', choices=['oiejq', 'time'], default=default_timetool,
+        parser.add_argument('-T', '--time-tool', dest='time_tool', choices=['oiejq', 'time'], default=default_timetool,
                             help='tool to measure time and memory usage (default when possible: oiejq)')
-        parser.add_argument('--oiejq_path', type=str,
+        parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
         add_compilation_arguments(parser)
-        parser.add_argument('--weak_compilation_flags', dest='weak_compilation_flags', action='store_true',
+        parser.add_argument('-w', '--weak-compilation-flags', dest='weak_compilation_flags', action='store_true',
                             help='use weaker compilation flags')
-        parser.add_argument('--apply_suggestions', dest='apply_suggestions', action='store_true',
+        parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
 
 
@@ -786,7 +786,7 @@ class Command(BaseCommand):
                 util.save_config(self.config)
                 print(util.info("Saved suggested expected scores description."))
             else:
-                util.exit_with_error("Use flag --apply_suggestions to apply suggestions.")
+                util.exit_with_error("Use flag --apply-suggestions to apply suggestions.")
 
 
     def set_constants(self):
