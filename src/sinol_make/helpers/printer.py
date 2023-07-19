@@ -75,32 +75,38 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
                 time = datetime.now()
                 output, title, footer = func(width, height, *args, **kwargs)
 
+            visible_height = height
+            if title is not None:
+                visible_height -= 1
+            if footer is not None:
+                visible_height -= 1
+
             row_change = False
             if len(output) > height:
                 if inpt != curses.ERR:
                     row_change = True
                     if inpt == curses.KEY_DOWN:
-                        curr_row = min(curr_row + 1, len(output) - height)
+                        curr_row = min(curr_row + 1, len(output) - visible_height)
                     elif inpt == curses.KEY_UP:
                         curr_row = max(curr_row - 1, 0)
                     elif inpt == curses.KEY_NPAGE:
-                        curr_row = min(curr_row + height, len(output) - height)
+                        curr_row = min(curr_row + visible_height, len(output) - visible_height)
                     elif inpt == curses.KEY_PPAGE:
-                        curr_row = max(curr_row - height, 0)
+                        curr_row = max(curr_row - visible_height, 0)
                     elif inpt == curses.KEY_END:
-                        curr_row = len(output) - height
+                        curr_row = len(output) - visible_height
                     elif inpt == curses.KEY_HOME:
                         curr_row = 0
                     else:
                         row_change = False
 
-            if last_output[curr_row:curr_row + height - 1] != output[curr_row:curr_row + height - 1] or row_change \
-                    or last_title != title or last_footer != footer:
+            if last_output[curr_row:curr_row + visible_height] != output[curr_row:curr_row + visible_height] \
+                    or row_change or last_title != title or last_footer != footer:
                 stdscr.erase()
 
                 if title is not None:
                     stdscr.addnstr(0, 0, title.ljust(width), width, curses.color_pair(4))
-                _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + height - 1]), title, footer)
+                _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + visible_height]), title, footer)
                 if footer is not None:
                     try:
                         stdscr.addnstr(height - 1, 0, footer.ljust(width), width, curses.color_pair(4))
