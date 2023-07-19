@@ -152,15 +152,20 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
             print(10*" ", end=" | ")
         print()
 
+        def print_group_seperator():
+            print(8 * "-", end=" | ")
+            for program in program_group:
+                print(10 * "-", end=" | ")
+            print()
+
+        print_group_seperator()
+
         last_group = None
         for test in tests:
             group = package_util.get_group(test)
             if last_group != group:
                 if last_group is not None:
-                    print(8 * "-", end=" | ")
-                    for program in program_group:
-                        print(10 * "-", end=" | ")
-                    print()
+                    print_group_seperator()
                 last_group = group
 
             print(margin + "%6s" % package_util.extract_test_id(test), end=" | ")
