@@ -59,7 +59,7 @@ class Command(BaseCommand):
         command = [execution.inwer_exe_path]
         with open(execution.test_path, 'r') as test:
             process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       preexec_fn=os.setsid())
+                                       preexec_fn=os.setsid)
 
             def sigint_handler(signum, frame):
                 try:
