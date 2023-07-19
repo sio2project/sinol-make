@@ -53,10 +53,11 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
     stdscr.erase()
     stdscr.refresh()
     stdscr.nodelay(True)
-    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     curr_row = 0
     last_output = []
@@ -105,11 +106,11 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
                 stdscr.erase()
 
                 if title is not None:
-                    stdscr.addnstr(0, 0, title.ljust(width), width, curses.color_pair(4))
+                    stdscr.addnstr(0, 0, title.ljust(width), width, curses.color_pair(5))
                 _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + visible_height]), title, footer)
                 if footer is not None:
                     try:
-                        stdscr.addnstr(height - 1, 0, footer.ljust(width), width, curses.color_pair(4))
+                        stdscr.addnstr(height - 1, 0, footer.ljust(width), width, curses.color_pair(5))
                     except curses.error:  # Curses raises error when trying to write in the lower right corner, but it can be ignored
                         pass
 
@@ -155,13 +156,13 @@ def _print_to_scr(scr: curses.window, output, title, footer):
                 if output[i + 1:i + 5] == '[01m':  # Bold
                     color = curses.A_BOLD
                 elif output[i + 1:i + 5] == '[91m':  # Red
-                    color = curses.color_pair(1)
-                elif output[i + 1:i + 5] == '[92m':  # Green
                     color = curses.color_pair(2)
-                elif output[i + 1:i + 5] == '[93m':  # Yellow
+                elif output[i + 1:i + 5] == '[92m':  # Green
                     color = curses.color_pair(3)
+                elif output[i + 1:i + 5] == '[93m':  # Yellow
+                    color = curses.color_pair(4)
                 else:
-                    color = curses.A_NORMAL
+                    color = curses.color_pair(1)  # White on black
             i += 4
         else:
             s += output[i]
