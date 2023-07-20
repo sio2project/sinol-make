@@ -54,9 +54,9 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
     stdscr.erase()
     stdscr.refresh()
     stdscr.nodelay(True)
-    curses.init_pair(2, curses.COLOR_RED, -1)
-    curses.init_pair(3, curses.COLOR_GREEN, -1)
-    curses.init_pair(4, curses.COLOR_YELLOW, -1)
+    curses.init_pair(1, curses.COLOR_RED, -1)
+    curses.init_pair(2, curses.COLOR_GREEN, -1)
+    curses.init_pair(3, curses.COLOR_YELLOW, -1)
 
     curr_row = 0
     last_output = []
