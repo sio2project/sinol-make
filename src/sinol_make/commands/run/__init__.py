@@ -54,7 +54,7 @@ def update_group_status(group_status, new_status):
 
 def print_view(term_width, term_height, program_groups_scores, all_results, print_data: PrintData, names, executions,
                groups, scores, tests, possible_score, time_limit, memory_limit, cpus, hide_memory):
-    width = term_width - 9  # First column has 6 characters and the " | " separator has 3 characters
+    width = term_width - 13  # First column has 6 characters, the " | " separator has 3 characters and 4 for margin
     programs_in_row = width // 13  # Each program has 10 characters and the " | " separator has 3 characters
 
     previous_stdout = sys.stdout
@@ -67,19 +67,32 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
     time_remaining = (len(executions) - print_data.i - 1) * 2 * time_limit / cpus / 1000.0
     title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
             % (print_data.i + 1, len(executions), time_remaining)
+    title = title.center(term_width)
+    margin = "  "
     for program_ix in range(0, len(names), programs_in_row):
-        # how to jump one line up
         program_group = names[program_ix:program_ix + programs_in_row]
-        print("groups", end=" | ")
+
+        def print_table_end():
+            print("-" * 8, end="-+-")
+            for i in range(len(program_group)):
+                if i != len(program_group) - 1:
+                    print("-" * 10, end="-+-")
+                else:
+                    print("-" * 10, end="-+")
+            print()
+
+        print_table_end()
+
+        print(margin + "groups", end=" | ")
         for program in program_group:
             print("%10s" % program, end=" | ")
         print()
-        print(6 * "-", end=" | ")
+        print(8 * "-", end=" | ")
         for program in program_group:
             print(10 * "-", end=" | ")
         print()
         for group in groups:
-            print("%6s" % group, end=" | ")
+            print(margin + "%6s" % group, end=" | ")
             for program in program_group:
                 results = all_results[program][group]
                 group_status = "OK"
@@ -112,46 +125,50 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                 program_scores[program] += scores[group] if group_status == "OK" else 0
                 program_groups_scores[program][group] = {"status": group_status, "points": points}
             print()
-        print(6 * " ", end=" | ")
+        print(8 * " ", end=" | ")
         for program in program_group:
             print(10 * " ", end=" | ")
         print()
-        print("points", end=" | ")
+        print(margin + "points", end=" | ")
         for program in program_group:
             print(util.bold("   %3s/%3s" % (program_scores[program], possible_score)), end=" | ")
         print()
-        print("  time", end=" | ")
+        print(margin + "  time", end=" | ")
         for program in program_group:
             program_time = program_times[program]
             print(util.bold(("%20s" % color_time(program_time, time_limit))
                             if program_time < 2 * time_limit and program_time >= 0
                             else "   " + 7 * '-'), end=" | ")
         print()
-        print("memory", end=" | ")
+        print(margin + "memory", end=" | ")
         for program in program_group:
             program_mem = program_memory[program]
             print(util.bold(("%20s" % color_memory(program_mem, memory_limit))
                             if program_mem < 2 * memory_limit and program_mem >= 0
                             else "   " + 7 * '-'), end=" | ")
         print()
-        print(6*" ", end=" | ")
+        print(8*" ", end=" | ")
         for program in program_group:
             print(10*" ", end=" | ")
         print()
+
+        def print_group_seperator():
+            print(8 * "-", end=" | ")
+            for program in program_group:
+                print(10 * "-", end=" | ")
+            print()
+
+        print_group_seperator()
 
         last_group = None
         for test in tests:
             group = package_util.get_group(test)
             if last_group != group:
                 if last_group is not None:
-                    last_group = group
-                    print(6 * "-", end=" | ")
-                    for program in program_group:
-                        print(10 * "-", end=" | ")
-                    print()
+                    print_group_seperator()
                 last_group = group
 
-            print("%6s" % package_util.extract_test_id(test), end=" | ")
+            print(margin + "%6s" % package_util.extract_test_id(test), end=" | ")
             for program in program_group:
                 result = all_results[program][package_util.get_group(test)][test]
                 status = result.Status
@@ -161,13 +178,15 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                          ("%17s" % color_time(result.Time, time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
             print()
             if not hide_memory:
-                print(6*" ", end=" | ")
+                print(8*" ", end=" | ")
                 for program in program_group:
                     result = all_results[program][package_util.get_group(test)][test]
                     print(("%20s" % color_memory(result.Memory, memory_limit)) if getattr(result, "Memory") is not None else 10*" ", end=" | ")
                 print()
+
+        print_table_end()
         print()
-        print(10 * len(program_group) * ' ')
+
 
     sys.stdout = previous_stdout
     return output.getvalue().splitlines(), title, "Use arrows to move."
@@ -568,12 +587,10 @@ class Command(BaseCommand):
         if has_terminal:
             run_event = threading.Event()
             run_event.set()
-            thr = threading.Thread(target=printer.printer_thread, args=(run_event, print_view, program_groups_scores,
-                                                                        all_results, print_data, names, executions,
-                                                                        self.groups, self.scores, self.tests,
-                                                                        self.possible_score, self.time_limit,
-                                                                        self.memory_limit, self.cpus,
-                                                                        self.args.hide_memory))
+            thr = threading.Thread(target=printer.printer_thread,
+                                   args=(run_event, print_view, program_groups_scores, all_results, print_data, names,
+                                         executions, self.groups, self.scores, self.tests, self.possible_score,
+                                         self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory))
             thr.start()
 
         pool = mp.Pool(self.cpus)
