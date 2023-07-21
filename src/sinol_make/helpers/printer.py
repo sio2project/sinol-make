@@ -106,7 +106,7 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
 
                 if title is not None:
                     stdscr.addnstr(0, 0, title.ljust(width), width, curses.A_REVERSE)
-                _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + visible_height]), title, footer)
+                _print_to_scr(stdscr, '\n'.join(output[curr_row:curr_row + visible_height]), title is not None)
                 if footer is not None:
                     try:
                         stdscr.addnstr(height - 1, 0, footer.ljust(width), width, curses.A_REVERSE)
@@ -121,14 +121,22 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
         return
 
 
-def _print_to_scr(scr: curses.window, output, title, footer):
+def _print_to_scr(scr: curses.window, output, has_title):
     """
     Prints output to scr. Replaces color escape sequences with curses color escape sequences.
     """
+    # `s` is the string that is currently being built,
+    # `x` and `y` are the coordinates of the next character to be printed,
+    # `new_x` and `new_y` are the coordinates of the next character to be processed,
+    # `color` is the curses color to be used for the current `s` string.
+    # The code iterates over the output string, and when it encounters a color escape sequence,
+    # it prints the current `s` string with the current `color` to the screen on coordinates `x`, `y`,
+    # and then resets `s`, `x`, `y` and `color`.
+
     s = ""
     y = 0
     new_y = 0
-    if title is not None:
+    if has_title:
         y = 1
         new_y = 1
     x = 0
@@ -136,8 +144,8 @@ def _print_to_scr(scr: curses.window, output, title, footer):
     color = curses.A_NORMAL
     i = 0
     while i < len(output):
-        if output[i] == '\033' and i + 4 < len(output):
-            if output[i + 1:i + 5] == '[00m':  # End of color
+        if output[i] == '\033' and i + 4 < len(output):  # Escape sequence.
+            if output[i + 1:i + 5] == '[00m':  # Escape sequence for color reset.
                 scr.addstr(y, x, s, color)
                 s = ""
                 x = new_x
@@ -152,20 +160,20 @@ def _print_to_scr(scr: curses.window, output, title, footer):
                 x = new_x
                 y = new_y
 
-                if output[i + 1:i + 5] == '[01m':  # Bold
+                if output[i + 1:i + 5] == '[01m':  # Escape sequence for bold.
                     color = curses.A_BOLD
-                elif output[i + 1:i + 5] == '[91m':  # Red
+                elif output[i + 1:i + 5] == '[91m':  # Escape sequence for red.
                     color = curses.color_pair(1)
-                elif output[i + 1:i + 5] == '[92m':  # Green
+                elif output[i + 1:i + 5] == '[92m':  # Escape sequence for green.
                     color = curses.color_pair(2)
-                elif output[i + 1:i + 5] == '[93m':  # Yellow
+                elif output[i + 1:i + 5] == '[93m':  # Escape sequence for yellow.
                     color = curses.color_pair(3)
                 else:
                     color = curses.A_NORMAL
-            i += 4
+            i += 4  # Skip the escape sequence.
         else:
             s += output[i]
-            if output[i] == '\n':
+            if output[i] == '\n':  # Go to the next line.
                 new_y += 1
                 new_x = 0
             else:
