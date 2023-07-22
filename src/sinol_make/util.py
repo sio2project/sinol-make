@@ -248,22 +248,6 @@ def file_diff(file1, file2):
     return lines_diff(open(file1).readlines(), open(file2).readlines())
 
 
-def get_terminal_info():
-    """
-    Function to get terminal size.
-    :return: triple (has_terminal, width, height)
-    """
-    has_terminal = True
-    try:
-        terminal_width = os.get_terminal_size().columns
-        terminal_height = os.get_terminal_size().lines
-    except OSError:
-        has_terminal = False
-        terminal_width = 80
-        terminal_height = 30
-    return has_terminal, terminal_width, terminal_height
-
-
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
