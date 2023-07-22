@@ -87,14 +87,7 @@ class Command(BaseCommand):
             results[test] = TestResult(test)
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
 
-        has_terminal = True
-        try:
-            terminal_width = os.get_terminal_size().columns
-            terminal_height = os.get_terminal_size().lines
-        except OSError:
-            has_terminal = False
-            terminal_width = 80
-            terminal_height = 30
+        has_terminal, terminal_width, terminal_height = util.get_terminal_size()
 
         table_data = TableData(results, 0)
         if has_terminal:
