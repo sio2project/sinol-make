@@ -589,12 +589,10 @@ class Command(BaseCommand):
         if has_terminal:
             run_event = threading.Event()
             run_event.set()
-            thr = threading.Thread(target=printer.printer_thread, args=(run_event, print_view, program_groups_scores,
-                                                                        all_results, print_data, names, executions,
-                                                                        self.groups, self.scores, self.tests,
-                                                                        self.possible_score, self.time_limit,
-                                                                        self.memory_limit, self.cpus,
-                                                                        self.args.hide_memory))
+            thr = threading.Thread(target=printer.printer_thread,
+                                   args=(run_event, print_view, program_groups_scores, all_results, print_data, names,
+                                         executions, self.groups, self.scores, self.tests, self.possible_score,
+                                         self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory))
             thr.start()
 
         pool = mp.Pool(self.cpus)
