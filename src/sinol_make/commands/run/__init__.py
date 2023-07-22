@@ -577,14 +577,7 @@ class Command(BaseCommand):
         program_groups_scores = collections.defaultdict(dict)
         print_data = PrintData(0)
 
-        has_terminal = True
-        try:
-            terminal_width = os.get_terminal_size().columns
-            terminal_height = os.get_terminal_size().lines
-        except OSError:
-            has_terminal = False
-            terminal_width = 80
-            terminal_height = 30
+        has_terminal, terminal_width, terminal_height = util.get_terminal_size()
 
         if has_terminal:
             run_event = threading.Event()
