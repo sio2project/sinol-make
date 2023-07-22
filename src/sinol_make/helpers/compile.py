@@ -54,12 +54,13 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         return True
 
 
-def compile_file(file_path: str, name: str, compilers: Compilers) -> Tuple[str or None, str]:
+def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilation_flags = False) -> Tuple[str or None, str]:
     """
     Compile a file
     :param file_path: Path to the file to compile
     :param name: Name of the executable
     :param compilers: Compilers object
+    :param weak_compilation_flags: Use weaker compilation flags
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
 
@@ -73,7 +74,7 @@ def compile_file(file_path: str, name: str, compilers: Compilers) -> Tuple[str o
     compile_log = open(compile_log_path, 'w')
 
     try:
-        if compile(file_path, output, compilers, compile_log):
+        if compile(file_path, output, compilers, compile_log, weak_compilation_flags):
             return output, compile_log_path
         else:
             return None, compile_log_path

@@ -21,3 +21,5 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
                         help='Python interpreter to use (default: python3)')
     parser.add_argument('--java-compiler-path', dest='java_compiler_path', type=str, default=compiler.get_java_compiler_path(),
                         help='Java compiler to use (default: javac)')
+    parser.add_argument('--weak-compilation-flags', dest='weak_compilation_flags', action='store_true',
+                        help='use weaker compilation flags')

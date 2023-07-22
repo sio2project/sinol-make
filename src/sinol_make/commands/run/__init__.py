@@ -233,8 +233,6 @@ class Command(BaseCommand):
         parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
         add_compilation_arguments(parser)
-        parser.add_argument('-w', '--weak-compilation-flags', dest='weak_compilation_flags', action='store_true',
-                            help='use weaker compilation flags')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
 
