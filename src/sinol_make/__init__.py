@@ -1,3 +1,6 @@
+# PYTHON_ARCOMPLETE_OK
+
+import argcomplete
 import argparse
 import sys
 
@@ -22,13 +25,15 @@ def configure_parsers():
 
     for command in commands:
         command.configure_subparser(subparsers)
+
+    argcomplete.autocomplete(parser)
     return parser
 
 
 def main():
     parser = configure_parsers()
-    commands = util.get_commands()
     args = parser.parse_args()
+    commands = util.get_commands()
 
     for command in commands:
         if command.get_name() == args.command:
@@ -47,7 +52,7 @@ def main():
                         util.exit_with_error('`oiejq` could not be installed.\n'
                                              'You can download it from https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz'
                                              ', unpack it to `~/.local/bin/` and rename oiejq.sh to oiejq.\n'
-                                             'You can also use --oiejq_path to specify path to your oiejq.')
+                                             'You can also use --oiejq-path to specify path to your oiejq.')
                 except Exception as err:
                     util.exit_with_error('`oiejq` could not be installed.\n' + err)
 
