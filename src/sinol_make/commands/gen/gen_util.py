@@ -31,7 +31,12 @@ def get_ingen(task_id=None, ingen_path=None):
     ingen = glob.glob(os.path.join(os.getcwd(), 'prog', task_id + 'ingen.*'))
     if len(ingen) == 0:
         return None
-    return ingen[0]
+
+    # Makefiles prioritize non .sh ingens.
+    if os.path.splitext(ingen[0])[1] == '.sh' and len(ingen) > 1:
+        return ingen[1]
+    else:
+        return ingen[0]
 
 
 def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_flags=False):
@@ -69,8 +74,12 @@ def run_ingen(ingen_exe):
     :param ingen_exe: path to ingen executable
     :return: True if ingen was successful, False otherwise
     """
+    shell = False
+    if os.path.splitext(ingen_exe)[1] == '.sh':
+        shell = True
+
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                               cwd=os.path.join(os.getcwd(), 'in'))
+                               cwd=os.path.join(os.getcwd(), 'in'), shell=shell)
     while process.poll() is None:
         line = process.stdout.readline()
         if line:
