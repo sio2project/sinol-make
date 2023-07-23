@@ -3,16 +3,195 @@
 # Version 0.6 (2021-08-29)
 import subprocess
 import signal
+import threading
+from io import StringIO
 import glob
 
-from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, PointsChange
+from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, \
+    PointsChange, PrintData
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException
-from sinol_make.helpers import compile, compiler, package_util
+from sinol_make.helpers import compile, compiler, package_util, printer
 import sinol_make.util as util
-import yaml, os, collections, sys, re, math, dictdiffer, glob
+import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
+
+
+def color_memory(memory, limit):
+    if memory == -1: return util.color_yellow("")
+    memory_str = "%.1fMB" % (memory / 1024.0)
+    if memory > limit:
+        return util.color_red(memory_str)
+    elif memory > limit / 2.0:
+        return util.color_yellow(memory_str)
+    else:
+        return util.color_green(memory_str)
+
+
+def color_time(time, limit):
+    if time == -1: return util.color_yellow("")
+    time_str = "%.2fs" % (time / 1000.0)
+    if time > limit:
+        return util.color_red(time_str)
+    elif time > limit / 2.0:
+        return util.color_yellow(time_str)
+    else:
+        return util.color_green(time_str)
+
+
+def colorize_status(status):
+    if status == "OK": return util.bold(util.color_green(status))
+    if status == "  " or status == "??": return util.warning(status)
+    return util.error(status)
+
+
+def update_group_status(group_status, new_status):
+    order = ["CE", "TL", "ML", "RE", "WA", "OK"]
+    if order.index(new_status) < order.index(group_status):
+        return new_status
+    return group_status
+
+
+def print_view(term_width, term_height, program_groups_scores, all_results, print_data: PrintData, names, executions,
+               groups, scores, tests, possible_score, time_limit, memory_limit, cpus, hide_memory):
+    width = term_width - 13  # First column has 6 characters, the " | " separator has 3 characters and 4 for margin
+    programs_in_row = width // 13  # Each program has 10 characters and the " | " separator has 3 characters
+
+    previous_stdout = sys.stdout
+    output = StringIO()
+    sys.stdout = output
+
+    program_scores = collections.defaultdict(int)
+    program_times = collections.defaultdict(lambda: -1)
+    program_memory = collections.defaultdict(lambda: -1)
+    time_remaining = (len(executions) - print_data.i - 1) * 2 * time_limit / cpus / 1000.0
+    title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
+            % (print_data.i + 1, len(executions), time_remaining)
+    title = title.center(term_width)
+    margin = "  "
+    for program_ix in range(0, len(names), programs_in_row):
+        program_group = names[program_ix:program_ix + programs_in_row]
+
+        def print_table_end():
+            print("-" * 8, end="-+-")
+            for i in range(len(program_group)):
+                if i != len(program_group) - 1:
+                    print("-" * 10, end="-+-")
+                else:
+                    print("-" * 10, end="-+")
+            print()
+
+        print_table_end()
+
+        print(margin + "groups", end=" | ")
+        for program in program_group:
+            print("%10s" % program, end=" | ")
+        print()
+        print(8 * "-", end=" | ")
+        for program in program_group:
+            print(10 * "-", end=" | ")
+        print()
+        for group in groups:
+            print(margin + "%6s" % group, end=" | ")
+            for program in program_group:
+                results = all_results[program][group]
+                group_status = "OK"
+                min_points = 100
+
+                for test in results:
+                    min_points = min(min_points, results[test].Points)
+                    status = results[test].Status
+                    if getattr(results[test], "Time") is not None:
+                        program_times[program] = max(
+                            program_times[program], results[test].Time)
+                    elif status == "TL":
+                        program_times[program] = 2 * time_limit
+                    if getattr(results[test], "Memory") is not None:
+                        program_memory[program] = max(
+                            program_memory[program], results[test].Memory)
+                    elif status == "ML":
+                        program_memory[program] = 2 * memory_limit
+                    if status == "  ":
+                        group_status = "  "
+                        min_points = 0
+                    else:
+                        group_status = update_group_status(group_status, status)
+
+                points = math.floor(min_points / 100 * scores[group])
+                print("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(
+                    util.color_red(group_status)),
+                      "%3s/%3s" % (points, scores[group]),
+                      end=" | ")
+                program_scores[program] += scores[group] if group_status == "OK" else 0
+                program_groups_scores[program][group] = {"status": group_status, "points": points}
+            print()
+        print(8 * " ", end=" | ")
+        for program in program_group:
+            print(10 * " ", end=" | ")
+        print()
+        print(margin + "points", end=" | ")
+        for program in program_group:
+            print(util.bold("   %3s/%3s" % (program_scores[program], possible_score)), end=" | ")
+        print()
+        print(margin + "  time", end=" | ")
+        for program in program_group:
+            program_time = program_times[program]
+            print(util.bold(("%20s" % color_time(program_time, time_limit))
+                            if program_time < 2 * time_limit and program_time >= 0
+                            else "   " + 7 * '-'), end=" | ")
+        print()
+        print(margin + "memory", end=" | ")
+        for program in program_group:
+            program_mem = program_memory[program]
+            print(util.bold(("%20s" % color_memory(program_mem, memory_limit))
+                            if program_mem < 2 * memory_limit and program_mem >= 0
+                            else "   " + 7 * '-'), end=" | ")
+        print()
+        print(8*" ", end=" | ")
+        for program in program_group:
+            print(10*" ", end=" | ")
+        print()
+
+        def print_group_seperator():
+            print(8 * "-", end=" | ")
+            for program in program_group:
+                print(10 * "-", end=" | ")
+            print()
+
+        print_group_seperator()
+
+        last_group = None
+        for test in tests:
+            group = package_util.get_group(test)
+            if last_group != group:
+                if last_group is not None:
+                    print_group_seperator()
+                last_group = group
+
+            print(margin + "%6s" % package_util.extract_test_id(test), end=" | ")
+            for program in program_group:
+                result = all_results[program][package_util.get_group(test)][test]
+                status = result.Status
+                if status == "  ": print(10*' ', end=" | ")
+                else:
+                    print("%3s" % colorize_status(status),
+                         ("%17s" % color_time(result.Time, time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
+            print()
+            if not hide_memory:
+                print(8*" ", end=" | ")
+                for program in program_group:
+                    result = all_results[program][package_util.get_group(test)][test]
+                    print(("%20s" % color_memory(result.Memory, memory_limit)) if getattr(result, "Memory") is not None else 10*" ", end=" | ")
+                print()
+
+        print_table_end()
+        print()
+
+
+    sys.stdout = previous_stdout
+    return output.getvalue().splitlines(), title, "Use arrows to move."
+
 
 class Command(BaseCommand):
     """
@@ -54,33 +233,8 @@ class Command(BaseCommand):
         parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
         add_compilation_arguments(parser)
-        parser.add_argument('-w', '--weak-compilation-flags', dest='weak_compilation_flags', action='store_true',
-                            help='use weaker compilation flags')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
-
-
-    def color_memory(self, memory, limit):
-        if memory == -1: return util.color_yellow("")
-        memory_str = "%.1fMB" % (memory / 1024.0)
-        if memory > limit: return util.color_red(memory_str)
-        elif memory > limit / 2.0: return util.color_yellow(memory_str)
-        else: return util.color_green(memory_str)
-
-
-    def color_time(self, time, limit):
-        if time == -1: return util.color_yellow("")
-        time_str = "%.2fs" % (time / 1000.0)
-        if time > limit: return util.color_red(time_str)
-        elif time > limit / 2.0: return util.color_yellow(time_str)
-        else: return util.color_green(time_str)
-
-
-    def colorize_status(self, status):
-        if status == "OK": return util.bold(util.color_green(status))
-        if status == "  " or status == "??": return util.warning(status)
-        return util.error(status)
-
 
     def parse_time(self, time_str):
         if len(time_str) < 3: return -1
@@ -92,16 +246,12 @@ class Command(BaseCommand):
         return int(memory_str[:-2])
 
 
-    def extract_test_id(self, test_path):
-        return os.path.split(os.path.splitext(test_path)[0])[1][len(self.ID):]
-
-
     def extract_file_name(self, file_path):
         return os.path.split(file_path)[1]
 
 
     def get_group(self, test_path):
-        return int("".join(filter(str.isdigit, self.extract_test_id(test_path))))
+        return int("".join(filter(str.isdigit, package_util.extract_test_id(test_path))))
 
 
     def get_executable_key(self, executable):
@@ -245,6 +395,15 @@ class Command(BaseCommand):
         with open(input_file_path, "r") as input_file:
             process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE, env=env, preexec_fn=os.setsid)
+
+            def sigint_handler(signum, frame):
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                sys.exit(1)
+            signal.signal(signal.SIGINT, sigint_handler)
+
             try:
                 output, lines = process.communicate(timeout=hard_time_limit)
             except subprocess.TimeoutExpired:
@@ -303,6 +462,15 @@ class Command(BaseCommand):
         with open(input_file_path, "r") as input_file:
             process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                        preexec_fn=os.setsid)
+
+            def sigint_handler(signum, frame):
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                sys.exit(1)
+            signal.signal(signal.SIGINT, sigint_handler)
+
             try:
                 output, _ = process.communicate(timeout=hard_time_limit)
             except subprocess.TimeoutExpired:
@@ -362,7 +530,7 @@ class Command(BaseCommand):
         """
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
-        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, self.extract_test_id(test))
+        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, package_util.extract_test_id(test))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
@@ -386,14 +554,7 @@ class Command(BaseCommand):
             return self.execute_time(command, name, result_file, test, output_file, self.get_output_file(test),
                                      time_limit, memory_limit, hard_time_limit_in_s)
 
-
-    def update_group_status(self, group_status, new_status):
-        order = ["CE", "TL", "ML", "RE", "WA", "OK"]
-        if order.index(new_status) < order.index(group_status):
-            return new_status
-        return group_status
-
-    def run_solutions(self, compiled_commands, names, solutions, report_file):
+    def run_solutions(self, compiled_commands, names, solutions):
         """
         Run solutions on tests and print the results as a table to stdout.
         """
@@ -413,135 +574,42 @@ class Command(BaseCommand):
         print()
         executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
         program_groups_scores = collections.defaultdict(dict)
+        print_data = PrintData(0)
 
-        def print_view(output_file=None):
-            def print_stream(*values, end='\n'):
-                if output_file is not None:
-                    print(*values, end=end, file=output_file)
-                else:
-                    print(*values, end=end)
+        has_terminal, terminal_width, terminal_height = util.get_terminal_size()
 
-            if i != 0 and output_file is None:
-                # TODO: always display both tables
-                # if self.args.verbose:
-                #   cursor_delta = len(self.tests) + len(self.groups)+ 9
-                #   if not self.args.hide_memory:
-                #       cursor_delta += len(self.tests)
-                # else:
-                cursor_delta = len(self.groups) + 7
-                number_of_rows = (len(solutions) + self.PROGRAMS_IN_ROW - 1) // self.PROGRAMS_IN_ROW
-                sys.stdout.write('\033[%dA' % (cursor_delta * number_of_rows + 1))
-            program_scores = collections.defaultdict(int)
-            program_times = collections.defaultdict(lambda: -1)
-            program_memory = collections.defaultdict(lambda: -1)
-            if output_file is None:
-                time_remaining = (len(executions) - i - 1) * 2 * self.time_limit / self.cpus / 1000.0
-                print_stream('Done %4d/%4d. Time remaining (in the worst case): %5d seconds.'
-                             % (i+1, len(executions), time_remaining))
-            for program_ix in range(0, len(names), self.PROGRAMS_IN_ROW):
-                # how to jump one line up
-                program_group = names[program_ix:program_ix + self.PROGRAMS_IN_ROW]
-                print_stream("groups", end=" | ")
-                for program in program_group:
-                    print_stream("%10s" % program, end=" | ")
-                print_stream()
-                print_stream(6*"-", end=" | ")
-                for program in program_group:
-                    print_stream(10*"-", end=" | ")
-                print_stream()
-                for group in self.groups:
-                    print_stream("%6s" % group, end=" | ")
-                    for program in program_group:
-                        results = all_results[program][group]
-                        group_status = "OK"
-                        min_points = 100
+        if has_terminal:
+            run_event = threading.Event()
+            run_event.set()
+            thr = threading.Thread(target=printer.printer_thread,
+                                   args=(run_event, print_view, program_groups_scores, all_results, print_data, names,
+                                         executions, self.groups, self.scores, self.tests, self.possible_score,
+                                         self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory))
+            thr.start()
 
-                        for test in results:
-                            min_points = min(min_points, results[test].Points)
-                            status = results[test].Status
-                            if getattr(results[test], "Time") is not None:
-                                program_times[program] = max(
-                                    program_times[program], results[test].Time)
-                            elif status == "TL":
-                                program_times[program] = 2 * self.time_limit
-                            if getattr(results[test], "Memory") is not None:
-                                program_memory[program] = max(
-                                    program_memory[program], results[test].Memory)
-                            elif status == "ML":
-                                program_memory[program] = 2 * self.memory_limit
-                            if status == "  ":
-                                group_status = "  "
-                                min_points = 0
-                            else:
-                                group_status = self.update_group_status(group_status, status)
-
-                        points = math.floor(min_points / 100 * self.scores[group])
-                        print_stream("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(util.color_red(group_status)),
-                                     "%3s/%3s" % (points, self.scores[group]),
-                                     end=" | ")
-                        program_scores[program] += self.scores[group] if group_status == "OK" else 0
-                        program_groups_scores[program][group] = {"status": group_status, "points": points}
-                    print_stream()
-                print_stream(6*" ", end=" | ")
-                for program in program_group:
-                    print_stream(10*" ", end=" | ")
-                print_stream()
-                print_stream("points", end=" | ")
-                for program in program_group:
-                    print_stream(util.bold("   %3s/%3s" % (program_scores[program], self.possible_score)), end=" | ")
-                print_stream()
-                print_stream("  time", end=" | ")
-                for program in program_group:
-                    program_time = program_times[program]
-                    print_stream(util.bold(("%20s" % self.color_time(program_time, self.time_limit))
-                                           if program_time < 2 * self.time_limit and program_time >= 0
-                                           else "   "+7*'-'), end=" | ")
-                print_stream()
-                print_stream("memory", end=" | ")
-                for program in program_group:
-                    program_mem = program_memory[program]
-                    print_stream(util.bold(("%20s" % self.color_memory(program_mem, self.memory_limit))
-                                           if program_mem < 2 * self.memory_limit and program_mem >= 0
-                                           else "   "+7*'-'), end=" | ")
-                print_stream()
-                # TODO: always display both tables
-                # if self.args.verbose:
-                #   print_stream(6*" ", end=" | ")
-                #   for program in program_group:
-                #       print_stream(10*" ", end=" | ")
-                #   print_stream()
-                #   for test in self.tests:
-                #       print_stream("%6s" % self.extract_test_id(test), end=" | ")
-                #       for program in program_group:
-                #           result = all_results[program][self.get_group(test)][test]
-                #           status = result.Status
-                #           if status == "  ": print_stream(10*' ', end=" | ")
-                #           else:
-                #               print_stream("%3s" % self.colorize_status(status),
-                #                   ("%17s" % self.color_time(result.Time, self.time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
-                #       print_stream()
-                #       if not self.args.hide_memory:
-                #           print_stream(6*" ", end=" | ")
-                #           for program in program_group:
-                #               result = all_results[program][self.get_group(test)][test]
-                #               print_stream(("%20s" % self.color_memory(result.Memory, self.memory_limit))  if getattr(result, "Memory") is not None else 10*" ", end=" | ")
-                #           print_stream()
-                #   print_stream()
-                print_stream(10*len(program_group)*' ')
-
-            if output_file is not None:
-                os.system('sed -i -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g" %s' % output_file) # TODO: make this work on Windows
-                print("Report has been saved to", util.bold(output_file))
-                print()
-
-        print("Performing %d executions..." % len(executions))
-        with mp.Pool(self.cpus) as pool:
+        pool = mp.Pool(self.cpus)
+        keyboard_interrupt = False
+        try:
             for i, result in enumerate(pool.imap(self.run_solution, executions)):
                 (name, executable, test) = executions[i][:3]
                 all_results[name][self.get_group(test)][test] = result
-                print_view()
-        if report_file:
-            print_view(report_file)
+                print_data.i = i
+            pool.terminate()
+        except KeyboardInterrupt:
+            keyboard_interrupt = True
+            pool.terminate()
+        finally:
+            if has_terminal:
+                run_event.clear()
+                thr.join()
+
+        print("\n".join(print_view(terminal_width, terminal_height, program_groups_scores, all_results, print_data,
+                                   names, executions, self.groups, self.scores, self.tests, self.possible_score,
+                                   self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory)[0]))
+
+        if keyboard_interrupt:
+            util.exit_with_error("Stopped due to keyboard interrupt.")
+
         return program_groups_scores, all_results
 
 
@@ -559,20 +627,15 @@ class Command(BaseCommand):
 
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
-        compiled_solutions = []
         for i in range(len(solutions)):
-            if compilation_results[i]:
-                compiled_solutions.append(solutions[i])
-            else:
+            if not compilation_results[i]:
                 self.failed_compilations.append(solutions[i])
-        compilation_results = [result for result in compilation_results if result]
-
         os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
         executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
-                       for solution in compiled_solutions]
-        compiled_commands = zip(compiled_solutions, executables, compilation_results)
-        names = compiled_solutions
-        return self.run_solutions(compiled_commands, names, compiled_solutions, self.args.solutions_report)
+                       for solution in solutions]
+        compiled_commands = zip(solutions, executables, compilation_results)
+        names = solutions
+        return self.run_solutions(compiled_commands, names, solutions)
 
 
     def print_expected_scores(self, expected_scores):
@@ -872,10 +935,10 @@ class Command(BaseCommand):
         Returns list of input files that have corresponding output file.
         """
         output_tests = glob.glob(os.path.join(os.getcwd(), "out", "*.out"))
-        output_tests_ids = [self.extract_test_id(test) for test in output_tests]
+        output_tests_ids = [package_util.extract_test_id(test) for test in output_tests]
         valid_input_files = []
         for test in self.tests:
-            if self.extract_test_id(test) in output_tests_ids:
+            if package_util.extract_test_id(test) in output_tests_ids:
                 valid_input_files.append(test)
         return valid_input_files
 
@@ -915,7 +978,7 @@ class Command(BaseCommand):
         for solution in results:
             for group in results[solution]:
                 for test in results[solution][group]:
-                    if results[solution][group][test].Status == "CE":
+                    if results[solution][group][test].Status == "CE" and results[solution][group][test].Error is not None:
                         error_msg += f'Solution {solution} had an error on test {test}: {results[solution][group][test].Error}\n'
         if error_msg != "":
             util.exit_with_error(error_msg)

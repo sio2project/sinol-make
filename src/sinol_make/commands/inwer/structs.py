@@ -36,8 +36,8 @@ class TableData:
     # Dictionary with test path as key and verification result as value.
     results: dict[str, TestResult]
 
-    # Previous vertical height of table, used for moving cursor up.
-    previous_vertical_height: int
+    # Number of executions finished
+    i: int
 
 @dataclass
 class InwerExecution:

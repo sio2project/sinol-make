@@ -1,11 +1,14 @@
 import subprocess
+import sys
+import signal
+import threading
 import argparse
 import os
 import multiprocessing as mp
 
 from sinol_make import util
 from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult, TableData
-from sinol_make.helpers import package_util, compile
+from sinol_make.helpers import package_util, compile, printer
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.inwer import inwer_util
@@ -37,7 +40,7 @@ class Command(BaseCommand):
         add_compilation_arguments(parser)
 
     def compile_inwer(self, args: argparse.Namespace):
-        self.inwer_executable, compile_log_path = inwer_util.compile_inwer(self.inwer, args)
+        self.inwer_executable, compile_log_path = inwer_util.compile_inwer(self.inwer, args, args.weak_compilation_flags)
         if self.inwer_executable is None:
             print(util.error('Compilation failed.'))
             compile.print_compile_log(compile_log_path)
@@ -55,7 +58,17 @@ class Command(BaseCommand):
 
         command = [execution.inwer_exe_path]
         with open(execution.test_path, 'r') as test:
-            process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                       preexec_fn=os.setsid)
+
+            def sigint_handler(signum, frame):
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                sys.exit(1)
+            signal.signal(signal.SIGINT, sigint_handler)
+
             process.wait()
         exit_code = process.returncode
         out, _ = process.communicate()
@@ -74,12 +87,32 @@ class Command(BaseCommand):
             results[test] = TestResult(test)
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
 
+        has_terminal, terminal_width, terminal_height = util.get_terminal_size()
+
         table_data = TableData(results, 0)
-        print('Verifying tests...\n\n')
-        with mp.Pool(self.cpus) as pool:
-            for i, result in enumerate(pool.imap(self.verify_test, executions)):
-                table_data.results[result.test_path].set_results(result.valid, result.output)
-                inwer_util.print_view(table_data)
+        if has_terminal:
+            run_event = threading.Event()
+            run_event.set()
+            thr = threading.Thread(target=printer.printer_thread, args=(run_event, inwer_util.print_view, table_data))
+            thr.start()
+
+        keyboard_interrupt = False
+        try:
+            with mp.Pool(self.cpus) as pool:
+                for i, result in enumerate(pool.imap(self.verify_test, executions)):
+                    table_data.results[result.test_path].set_results(result.valid, result.output)
+                    table_data.i = i
+        except KeyboardInterrupt:
+            keyboard_interrupt = True
+
+        if has_terminal:
+            run_event.clear()
+            thr.join()
+
+        print("\n".join(inwer_util.print_view(terminal_width, terminal_height, table_data)[0]))
+
+        if keyboard_interrupt:
+            util.exit_with_error('Keyboard interrupt.')
 
         return results
 
