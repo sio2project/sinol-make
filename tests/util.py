@@ -39,6 +39,13 @@ def get_inwer_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "wer")
 
 
+def get_shell_ingen_pack_path():
+    """
+    Get path to package for testing shell ingen (/test/packages/gen)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "gen")
+
+
 def create_ins(package_path):
     """
     Create .in files for package.
