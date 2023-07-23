@@ -128,7 +128,11 @@ class Command(BaseCommand):
         if self.correct_solution is None:
             util.exit_with_error(f'Couldn\'t find correct solution file.')
 
-        self.compile_ingen()
+        if os.path.splitext(self.ingen)[1] != '.sh':
+            self.compile_ingen()
+        else:
+            self.ingen_exe = self.ingen
+
         if gen_util.run_ingen(self.ingen_exe):
             print(util.info('Successfully generated input files.'))
         else:
