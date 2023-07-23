@@ -34,12 +34,12 @@ def get_ingen(task_id=None, ingen_path=None):
     return ingen[0]
 
 
-def compile_ingen(ingen_path: str, args: argparse.Namespace):
+def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_flags=False):
     """
     Compiles ingen and returns path to compiled executable and path to compile log.
     """
     compilers = compiler.verify_compilers(args, [ingen_path])
-    return compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers)
+    return compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers, weak_compilation_flags)
 
 
 def get_correct_solution(task_id):
@@ -54,12 +54,13 @@ def get_correct_solution(task_id):
     return correct_solution[0]
 
 
-def compile_correct_solution(solution_path: str, args: argparse.Namespace):
+def compile_correct_solution(solution_path: str, args: argparse.Namespace, weak_compilation_flags=False):
     """
     Compiles correct solution and returns path to compiled executable and path to compile log.
     """
     compilers = compiler.verify_compilers(args, [solution_path])
-    return compile.compile_file(solution_path, package_util.get_executable(solution_path), compilers)
+    return compile.compile_file(solution_path, package_util.get_executable(solution_path), compilers,
+                                weak_compilation_flags)
 
 
 def run_ingen(ingen_exe):
@@ -82,14 +83,16 @@ def run_ingen(ingen_exe):
     return exit_code == 0
 
 
-def generate_output(correct_solution_exe, input_test, output_test):
+def generate_output(arguments):
     """
     Generates output file for given input file.
-    :param correct_solution_exe: path to correct solution executable
-    :param input_test: path to input file
-    :param output_test: path to output file
+    :param arguments: arguments for output generation (type OutputGenerationArguments)
     :return: True if the output was successfully generated, False otherwise
     """
+    input_test = arguments.input_test
+    output_test = arguments.output_test
+    correct_solution_exe = arguments.correct_solution_exe
+
     input_file = open(input_test, 'r')
     output_file = open(output_test, 'w')
     process = subprocess.Popen([correct_solution_exe], stdin=input_file, stdout=output_file, preexec_fn=os.setsid)

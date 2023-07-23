@@ -37,11 +37,12 @@ class Command(BaseCommand):
                             help='path to ingen source file, for example prog/abcingen.cpp')
         parser.add_argument('-c', '--cpus', type=int,
                             help=f'number of cpus to use, by default {mp.cpu_count()} (all available). '
-                                 f'Used when generating output files.')
+                                 f'Used when generating output files.', default=mp.cpu_count())
         parsers.add_compilation_arguments(parser)
 
     def compile_ingen(self):
-        self.ingen_exe, compile_log_path = gen_util.compile_ingen(self.ingen, self.args)
+        self.ingen_exe, compile_log_path = gen_util.compile_ingen(self.ingen, self.args,
+                                                                  self.args.weak_compilation_flags)
         if self.ingen_exe is None:
             print(util.error('Failed ingen compilation.'))
             compile.print_compile_log(compile_log_path)
@@ -50,7 +51,8 @@ class Command(BaseCommand):
             print(util.info('Successfully compiled ingen.'))
 
     def compile_correct_solution(self):
-        self.correct_solution_exe, compile_log_path = gen_util.compile_correct_solution(self.correct_solution, self.args)
+        self.correct_solution_exe, compile_log_path = gen_util.compile_correct_solution(self.correct_solution, self.args,
+                                                                                        self.args.weak_compilation_flags)
         if self.correct_solution_exe is None:
             print(util.error('Failed ingen compilation.'))
             compile.print_compile_log(compile_log_path)
@@ -59,20 +61,21 @@ class Command(BaseCommand):
             print(util.info('Successfully compiled ingen.'))
 
     def generate_outputs(self, outputs_to_generate):
+        print(f'Generating output files for {len(outputs_to_generate)} tests on {self.args.cpus} cpus.')
         arguments = []
         for output in outputs_to_generate:
             output_basename = os.path.basename(output)
-            input = os.path.join(os.getcwd(), 'in', output_basename + '.in')
+            input = os.path.join(os.getcwd(), 'in', os.path.splitext(output_basename)[0] + '.in')
             arguments.append(OutputGenerationArguments(self.correct_solution_exe, input, output))
 
         failed = False
         with mp.Pool(self.args.cpus) as pool:
             for i, result in enumerate(pool.imap_unordered(gen_util.generate_output, arguments)):
                 if result:
-                    print(util.info(f'Successfully generated output file {os.path.basename(arguments[i].output_file)}'))
+                    print(util.info(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}'))
                 else:
                     failed = True
-                    print(util.error(f'Failed to generate output file {os.path.basename(arguments[i].output_file)}'))
+                    print(util.error(f'Failed to generate output file {os.path.basename(arguments[i].output_test)}'))
 
         if failed:
             util.exit_with_error('Failed to generate some output files.')
@@ -86,13 +89,13 @@ class Command(BaseCommand):
         """
         old_md5_sums = None
         if os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
-            lines = open(os.path.join(os.getcwd(), 'in', '.md5sums')).readlines()
-            # If there is only one line, then the file is old format (without yaml, md5 sum of all files)
-            if len(lines) > 1:
-                try:
-                    old_md5_sums = yaml.load("\n".join(lines), Loader=yaml.FullLoader)
-                except yaml.YAMLError:
-                    pass
+            try:
+                with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'r') as f:
+                    old_md5_sums = yaml.load(f, Loader=yaml.FullLoader)
+            except yaml.YAMLError:
+                pass
+            if not isinstance(old_md5_sums, dict):
+                old_md5_sums = None
 
         solution_compiled = False
         md5_sums = {}
@@ -131,6 +134,10 @@ class Command(BaseCommand):
         else:
             util.exit_with_error('Failed to generate input files.')
         md5_sums, outputs_to_generate = self.calculate_md5_sums()
-        self.generate_outputs(outputs_to_generate)
+        if len(outputs_to_generate) == 0:
+            print(util.info('All output files are up to date.'))
+        else:
+            self.generate_outputs(outputs_to_generate)
+
         with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
             yaml.dump(md5_sums, f)

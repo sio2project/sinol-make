@@ -7,5 +7,5 @@ class OutputGenerationArguments:
     Arguments used for function that generates output file.
     """
     correct_solution_exe: str
-    input_file: str
-    output_file: str
+    input_test: str
+    output_test: str
