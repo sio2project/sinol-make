@@ -25,11 +25,11 @@ class Command(BaseCommand):
         parser = subparser.add_parser(
             self.get_name(),
             help='Generate input and output files',
-            description='Generate input files using gingen program '
-                        '(for example prog/abcingen.cpp for abc task). If there '
-                        'is a new test or it differs from the previous one, '
-                        'then the output file will be generated using the '
-                        'correct solution. You can also specify your ingen source '
+            description='Generate input files using ingen program '
+                        '(for example prog/abcingen.cpp for abc task). Whenever '
+                        'the new input differs from the previous one, '
+                        'the model solution will be used to generate the new output '
+                        'file. You can also specify your ingen source '
                         'file which will be used.'
         )
 

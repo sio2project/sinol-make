@@ -32,7 +32,7 @@ def get_ingen(task_id=None, ingen_path=None):
     if len(ingen) == 0:
         return None
 
-    # Makefiles prioritize non .sh ingens.
+    # Sio2 first chooses shell scripts, then non-shell source codes.
     if os.path.splitext(ingen[0])[1] == '.sh' and len(ingen) > 1:
         return ingen[1]
     else:
@@ -74,9 +74,7 @@ def run_ingen(ingen_exe):
     :param ingen_exe: path to ingen executable
     :return: True if ingen was successful, False otherwise
     """
-    shell = False
-    if os.path.splitext(ingen_exe)[1] == '.sh':
-        shell = True
+    shell = os.path.splitext(ingen_exe)[1] == '.sh'
 
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                cwd=os.path.join(os.getcwd(), 'in'), shell=shell)
