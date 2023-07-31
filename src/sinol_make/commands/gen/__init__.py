@@ -78,15 +78,19 @@ class Command(BaseCommand):
                 old_md5_sums = None
 
         solution_compiled = False
+        def compile_solution():
+            nonlocal solution_compiled
+            if not solution_compiled:
+                self.correct_solution_exe = gen_util.compile_correct_solution(self.correct_solution, self.args)
+                solution_compiled = True
+
         md5_sums = {}
         outputs_to_generate = []
         for file in glob.glob(os.path.join(os.getcwd(), 'in', '*.in')):
             basename = os.path.basename(file)
             md5_sums[basename] = hashlib.md5(open(file, 'rb').read()).hexdigest()
             if old_md5_sums is None or old_md5_sums.get(basename, '') != md5_sums[basename]:
-                if not solution_compiled:
-                    self.correct_solution_exe = gen_util.compile_correct_solution(self.correct_solution, self.args)
-                    solution_compiled = True
+                compile_solution()
 
                 output_basename = os.path.splitext(os.path.basename(basename))[0] + '.out'
                 outputs_to_generate.append(os.path.join(os.getcwd(), "out", output_basename))
