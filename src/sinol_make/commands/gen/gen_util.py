@@ -74,10 +74,10 @@ def run_ingen(ingen_exe):
     :param ingen_exe: path to ingen executable
     :return: True if ingen was successful, False otherwise
     """
-    shell = os.path.splitext(ingen_exe)[1] == '.sh'
+    is_shell = os.path.splitext(ingen_exe)[1] == '.sh'
 
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                               cwd=os.path.join(os.getcwd(), 'in'), shell=shell)
+                               cwd=os.path.join(os.getcwd(), 'in'), shell=is_shell)
     while process.poll() is None:
         line = process.stdout.readline()
         if line:
