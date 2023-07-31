@@ -16,7 +16,7 @@ cd "$(dirname "$0")" || exit 1
 mkdir -p ../cache
 g++ gen_helper.cpp -o ../cache/gen
 
-cpu_num=$(cat /proc/cpuinfo | grep -c processor)
+cpu_num=$(nproc)
 
 IFS=' '
 read -a tests <<< "$(cat tests)"
