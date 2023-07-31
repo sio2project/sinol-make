@@ -92,6 +92,8 @@ def run_ingen(ingen_exe):
     :return: True if ingen was successful, False otherwise
     """
     is_shell = os.path.splitext(ingen_exe)[1] == '.sh'
+    if is_shell:
+        os.system(f'chmod +x {ingen_exe}')
 
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                cwd=os.path.join(os.getcwd(), 'in'), shell=is_shell)
