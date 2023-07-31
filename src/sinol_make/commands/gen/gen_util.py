@@ -75,11 +75,11 @@ def compile_correct_solution(solution_path: str, args: argparse.Namespace, weak_
     correct_solution_exe, compile_log_path = compile.compile_file(solution_path, package_util.get_executable(solution_path), compilers,
                                 weak_compilation_flags)
     if correct_solution_exe is None:
-        print(util.error('Failed compilation of correct_solution.'))
+        print(util.error('Failed compilation of correct solution.'))
         compile.print_compile_log(compile_log_path)
         exit(1)
     else:
-        print(util.info('Successfully compiled correct_solution.'))
+        print(util.info('Successfully compiled correct solution.'))
 
     return correct_solution_exe
 
@@ -97,7 +97,7 @@ def run_ingen(ingen_exe):
                                cwd=os.path.join(os.getcwd(), 'in'), shell=is_shell)
     while process.poll() is None:
         print(process.stdout.readline().decode('utf-8'), end='')
-    
+
     print(process.stdout.read().decode('utf-8'), end='')
     exit_code = process.returncode
 
