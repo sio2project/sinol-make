@@ -50,7 +50,7 @@ class Command(BaseCommand):
 
         failed = False
         with mp.Pool(self.args.cpus) as pool:
-            for i, result in enumerate(pool.imap_unordered(gen_util.generate_output, arguments)):
+            for i, result in enumerate(pool.imap(gen_util.generate_output, arguments)):
                 if result:
                     print(util.info(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}'))
                 else:
