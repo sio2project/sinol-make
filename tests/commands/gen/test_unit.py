@@ -44,7 +44,7 @@ def test_get_ingen():
         ingen_path = gen_util.get_ingen("gen", "prog/geningen.cpp")
         assert ingen_path is None
 
-        os.rename("prog/gen.cpp", "prog/geningen.cpp")
+        os.rename("prog/gen_helper.cpp", "prog/geningen.cpp")
         ingen_path = gen_util.get_ingen("gen")
         assert os.path.basename(ingen_path) == "geningen.cpp"
 

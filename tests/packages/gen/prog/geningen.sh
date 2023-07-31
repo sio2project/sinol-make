@@ -7,14 +7,14 @@ function generate() {
     start=$1
     end=$2
     for ((i=start; i<end; i++)); do
-      output=${tests[$i]/.in/.out}
-      ./gen "${tests[$i]}" > "../in/$output"
-      echo "Generated $output"
+      ../cache/gen "${tests[$i]}" > "../in/${tests[$i]}"
+      echo "Generated ${tests[$i]}"
     done
 }
 
 cd "$(dirname "$0")" || exit 1
-g++ gen.cpp -o gen
+mkdir -p ../cache
+g++ gen_helper.cpp -o ../cache/gen
 
 cpu_num=$(cat /proc/cpuinfo | grep -c processor)
 
