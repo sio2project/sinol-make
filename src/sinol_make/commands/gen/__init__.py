@@ -1,7 +1,6 @@
 import argparse
 import glob
 import os
-import subprocess
 import hashlib
 import yaml
 
@@ -12,6 +11,7 @@ from sinol_make.commands.gen import gen_util
 from sinol_make.commands.gen.structs import OutputGenerationArguments
 from sinol_make.helpers import parsers, package_util, compile
 from sinol_make.interfaces.BaseCommand import BaseCommand
+
 
 class Command(BaseCommand):
     """
@@ -39,16 +39,6 @@ class Command(BaseCommand):
                             help=f'number of cpus to use, by default {mp.cpu_count()} (all available). '
                                  f'Used when generating output files.', default=mp.cpu_count())
         parsers.add_compilation_arguments(parser)
-
-    def compile_ingen(self):
-        self.ingen_exe, compile_log_path = gen_util.compile_ingen(self.ingen, self.args,
-                                                                  self.args.weak_compilation_flags)
-        if self.ingen_exe is None:
-            print(util.error('Failed ingen compilation.'))
-            compile.print_compile_log(compile_log_path)
-            exit(1)
-        else:
-            print(util.info('Successfully compiled ingen.'))
 
     def compile_correct_solution(self):
         self.correct_solution_exe, compile_log_path = gen_util.compile_correct_solution(self.correct_solution, self.args,
@@ -129,7 +119,7 @@ class Command(BaseCommand):
             util.exit_with_error(f'Couldn\'t find correct solution file.')
 
         if os.path.splitext(self.ingen)[1] != '.sh':
-            self.compile_ingen()
+            self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args)
         else:
             self.ingen_exe = self.ingen
 

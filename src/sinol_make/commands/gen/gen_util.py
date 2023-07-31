@@ -41,10 +41,18 @@ def get_ingen(task_id=None, ingen_path=None):
 
 def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_flags=False):
     """
-    Compiles ingen and returns path to compiled executable and path to compile log.
+    Compiles ingen and returns path to compiled executable.
     """
     compilers = compiler.verify_compilers(args, [ingen_path])
-    return compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers, weak_compilation_flags)
+    ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers, weak_compilation_flags)
+
+    if ingen_exe is None:
+        print(util.error('Failed ingen compilation.'))
+        compile.print_compile_log(compile_log_path)
+        exit(1)
+    else:
+        print(util.info('Successfully compiled ingen.'))
+    return ingen_exe
 
 
 def get_correct_solution(task_id):
