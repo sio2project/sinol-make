@@ -40,16 +40,6 @@ class Command(BaseCommand):
                                  f'Used when generating output files.', default=mp.cpu_count())
         parsers.add_compilation_arguments(parser)
 
-    def compile_correct_solution(self):
-        self.correct_solution_exe, compile_log_path = gen_util.compile_correct_solution(self.correct_solution, self.args,
-                                                                                        self.args.weak_compilation_flags)
-        if self.correct_solution_exe is None:
-            print(util.error('Failed ingen compilation.'))
-            compile.print_compile_log(compile_log_path)
-            exit(1)
-        else:
-            print(util.info('Successfully compiled ingen.'))
-
     def generate_outputs(self, outputs_to_generate):
         print(f'Generating output files for {len(outputs_to_generate)} tests on {self.args.cpus} cpus.')
         arguments = []
@@ -95,7 +85,7 @@ class Command(BaseCommand):
             md5_sums[basename] = hashlib.md5(open(file, 'rb').read()).hexdigest()
             if old_md5_sums is None or old_md5_sums.get(basename, '') != md5_sums[basename]:
                 if not solution_compiled:
-                    self.compile_correct_solution()
+                    self.correct_solution_exe = gen_util.compile_correct_solution(self.correct_solution, self.args)
                     solution_compiled = True
 
                 output_basename = os.path.splitext(os.path.basename(basename))[0] + '.out'

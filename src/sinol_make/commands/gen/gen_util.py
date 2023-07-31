@@ -69,11 +69,20 @@ def get_correct_solution(task_id):
 
 def compile_correct_solution(solution_path: str, args: argparse.Namespace, weak_compilation_flags=False):
     """
-    Compiles correct solution and returns path to compiled executable and path to compile log.
+    Compiles correct solution and returns path to compiled executable.
     """
     compilers = compiler.verify_compilers(args, [solution_path])
-    return compile.compile_file(solution_path, package_util.get_executable(solution_path), compilers,
+    correct_solution_exe, compile_log_path = compile.compile_file(solution_path, package_util.get_executable(solution_path), compilers,
                                 weak_compilation_flags)
+    if correct_solution_exe is None:
+        print(util.error('Failed compilation of correct_solution.'))
+        compile.print_compile_log(compile_log_path)
+        exit(1)
+    else:
+        print(util.info('Successfully compiled correct_solution.'))
+
+    return correct_solution_exe
+
 
 
 def run_ingen(ingen_exe):
