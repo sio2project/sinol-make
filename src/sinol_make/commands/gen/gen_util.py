@@ -96,12 +96,9 @@ def run_ingen(ingen_exe):
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                cwd=os.path.join(os.getcwd(), 'in'), shell=is_shell)
     while process.poll() is None:
-        line = process.stdout.readline()
-        if line:
-            print(line.decode('utf-8'), end='')
-    line = process.stdout.read().decode('utf-8').strip()
-    if line:
-        print(process.stdout.read().decode('utf-8'), end='')
+        print(process.stdout.readline().decode('utf-8'), end='')
+    
+    print(process.stdout.read().decode('utf-8'), end='')
     exit_code = process.returncode
 
     return exit_code == 0
