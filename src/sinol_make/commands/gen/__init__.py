@@ -81,7 +81,8 @@ class Command(BaseCommand):
         def compile_solution():
             nonlocal solution_compiled
             if not solution_compiled:
-                self.correct_solution_exe = gen_util.compile_correct_solution(self.correct_solution, self.args)
+                self.correct_solution_exe = gen_util.compile_correct_solution(self.correct_solution, self.args,
+                                                                              self.args.weak_compilation_flags)
                 solution_compiled = True
 
         md5_sums = {}
@@ -113,7 +114,7 @@ class Command(BaseCommand):
             util.exit_with_error(f'Couldn\'t find correct solution file.')
 
         if os.path.splitext(self.ingen)[1] != '.sh':
-            self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args)
+            self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
         else:
             self.ingen_exe = self.ingen
 
