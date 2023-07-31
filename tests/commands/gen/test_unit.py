@@ -50,14 +50,14 @@ def test_get_ingen():
 
 
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
-def test_compile_inwer(create_package):
+def test_compile_ingen(create_package):
     """
-    Test compilation of inwer.
+    Test compilation of ingen.
     """
     task_id = package_util.get_task_id()
     ingen_path = gen_util.get_ingen(task_id)
     args = compiler.get_default_compilers()
-    executable, compile_log = gen_util.compile_ingen(ingen_path, args)
+    executable = gen_util.compile_ingen(ingen_path, args)
     assert os.path.exists(executable)
 
 
@@ -79,7 +79,7 @@ def test_compile_correct_solution(create_package):
     task_id = package_util.get_task_id()
     correct_solution_path = gen_util.get_correct_solution(task_id)
     args = compiler.get_default_compilers()
-    executable, compile_log = gen_util.compile_correct_solution(correct_solution_path, args)
+    executable = gen_util.compile_correct_solution(correct_solution_path, args)
     assert os.path.exists(executable)
 
 
@@ -92,7 +92,7 @@ def test_run_ingen(create_package):
     task_id = package_util.get_task_id()
     ingen_path = gen_util.get_ingen(task_id)
     args = compiler.get_default_compilers()
-    executable, _ = gen_util.compile_ingen(ingen_path, args)
+    executable = gen_util.compile_ingen(ingen_path, args)
 
     gen_util.run_ingen(executable)
     files = glob.glob(os.path.join(package_path, "in", "*.in"))
@@ -109,10 +109,10 @@ def test_generate_output(create_package):
     task_id = package_util.get_task_id()
     ingen_path = gen_util.get_ingen(task_id)
     args = compiler.get_default_compilers()
-    ingen_exe, _ = gen_util.compile_ingen(ingen_path, args)
+    ingen_exe = gen_util.compile_ingen(ingen_path, args)
 
     correct_solution = gen_util.get_correct_solution(task_id)
-    correct_sol_exe, _ = gen_util.compile_correct_solution(correct_solution, args)
+    correct_sol_exe = gen_util.compile_correct_solution(correct_solution, args)
 
     gen_util.run_ingen(ingen_exe)
     assert gen_util.generate_output(OutputGenerationArguments(correct_sol_exe, "in/abc1a.in", "out/abc1a.out"))
