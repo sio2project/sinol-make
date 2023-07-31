@@ -48,16 +48,16 @@ class Command(BaseCommand):
             input = os.path.join(os.getcwd(), 'in', os.path.splitext(output_basename)[0] + '.in')
             arguments.append(OutputGenerationArguments(self.correct_solution_exe, input, output))
 
-        failed = False
+        results = []
         with mp.Pool(self.args.cpus) as pool:
             for i, result in enumerate(pool.imap(gen_util.generate_output, arguments)):
+                results.append(result)
                 if result:
                     print(util.info(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}'))
                 else:
-                    failed = True
                     print(util.error(f'Failed to generate output file {os.path.basename(arguments[i].output_test)}'))
 
-        if failed:
+        if not all(results):
             util.exit_with_error('Failed to generate some output files.')
         else:
             print(util.info('Successfully generated all output files.'))
