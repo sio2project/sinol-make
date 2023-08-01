@@ -275,6 +275,13 @@ def warning(text):
 def error(text):
     return bold(color_red(text))
 
+
 def exit_with_error(text):
     print(error(text))
+    exit(1)
+
+
+def exit_with_error_func(text, func):
+    print(error(text))
+    func()
     exit(1)
