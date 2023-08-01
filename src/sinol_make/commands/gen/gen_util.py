@@ -47,7 +47,7 @@ def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_fl
     ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers, weak_compilation_flags)
 
     if ingen_exe is None:
-        util.exit_with_error_func('Failed ingen compilation.', lambda: compile.print_compile_log(compile_log_path))
+        util.exit_with_error('Failed ingen compilation.', lambda: compile.print_compile_log(compile_log_path))
     else:
         print(util.info('Successfully compiled ingen.'))
     return ingen_exe
@@ -73,7 +73,7 @@ def compile_correct_solution(solution_path: str, args: argparse.Namespace, weak_
     correct_solution_exe, compile_log_path = compile.compile_file(solution_path, package_util.get_executable(solution_path), compilers,
                                 weak_compilation_flags)
     if correct_solution_exe is None:
-        util.exit_with_error_func('Failed compilation of correct solution.',
+        util.exit_with_error('Failed compilation of correct solution.',
                                   lambda: compile.print_compile_log(compile_log_path))
     else:
         print(util.info('Successfully compiled correct solution.'))

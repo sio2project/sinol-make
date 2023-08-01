@@ -276,12 +276,8 @@ def error(text):
     return bold(color_red(text))
 
 
-def exit_with_error(text):
+def exit_with_error(text, func=None):
     print(error(text))
-    exit(1)
-
-
-def exit_with_error_func(text, func):
-    print(error(text))
-    func()
+    if func is not None:
+        func()
     exit(1)
