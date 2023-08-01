@@ -68,14 +68,13 @@ class Command(BaseCommand):
         :return: Tuple (dictionary of md5 sums, list of outputs tests that need to be generated)
         """
         old_md5_sums = None
-        if os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
-            try:
-                with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'r') as f:
-                    old_md5_sums = yaml.load(f, Loader=yaml.FullLoader)
-            except yaml.YAMLError:
-                pass
-            if not isinstance(old_md5_sums, dict):
-                old_md5_sums = None
+        try:
+            with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'r') as f:
+                old_md5_sums = yaml.load(f, Loader=yaml.FullLoader)
+        except yaml.YAMLError | FileNotFoundError:
+            pass
+        if not isinstance(old_md5_sums, dict):
+            old_md5_sums = None
 
         md5_sums = {}
         outputs_to_generate = []
