@@ -71,10 +71,10 @@ class Command(BaseCommand):
         try:
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'r') as f:
                 old_md5_sums = yaml.load(f, Loader=yaml.FullLoader)
+            if not isinstance(old_md5_sums, dict):
+                old_md5_sums = None
         except (yaml.YAMLError, OSError):
             pass
-        if not isinstance(old_md5_sums, dict):
-            old_md5_sums = None
 
         md5_sums = {}
         outputs_to_generate = []
