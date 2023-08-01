@@ -29,8 +29,10 @@ def test_get_ingen():
         ingen_path = gen_util.get_ingen("abc", "prog/abcingen.cpp")
         assert os.path.basename(ingen_path) == "abcingen.cpp"
 
-        ingen_path = gen_util.get_ingen("abc", "prog/abcingen.c")
-        assert ingen_path is None
+        with pytest.raises(SystemExit) as e:
+            gen_util.get_ingen("abc", "prog/abcingen.c")
+        assert e.type == SystemExit
+        assert e.value.code == 1
 
         shutil.copytree(gen_package_path, os.path.join(tmpdir, 'gen'))
         os.chdir(os.path.join(tmpdir, 'gen'))
@@ -41,8 +43,10 @@ def test_get_ingen():
         ingen_path = gen_util.get_ingen("gen")
         assert os.path.basename(ingen_path) == "geningen.sh"
 
-        ingen_path = gen_util.get_ingen("gen", "prog/geningen.cpp")
-        assert ingen_path is None
+        with pytest.raises(SystemExit) as e:
+            gen_util.get_ingen("gen", "prog/geningen.cpp")
+        assert e.type == SystemExit
+        assert e.value.code == 1
 
         os.rename("prog/gen_helper.cpp", "prog/geningen.cpp")
         ingen_path = gen_util.get_ingen("gen")

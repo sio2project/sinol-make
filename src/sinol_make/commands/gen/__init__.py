@@ -94,13 +94,9 @@ class Command(BaseCommand):
         self.args = args
         self.task_id = package_util.get_task_id()
         self.ingen = gen_util.get_ingen(self.task_id, args.ingen_path)
-        if self.ingen is None:
-            util.exit_with_error(f'Couldn\'t find ingen source file.')
         print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
 
         self.correct_solution = gen_util.get_correct_solution(self.task_id)
-        if self.correct_solution is None:
-            util.exit_with_error(f'Couldn\'t find correct solution file.')
 
         if os.path.splitext(self.ingen)[1] != '.sh':
             self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)

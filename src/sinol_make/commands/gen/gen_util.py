@@ -24,13 +24,13 @@ def get_ingen(task_id=None, ingen_path=None):
         if os.path.exists(ingen_path):
             return ingen_path
         else:
-            return None
+            util.exit_with_error(f'Ingen source file {ingen_path} does not exist.')
 
     if task_id is None:
         task_id = '*'
     ingen = glob.glob(os.path.join(os.getcwd(), 'prog', task_id + 'ingen.*'))
     if len(ingen) == 0:
-        return None
+        util.exit_with_error(f'Ingen source file for task {task_id} does not exist.')
 
     # Sio2 first chooses shell scripts, then non-shell source codes.
     if os.path.splitext(ingen[0])[1] == '.sh' and len(ingen) > 1:
@@ -63,7 +63,7 @@ def get_correct_solution(task_id):
     """
     correct_solution = glob.glob(os.path.join(os.getcwd(), 'prog', task_id + '.*'))
     if len(correct_solution) == 0:
-        return None
+        util.exit_with_error(f'Correct solution for task {task_id} does not exist.')
     return correct_solution[0]
 
 
