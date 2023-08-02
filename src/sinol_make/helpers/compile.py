@@ -31,7 +31,7 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
 
     gcc_compilation_flags = '-Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
     if weak_compilation_flags:
-        gcc_compilation_flags = '-w' # Disable all warnings
+        gcc_compilation_flags = '-w'  # Disable all warnings
 
     if compilers is None:
         compilers = Compilers()

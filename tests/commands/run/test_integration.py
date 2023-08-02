@@ -4,7 +4,7 @@ from sinol_make import configure_parsers
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path()], indirect=True)
+                                            get_checker_package_path(), get_library_package_path()], indirect=True)
 def test_simple(create_package, time_tool):
     """
     Test a simple run.
@@ -20,7 +20,7 @@ def test_simple(create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path()], indirect=True)
+                                            get_checker_package_path(), get_library_package_path()], indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -51,7 +51,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path()], indirect=True)
+                                            get_checker_package_path(), get_library_package_path()], indirect=True)
 def test_apply_suggestions(create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -105,7 +105,8 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
     assert "Solution abc.cpp passed group 1 with status OK while it should pass with status WA." in out
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path(),
+                                            get_library_package_path()], indirect=True)
 def test_flag_tests(create_package, time_tool):
     """
     Test flag --tests.

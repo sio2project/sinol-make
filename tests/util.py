@@ -25,6 +25,13 @@ def get_checker_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "chk")
 
 
+def get_library_package_path():
+    """
+    Get path to package with library command (/test/packages/lib)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "lib")
+
+
 def get_weak_compilation_flags_package_path():
     """
     Get path to package for testing weak compilation flags (/test/packages/wcf)
@@ -73,4 +80,6 @@ def create_ins_outs(package_path):
     Create .in and .out files for package.
     """
     create_ins(package_path)
-    create_outs(package_path)
+    has_lib = len(glob.glob(os.path.join(package_path, "prog", "???lib.*"))) > 0
+    if not has_lib:
+        create_outs(package_path)
