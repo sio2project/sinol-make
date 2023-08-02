@@ -131,7 +131,14 @@ def save_config(config):
         "time_limits",
         "override_limits",
         "scores",
-        "extra_compilation_files",
+        {
+            "key": "extra_compilation_files",
+            "default_flow_style": None
+        },
+        {
+            "key": "extra_compilation_args",
+            "default_flow_style": None
+        },
         {
             "key": "sinol_expected_scores",
             "default_flow_style": None

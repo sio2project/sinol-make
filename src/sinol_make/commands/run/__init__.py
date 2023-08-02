@@ -315,20 +315,33 @@ class Command(BaseCommand):
         os.makedirs(self.COMPILATION_DIR, exist_ok=True)
         os.makedirs(self.EXECUTABLES_DIR, exist_ok=True)
         print("Compiling %d solutions..." % len(solutions))
+        args = [(solution, True) for solution in solutions]
         with mp.Pool(self.cpus) as pool:
-            compilation_results = pool.map(self.compile, solutions)
+            compilation_results = pool.starmap(self.compile, args)
         return compilation_results
 
 
-    def compile(self, solution):
+    def compile(self, solution, use_extras = False):
         compile_log_file = os.path.join(
             self.COMPILATION_DIR, "%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
 
+        extra_compilation_args = []
+        extra_compilation_files = []
+        if use_extras:
+            if "extra_compilation_args" in self.config:
+                lang = os.path.splitext(source_file)[1][1:]
+                for file in self.config["extra_compilation_args"].get(lang, []):
+                    extra_compilation_args.append(os.path.join(os.getcwd(), "prog", file))
+
+            for file in self.config.get("extra_compilation_files", []):
+                extra_compilation_files.append(os.path.join(os.getcwd(), "prog", file))
+
         try:
             compile.compile(source_file, output, self.compilers,
-                            open(compile_log_file, "w"), self.args.weak_compilation_flags)
+                            open(compile_log_file, "w"), self.args.weak_compilation_flags, extra_compilation_args,
+                            extra_compilation_files)
             print(util.info("Compilation of file %s was successful."
                             % package_util.get_file_name(solution)))
             return True
@@ -969,7 +982,8 @@ class Command(BaseCommand):
             if len(example_tests) == len(self.tests):
                 print(util.warning('Running only on example tests.'))
 
-            self.validate_existence_of_outputs()
+            if not self.has_lib:
+                self.validate_existence_of_outputs()
         else:
             print(util.warning('There are no tests to run.'))
 
@@ -1034,6 +1048,9 @@ class Command(BaseCommand):
                 util.exit_with_error('Checker compilation failed.')
         else:
             self.checker = None
+
+        lib = glob.glob(os.path.join(os.getcwd(), "prog", f'{self.ID}lib.*'))
+        self.has_lib = len(lib) != 0
 
         self.set_scores()
         self.check_are_any_tests_to_run()

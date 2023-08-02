@@ -1,15 +1,34 @@
 from typing import Tuple
+import os
+import sys
+import shutil
+import subprocess
 
 import sinol_make.helpers.compiler as compiler
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
-import os, subprocess, sys
 
-def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False):
+
+def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
+            extra_compilation_args = None, extra_compilation_files = None):
     """
-    Compile a program
-    compilers - A Compilers object with compilers to use. If None, default compilers will be used.
+    Compile a program.
+    :param program: Path to the program to compile
+    :param output: Path to the output file
+    :param compilers: Compilers object
+    :param compile_log: File to write the compilation log to
+    :param weak_compilation_flags: If True, disable all warnings
+    :param extra_compilation_args: Extra compilation arguments
+    :param extra_compilation_files: Extra compilation files
     """
+    if extra_compilation_args is None:
+        extra_compilation_args = []
+    if extra_compilation_files is None:
+        extra_compilation_files = []
+
+    for file in extra_compilation_files:
+        shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
+
     gcc_compilation_flags = '-Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
     if weak_compilation_flags:
         gcc_compilation_flags = '-w' # Disable all warnings
@@ -20,10 +39,12 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     ext = os.path.splitext(program)[1]
     arguments = []
     if ext == '.cpp':
-        arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program, '-o', output] + \
+        arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program] + \
+                    extra_compilation_args + ['-o', output] + \
                     f'--std=c++17 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
     elif ext == '.c':
-        arguments = [compilers.c_compiler_path, program, '-o', output] + \
+        arguments = [compilers.c_compiler_path or compiler.get_c_compiler_path(), program] + \
+                    extra_compilation_args + ['-o', output] + \
                     f'--std=c17 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
