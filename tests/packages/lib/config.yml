@@ -1,0 +1,19 @@
+title: Package with lib file
+memory_limit: 16000
+time_limit: 1000
+scores:
+  1: 50
+  2: 50
+extra_compilation_files: [liblib.cpp, liblib.h, liblib.py]
+extra_compilation_args:
+  cpp: [liblib.cpp]
+sinol_expected_scores:
+  lib.cpp:
+    expected: {1: OK, 2: OK}
+    points: 100
+  lib.py:
+    expected: {1: OK, 2: OK}
+    points: 100
+  libs1.cpp:
+    expected: {1: WA, 2: OK}
+    points: 50
