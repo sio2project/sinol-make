@@ -1,9 +1,13 @@
 from typing import Tuple
+import os
+import sys
+import stat
+import subprocess
 
 import sinol_make.helpers.compiler as compiler
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
-import os, subprocess, sys
+
 
 def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False):
     """
@@ -32,7 +36,8 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         else:
             open(output, 'w').write('#!/usr/bin/python3\n')
             open(output, 'a').write(open(program, 'r').read())
-            subprocess.call(['chmod', '+x', output])
+            st = os.stat(output)
+            os.chmod(output, st.st_mode | stat.S_IEXEC)
         arguments = [compilers.python_interpreter_path, '-m', 'py_compile', program]
     elif ext == '.java':
         raise NotImplementedError('Java compilation is not implemented')

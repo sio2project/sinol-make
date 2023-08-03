@@ -1,6 +1,6 @@
 import glob
 import os
-
+import stat
 import argparse
 import signal
 import subprocess
@@ -90,7 +90,8 @@ def run_ingen(ingen_exe):
     """
     is_shell = os.path.splitext(ingen_exe)[1] == '.sh'
     if is_shell:
-        os.system(f'chmod +x {ingen_exe}')
+        st = os.stat(ingen_exe)
+        os.chmod(ingen_exe, st.st_mode | stat.S_IEXEC)
 
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                cwd=os.path.join(os.getcwd(), 'in'), shell=is_shell)
