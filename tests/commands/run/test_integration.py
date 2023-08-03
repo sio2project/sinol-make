@@ -31,9 +31,11 @@ def test_no_expected_scores(capsys, create_package, time_tool):
     create_ins_outs(package_path)
 
     config_path = os.path.join(package_path, "config.yml")
-    config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
     del config["sinol_expected_scores"]
-    open(config_path, "w").write(yaml.dump(config))
+    with open(config_path, "w") as config_file:
+        config_file.write(yaml.dump(config))
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", time_tool])
@@ -62,17 +64,20 @@ def test_apply_suggestions(create_package, time_tool):
     create_ins_outs(package_path)
 
     config_path = os.path.join(package_path, "config.yml")
-    config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
     expected_scores = config["sinol_expected_scores"]
     del config["sinol_expected_scores"]
-    open(config_path, "w").write(yaml.dump(config))
+    with open(config_path, "w") as config_file:
+        config_file.write(yaml.dump(config))
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--apply-suggestions", "--time-tool", time_tool])
     command = Command()
     command.run(args)
 
-    config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
     assert config["sinol_expected_scores"] == expected_scores
 
 
@@ -86,10 +91,12 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
     create_ins_outs(package_path)
 
     config_path = os.path.join(package_path, "config.yml")
-    config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
     config["sinol_expected_scores"]["abc.cpp"]["expected"][1] = "WA"
     config["sinol_expected_scores"]["abc.cpp"]["points"] = 75
-    open(config_path, "w").write(yaml.dump(config))
+    with open(config_path, "w") as config_file:
+        config_file.write(yaml.dump(config))
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", time_tool])
@@ -179,9 +186,11 @@ def test_no_scores(capsys, create_package, time_tool):
     create_ins_outs(package_path)
 
     config_path = os.path.join(package_path, "config.yml")
-    config = yaml.load(open(config_path, "r"), Loader=yaml.SafeLoader)
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
     del config["scores"]
-    open(config_path, "w").write(yaml.dump(config))
+    with open(config_path, "w") as config_file:
+        config_file.write(yaml.dump(config))
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", time_tool])

@@ -79,7 +79,8 @@ def install_oiejq():
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz couldn\'t connect)')
     if request.status_code != 200:
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
-    open('/tmp/oiejq.tar.gz', 'wb').write(request.content)
+    with open('/tmp/oiejq.tar.gz', 'wb') as oiejq_file:
+        oiejq_file.write(request.content)
 
     def strip(tar):
         l = len('oiejq/')
@@ -247,12 +248,13 @@ def lines_diff(lines1, lines2):
     return True
 
 
-def file_diff(file1, file2):
+def file_diff(file1_path, file2_path):
     """
     Function to compare two files.
     Returns True if they are the same, False otherwise.
     """
-    return lines_diff(open(file1).readlines(), open(file2).readlines())
+    with open(file1_path) as file1, open(file2_path) as file2:
+        return lines_diff(file1.readlines(), file2.readlines())
 
 
 def get_terminal_size():

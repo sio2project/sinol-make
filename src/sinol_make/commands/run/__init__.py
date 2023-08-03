@@ -339,9 +339,9 @@ class Command(BaseCommand):
                 extra_compilation_files.append(os.path.join(os.getcwd(), "prog", file))
 
         try:
-            compile.compile(source_file, output, self.compilers,
-                            open(compile_log_file, "w"), self.args.weak_compilation_flags, extra_compilation_args,
-                            extra_compilation_files)
+            with open(compile_log_file, "w") as compile_log:
+                compile.compile(source_file, output, self.compilers, compile_log, self.args.weak_compilation_flags,
+                                extra_compilation_args, extra_compilation_files)
             print(util.info("Compilation of file %s was successful."
                             % package_util.get_file_name(solution)))
             return True
@@ -391,10 +391,12 @@ class Command(BaseCommand):
         Returns a tuple (is correct, number of points).
         """
         if not hasattr(self, "checker") or self.checker is None:
-            correct = util.lines_diff(output, open(answer_file_path, "r").readlines())
+            with open(answer_file_path, "r") as answer_file:
+                correct = util.lines_diff(output, answer_file.readlines())
             return correct, 100 if correct else 0
         else:
-            open(output_file_path, "w").write("\n".join(output))
+            with open(output_file_path, "w") as output_file:
+                output_file.write("\n".join(output))
             return self.check_output_checker(name, input_file, output_file_path, answer_file_path)
 
 
@@ -494,7 +496,8 @@ class Command(BaseCommand):
         program_exit_code = None
         if not timeout:
             output = output.decode("utf-8").splitlines()
-            lines = open(result_file_path).readlines()
+            with open(result_file_path, "r") as result_file:
+                lines = result_file.readlines()
             if len(lines) == 3:
                 """
                 If programs runs successfully, the output looks like this:
@@ -1004,10 +1007,11 @@ class Command(BaseCommand):
 
         self.set_constants()
         self.args = args
-        try:
-            self.config = yaml.load(open("config.yml"), Loader=yaml.FullLoader)
-        except AttributeError:
-            self.config = yaml.load(open("config.yml"))
+        with open(os.path.join(os.getcwd(), "config.yml"), 'r') as config:
+            try:
+                self.config = yaml.load(config, Loader=yaml.FullLoader)
+            except AttributeError:
+                self.config = yaml.load(config)
 
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')
