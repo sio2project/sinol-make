@@ -28,7 +28,12 @@ class Command(BaseCommand):
         parser.add_argument('-o', '--output', type=str, default='export',
                             help='output directory. Default: export')
 
-    def copy_files(self, target_dir: str):
+    @staticmethod
+    def copy_files(target_dir: str):
+        """
+        Copies files from current directory to target directory.
+        :param target_dir: Directory to copy files to.
+        """
         files = ['config.yml', 'makefile.in', 'Makefile.in',
                  'in', 'out', 'prog', 'doc', 'public']
         for file in files:
@@ -39,7 +44,14 @@ class Command(BaseCommand):
                 else:
                     shutil.copy(file_path, target_dir)
 
-    def create_files(self, target_dir: str, task_id: str, config: dict):
+    @staticmethod
+    def create_files(target_dir: str, task_id: str, config: dict):
+        """
+        Creates required files in target directory (makefile.in).
+        :param target_dir: Directory to create files in.
+        :param task_id: Task id.
+        :param config: Config dictionary.
+        """
         with open(os.path.join(target_dir, 'makefile.in'), 'w') as f:
             cxx_flags = '-std=c++17'
             c_flags = '-std=c17'
@@ -61,6 +73,13 @@ class Command(BaseCommand):
                     f'CFLAGS += {c_flags}\n')
 
     def compress(self, tmpdir, target_dir, task_id):
+        """
+        Compresses target directory to archive.
+        :param tmpdir: Temporary directory path.
+        :param target_dir: Target directory path.
+        :param task_id: Task id.
+        :return: Path to archive.
+        """
         archive = os.path.join(tmpdir, f'{task_id}.tgz')
         with tarfile.open(archive, "w:gz") as tar:
             tar.add(target_dir, arcname=os.path.basename(target_dir))
