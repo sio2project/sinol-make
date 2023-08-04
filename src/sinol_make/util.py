@@ -1,4 +1,5 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
+import tempfile
 import importlib.resources
 import threading
 
@@ -79,20 +80,21 @@ def install_oiejq():
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz couldn\'t connect)')
     if request.status_code != 200:
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
-    with open('/tmp/oiejq.tar.gz', 'wb') as oiejq_file:
-        oiejq_file.write(request.content)
 
-    def strip(tar):
-        l = len('oiejq/')
-        for member in tar.getmembers():
-            member.name = member.name[l:]
-            yield member
+    with tempfile.TemporaryDirectory() as tmpdir:
+        oiejq_path = os.path.join(tmpdir, 'oiejq.tar.gz')
+        with open(oiejq_path, 'wb') as oiejq_file:
+            oiejq_file.write(request.content)
 
-    tar = tarfile.open('/tmp/oiejq.tar.gz')
-    tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
-    tar.close()
-    os.remove('/tmp/oiejq.tar.gz')
-    os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
+        def strip(tar):
+            l = len('oiejq/')
+            for member in tar.getmembers():
+                member.name = member.name[l:]
+                yield member
+
+        with tarfile.open(oiejq_path) as tar:
+            tar.extractall(path=tmpdir, members=strip(tar))
+        os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
 
     return check_oiejq()
 
