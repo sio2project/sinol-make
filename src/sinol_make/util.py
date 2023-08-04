@@ -263,6 +263,14 @@ def get_terminal_size():
         terminal_height = 30
     return has_terminal, terminal_width, terminal_height
 
+
+def fix_file_endings(file):
+    with open(file, "rb") as f:
+        content = f.read()
+    with open(file, "wb") as f:
+        f.write(content.replace(b"\r\n", b"\n"))
+
+
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
@@ -275,6 +283,9 @@ def warning(text):
 def error(text):
     return bold(color_red(text))
 
-def exit_with_error(text):
+
+def exit_with_error(text, func=None):
     print(error(text))
+    if func is not None:
+        func()
     exit(1)
