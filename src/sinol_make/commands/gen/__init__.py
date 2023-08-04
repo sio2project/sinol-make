@@ -70,9 +70,9 @@ class Command(BaseCommand):
         old_md5_sums = None
         try:
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'r') as f:
-                old_md5_sums = yaml.load(f, Loader=yaml.FullLoader)
-                if not isinstance(old_md5_sums, dict):
-                    old_md5_sums = None
+                file_content = yaml.load(f, Loader=yaml.FullLoader)
+                if isinstance(file_content, dict):
+                    old_md5_sums = file_content
         except (yaml.YAMLError, OSError):
             pass
 
