@@ -366,10 +366,8 @@ class Command(BaseCommand):
                     pass
 
             return True, points
-        elif checker_output[0].strip() == "WRONG":
-            return False, 0
         else:
-            raise CheckerOutputException("Checker output is invalid.")
+            return False, 0
 
 
     def check_output(self, name, input_file, output_file_path, output, answer_file_path):
