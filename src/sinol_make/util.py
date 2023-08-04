@@ -1,4 +1,5 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
+import tempfile
 import importlib.resources
 import threading
 
@@ -79,19 +80,25 @@ def install_oiejq():
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz couldn\'t connect)')
     if request.status_code != 200:
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
-    open('/tmp/oiejq.tar.gz', 'wb').write(request.content)
 
-    def strip(tar):
-        l = len('oiejq/')
-        for member in tar.getmembers():
-            member.name = member.name[l:]
-            yield member
+    # oiejq is downloaded to a temporary directory and not to the `cache` dir,
+    # as there is no guarantee that the current directory is the package directory.
+    # The `cache` dir is only used for files that are part of the package and those
+    # that the package creator might want to look into.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        oiejq_path = os.path.join(tmpdir, 'oiejq.tar.gz')
+        with open(oiejq_path, 'wb') as oiejq_file:
+            oiejq_file.write(request.content)
 
-    tar = tarfile.open('/tmp/oiejq.tar.gz')
-    tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
-    tar.close()
-    os.remove('/tmp/oiejq.tar.gz')
-    os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
+        def strip(tar):
+            l = len('oiejq/')
+            for member in tar.getmembers():
+                member.name = member.name[l:]
+                yield member
+
+        with tarfile.open(oiejq_path) as tar:
+            tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
+        os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
 
     return check_oiejq()
 
@@ -131,7 +138,14 @@ def save_config(config):
         "time_limits",
         "override_limits",
         "scores",
-        "extra_compilation_files",
+        {
+            "key": "extra_compilation_files",
+            "default_flow_style": None
+        },
+        {
+            "key": "extra_compilation_args",
+            "default_flow_style": None
+        },
         {
             "key": "sinol_expected_scores",
             "default_flow_style": None
@@ -240,12 +254,13 @@ def lines_diff(lines1, lines2):
     return True
 
 
-def file_diff(file1, file2):
+def file_diff(file1_path, file2_path):
     """
     Function to compare two files.
     Returns True if they are the same, False otherwise.
     """
-    return lines_diff(open(file1).readlines(), open(file2).readlines())
+    with open(file1_path) as file1, open(file2_path) as file2:
+        return lines_diff(file1.readlines(), file2.readlines())
 
 
 def get_terminal_size():

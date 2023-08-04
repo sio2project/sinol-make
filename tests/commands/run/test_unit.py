@@ -50,7 +50,8 @@ def test_execution(create_package, time_tool):
     create_ins_outs(package_path)
     test = package_util.get_tests(None)[0]
 
-    config = yaml.load(open(os.path.join(package_path, "config.yml"), "r"), Loader=yaml.FullLoader)
+    with open(os.path.join(package_path, "config.yml"), "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
 
     os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
     result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
@@ -379,7 +380,8 @@ def test_print_expected_scores_diff(capsys, create_package):
     assert re.search(r"Groups were removed:.*4", out) is not None
     assert "Solution abc.cpp passed group 1 with status WA while it should pass with status OK." in out
 
-    config = yaml.load(open(os.path.join(package_path, "config.yml"), "r"), Loader=yaml.FullLoader)
+    with open(os.path.join(package_path, "config.yml"), "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
     assert config["sinol_expected_scores"] == {
         "abc.cpp": {
             "expected": {1: "WA", 2: "OK", 3: "OK", 5: "OK"},

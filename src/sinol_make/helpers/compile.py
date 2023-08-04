@@ -1,6 +1,7 @@
 from typing import Tuple
 import os
 import sys
+import shutil
 import stat
 import subprocess
 
@@ -9,14 +10,29 @@ from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
 
-def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False):
+def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
+            extra_compilation_args = None, extra_compilation_files = None):
     """
-    Compile a program
-    compilers - A Compilers object with compilers to use. If None, default compilers will be used.
+    Compile a program.
+    :param program: Path to the program to compile
+    :param output: Path to the output file
+    :param compilers: Compilers object
+    :param compile_log: File to write the compilation log to
+    :param weak_compilation_flags: If True, disable all warnings
+    :param extra_compilation_args: Extra compilation arguments
+    :param extra_compilation_files: Extra compilation files
     """
+    if extra_compilation_args is None:
+        extra_compilation_args = []
+    if extra_compilation_files is None:
+        extra_compilation_files = []
+
+    for file in extra_compilation_files:
+        shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
+
     gcc_compilation_flags = '-Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
     if weak_compilation_flags:
-        gcc_compilation_flags = '-w' # Disable all warnings
+        gcc_compilation_flags = '-w'  # Disable all warnings
 
     if compilers is None:
         compilers = Compilers()
@@ -24,18 +40,22 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     ext = os.path.splitext(program)[1]
     arguments = []
     if ext == '.cpp':
-        arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program, '-o', output] + \
+        arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program] + \
+                    extra_compilation_args + ['-o', output] + \
                     f'--std=c++17 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
     elif ext == '.c':
-        arguments = [compilers.c_compiler_path, program, '-o', output] + \
+        arguments = [compilers.c_compiler_path or compiler.get_c_compiler_path(), program] + \
+                    extra_compilation_args + ['-o', output] + \
                     f'--std=c17 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             # TODO: Make this work on Windows
             pass
         else:
-            open(output, 'w').write('#!/usr/bin/python3\n')
-            open(output, 'a').write(open(program, 'r').read())
+            with open(output, 'w') as output_file, open(program, 'r') as program_file:
+                output_file.write('#!/usr/bin/python3\n')
+                output_file.write(program_file.read())
+
             st = os.stat(output)
             os.chmod(output, st.st_mode | stat.S_IEXEC)
         arguments = [compilers.python_interpreter_path, '-m', 'py_compile', program]
@@ -76,14 +96,12 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
 
     output = os.path.join(executable_dir, name)
     compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')
-    compile_log = open(compile_log_path, 'w')
-
-    try:
-        if compile(file_path, output, compilers, compile_log, weak_compilation_flags):
-            return output, compile_log_path
-        else:
-            return None, compile_log_path
-    except CompilationError:
+    with open(compile_log_path, 'w') as compile_log:
+        try:
+            if compile(file_path, output, compilers, compile_log, weak_compilation_flags):
+                return output, compile_log_path
+        except CompilationError:
+            pass
         return None, compile_log_path
 
 
@@ -93,8 +111,7 @@ def print_compile_log(compile_log_path: str):
     :param compile_log_path: path to the compilation log
     """
 
-    compile_log = open(compile_log_path, 'r')
-    lines = compile_log.readlines()
-    compile_log.close()
-    for line in lines[:500]:
-        print(line, end='')
+    with open(compile_log_path, 'r') as compile_log:
+        lines = compile_log.readlines()
+        for line in lines[:500]:
+            print(line, end='')
