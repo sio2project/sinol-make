@@ -93,7 +93,7 @@ def install_oiejq():
                 yield member
 
         with tarfile.open(oiejq_path) as tar:
-            tar.extractall(path=tmpdir, members=strip(tar))
+            tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
         os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
 
     return check_oiejq()
