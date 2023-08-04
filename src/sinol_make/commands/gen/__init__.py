@@ -48,8 +48,8 @@ class Command(BaseCommand):
             input = os.path.join(os.getcwd(), 'in', os.path.splitext(output_basename)[0] + '.in')
             arguments.append(OutputGenerationArguments(self.correct_solution_exe, input, output))
 
-        results = []
         with mp.Pool(self.args.cpus) as pool:
+            results = []
             for i, result in enumerate(pool.imap(gen_util.generate_output, arguments)):
                 results.append(result)
                 if result:
@@ -57,10 +57,10 @@ class Command(BaseCommand):
                 else:
                     print(util.error(f'Failed to generate output file {os.path.basename(arguments[i].output_test)}'))
 
-        if not all(results):
-            util.exit_with_error('Failed to generate some output files.')
-        else:
-            print(util.info('Successfully generated all output files.'))
+            if not all(results):
+                util.exit_with_error('Failed to generate some output files.')
+            else:
+                print(util.info('Successfully generated all output files.'))
 
     def calculate_md5_sums(self):
         """
@@ -70,9 +70,8 @@ class Command(BaseCommand):
         old_md5_sums = None
         try:
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'r') as f:
-                old_md5_sums = yaml.load(f, Loader=yaml.FullLoader)
-            if not isinstance(old_md5_sums, dict):
-                old_md5_sums = None
+                if isinstance(old_md5_sums, dict):
+                    old_md5_sums = yaml.load(f, Loader=yaml.FullLoader)
         except (yaml.YAMLError, OSError):
             pass
 
