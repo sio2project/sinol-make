@@ -2,6 +2,7 @@ from typing import Tuple
 import os
 import sys
 import shutil
+import stat
 import subprocess
 
 import sinol_make.helpers.compiler as compiler
@@ -55,7 +56,8 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
                 output_file.write('#!/usr/bin/python3\n')
                 output_file.write(program_file.read())
 
-            subprocess.call(['chmod', '+x', output])
+            st = os.stat(output)
+            os.chmod(output, st.st_mode | stat.S_IEXEC)
         arguments = [compilers.python_interpreter_path, '-m', 'py_compile', program]
     elif ext == '.java':
         raise NotImplementedError('Java compilation is not implemented')

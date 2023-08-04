@@ -42,9 +42,7 @@ class Command(BaseCommand):
     def compile_inwer(self, args: argparse.Namespace):
         self.inwer_executable, compile_log_path = inwer_util.compile_inwer(self.inwer, args, args.weak_compilation_flags)
         if self.inwer_executable is None:
-            print(util.error('Compilation failed.'))
-            compile.print_compile_log(compile_log_path)
-            exit(1)
+            util.exit_with_error('Compilation failed.', lambda: compile.print_compile_log(compile_log_path))
         else:
             print(util.info('Compilation successful.'))
 
