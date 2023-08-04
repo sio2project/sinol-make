@@ -80,6 +80,18 @@ def get_java_compiler_path():
         return 'javac'
 
 
+def get_default_compilers():
+    """
+    Get the default compilers
+    """
+    return argparse.Namespace(
+        c_compiler_path=get_c_compiler_path(),
+        cpp_compiler_path=get_cpp_compiler_path(),
+        python_interpreter_path=get_python_interpreter_path(),
+        java_compiler_path=get_java_compiler_path()
+    )
+
+
 def verify_compilers(args: argparse.Namespace, solutions: list[str]) -> Compilers:
     for solution in solutions:
         ext = os.path.splitext(solution)[1]
