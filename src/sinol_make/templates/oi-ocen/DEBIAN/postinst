@@ -1,0 +1,97 @@
+#!/usr/bin/python3
+# coding=utf-8
+
+# Olimpiada Informatyczna
+#
+# autor oryginału (https://sinol3.dasie.mimuw.edu.pl/oi-tech/oi-scripts/-/blob/master/sio1/ocen/oi-ocen/DEBIAN/postinst): Marek Żylak
+
+import os
+import sys
+import glob
+import tempfile
+import tarfile
+import shutil
+
+zawodnik_uid = 1001
+zawodnik_gid = 1001
+zawodnik_home = '/home/zawodnik'
+linOcenPackage = '/usr/share/oi-ocen/ocen-linux.tgz'
+winOcenPackage = '/usr/share/oi-ocen/ocen-linux.tgz'
+
+task_id = None
+tar_file = '/usr/share/oi-ocen/ocen-linux.tgz'
+if task_id is not None:
+    tar_file = f'/usr/share/oi-ocen-{task_id}/ocen-linux.tgz'
+
+def loadFile(path):
+    f = open(path, 'r')
+    l = f.readlines()
+    f.close()
+    return l
+
+
+def cleanDir(dir):
+    if dir is not None:
+        shutil.rmtree(dir)
+
+
+pid = os.fork()
+if pid < 0:
+    raise Exception()
+if pid == 0:
+    os.chdir('/home/zawodnik')
+
+    if not os.path.exists('/home/zawodnik/rozw'):
+        try:
+            if not os.path.exists('/home/zawodnik/rozw'):
+                os.mkdir('/home/zawodnik/rozw')
+
+            with tarfile.open(tar_file) as tar:
+                tar.extractall('/home/zawodnik')
+        except:
+            cleanDir('/home/zawodnik/rozw')
+            raise Exception()
+    else:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with tarfile.open(tar_file) as tar:
+                tar.extractall(tmpdir)
+
+            ocen_dir = os.path.join(tmpdir, 'rozw')
+            existing_conf_path = os.path.join(os.getcwd(), 'rozw', 'oi.conf')
+            existing_conf = loadFile(existing_conf_path)
+
+            ins = glob.glob(os.path.join(ocen_dir, 'in', '*.in'))
+            outs = glob.glob(os.path.join(ocen_dir, 'out', '*.out'))
+            task_id = os.path.basename(ins[0])[:3]
+            nums = set()
+            for f in ins:
+                nums.add(os.path.basename(f).split('.')[0][3:])
+
+            for i in range(len(existing_conf)):
+                if existing_conf[i].split('=')[0] == 'TASKS':
+                    existing_tasks = existing_conf[i].split('=')[1].strip().strip('"')
+                    existing_conf[i] = 'TASKS="' + existing_tasks + ' ' + task_id + '"\n'
+                    break
+            existing_conf.insert(1, 'TESTS_' + task_id + '="' + ' '.join(sorted(nums)) + '"\n')
+
+            with open(existing_conf_path, 'w') as f:
+                f.writelines(existing_conf)
+
+            for f in ins:
+                shutil.copy(f, os.path.join(os.getcwd(), 'rozw', 'in'))
+            for f in outs:
+                shutil.copy(f, os.path.join(os.getcwd(), 'rozw', 'out'))
+
+    os.chown('/home/zawodnik/rozw', zawodnik_uid, zawodnik_gid)
+    os.chmod('/home/zawodnik/rozw', 0o777)
+    for root, dirs, files in os.walk('/home/zawodnik/rozw'):
+        for d in dirs:
+            os.chown(os.path.join(root, d), zawodnik_uid, zawodnik_gid)
+            os.chmod(os.path.join(root, d), 0o777)
+        for f in files:
+            os.chown(os.path.join(root, f), zawodnik_uid, zawodnik_gid)
+            os.chmod(os.path.join(root, f), 0o777)
+else:
+    p, status = os.wait()
+    if status != 0:
+        raise Exception()

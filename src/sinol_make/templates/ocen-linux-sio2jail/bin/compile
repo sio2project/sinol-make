@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+# prosty skrypt do kompilowania programow
+#
+
+GCC_ARCH=""
+
+# Poniższa opcja wymusza kompilację 32-bitową, nawet na 64-bitowym systemie.
+# Na sio2 kompilacja jest 64-bitowa.
+# Jesli mimo wszysto chcesz kompilację 32-bitową, możesz odkomentować tę opcję, usuwając '#' na początku następnej linijki.
+#GCC_ARCH="-m32"
+
+GCC_OPT="-static -O3 $GCC_ARCH"
+GCC_LIBS="-lm"
+GPP_OPT="-static -O3 -std=c++17 $GCC_ARCH"
+GPP_LIBS=""
+FPC_OPT="-XS -O2"
+SRCLIMIT=${SRCLIMIT:=100}
+EXELIMIT=${EXELIMIT:=10240}
+
+file_size () {
+    wc -c "$1" | sed -e 's/[^0-9]*\([0-9]\+\).*/\1/'
+}
+
+if [ $# -ne 1 ] ; then
+    echo 
+    echo "Sposob uzycia: "
+    echo "  compile program.(c|cc|cpp|pas)"
+    echo 
+    echo " np. compile hello.cc"
+    echo
+    exit 1
+fi
+
+if [ ! -f "$1" ] ; then
+    echo "Nie mozna odczytac pliku: $1"
+    exit 2
+fi
+
+size=$[`file_size "$1"` / 1024 ] 
+if [ $size -gt $SRCLIMIT ] ; then
+    echo "Plik zrodlowy jest zbyt duzy! Dopuszczalny limit to ${SRCLIMIT}kb"
+    exit 3
+fi
+
+BASE=`echo $1 | cut -f 1 -d '.'`
+EXT=`echo $1 | cut -f 2 -d '.'`
+case "$EXT" in 
+c)
+    gcc $GCC_OPT "$1" -o "$BASE.e" $GCC_LIBS || exit 10
+    ;;
+cc|cpp)
+    g++ $GPP_OPT "$1" -o "$BASE.e" $GPP_LIBS || exit 10
+    ;;
+pas|pp)
+    ppc386 $FPC_OPT "$1" -otmpcompile && mv tmpcompile "$BASE.e" || exit 10
+    ;;
+*)
+    echo "Nieznane rozszerzenie: $EXT";
+    ;;
+esac
+
+size=$[`file_size "$BASE.e"` / 1024 ] 
+if [ $size -gt $EXELIMIT ] ; then
+    echo "Plik wynikowy jest zbyt duzy (${size}kb)! Dopuszczalny limit to ${EXELIMIT}kb"
+    rm -f "$BASE.e"    
+    exit 3
+fi

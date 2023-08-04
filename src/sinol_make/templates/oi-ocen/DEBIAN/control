@@ -1,0 +1,9 @@
+Package: oi-ocen-TASK_ID
+Version: 1.0
+Section: oi
+Priority: optional
+Depends: bash, python3, unzip, tar, gzip
+Architecture: all
+Maintainer: Olimpiada Informatyczna
+Description: Testy ocen
+  Testy ocen

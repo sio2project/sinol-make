@@ -1,0 +1,98 @@
+ocen (dla Linuxa)
+---------------------------------
+(c) 2001-2014, Olimpiada Informatyczna
+
+WYMAGANIA
+
+Skrypt potrzebuje SIO2Jaila.
+
+SPOSOB UZYCIA:
+
+Nalezy wejsc do katalogu ocen i skopiowac do niego rozwiazania,
+a nastepnie wydac komendê
+
+./ocen ID
+    gdzie ID jest identyfikatorem zadania
+
+  Ocenienie rozwiazania zadania ID na podstawie wszystkich
+  testow zawartych w zestawie.
+  (gdzie ID oznacza trzyliterowy identyfikator zadania)
+
+  Jesli biezacy katalog zawiera plik ID.e to uznawany jest on za kod
+  wykonywalny z rozwiazaniem,
+  w innym przypadku skrypt szuka plikow: ID.c, ID.cpp, ID.pas i
+  automatycznie kompiluje znalezione zrodlo.
+
+  Przyklad:
+     ./ocen wys
+
+-
+
+Mozna tez wydac komende
+
+./ocen ID NR
+    gdzie ID jest identyfikatorem zadania
+          NR jest numerem testu
+
+  Ocenienie rozwiazania zadania ID na podstawie testu o numerze NR
+
+  Przyklad:
+     ./ocen wys 1
+
+-
+
+DO CZEGO SLUZY SKRYPT:
+- wstepnego sprawdzenia poprawnosci formalnej rozwiazan
+  (np. poprawnego nazwania plikow exe, in, out)
+- moze byc pomocny przy testowaniu wlasnych rozwiazan,
+  jednak wymaga to opracowania wlasnych zestawow testow i
+  naniesienia odpowiednich zmian w oi.conf
+
+UWAGI:
+- Twoj program powinien dzialac i konczyc dzialanie bez jakiejkolwiek
+  interakcji uzytkownikiem (wprowadzanie danych, nacisniecie klawisza,
+  dotkniecie myszy etc.).  Sprawdz czy w wysylanym rozwiazaniu nie umiesciles
+  ReadKey, ReadLn, getchar, scanf, ktorych zadaniem jest oczekiwanie na
+  potwierdzenie zakonczenia programu przez uzytkownika.
+
+  Pamietaj jesli Twoj program wymaga interakcji uzytkownika, to przy
+  ostatecznym sprawdzeniu moze okazac sie, ze Twoj program dostanie 0 pkt z
+  powodu przekroczenia limitu czasu (rozwiazania testowane sa mechanicznie!!!).
+
+- program "compare" jest bardzo uproszczony, stad jesli Twoje odpowiedzi
+  nie spelniaja dokladnie skladni podanej w tresci zadania, moga
+  zostac uznane za niepoprawne.
+
+- domyslnie nie jest ustawiony zaden limit pamieciowy. Mozna go ustawic w pliku
+  oi.conf.
+
+- w niektorych zadaniach dopuszczalne jest wiele poprawnych odpowiedzi,
+  w takim wypadku musisz napisac wlasny program weryfikujacy poprawnosc
+  odpowiedzi,
+
+JAK PISAC WLASNE PROGRAMY DO WERYFIKACJI ODPOWIEDZI:
+
+Niektore zadania dopuszczaja wiele poprawnych odpowiedzi, w takim
+przypadku program "compare" (ocen/bin/compare) moze okazac sie
+niewystarczajacy.
+Mozesz napisac wlasny program weryfikujacy poprawnosc odpowiedzi,
+musi on jednak spelniac nastepujace zalozenia:
+- powinien nazywac sie IDchk.e, gdzie ID to trzyliterowy
+  identyfikator zadania, i znajdowac sie w katalogu ocen/bin
+- w przypadku poprawnej odpowiedzi powinien w pierwszej linii
+  standardowego wyjscia napis "OK"
+- program sprawdzajacy moze zakladac, ze
+   a) zostanie uruchomiony w katalogu zawierjacym pliki ID.in, ID.out
+   b) jego pierwszy parametr bedzie zawieral nazwe pliku z odpowiedzia
+      wygenerowana przez testowany program
+   c) drugi parametr bedzie zawieral nazwe pliku z prawidlowa odpowiedzia
+      (lub plikiem ulatwiajacym weryfikacje), zazwyczaj bedzie to
+      ocen/out/ID?.out, gdzie ? oznacza numer testu
+   d) trzeci parametr zawiera nazwe pliku z danymi wejsciowymi
+
+DO CZEGO NIE SLUZY SKRYPT:
+- ostatecznej oceny rozwiazania!
+
+--
+Wiecej informacji na temat Olimpiady mozna znalezc pod adresami:
+  http://www.oi.edu.pl/

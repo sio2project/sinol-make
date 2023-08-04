@@ -263,6 +263,15 @@ def get_terminal_size():
         terminal_height = 30
     return has_terminal, terminal_width, terminal_height
 
+
+def get_templates_dir():
+    """
+    Function to get the path to the templates' directory.
+    :return: path to the templates directory
+    """
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "templates"))
+
+
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
