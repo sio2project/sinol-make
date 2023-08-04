@@ -98,10 +98,9 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
         try:
             if compile(file_path, output, compilers, compile_log, weak_compilation_flags):
                 return output, compile_log_path
-            else:
-                return None, compile_log_path
         except CompilationError:
-            return None, compile_log_path
+            pass
+        return None, compile_log_path
 
 
 def print_compile_log(compile_log_path: str):
@@ -112,6 +111,5 @@ def print_compile_log(compile_log_path: str):
 
     with open(compile_log_path, 'r') as compile_log:
         lines = compile_log.readlines()
-        compile_log.close()
         for line in lines[:500]:
             print(line, end='')
