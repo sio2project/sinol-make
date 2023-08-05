@@ -304,6 +304,18 @@ def fix_file_endings(file):
         f.write(content.replace(b"\r\n", b"\n"))
 
 
+def stringify_keys(d):
+    """
+    Function to stringify all keys in a dict.
+    """
+    if isinstance(d, dict):
+        return {str(k): stringify_keys(v) for k, v in d.items()}
+    elif isinstance(d, list):
+        return [stringify_keys(x) for x in d]
+    else:
+        return d
+
+
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)

@@ -1,6 +1,8 @@
 import os
 from typing import List, Union
 
+from sinol_make import util
+
 
 def get_task_id() -> str:
     return os.path.split(os.getcwd())[-1]
@@ -55,3 +57,35 @@ def get_executable_path(solution: str) -> str:
     Returns path to compiled executable for given solution.
     """
     return os.path.join(os.getcwd(), 'cache', 'executables', get_executable(solution))
+
+
+def get_time_limit(test_path, config):
+    """
+    Returns time limit for given test.
+    """
+    str_config = util.stringify_keys(config)
+    test_id = extract_test_id(test_path)
+    test_group = str(get_group(test_path))
+
+    if "time_limits" in str_config:
+        if test_id in str_config["time_limits"]:
+            return str_config["time_limits"][test_id]
+        elif test_group in str_config["time_limits"]:
+            return str_config["time_limits"][test_group]
+    return str_config["time_limit"]
+
+
+def get_memory_limit(test_path, config):
+    """
+    Returns memory limit for given test.
+    """
+    str_config = util.stringify_keys(config)
+    test_id = extract_test_id(test_path)
+    test_group = str(get_group(test_path))
+
+    if "memory_limits" in str_config:
+        if test_id in str_config["memory_limits"]:
+            return str_config["memory_limits"][test_id]
+        elif test_group in str_config["memory_limits"]:
+            return str_config["memory_limits"][test_group]
+    return str_config["memory_limit"]

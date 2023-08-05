@@ -4,7 +4,8 @@ from sinol_make import configure_parsers
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_library_package_path()], indirect=True)
+                                            get_checker_package_path(), get_library_package_path(),
+                                            get_limits_package_path()], indirect=True)
 def test_simple(create_package, time_tool):
     """
     Test a simple run.
@@ -20,7 +21,8 @@ def test_simple(create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_library_package_path()], indirect=True)
+                                            get_checker_package_path(), get_library_package_path(),
+                                            get_limits_package_path()], indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -53,7 +55,8 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_library_package_path()], indirect=True)
+                                            get_checker_package_path(), get_library_package_path(),
+                                            get_limits_package_path()], indirect=True)
 def test_apply_suggestions(create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -225,3 +228,30 @@ def test_missing_output_files(capsys, create_package):
 
     out = capsys.readouterr().out
     assert f'Missing output files for tests: {out1}, {out2}' in out
+
+
+@pytest.mark.parametrize("create_package", [get_limits_package_path()], indirect=True)
+def test_no_limits_in_config(capsys, create_package, time_tool):
+    """
+    Test with missing `time_limits` and `memory_limits` keys in config.yml.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+
+    config_path = os.path.join(package_path, "config.yml")
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    del config["time_limits"]
+    del config["memory_limits"]
+    with open(config_path, "w") as config_file:
+        config_file.write(yaml.dump(config))
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+    out = capsys.readouterr().out
+    assert "Use flag --apply-suggestions to apply suggestions." in out
