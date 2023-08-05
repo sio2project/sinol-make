@@ -63,6 +63,10 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
     sys.stdout = output
 
     program_scores = collections.defaultdict(int)
+    # program_times and program_memory are dictionaries of tuples (max, limit),
+    # where max is the maximum time/memory used by a program and
+    # limit is the time/memory limit of the test that caused the maximum
+    # time/memory usage.
     program_times = collections.defaultdict(lambda: (-1, 0))
     program_memory = collections.defaultdict(lambda: (-1, 0))
 
