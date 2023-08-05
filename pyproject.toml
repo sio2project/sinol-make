@@ -24,7 +24,8 @@ dependencies = [
     "argcomplete",
     "requests",
     "PyYAML",
-    "dictdiffer"
+    "dictdiffer",
+    "importlib-resources",
 ]
 
 [project.optional-dependencies]

@@ -1,4 +1,5 @@
 import os
+from typing import List, Union
 
 
 def get_task_id() -> str:
@@ -23,7 +24,12 @@ def get_test_key(test):
     return get_group(test), test
 
 
-def get_tests(arg_tests: list[str] or None) -> list[str]:
+def get_tests(arg_tests: Union[List[str], None]) -> List[str]:
+    """
+    Returns list of tests to run.
+    :param arg_tests: Tests specified in command line arguments. If None, all tests are returned.
+    :return: List of tests to run.
+    """
     if arg_tests is None:
         all_tests = ["in/%s" % test for test in os.listdir("in/")
                      if test[-3:] == ".in"]

@@ -63,8 +63,6 @@ class ExecutionData:
     memory_limit: int
     # Path to the timetool executable
     timetool_path: str
-    # Dictionary of pids for each execution
-    execution_pids: dict[dict[str, int]]
 
 
 @dataclass

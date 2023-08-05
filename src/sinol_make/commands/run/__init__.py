@@ -6,6 +6,7 @@ import signal
 import threading
 from io import StringIO
 import glob
+from typing import Dict
 
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, \
     PointsChange, PrintData
@@ -988,7 +989,12 @@ class Command(BaseCommand):
         else:
             print(util.warning('There are no tests to run.'))
 
-    def check_errors(self, results: dict[str, dict[str, dict[str, ExecutionResult]]]):
+    def check_errors(self, results: Dict[str, Dict[str, Dict[str, ExecutionResult]]]):
+        """
+        Checks if there were any errors during execution and exits if there were.
+        :param results: Dictionary of results.
+        :return:
+        """
         error_msg = ""
         for solution in results:
             for group in results[solution]:

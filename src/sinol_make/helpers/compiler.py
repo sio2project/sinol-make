@@ -1,3 +1,5 @@
+from typing import List
+
 import argparse
 import os
 
@@ -92,7 +94,13 @@ def get_default_compilers():
     )
 
 
-def verify_compilers(args: argparse.Namespace, solutions: list[str]) -> Compilers:
+def verify_compilers(args: argparse.Namespace, solutions: List[str]) -> Compilers:
+    """
+    Verify that specified compilers exist.
+    :param args: argparse.Namespace arguments
+    :param solutions: List of solutions (used for checking if a compiler is specified)
+    :return: Compilers object with all the compilers
+    """
     for solution in solutions:
         ext = os.path.splitext(solution)[1]
         compiler = ""

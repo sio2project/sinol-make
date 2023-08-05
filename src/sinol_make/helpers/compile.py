@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union
 import os
 import sys
 import shutil
@@ -79,7 +79,8 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         return True
 
 
-def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilation_flags = False) -> Tuple[str or None, str]:
+def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilation_flags = False) \
+        -> Tuple[Union[str, None], str]:
     """
     Compile a file
     :param file_path: Path to the file to compile

@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from typing import Dict
 
 from sinol_make.helpers import package_util
 
@@ -34,7 +35,7 @@ class TableData:
     """
 
     # Dictionary with test path as key and verification result as value.
-    results: dict[str, TestResult]
+    results: Dict[str, TestResult]
 
     # Number of executions finished
     i: int
