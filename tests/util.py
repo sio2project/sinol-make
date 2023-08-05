@@ -53,6 +53,13 @@ def get_shell_ingen_pack_path():
     return os.path.join(os.path.dirname(__file__), "packages", "gen")
 
 
+def get_limits_package_path():
+    """
+    Get path to package with `time_limits` and `memory_limits` present in config (/test/packages/lim)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "lim")
+
+
 def create_ins(package_path):
     """
     Create .in files for package.

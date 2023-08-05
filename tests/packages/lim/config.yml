@@ -1,0 +1,32 @@
+title: Package with `time_limits` and `memory_limits` set
+
+memory_limit: 10000
+memory_limits:
+  1a: 5000
+  2: 20000
+
+time_limit: 1000
+time_limits:
+  1a: 500
+  2: 2000
+
+scores:
+  1: 50
+  2: 50
+
+sinol_expected_scores:
+  lim.cpp:
+    expected: {1: OK, 2: OK}
+    points: 100
+  lim1.cpp:
+    expected: {1: TL, 2: OK}
+    points: 50
+  lim2.cpp:
+    expected: {1: TL, 2: TL}
+    points: 0
+  lim3.cpp:
+    expected: {1: ML, 2: OK}
+    points: 50
+  lim4.cpp:
+    expected: {1: ML, 2: ML}
+    points: 0
