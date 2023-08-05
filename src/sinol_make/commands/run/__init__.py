@@ -54,7 +54,7 @@ def update_group_status(group_status, new_status):
 
 
 def print_view(term_width, term_height, program_groups_scores, all_results, print_data: PrintData, names, executions,
-               groups, scores, tests, possible_score, time_limit, memory_limit, cpus, hide_memory):
+               groups, scores, tests, possible_score, cpus, hide_memory, config):
     width = term_width - 13  # First column has 6 characters, the " | " separator has 3 characters and 4 for margin
     programs_in_row = width // 13  # Each program has 10 characters and the " | " separator has 3 characters
 
@@ -63,9 +63,14 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
     sys.stdout = output
 
     program_scores = collections.defaultdict(int)
-    program_times = collections.defaultdict(lambda: -1)
-    program_memory = collections.defaultdict(lambda: -1)
-    time_remaining = (len(executions) - print_data.i - 1) * 2 * time_limit / cpus / 1000.0
+    program_times = collections.defaultdict(lambda: (-1, 0))
+    program_memory = collections.defaultdict(lambda: (-1, 0))
+
+    time_sum = 0
+    for test in tests:
+        time_sum += package_util.get_time_limit(test, config)
+
+    time_remaining = (len(executions) - print_data.i - 1) * 2 * time_sum / cpus / 1000.0
     title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
             % (print_data.i + 1, len(executions), time_remaining)
     title = title.center(term_width)
@@ -103,15 +108,17 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                     min_points = min(min_points, results[test].Points)
                     status = results[test].Status
                     if getattr(results[test], "Time") is not None:
-                        program_times[program] = max(
-                            program_times[program], results[test].Time)
+                        if program_times[program][0] < results[test].Time:
+                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, config))
                     elif status == "TL":
-                        program_times[program] = 2 * time_limit
+                        program_times[program] = (2 * package_util.get_time_limit(test, config),
+                                                  package_util.get_time_limit(test, config))
                     if getattr(results[test], "Memory") is not None:
-                        program_memory[program] = max(
-                            program_memory[program], results[test].Memory)
+                        if program_memory[program][0] < results[test].Memory:
+                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config))
                     elif status == "ML":
-                        program_memory[program] = 2 * memory_limit
+                        program_memory[program] = (2 * package_util.get_memory_limit(test, config),
+                                                   package_util.get_memory_limit(test, config))
                     if status == "  ":
                         group_status = "  "
                         min_points = 0
@@ -137,15 +144,15 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
         print(margin + "  time", end=" | ")
         for program in program_group:
             program_time = program_times[program]
-            print(util.bold(("%20s" % color_time(program_time, time_limit))
-                            if program_time < 2 * time_limit and program_time >= 0
+            print(util.bold(("%20s" % color_time(program_time[0], program_time[1]))
+                            if program_time[0] < 2 * program_time[1] and program_time[0] >= 0
                             else "   " + 7 * '-'), end=" | ")
         print()
         print(margin + "memory", end=" | ")
         for program in program_group:
             program_mem = program_memory[program]
-            print(util.bold(("%20s" % color_memory(program_mem, memory_limit))
-                            if program_mem < 2 * memory_limit and program_mem >= 0
+            print(util.bold(("%20s" % color_memory(program_mem[0], program_mem[1]))
+                            if program_mem[0] < 2 * program_mem[1] and program_mem[0] >= 0
                             else "   " + 7 * '-'), end=" | ")
         print()
         print(8*" ", end=" | ")
@@ -176,13 +183,15 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                 if status == "  ": print(10*' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
-                         ("%17s" % color_time(result.Time, time_limit)) if getattr(result, "Time") is not None else 7*" ", end=" | ")
+                         ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config)))
+                         if getattr(result, "Time") is not None else 7*" ", end=" | ")
             print()
             if not hide_memory:
                 print(8*" ", end=" | ")
                 for program in program_group:
                     result = all_results[program][package_util.get_group(test)][test]
-                    print(("%20s" % color_memory(result.Memory, memory_limit)) if getattr(result, "Memory") is not None else 10*" ", end=" | ")
+                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config)))
+                          if getattr(result, "Memory") is not None else 10*" ", end=" | ")
                 print()
 
         print_table_end()
@@ -579,7 +588,8 @@ class Command(BaseCommand):
         for (name, executable, result) in compiled_commands:
             if result:
                 for test in self.tests:
-                    executions.append((name, executable, test, self.time_limit, self.memory_limit, self.timetool_path))
+                    executions.append((name, executable, test, package_util.get_time_limit(test, self.config),
+                                       package_util.get_memory_limit(test, self.config), self.timetool_path))
                     all_results[name][self.get_group(test)][test] = ExecutionResult("  ")
                 os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
             else:
@@ -598,7 +608,7 @@ class Command(BaseCommand):
             thr = threading.Thread(target=printer.printer_thread,
                                    args=(run_event, print_view, program_groups_scores, all_results, print_data, names,
                                          executions, self.groups, self.scores, self.tests, self.possible_score,
-                                         self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory))
+                                         self.cpus, self.args.hide_memory, self.config))
             thr.start()
 
         pool = mp.Pool(self.cpus)
@@ -619,7 +629,7 @@ class Command(BaseCommand):
 
         print("\n".join(print_view(terminal_width, terminal_height, program_groups_scores, all_results, print_data,
                                    names, executions, self.groups, self.scores, self.tests, self.possible_score,
-                                   self.time_limit, self.memory_limit, self.cpus, self.args.hide_memory)[0]))
+                                   self.cpus, self.args.hide_memory, self.config)[0]))
 
         if keyboard_interrupt:
             util.exit_with_error("Stopped due to keyboard interrupt.")
