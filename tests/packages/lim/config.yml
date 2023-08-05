@@ -1,9 +1,9 @@
 title: Package with `time_limits` and `memory_limits` set
 
-memory_limit: 10000
+memory_limit: 30000
 memory_limits:
-  1a: 5000
-  2: 20000
+  1a: 15000
+  2: 60000
 
 time_limit: 1000
 time_limits:

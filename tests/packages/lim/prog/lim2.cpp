@@ -8,9 +8,9 @@ int main() {
     int a, b;
     cin >> a >> b;
 
-    int tl = 750000;
+    int tl = 900000;
     if (a == 2 && b == 1) {
-        tl = 2500000;
+        tl = 2900000;
     }
     auto start = high_resolution_clock::now();
     int i = 0;

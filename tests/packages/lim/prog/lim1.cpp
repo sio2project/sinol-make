@@ -10,9 +10,12 @@ int main() {
 
     auto start = high_resolution_clock::now();
     int i = 0;
-    while (duration_cast<microseconds>(high_resolution_clock::now() - start).count() < 750000) {
+    vector<int> v(5, 0);
+    while (duration_cast<microseconds>(high_resolution_clock::now() - start).count() < 900000) {
         i++;
+        v[i % 5]++;
     }
 
     cout << a + b << endl;
+    cerr << "i = " << i << endl;
 }
