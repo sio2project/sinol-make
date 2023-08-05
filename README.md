@@ -63,6 +63,9 @@ The availabe commands (see `sinol-make --help`) are:
 of CPUs. Measures the solutions' time with oiejq, unless specified otherwise. After running the solutions, it
 compares the solutions' scores with the ones saved in config.yml.
 Run `sinol-make run --help` to see available flags.
+- `sinol-make gen` -- Generate input files using ingen program (for example prog/abcingen.cpp for abc task). 
+Whenever the new input differs from the previous one, the model solution will be used to generate the new output file. 
+You can also specify your ingen source file which will be used. Run `sinol-make gen --help` to see available flags.
 - `sinol-make inwer` -- Verifies whether input files are correct using your "inwer.cpp" program. You can specify what inwer
 program to use, what tests to check and how many CPUs to use. Run `sinol-make inwer --help` to see available flags.
 
