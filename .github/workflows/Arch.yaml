@@ -6,7 +6,7 @@ jobs:
     runs-on: self-hosted
     strategy:
         matrix:
-            python-version: [3.7, 3.11.4]
+            python-version: ["3.7", "3.11.4"]
     name: pytest-arch-python-${{ matrix.python-version }}
     container:
       image: archlinux:latest

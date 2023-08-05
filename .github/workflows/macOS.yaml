@@ -7,7 +7,7 @@ jobs:
     runs-on: macos-latest
     strategy:
         matrix:
-            python-version: [3.7, 3.11]
+            python-version: ["3.7", "3.11"]
     name: pytest-macos-python-${{ matrix.python-version }}
     steps:
       - name: Checkout
