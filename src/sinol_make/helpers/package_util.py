@@ -1,5 +1,7 @@
 import os
 
+from sinol_make import util
+
 
 def get_task_id() -> str:
     return os.path.split(os.getcwd())[-1]
@@ -55,31 +57,29 @@ def get_time_limit(test_path, config):
     """
     Returns time limit for given test.
     """
+    str_config = util.stringify_keys(config)
     test_id = extract_test_id(test_path)
-    test_group = get_group(test_path)
+    test_group = str(get_group(test_path))
 
-    if "time_limits" in config:
-        if test_id in config["time_limits"]:
-            return config["time_limits"][test_id]
-        elif int(test_group) in config["time_limits"]:
-            return config["time_limits"][int(test_group)]
-        elif str(test_group) in config["time_limits"]:
-            return config["time_limits"][str(test_group)]
-    return config["time_limit"]
+    if "time_limits" in str_config:
+        if test_id in str_config["time_limits"]:
+            return str_config["time_limits"][test_id]
+        elif test_group in str_config["time_limits"]:
+            return str_config["time_limits"][test_group]
+    return str_config["time_limit"]
 
 
 def get_memory_limit(test_path, config):
     """
     Returns memory limit for given test.
     """
+    str_config = util.stringify_keys(config)
     test_id = extract_test_id(test_path)
-    test_group = get_group(test_path)
+    test_group = str(get_group(test_path))
 
-    if "memory_limits" in config:
-        if test_id in config["memory_limits"]:
-            return config["memory_limits"][test_id]
-        elif int(test_group) in config["memory_limits"]:
-            return config["memory_limits"][int(test_group)]
-        elif str(test_group) in config["memory_limits"]:
-            return config["memory_limits"][str(test_group)]
-    return config["memory_limit"]
+    if "memory_limits" in str_config:
+        if test_id in str_config["memory_limits"]:
+            return str_config["memory_limits"][test_id]
+        elif test_group in str_config["memory_limits"]:
+            return str_config["memory_limits"][test_group]
+    return str_config["memory_limit"]
