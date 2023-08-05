@@ -61,8 +61,10 @@ def get_time_limit(test_path, config):
     if "time_limits" in config:
         if test_id in config["time_limits"]:
             return config["time_limits"][test_id]
-        elif test_group in config["time_limits"]:
-            return config["time_limits"][test_group]
+        elif int(test_group) in config["time_limits"]:
+            return config["time_limits"][int(test_group)]
+        elif str(test_group) in config["time_limits"]:
+            return config["time_limits"][str(test_group)]
     return config["time_limit"]
 
 
@@ -76,6 +78,8 @@ def get_memory_limit(test_path, config):
     if "memory_limits" in config:
         if test_id in config["memory_limits"]:
             return config["memory_limits"][test_id]
-        elif test_group in config["memory_limits"]:
-            return config["memory_limits"][test_group]
+        elif int(test_group) in config["memory_limits"]:
+            return config["memory_limits"][int(test_group)]
+        elif str(test_group) in config["memory_limits"]:
+            return config["memory_limits"][str(test_group)]
     return config["memory_limit"]
