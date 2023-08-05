@@ -9,7 +9,7 @@ int main() {
     cin >> a >> b;
 
     vector<int> v(5, 0);
-    this_thread::sleep_for(0.9s);
+    this_thread::sleep_for(1.1s);
 
     cout << a + b << endl;
 }
