@@ -7,8 +7,10 @@ int main() {
     cin >> a >> b;
 
     vector<long long> mem;
-    for (int i = 1; i <= 1280000; i++) {
-        mem.push_back(i);
+    if (a == 1) {
+        for (int i = 1; i <= 1280000; i++) {
+            mem.push_back(i);
+        }
     }
     cout << a + b;
 }
