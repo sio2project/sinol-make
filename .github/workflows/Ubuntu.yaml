@@ -21,14 +21,11 @@ jobs:
         uses: actions/checkout@v3
       - name: Prepare system
         run: |
-          apt update
-          export TZ=Europe/Warsaw
-          ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
           sysctl kernel.perf_event_paranoid=-1
       - name: Set up Python ${{ matrix.python-version }}
-        run: |
-          apt install -y python${{ matrix.python-version }} python${{ matrix.python-version }}-dev python3-pip
-          pip3 install -U setuptools
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           pip3 install .[tests]

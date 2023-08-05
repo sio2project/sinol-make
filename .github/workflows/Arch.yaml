@@ -6,7 +6,7 @@ jobs:
     runs-on: self-hosted
     strategy:
         matrix:
-            python-version: [3.7, 3.11]
+            python-version: [3.7, 3.11.4]
     name: pytest-arch-python-${{ matrix.python-version }}
     container:
       image: archlinux:latest
@@ -22,7 +22,7 @@ jobs:
           sysctl kernel.perf_event_paranoid=-1
           pacman -Syu --noconfirm diffutils time gcc
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
