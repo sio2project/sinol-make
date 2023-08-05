@@ -5,7 +5,6 @@ import json
 import tempfile
 import requests
 import requests_mock
-import importlib.resources
 
 import pytest
 
@@ -81,7 +80,13 @@ def test_check_version(**kwargs):
     """
     mocker = kwargs["mocker"]
 
-    data_dir = importlib.resources.files('sinol_make').joinpath("data")
+    python_version = sys.version_info
+    if python_version.minor <= 8:
+        import importlib_resources as importlib
+    else:
+        import importlib.resources as importlib
+
+    data_dir = importlib.files('sinol_make').joinpath("data")
     version_file = data_dir.joinpath("version")
     if not data_dir.is_dir():
         data_dir.mkdir()
