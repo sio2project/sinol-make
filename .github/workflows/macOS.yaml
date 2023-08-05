@@ -5,13 +5,17 @@ on: [push]
 jobs:
   pytest:
     runs-on: macos-latest
+    strategy:
+        matrix:
+            python-version: [3.7, 3.11]
+    name: pytest-macos-python-${{ matrix.python-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Install Python 3.11
+      - name: Install Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
-          python-version: 3.11
+          python-version: ${{ matrix.python-version }}
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@master
       - name: Install Python dependencies

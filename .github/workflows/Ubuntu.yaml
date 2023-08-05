@@ -4,6 +4,10 @@ on: [push]
 jobs:
   pytest:
     runs-on: self-hosted
+    strategy:
+        matrix:
+            python-version: [3.7, 3.11]
+    name: pytest-ubuntu-python-${{ matrix.python-version }}
     container:
       image: ubuntu:latest
       volumes:
@@ -21,9 +25,9 @@ jobs:
           export TZ=Europe/Warsaw
           ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
           sysctl kernel.perf_event_paranoid=-1
-      - name: Set up Python 3.11
+      - name: Set up Python ${{ matrix.python-version }}
         run: |
-          apt install -y python3.11 python3.11-dev python3-pip
+          apt install -y python${{ matrix.python-version }} python${{ matrix.python-version }}-dev python3-pip
           pip3 install -U setuptools
       - name: Install dependencies
         run: |
