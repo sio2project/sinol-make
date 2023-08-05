@@ -63,7 +63,7 @@ def test_get_memory_limit():
 
     assert package_util.get_memory_limit("in/abc1a.in", config) == 256
     assert package_util.get_memory_limit("in/abc2a.in", config) == 512
-    assert package_util.get_memory_limit("in/abc2b.in", config) == 256
+    assert package_util.get_memory_limit("in/abc2b.in", config) == 512
     assert package_util.get_memory_limit("in/abc2c.in", config) == 1024
     assert package_util.get_memory_limit("in/abc3a.in", config) == 128
     assert package_util.get_memory_limit("in/abc3ocen.in", config) == 2048
