@@ -171,17 +171,27 @@ def save_config(config):
             yaml.dump(config, config_file)
 
 
-def check_for_updates(current_version) -> Union[str, None]:
+def import_importlib_resources():
     """
-    Function to check if there is a new version of sinol-make.
-    :param current_version: current version of sinol-make
-    :return: returns new version if there is one, None otherwise
+    Function to import importlib_resources.
+    For Python 3.8 and below, we use importlib_resources.
+    For Python 3.9 and above, we use importlib.resources.
     """
     python_version = sys.version_info
     if python_version.minor <= 8:
         import importlib_resources as importlib
     else:
         import importlib.resources as importlib
+    return importlib
+
+
+def check_for_updates(current_version) -> Union[str, None]:
+    """
+    Function to check if there is a new version of sinol-make.
+    :param current_version: current version of sinol-make
+    :return: returns new version if there is one, None otherwise
+    """
+    importlib = import_importlib_resources()
 
     data_dir = importlib.files("sinol_make").joinpath("data")
     if not data_dir.is_dir():
@@ -210,11 +220,7 @@ def check_version():
     Function that asynchronously checks for new version of sinol-make.
     Writes the newest version to data/version file.
     """
-    python_version = sys.version_info
-    if python_version.minor <= 8:
-        import importlib_resources as importlib
-    else:
-        import importlib.resources as importlib
+    importlib = import_importlib_resources()
 
     try:
         request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)

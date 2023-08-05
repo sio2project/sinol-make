@@ -80,11 +80,7 @@ def test_check_version(**kwargs):
     """
     mocker = kwargs["mocker"]
 
-    python_version = sys.version_info
-    if python_version.minor <= 8:
-        import importlib_resources as importlib
-    else:
-        import importlib.resources as importlib
+    importlib = util.import_importlib_resources()
 
     data_dir = importlib.files('sinol_make').joinpath("data")
     version_file = data_dir.joinpath("version")
