@@ -108,6 +108,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                 results = all_results[program][group]
                 group_status = "OK"
                 min_points = 100
+                all_tests_finished = True
 
                 for test in results:
                     min_points = min(min_points, results[test].Points)
@@ -127,14 +128,19 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                     if status == "  ":
                         group_status = "  "
                         min_points = 0
+                        all_tests_finished = False
                     else:
                         group_status = update_group_status(group_status, status)
 
                 points = math.floor(min_points / 100 * scores[group])
-                print("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(
-                    util.color_red(group_status)),
-                      "%3s/%3s" % (points, scores[group]),
-                      end=" | ")
+                if not all_tests_finished:
+                    print(" " * 3 + ("?" * len(str(scores[group]))).rjust(3) +
+                          f'/{str(scores[group]).rjust(3)}', end=' | ')
+                else:
+                    print("%3s" % util.bold(util.color_green(group_status)) if group_status == "OK" else util.bold(
+                        util.color_red(group_status)),
+                          "%3s/%3s" % (points, scores[group]),
+                          end=" | ")
                 program_scores[program] += scores[group] if group_status == "OK" else 0
                 program_groups_scores[program][group] = {"status": group_status, "points": points}
             print()
