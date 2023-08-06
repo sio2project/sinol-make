@@ -17,8 +17,7 @@ def check_compiled(file_path: str):
     :param file_path: Path to the file
     :return: executable path if compiled, None otherwise
     """
-    if not os.path.exists(os.path.join(os.getcwd(), 'cache', 'md5sums')):
-        os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'))
+    os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
 
     file_md5sum = util.get_file_md5(file_path)
 
@@ -40,8 +39,7 @@ def save_compiled(file_path: str, exe_path: str):
     :param file_path: Path to the file
     :param exe_path: Path to the compiled executable
     """
-    if not os.path.exists(os.path.join(os.getcwd(), 'cache', 'md5sums')):
-        os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'))
+    os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
 
     file_md5sum = util.get_file_md5(file_path)
 
@@ -68,7 +66,8 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
 
     compiled_exe = check_compiled(program)
     if compiled_exe is not None:
-        compile_log.write(f'Using cached executable {compiled_exe}\n')
+        if compile_log is not None:
+            compile_log.write(f'Using cached executable {compiled_exe}\n')
         if os.path.abspath(compiled_exe) != os.path.abspath(output):
             shutil.copy(compiled_exe, output)
         return True
