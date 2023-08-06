@@ -1,0 +1,13 @@
+title: Package with handwritten tests for testing `export` command
+
+memory_limit: 32000
+time_limit: 1
+
+scores:
+  1: 50
+  2: 50
+
+sinol_expected_scores:
+  hwr.cpp:
+    expected: {0: OK, 1: OK, 2: OK}
+    points: 100
