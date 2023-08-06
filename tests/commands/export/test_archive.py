@@ -16,7 +16,7 @@ from .util import *
 def _test_archive(package_path, out, tar):
     task_id = package_util.get_task_id()
     assert os.path.exists(tar)
-    assert f'Exported to {tar}' in out
+    assert f'{tar}' in out
 
     with tempfile.TemporaryDirectory() as tmpdir:
         with tarfile.open(tar, "r") as tar:

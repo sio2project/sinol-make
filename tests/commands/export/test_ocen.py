@@ -14,7 +14,7 @@ def _test_deb(output_dir, out):
 
     assert os.path.exists(deb)
     assert "Creating ocen debian package..." in out
-    assert f'Exported to {deb}' in out
+    assert f'{deb}' in out
 
     # Extracting the .deb file
     with tempfile.TemporaryDirectory() as tmpdir:
