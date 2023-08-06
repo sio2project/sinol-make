@@ -47,7 +47,8 @@ def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_fl
     ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers, weak_compilation_flags)
 
     if ingen_exe is None:
-        util.exit_with_error('Failed ingen compilation.', lambda: compile.print_compile_log(compile_log_path))
+        compile.print_compile_log(compile_log_path)
+        util.exit_with_error('Failed ingen compilation.')
     else:
         print(util.info('Successfully compiled ingen.'))
     return ingen_exe
@@ -81,13 +82,16 @@ def compile_correct_solution(solution_path: str, args: argparse.Namespace, weak_
     return correct_solution_exe
 
 
-
-def run_ingen(ingen_exe):
+def run_ingen(ingen_exe, working_dir=None):
     """
     Runs ingen and generates all input files.
     :param ingen_exe: path to ingen executable
+    :param working_dir: working directory for ingen. If None, then {os.getcwd()}/in is used.
     :return: True if ingen was successful, False otherwise
     """
+    if working_dir is None:
+        working_dir = os.path.join(os.getcwd(), 'in')
+
     is_shell = os.path.splitext(ingen_exe)[1] == '.sh'
     if is_shell:
         util.fix_line_endings(ingen_exe)
@@ -95,7 +99,7 @@ def run_ingen(ingen_exe):
         os.chmod(ingen_exe, st.st_mode | stat.S_IEXEC)
 
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                               cwd=os.path.join(os.getcwd(), 'in'), shell=is_shell)
+                               cwd=working_dir, shell=is_shell)
     while process.poll() is None:
         print(process.stdout.readline().decode('utf-8'), end='')
 

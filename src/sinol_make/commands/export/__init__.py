@@ -7,7 +7,8 @@ import argparse
 import yaml
 
 from sinol_make import util
-from sinol_make.helpers import package_util
+from sinol_make.helpers import package_util, parsers
+from sinol_make.commands.gen import gen_util
 from sinol_make.interfaces.BaseCommand import BaseCommand
 
 
@@ -33,6 +34,21 @@ class Command(BaseCommand):
         parser.add_argument('--ocen', action='store_true', default=False,
                             help='create ocen (or dlazaw in case `dlazaw/` directory exists) debian package '
                                  'for usage in contests')
+        parsers.add_compilation_arguments(parser)
+
+    def get_generated_tests(self):
+        """
+        Returns list of generated tests.
+        Executes ingen to check what tests are generated.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ingen_path = gen_util.get_ingen(self.task_id)
+            ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
+            if not gen_util.run_ingen(ingen_exe, tmpdir):
+                util.exit_with_error('Failed to run ingen.')
+
+            tests = glob.glob(os.path.join(tmpdir, f'{self.task_id}*.in'))
+            return [package_util.extract_test_id(test) for test in tests]
 
     def copy_files(self, target_dir: str):
         """
@@ -40,7 +56,7 @@ class Command(BaseCommand):
         :param target_dir: Directory to copy files to.
         """
         files = ['config.yml', 'makefile.in', 'Makefile.in',
-                 'in', 'out', 'prog', 'doc', 'public', 'dlazaw']
+                 'prog', 'doc', 'public', 'dlazaw']
         for file in files:
             file_path = os.path.join(os.getcwd(), file)
             if os.path.exists(file_path):
@@ -49,11 +65,19 @@ class Command(BaseCommand):
                 else:
                     shutil.copy(file_path, target_dir)
 
-    def create_files(self, target_dir: str, task_id: str, config: dict):
+        print('Generating tests...')
+        generated_tests = self.get_generated_tests()
+        print('Copying only handwritten tests...')
+        for ext in ['in', 'out']:
+            os.mkdir(os.path.join(target_dir, ext))
+            for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}*.{ext}')):
+                if package_util.extract_test_id(test) not in generated_tests:
+                    shutil.copy(test, os.path.join(target_dir, ext))
+
+    def create_files(self, target_dir: str, config: dict):
         """
         Creates required files in target directory (makefile.in).
         :param target_dir: Directory to create files in.
-        :param task_id: Task id.
         :param config: Config dictionary.
         """
         with open(os.path.join(target_dir, 'makefile.in'), 'w') as f:
@@ -64,7 +88,7 @@ class Command(BaseCommand):
                 c_flags += ' ' + ' '.join(config['extra_compilation_args'].get('c', []))
 
             f.write(f'MODE = wer\n'
-                    f'ID = {task_id}\n'
+                    f'ID = {self.task_id}\n'
                     f'SIG = sinolmake\n'
                     f'\n'
                     f'TIMELIMIT = {config["time_limit"]}\n'
@@ -76,15 +100,14 @@ class Command(BaseCommand):
                     f'CXXFLAGS += {cxx_flags}\n'
                     f'CFLAGS += {c_flags}\n')
 
-    def compress(self, tmpdir, target_dir, task_id):
+    def compress(self, tmpdir, target_dir):
         """
         Compresses target directory to archive.
         :param tmpdir: Temporary directory path.
         :param target_dir: Target directory path.
-        :param task_id: Task id.
         :return: Path to archive.
         """
-        archive = os.path.join(tmpdir, f'{task_id}.tgz')
+        archive = os.path.join(tmpdir, f'{self.task_id}.tgz')
         with tarfile.open(archive, "w:gz") as tar:
             tar.add(target_dir, arcname=os.path.basename(target_dir))
         return archive
@@ -100,18 +123,17 @@ class Command(BaseCommand):
         out = os.path.join(ocen_dir, ext, base)
         shutil.copyfile(filename, out)
 
-    def ocen_gen_conf(self, ocen_dir, nums, task_id):
+    def ocen_gen_conf(self, ocen_dir, nums):
         """
         Generates ocen configuration file.
         :param ocen_dir: Ocen directory path.
         :param nums: Set of test numbers.
-        :param task_id: Task id.
         """
 
         print("Generating ocen configuration file...")
         with open(os.path.join(ocen_dir, 'oi.conf'), "w") as conf:
-            conf.write(f'TASKS="{task_id}"\n'
-                       f'TESTS_{task_id}="{" ".join(sorted(nums))}"\n'
+            conf.write(f'TASKS="{self.task_id}"\n'
+                       f'TESTS_{self.task_id}="{" ".join(sorted(nums))}"\n'
                        f'HARD_TIMELIMIT=60    # limit czasu na wykonanie pod oitimetool (zwroc  uwage,\n'
                        f'                     # ze nie ma to nic wspolnego z wynikiem oitimetool dla Twojego programu)\n'
                        f'MEMLIMIT=1000000   # limit wykorzysztania pamieci przez program oraz oitimetool (KiB)\n'
@@ -140,7 +162,7 @@ class Command(BaseCommand):
 
         return os.path.join(package_path, f'{package_dir_name}.deb')
 
-    def ocen_make_deb_package(self, tmpdir, ocen_dir, task_id):
+    def ocen_make_deb_package(self, tmpdir, ocen_dir):
         """
         Creates ocen debian package.
         :param tmpdir: Temporary directory path.
@@ -148,7 +170,7 @@ class Command(BaseCommand):
         :return: Path to debian package.
         """
         deb_template = os.path.abspath(os.path.join(util.get_templates_dir(), 'oi-ocen'))
-        deb_dir = os.path.join(tmpdir, f'oi-ocen-{task_id}')
+        deb_dir = os.path.join(tmpdir, f'oi-ocen-{self.task_id}')
         shutil.copytree(deb_template, deb_dir)
 
         print("Creating archive with ocen...")
@@ -156,9 +178,9 @@ class Command(BaseCommand):
             tar.add(ocen_dir, arcname=os.path.basename(ocen_dir))
 
         print("Creating debian package...")
-        os.makedirs(os.path.join(deb_dir, 'usr', 'share', f'oi-ocen-{task_id}'), exist_ok=True)
+        os.makedirs(os.path.join(deb_dir, 'usr', 'share', f'oi-ocen-{self.task_id}'), exist_ok=True)
         shutil.copyfile(os.path.join(tmpdir, 'ocen-linux.tgz'),
-                        os.path.join(deb_dir, 'usr', 'share', f'oi-ocen-{task_id}', 'ocen-linux.tgz'))
+                        os.path.join(deb_dir, 'usr', 'share', f'oi-ocen-{self.task_id}', 'ocen-linux.tgz'))
 
         def replace_text(file, old, new):
             with open(file, 'r') as f:
@@ -166,12 +188,12 @@ class Command(BaseCommand):
             with open(file, 'w') as f:
                 f.write(content)
 
-        replace_text(os.path.join(deb_dir, 'DEBIAN', 'control'), 'TASK_ID', task_id)
-        replace_text(os.path.join(deb_dir, 'DEBIAN', 'postinst'), 'task_id = None', f'task_id = "{task_id}"')
+        replace_text(os.path.join(deb_dir, 'DEBIAN', 'control'), 'TASK_ID', self.task_id)
+        replace_text(os.path.join(deb_dir, 'DEBIAN', 'postinst'), 'task_id = None', f'task_id = "{self.task_id}"')
 
-        return self.build_debian_package(tmpdir, f'oi-ocen-{task_id}')
+        return self.build_debian_package(tmpdir, f'oi-ocen-{self.task_id}')
 
-    def make_ocen(self, tmpdir, task_id):
+    def make_ocen(self, tmpdir):
         """
         Creates ocen debian package for contests.
         :param tmpdir: Temporary directory path.
@@ -203,14 +225,13 @@ class Command(BaseCommand):
                 self.copy_test(ocen_dir, file)
                 nums.add(os.path.basename(file).split('.')[0][3:])
 
-        self.ocen_gen_conf(ocen_dir, nums, task_id)
-        return self.ocen_make_deb_package(tmpdir, ocen_dir, task_id)
+        self.ocen_gen_conf(ocen_dir, nums)
+        return self.ocen_make_deb_package(tmpdir, ocen_dir)
 
-    def make_dlazaw(self, tmpdir, task_id):
+    def make_dlazaw(self, tmpdir):
         """
         Creates dlazaw debian package for contests.
         :param tmpdir: Temporary directory path.
-        :param task_id: Task id.
         """
 
         print("Copying dlazaw template...")
@@ -228,8 +249,9 @@ class Command(BaseCommand):
             print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
             exit(1)
 
+        self.args = args
         export_dir = args.output or 'export'
-        task_id = package_util.get_task_id()
+        self.task_id = package_util.get_task_id()
         self.export_dir = os.path.abspath(export_dir)
         if not os.path.exists(self.export_dir):
             os.makedirs(self.export_dir)
@@ -238,10 +260,10 @@ class Command(BaseCommand):
             if args.ocen:
                 if os.path.exists(os.path.join(os.getcwd(), 'dlazaw')):
                     print("Creating dlazaw debian package...")
-                    deb_file = self.make_dlazaw(tmpdir, task_id)
+                    deb_file = self.make_dlazaw(tmpdir)
                 else:
                     print("Creating ocen debian package...")
-                    deb_file = self.make_ocen(tmpdir, task_id)
+                    deb_file = self.make_ocen(tmpdir)
 
                 shutil.copy(deb_file, self.export_dir)
                 print(util.info(f'Exported to {os.path.join(self.export_dir, os.path.basename(deb_file))}'))
@@ -249,12 +271,12 @@ class Command(BaseCommand):
                 with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
                     config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-                package_path = os.path.join(tmpdir, task_id)
+                package_path = os.path.join(tmpdir, self.task_id)
                 os.makedirs(package_path)
 
                 self.copy_files(package_path)
-                self.create_files(package_path, task_id, config)
-                archive = self.compress(tmpdir, package_path, task_id)
+                self.create_files(package_path, config)
+                archive = self.compress(tmpdir, package_path)
                 shutil.copy(archive, self.export_dir)
 
-                print(util.info(f'Exported to {os.path.join(self.export_dir, task_id + ".tgz")}'))
+                print(util.info(f'Exported to {os.path.join(self.export_dir, self.task_id + ".tgz")}'))
