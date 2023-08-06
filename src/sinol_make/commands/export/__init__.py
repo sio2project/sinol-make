@@ -24,14 +24,15 @@ class Command(BaseCommand):
             self.get_name(),
             help='Create archive for oioioi upload',
             description='Creates archive ready to upload to oioioi. '
-                        'It is possible to create ocen debian package for usage in contests '
+                        'It is possible to create ocen and dlazaw debian packages for usage in contests '
                         'with --ocen flag.'
         )
 
         parser.add_argument('-o', '--output', type=str, default='export',
                             help='output directory. Default: export')
         parser.add_argument('--ocen', action='store_true', default=False,
-                            help='create ocen debian package for usage in contests')
+                            help='create ocen (or dlazaw in case `dlazaw/` directory exists) debian package '
+                                 'for usage in contests')
 
     def copy_files(self, target_dir: str):
         """
@@ -39,7 +40,7 @@ class Command(BaseCommand):
         :param target_dir: Directory to copy files to.
         """
         files = ['config.yml', 'makefile.in', 'Makefile.in',
-                 'in', 'out', 'prog', 'doc', 'public']
+                 'in', 'out', 'prog', 'doc', 'public', 'dlazaw']
         for file in files:
             file_path = os.path.join(os.getcwd(), file)
             if os.path.exists(file_path):
@@ -127,6 +128,28 @@ class Command(BaseCommand):
         with open(file, 'wb') as f:
             f.write(content)
 
+    def build_debian_package(self, package_path, package_dir_name):
+        """
+        Builds debian package.
+        :param package_path: Path to directory with package.
+        :param package_dir_name: Name of directory with package.
+        :return: Path to .deb file.
+        """
+        deb_path = os.path.join(package_path, package_dir_name)
+        os.chmod(os.path.join(deb_path, 'DEBIAN'), 0o755)
+        for root, dirs, files in os.walk(os.path.join(deb_path, 'DEBIAN')):
+            for d in dirs:
+                os.chmod(os.path.join(root, d), 0o755)
+            for f in files:
+                os.chmod(os.path.join(root, f), 0o755)
+                self.fix_line_endings(os.path.join(root, f))
+
+        exit_code = os.system(f'cd {package_path} && dpkg-deb -v -Zxz --build {package_dir_name}')
+        if exit_code != 0:
+            util.exit_with_error("Failed to create debian package.")
+
+        return os.path.join(package_path, f'{package_dir_name}.deb')
+
     def ocen_make_deb_package(self, tmpdir, ocen_dir, task_id):
         """
         Creates ocen debian package.
@@ -146,14 +169,6 @@ class Command(BaseCommand):
         os.makedirs(os.path.join(deb_dir, 'usr', 'share', f'oi-ocen-{task_id}'), exist_ok=True)
         shutil.copyfile(os.path.join(tmpdir, 'ocen-linux.tgz'),
                         os.path.join(deb_dir, 'usr', 'share', f'oi-ocen-{task_id}', 'ocen-linux.tgz'))
-        os.chmod(os.path.join(deb_dir, 'DEBIAN'), 0o755)
-        for root, dirs, files in os.walk(deb_dir):
-            for d in dirs:
-                os.chmod(os.path.join(root, d), 0o755)
-            for f in files:
-                os.chmod(os.path.join(root, f), 0o755)
-
-        self.fix_line_endings(os.path.join(deb_dir, 'DEBIAN', 'postinst'))
 
         def replace_text(file, old, new):
             with open(file, 'r') as f:
@@ -164,11 +179,7 @@ class Command(BaseCommand):
         replace_text(os.path.join(deb_dir, 'DEBIAN', 'control'), 'TASK_ID', task_id)
         replace_text(os.path.join(deb_dir, 'DEBIAN', 'postinst'), 'task_id = None', f'task_id = "{task_id}"')
 
-        exit_code = os.system(f'cd {tmpdir} && dpkg-deb -Zxz --build oi-ocen-{task_id}')
-        if exit_code != 0:
-            util.exit_with_error("Failed to create debian package.")
-
-        return os.path.join(tmpdir, f'oi-ocen-{task_id}.deb')
+        return self.build_debian_package(tmpdir, f'oi-ocen-{task_id}')
 
     def make_ocen(self, tmpdir, task_id):
         """
@@ -205,6 +216,23 @@ class Command(BaseCommand):
         self.ocen_gen_conf(ocen_dir, nums, task_id)
         return self.ocen_make_deb_package(tmpdir, ocen_dir, task_id)
 
+    def make_dlazaw(self, tmpdir, task_id):
+        """
+        Creates dlazaw debian package for contests.
+        :param tmpdir: Temporary directory path.
+        :param task_id: Task id.
+        """
+
+        print("Copying dlazaw template...")
+        shutil.copytree(os.path.join(util.get_templates_dir(), 'oi-dlazaw'),
+                        os.path.join(tmpdir, 'oi-dlazaw'))
+
+        shutil.copytree(os.path.join(os.getcwd(), 'dlazaw'),
+                        os.path.join(tmpdir, 'oi-dlazaw', 'home', 'zawodnik', 'dlazaw'))
+
+        print("Creating debian package...")
+        return self.build_debian_package(tmpdir, 'oi-dlazaw')
+
     def run(self, args: argparse.Namespace):
         if not util.check_if_project():
             print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
@@ -218,9 +246,15 @@ class Command(BaseCommand):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             if args.ocen:
-                deb_file = self.make_ocen(tmpdir, task_id)
+                if os.path.exists(os.path.join(os.getcwd(), 'dlazaw')):
+                    print("Creating dlazaw debian package...")
+                    deb_file = self.make_dlazaw(tmpdir, task_id)
+                else:
+                    print("Creating ocen debian package...")
+                    deb_file = self.make_ocen(tmpdir, task_id)
+
                 shutil.copy(deb_file, self.export_dir)
-                print(util.info(f'Exported to {os.path.join(self.export_dir, "oi-ocen-" + task_id + ".deb")}'))
+                print(util.info(f'Exported to {os.path.join(self.export_dir, os.path.basename(deb_file))}'))
             else:
                 with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
                     config = yaml.load(config_file, Loader=yaml.FullLoader)

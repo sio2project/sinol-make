@@ -1,0 +1,9 @@
+Package: oi-dlazaw
+Version: 1.0
+Section: oi
+Priority: optional
+Depends: 
+Architecture: all
+Maintainer: Olimpiada Informatyczna 
+Description: Folder dlazaw
+  Folder dlazaw
