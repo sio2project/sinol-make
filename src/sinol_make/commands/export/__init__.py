@@ -43,7 +43,10 @@ class Command(BaseCommand):
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             ingen_path = gen_util.get_ingen(self.task_id)
-            ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
+            if os.path.splitext(ingen_path)[1] == '.sh':
+                ingen_exe = ingen_path
+            else:
+                ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
             if not gen_util.run_ingen(ingen_exe, tmpdir):
                 util.exit_with_error('Failed to run ingen.')
 
@@ -84,8 +87,10 @@ class Command(BaseCommand):
             cxx_flags = '-std=c++17'
             c_flags = '-std=c17'
             if 'extra_compilation_args' in config:
-                cxx_flags += ' ' + ' '.join(config['extra_compilation_args'].get('cpp', []))
-                c_flags += ' ' + ' '.join(config['extra_compilation_args'].get('c', []))
+                if 'cpp' in config['extra_compilation_args']:
+                    cxx_flags += ' ' + ' '.join(config['extra_compilation_args']['cpp'])
+                if 'c' in config['extra_compilation_args']:
+                    c_flags += ' ' + ' '.join(config['extra_compilation_args']['c'])
 
             f.write(f'MODE = wer\n'
                     f'ID = {self.task_id}\n'
@@ -156,7 +161,7 @@ class Command(BaseCommand):
                 os.chmod(os.path.join(root, f), 0o755)
                 util.fix_line_endings(os.path.join(root, f))
 
-        exit_code = os.system(f'cd {package_path} && dpkg-deb -v -Zxz --build {package_dir_name}')
+        exit_code = os.system(f'cd "{package_path}" && dpkg-deb -v -Zxz --build {package_dir_name}')
         if exit_code != 0:
             util.exit_with_error("Failed to create debian package.")
 
