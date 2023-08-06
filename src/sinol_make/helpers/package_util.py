@@ -19,6 +19,8 @@ def extract_test_id(test_path):
 
 
 def get_group(test_path):
+    if extract_test_id(test_path).endswith("ocen"):
+        return 0
     return int("".join(filter(str.isdigit, extract_test_id(test_path))))
 
 

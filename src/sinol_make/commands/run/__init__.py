@@ -271,6 +271,8 @@ class Command(BaseCommand):
 
 
     def get_group(self, test_path):
+        if package_util.extract_test_id(test_path).endswith("ocen"):
+            return 0
         return int("".join(filter(str.isdigit, package_util.extract_test_id(test_path))))
 
 
