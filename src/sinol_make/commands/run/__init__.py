@@ -141,7 +141,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                         util.color_red(group_status)),
                           "%3s/%3s" % (points, scores[group]),
                           end=" | ")
-                program_scores[program] += scores[group] if group_status == "OK" else 0
+                program_scores[program] += points if group_status == "OK" else 0
                 program_groups_scores[program][group] = {"status": group_status, "points": points}
             print()
         print(8 * " ", end=" | ")
