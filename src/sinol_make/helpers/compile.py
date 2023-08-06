@@ -5,8 +5,6 @@ import shutil
 import stat
 import subprocess
 
-import yaml
-
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
 from sinol_make.interfaces.Errors import CompilationError
@@ -26,7 +24,7 @@ def check_compiled(file_path: str):
 
     try:
         with open(os.path.join(os.getcwd(), 'cache', 'md5sums', file_md5sum), 'r') as md5sums_file:
-            exe_file =  md5sums_file.read().strip()
+            exe_file = md5sums_file.read().strip()
             if os.path.exists(exe_file):
                 return exe_file
             else:
