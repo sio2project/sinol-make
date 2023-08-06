@@ -5,6 +5,7 @@ import threading
 import argparse
 import os
 import multiprocessing as mp
+from typing import Dict, List
 
 from sinol_make import util
 from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult, TableData
@@ -42,9 +43,7 @@ class Command(BaseCommand):
     def compile_inwer(self, args: argparse.Namespace):
         self.inwer_executable, compile_log_path = inwer_util.compile_inwer(self.inwer, args, args.weak_compilation_flags)
         if self.inwer_executable is None:
-            print(util.error('Compilation failed.'))
-            compile.print_compile_log(compile_log_path)
-            exit(1)
+            util.exit_with_error('Compilation failed.', lambda: compile.print_compile_log(compile_log_path))
         else:
             print(util.info('Compilation successful.'))
 
@@ -79,10 +78,14 @@ class Command(BaseCommand):
             out.decode('utf-8')
         )
 
-    def verify_and_print_table(self) -> dict[str, TestResult]:
+    def verify_and_print_table(self) -> Dict[str, TestResult]:
+        """
+        Verifies all tests and prints the results in a table.
+        :return: dictionary of TestResult objects
+        """
         results = {}
         sorted_tests = sorted(self.tests, key=lambda x: x[0])
-        executions: list[InwerExecution] = []
+        executions: List[InwerExecution] = []
         for test in sorted_tests:
             results[test] = TestResult(test)
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
@@ -139,7 +142,7 @@ class Command(BaseCommand):
             print('Verifying tests: ' + util.bold(', '.join(self.tests)))
 
         self.compile_inwer(args)
-        results: dict[str, TestResult] = self.verify_and_print_table()
+        results: Dict[str, TestResult] = self.verify_and_print_table()
         print('')
 
         failed_tests = []

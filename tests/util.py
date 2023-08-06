@@ -25,6 +25,13 @@ def get_checker_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "chk")
 
 
+def get_library_package_path():
+    """
+    Get path to package with library command (/test/packages/lib)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "lib")
+
+
 def get_weak_compilation_flags_package_path():
     """
     Get path to package for testing weak compilation flags (/test/packages/wcf)
@@ -37,6 +44,20 @@ def get_inwer_package_path():
     Get path to package for inwer command (/test/packages/wer)
     """
     return os.path.join(os.path.dirname(__file__), "packages", "wer")
+
+
+def get_shell_ingen_pack_path():
+    """
+    Get path to package for testing shell ingen (/test/packages/gen)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "gen")
+
+
+def get_limits_package_path():
+    """
+    Get path to package with `time_limits` and `memory_limits` present in config (/test/packages/lim)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "lim")
 
 
 def create_ins(package_path):
@@ -73,4 +94,6 @@ def create_ins_outs(package_path):
     Create .in and .out files for package.
     """
     create_ins(package_path)
-    create_outs(package_path)
+    has_lib = len(glob.glob(os.path.join(package_path, "prog", "???lib.*"))) > 0
+    if not has_lib:
+        create_outs(package_path)

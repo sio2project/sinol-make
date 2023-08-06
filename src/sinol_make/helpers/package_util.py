@@ -1,4 +1,7 @@
 import os
+from typing import List, Union
+
+from sinol_make import util
 
 
 def get_task_id() -> str:
@@ -23,7 +26,12 @@ def get_test_key(test):
     return get_group(test), test
 
 
-def get_tests(arg_tests: list[str] or None) -> list[str]:
+def get_tests(arg_tests: Union[List[str], None]) -> List[str]:
+    """
+    Returns list of tests to run.
+    :param arg_tests: Tests specified in command line arguments. If None, all tests are returned.
+    :return: List of tests to run.
+    """
     if arg_tests is None:
         all_tests = ["in/%s" % test for test in os.listdir("in/")
                      if test[-3:] == ".in"]
@@ -49,3 +57,35 @@ def get_executable_path(solution: str) -> str:
     Returns path to compiled executable for given solution.
     """
     return os.path.join(os.getcwd(), 'cache', 'executables', get_executable(solution))
+
+
+def get_time_limit(test_path, config):
+    """
+    Returns time limit for given test.
+    """
+    str_config = util.stringify_keys(config)
+    test_id = extract_test_id(test_path)
+    test_group = str(get_group(test_path))
+
+    if "time_limits" in str_config:
+        if test_id in str_config["time_limits"]:
+            return str_config["time_limits"][test_id]
+        elif test_group in str_config["time_limits"]:
+            return str_config["time_limits"][test_group]
+    return str_config["time_limit"]
+
+
+def get_memory_limit(test_path, config):
+    """
+    Returns memory limit for given test.
+    """
+    str_config = util.stringify_keys(config)
+    test_id = extract_test_id(test_path)
+    test_group = str(get_group(test_path))
+
+    if "memory_limits" in str_config:
+        if test_id in str_config["memory_limits"]:
+            return str_config["memory_limits"][test_id]
+        elif test_group in str_config["memory_limits"]:
+            return str_config["memory_limits"][test_group]
+    return str_config["memory_limit"]

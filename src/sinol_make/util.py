@@ -1,6 +1,7 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
-import importlib.resources
+import tempfile
 import threading
+from typing import Union
 
 
 def get_commands():
@@ -79,19 +80,25 @@ def install_oiejq():
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz couldn\'t connect)')
     if request.status_code != 200:
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
-    open('/tmp/oiejq.tar.gz', 'wb').write(request.content)
 
-    def strip(tar):
-        l = len('oiejq/')
-        for member in tar.getmembers():
-            member.name = member.name[l:]
-            yield member
+    # oiejq is downloaded to a temporary directory and not to the `cache` dir,
+    # as there is no guarantee that the current directory is the package directory.
+    # The `cache` dir is only used for files that are part of the package and those
+    # that the package creator might want to look into.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        oiejq_path = os.path.join(tmpdir, 'oiejq.tar.gz')
+        with open(oiejq_path, 'wb') as oiejq_file:
+            oiejq_file.write(request.content)
 
-    tar = tarfile.open('/tmp/oiejq.tar.gz')
-    tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
-    tar.close()
-    os.remove('/tmp/oiejq.tar.gz')
-    os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
+        def strip(tar):
+            l = len('oiejq/')
+            for member in tar.getmembers():
+                member.name = member.name[l:]
+                yield member
+
+        with tarfile.open(oiejq_path) as tar:
+            tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
+        os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
 
     return check_oiejq()
 
@@ -131,7 +138,14 @@ def save_config(config):
         "time_limits",
         "override_limits",
         "scores",
-        "extra_compilation_files",
+        {
+            "key": "extra_compilation_files",
+            "default_flow_style": None
+        },
+        {
+            "key": "extra_compilation_args",
+            "default_flow_style": None
+        },
         {
             "key": "sinol_expected_scores",
             "default_flow_style": None
@@ -157,13 +171,29 @@ def save_config(config):
             yaml.dump(config, config_file)
 
 
-def check_for_updates(current_version) -> str | None:
+def import_importlib_resources():
+    """
+    Function to import importlib_resources.
+    For Python 3.8 and below, we use importlib_resources.
+    For Python 3.9 and above, we use importlib.resources.
+    """
+    python_version = sys.version_info
+    if python_version.minor <= 8:
+        import importlib_resources as importlib
+    else:
+        import importlib.resources as importlib
+    return importlib
+
+
+def check_for_updates(current_version) -> Union[str, None]:
     """
     Function to check if there is a new version of sinol-make.
     :param current_version: current version of sinol-make
     :return: returns new version if there is one, None otherwise
     """
-    data_dir = importlib.resources.files("sinol_make").joinpath("data")
+    importlib = import_importlib_resources()
+
+    data_dir = importlib.files("sinol_make").joinpath("data")
     if not data_dir.is_dir():
         os.mkdir(data_dir)
 
@@ -190,6 +220,8 @@ def check_version():
     Function that asynchronously checks for new version of sinol-make.
     Writes the newest version to data/version file.
     """
+    importlib = import_importlib_resources()
+
     try:
         request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)
     except requests.exceptions.RequestException:
@@ -201,7 +233,7 @@ def check_version():
     data = request.json()
     latest_version = data["info"]["version"]
 
-    version_file = importlib.resources.files("sinol_make").joinpath("data/version")
+    version_file = importlib.files("sinol_make").joinpath("data/version")
     version_file.write_text(latest_version)
 
 
@@ -240,12 +272,13 @@ def lines_diff(lines1, lines2):
     return True
 
 
-def file_diff(file1, file2):
+def file_diff(file1_path, file2_path):
     """
     Function to compare two files.
     Returns True if they are the same, False otherwise.
     """
-    return lines_diff(open(file1).readlines(), open(file2).readlines())
+    with open(file1_path) as file1, open(file2_path) as file2:
+        return lines_diff(file1.readlines(), file2.readlines())
 
 
 def get_terminal_size():
@@ -272,6 +305,25 @@ def get_templates_dir():
     return os.path.abspath(os.path.join(os.path.dirname(__file__), "templates"))
 
 
+def fix_line_endings(file):
+    with open(file, "rb") as f:
+        content = f.read()
+    with open(file, "wb") as f:
+        f.write(content.replace(b"\r\n", b"\n"))
+
+
+def stringify_keys(d):
+    """
+    Function to stringify all keys in a dict.
+    """
+    if isinstance(d, dict):
+        return {str(k): stringify_keys(v) for k, v in d.items()}
+    elif isinstance(d, list):
+        return [stringify_keys(x) for x in d]
+    else:
+        return d
+
+
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
@@ -284,6 +336,9 @@ def warning(text):
 def error(text):
     return bold(color_red(text))
 
-def exit_with_error(text):
+
+def exit_with_error(text, func=None):
     print(error(text))
+    if func is not None:
+        func()
     exit(1)

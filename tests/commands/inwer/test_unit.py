@@ -25,12 +25,7 @@ def test_compile_inwer(create_package):
     """
     task_id = package_util.get_task_id()
     inwer_path = inwer_util.get_inwer_path(task_id)
-    args = argparse.Namespace(
-        c_compiler_path=compiler.get_c_compiler_path(),
-        cpp_compiler_path=compiler.get_cpp_compiler_path(),
-        python_interpreter_path=compiler.get_python_interpreter_path(),
-        java_compiler_path=compiler.get_java_compiler_path()
-    )
+    args = compiler.get_default_compilers()
     executable, compile_log = inwer_util.compile_inwer(inwer_path, args)
     assert os.path.exists(executable)
 

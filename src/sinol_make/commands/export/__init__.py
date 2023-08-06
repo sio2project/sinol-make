@@ -118,16 +118,6 @@ class Command(BaseCommand):
                        f'SRCLIMIT=100     # limit na rozmiar pliku zrodlowego (KiB)\n'
                        f'EXELIMIT=10240   # limit na rozmiar pliku wykonywalnego (KiB) = 10MB\n')
 
-    def fix_line_endings(self, file):
-        """
-        Fixes line endings in file.
-        :param file: File path.
-        """
-        with open(file, 'rb') as f:
-            content = f.read().replace(b'\r\n', b'\n')
-        with open(file, 'wb') as f:
-            f.write(content)
-
     def build_debian_package(self, package_path, package_dir_name):
         """
         Builds debian package.
@@ -142,7 +132,7 @@ class Command(BaseCommand):
                 os.chmod(os.path.join(root, d), 0o755)
             for f in files:
                 os.chmod(os.path.join(root, f), 0o755)
-                self.fix_line_endings(os.path.join(root, f))
+                util.fix_line_endings(os.path.join(root, f))
 
         exit_code = os.system(f'cd {package_path} && dpkg-deb -v -Zxz --build {package_dir_name}')
         if exit_code != 0:
@@ -198,7 +188,7 @@ class Command(BaseCommand):
 
         for root, dirs, files in os.walk(ocen_dir):
             for f in files:
-                self.fix_line_endings(os.path.join(root, f))
+                util.fix_line_endings(os.path.join(root, f))
 
         test_patterns = [
             'in/???0*.in',

@@ -2,6 +2,8 @@ import glob
 import os
 import sys
 from io import StringIO
+from typing import Union
+
 import argparse
 
 from sinol_make import util
@@ -11,7 +13,7 @@ from sinol_make.helpers import compiler
 from sinol_make.interfaces.Errors import CompilationError
 
 
-def get_inwer_path(task_id: str, path = None) -> str or None:
+def get_inwer_path(task_id: str, path = None) -> Union[str, None]:
     """
     Returns path to inwer executable for given task or None if no inwer was found.
     """

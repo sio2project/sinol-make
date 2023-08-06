@@ -34,7 +34,7 @@ def printer_thread(run_event, func, *args, **kwargs):
     wrapper(_printer, run_event, func, *args, **kwargs)
 
 
-def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
+def _printer(stdscr, run_event, func, *args, **kwargs):
     """
     Function called by curses.wrapper to print output of func (called with terminal width and height, then args and kwargs) to terminal in less-style.
     :param func: function called to get output. Should return a triple (output, title, footer),
@@ -121,7 +121,7 @@ def _printer(stdscr: curses.window, run_event, func, *args, **kwargs):
         return
 
 
-def _print_to_scr(scr: curses.window, output, has_title):
+def _print_to_scr(scr, output, has_title):
     """
     Prints output to scr. Replaces color escape sequences with curses color escape sequences.
     """

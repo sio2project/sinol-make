@@ -25,7 +25,8 @@ def get_command(path = None):
         python_interpreter_path=compiler.get_python_interpreter_path(),
         java_compiler_path=compiler.get_java_compiler_path()
     )
-    command.config = yaml.load(open(os.path.join(path, "config.yml"), "r"), Loader=yaml.FullLoader)
+    with open(os.path.join(path, "config.yml"), "r") as config_file:
+        command.config = yaml.load(config_file, Loader=yaml.FullLoader)
     command.checker = None
     command.failed_compilations = []
     set_default_args(command)
