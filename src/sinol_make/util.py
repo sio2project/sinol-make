@@ -1,5 +1,6 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
 import tempfile
+import hashlib
 import threading
 from typing import Union
 
@@ -314,6 +315,14 @@ def stringify_keys(d):
         return [stringify_keys(x) for x in d]
     else:
         return d
+
+
+def get_file_md5(file):
+    """
+    Function to get the md5 hash of a file.
+    """
+    with open(file, "rb") as f:
+        return hashlib.md5(f.read()).hexdigest()
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

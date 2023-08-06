@@ -1,13 +1,54 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, Dict
 import os
 import sys
 import shutil
 import stat
 import subprocess
 
+import yaml
+
 import sinol_make.helpers.compiler as compiler
+from sinol_make import util
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
+
+
+def check_compiled(file_path: str):
+    """
+    Check if a file is compiled
+    :param file_path: Path to the file
+    :return: executable path if compiled, None otherwise
+    """
+    if not os.path.exists(os.path.join(os.getcwd(), 'cache', 'md5sums')):
+        os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'))
+
+    file_md5sum = util.get_file_md5(file_path)
+
+    try:
+        with open(os.path.join(os.getcwd(), 'cache', 'md5sums', file_md5sum), 'r') as md5sums_file:
+            exe_file =  md5sums_file.read().strip()
+            if os.path.exists(exe_file):
+                return exe_file
+            else:
+                os.unlink(os.path.join(os.getcwd(), 'cache', 'md5sums', file_md5sum))
+                return None
+    except FileNotFoundError:
+        return None
+
+
+def save_compiled(file_path: str, exe_path: str):
+    """
+    Save md5 sum of file to cache, so we know it is compiled.
+    :param file_path: Path to the file
+    :param exe_path: Path to the compiled executable
+    """
+    if not os.path.exists(os.path.join(os.getcwd(), 'cache', 'md5sums')):
+        os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'))
+
+    file_md5sum = util.get_file_md5(file_path)
+
+    with open(os.path.join(os.getcwd(), 'cache', 'md5sums', file_md5sum), 'w') as md5sums_file:
+        md5sums_file.write(exe_path)
 
 
 def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
@@ -26,6 +67,13 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         extra_compilation_args = []
     if extra_compilation_files is None:
         extra_compilation_files = []
+
+    compiled_exe = check_compiled(program)
+    if compiled_exe is not None:
+        compile_log.write(f'Using cached executable {compiled_exe}\n')
+        if os.path.abspath(compiled_exe) != os.path.abspath(output):
+            shutil.copy(compiled_exe, output)
+        return True
 
     for file in extra_compilation_files:
         shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
@@ -76,6 +124,7 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
+        save_compiled(program, output)
         return True
 
 
