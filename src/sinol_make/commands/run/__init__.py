@@ -132,7 +132,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                     else:
                         group_status = update_group_status(group_status, status)
 
-                points = math.floor(min_points / 100 * scores[group])
+                points = math.ceil(min_points / 100 * scores[group])
                 if not all_tests_finished:
                     print(" " * 3 + ("?" * len(str(scores[group]))).rjust(3) +
                           f'/{str(scores[group]).rjust(3)}', end=' | ')
