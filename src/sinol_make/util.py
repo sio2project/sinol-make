@@ -317,11 +317,8 @@ def stringify_keys(d):
         return d
 
 
-def get_file_md5(file):
-    """
-    Function to get the md5 hash of a file.
-    """
-    with open(file, "rb") as f:
+def get_file_md5(path):
+    with open(path, "rb") as f:
         return hashlib.md5(f.read()).hexdigest()
 
 
