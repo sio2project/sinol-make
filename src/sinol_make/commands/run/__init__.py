@@ -79,6 +79,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
     title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
             % (print_data.i + 1, len(executions), time_remaining)
     title = title.center(term_width)
+    NO_STATUS = "  "
     margin = "  "
     for program_ix in range(0, len(names), programs_in_row):
         program_group = names[program_ix:program_ix + programs_in_row]
@@ -108,7 +109,6 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                 results = all_results[program][group]
                 group_status = "OK"
                 min_points = 100
-                all_tests_finished = True
 
                 for test in results:
                     min_points = min(min_points, results[test].Points)
@@ -125,15 +125,14 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                     elif status == "ML":
                         program_memory[program] = (2 * package_util.get_memory_limit(test, config),
                                                    package_util.get_memory_limit(test, config))
-                    if status == "  ":
-                        group_status = "  "
+                    if status == NO_STATUS:
+                        group_status = NO_STATUS
                         min_points = 0
-                        all_tests_finished = False
                     else:
                         group_status = update_group_status(group_status, status)
 
                 points = math.ceil(min_points / 100 * scores[group])
-                if not all_tests_finished:
+                if any([results[test].Status == NO_STATUS for test in results]):
                     print(" " * 3 + ("?" * len(str(scores[group]))).rjust(3) +
                           f'/{str(scores[group]).rjust(3)}', end=' | ')
                 else:
@@ -191,7 +190,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
             for program in program_group:
                 result = all_results[program][package_util.get_group(test)][test]
                 status = result.Status
-                if status == "  ": print(10*' ', end=" | ")
+                if status == NO_STATUS: print(10*' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
                          ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config)))
