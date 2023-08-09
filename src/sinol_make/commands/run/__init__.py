@@ -302,7 +302,8 @@ class Command(BaseCommand):
             for solution in args_solutions:
                 if not os.path.isfile(solution):
                     util.exit_with_error("Solution %s does not exist" % solution)
-                solutions.append(os.path.basename(solution))
+                if self.SOLUTIONS_RE.match(os.path.basename(solution)) is not None:
+                    solutions.append(os.path.basename(solution))
             return sorted(solutions, key=self.get_executable_key)
 
 
