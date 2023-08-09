@@ -101,9 +101,7 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
 
     extra_compilation_files = [os.path.join(os.getcwd(), "prog", file)
                                for file in config.get("extra_compilation_files", [])]
-    extra_compilation_args = []
-    if 'extra_compilation_args' in config:
-        extra_compilation_args = config['extra_compilation_args'].get(os.path.splitext(name)[1], [])
+    extra_compilation_args = config.get('extra_compilation_args', {}).get(os.path.splitext(name)[1], [])
 
     output = os.path.join(executable_dir, name)
     compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')
