@@ -1055,9 +1055,9 @@ class Command(BaseCommand):
 
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')
-        if not 'time_limit' in self.config.keys():
+        if 'time_limit' not in self.config.keys() and 'time_limits' not in self.config.keys():
             util.exit_with_error('Time limit was not defined in config.yml.')
-        if not 'memory_limit' in self.config.keys():
+        if 'memory_limit' not in self.config.keys() and 'memory_limits' not in self.config.keys():
             util.exit_with_error('Memory limit was not defined in config.yml.')
 
         self.compilers, self.timetool_path = self.validate_arguments(args)
