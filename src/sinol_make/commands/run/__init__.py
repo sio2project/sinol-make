@@ -56,7 +56,7 @@ def update_group_status(group_status, new_status):
 
 
 def print_view(term_width, term_height, program_groups_scores, all_results, print_data: PrintData, names, executions,
-               groups, scores, tests, possible_score, cpus, hide_memory, config):
+               groups, scores, tests, possible_score, cpus, hide_memory, config, args):
     width = term_width - 13  # First column has 6 characters, the " | " separator has 3 characters and 4 for margin
     programs_in_row = width // 13  # Each program has 10 characters and the " | " separator has 3 characters
 
@@ -74,7 +74,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
 
     time_sum = 0
     for test in tests:
-        time_sum += package_util.get_time_limit(test, config)
+        time_sum += package_util.get_time_limit(test, config, args)
 
     time_remaining = (len(executions) - print_data.i - 1) * 2 * time_sum / cpus / 1000.0
     title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
@@ -115,16 +115,16 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                     status = results[test].Status
                     if getattr(results[test], "Time") is not None:
                         if program_times[program][0] < results[test].Time:
-                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, config))
+                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, config, args))
                     elif status == Status.TL:
-                        program_times[program] = (2 * package_util.get_time_limit(test, config),
-                                                  package_util.get_time_limit(test, config))
+                        program_times[program] = (2 * package_util.get_time_limit(test, config, args),
+                                                  package_util.get_time_limit(test, config, args))
                     if getattr(results[test], "Memory") is not None:
                         if program_memory[program][0] < results[test].Memory:
-                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config))
+                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config, args))
                     elif status == Status.ML:
-                        program_memory[program] = (2 * package_util.get_memory_limit(test, config),
-                                                   package_util.get_memory_limit(test, config))
+                        program_memory[program] = (2 * package_util.get_memory_limit(test, config, args),
+                                                   package_util.get_memory_limit(test, config, args))
                     if status == Status.NO_STATUS:
                         group_status = Status.NO_STATUS
                         min_points = 0
@@ -193,14 +193,14 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                 if status == Status.NO_STATUS: print(10*' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
-                         ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config)))
+                         ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config, args)))
                          if getattr(result, "Time") is not None else 7*" ", end=" | ")
             print()
             if not hide_memory:
                 print(8*" ", end=" | ")
                 for program in program_group:
                     result = all_results[program][package_util.get_group(test)][test]
-                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config)))
+                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, args)))
                           if getattr(result, "Memory") is not None else 10*" ", end=" | ")
                 print()
 
@@ -241,8 +241,8 @@ class Command(BaseCommand):
                             help='tests to be run, for example in/abc{0,1}*')
         parser.add_argument('-c', '--cpus', type=int,
                             help='number of cpus to use, you have %d avaliable' % mp.cpu_count())
-        parser.add_argument('--tl', type=float, help='time limit (in s)')
-        parser.add_argument('--ml', type=float, help='memory limit (in MB)')
+        parser.add_argument('--tl', type=float, help='time limit for all tests (in s)')
+        parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
                             help='hide memory usage in report')
         parser.add_argument('--solutions-report', dest='solutions_report', type=str,
@@ -600,8 +600,8 @@ class Command(BaseCommand):
         for (name, executable, result) in compiled_commands:
             if result:
                 for test in self.tests:
-                    executions.append((name, executable, test, package_util.get_time_limit(test, self.config),
-                                       package_util.get_memory_limit(test, self.config), self.timetool_path))
+                    executions.append((name, executable, test, package_util.get_time_limit(test, self.config, self.args),
+                                       package_util.get_memory_limit(test, self.config, self.args), self.timetool_path))
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.NO_STATUS)
                 os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
             else:
@@ -620,7 +620,7 @@ class Command(BaseCommand):
             thr = threading.Thread(target=printer.printer_thread,
                                    args=(run_event, print_view, program_groups_scores, all_results, print_data, names,
                                          executions, self.groups, self.scores, self.tests, self.possible_score,
-                                         self.cpus, self.args.hide_memory, self.config))
+                                         self.cpus, self.args.hide_memory, self.config, self.args))
             thr.start()
 
         pool = mp.Pool(self.cpus)
@@ -641,7 +641,7 @@ class Command(BaseCommand):
 
         print("\n".join(print_view(terminal_width, terminal_height, program_groups_scores, all_results, print_data,
                                    names, executions, self.groups, self.scores, self.tests, self.possible_score,
-                                   self.cpus, self.args.hide_memory, self.config)[0]))
+                                   self.cpus, self.args.hide_memory, self.config, self.args)[0]))
 
         if keyboard_interrupt:
             util.exit_with_error("Stopped due to keyboard interrupt.")
@@ -1064,21 +1064,7 @@ class Command(BaseCommand):
 
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
-        config_time_limit = self.config["time_limit"]
-        config_memory_limit = self.config["memory_limit"]
-        self.time_limit = args.tl * 1000.0 if args.tl is not None else config_time_limit
-        self.memory_limit = args.ml * 1024 if args.ml is not None else config_memory_limit
         self.cpus = args.cpus or mp.cpu_count()
-        if self.time_limit == config_time_limit:
-            print(f'Time limit: {self.time_limit} ms')
-        else:
-            print(f'Time limit: {self.time_limit} ms',
-                  util.warning(("[originally was %.1f ms]" % config_time_limit)))
-        if self.memory_limit == config_memory_limit:
-            print(f'Memory limit: {self.memory_limit} kB')
-        else:
-            print(f'Memory limit: {self.memory_limit} kB',
-                  util.warning(("[originally was %.1f kb]" % config_memory_limit)))
 
         checker = glob.glob(os.path.join(os.getcwd(), "prog", f'{self.ID}chk.*'))
         if len(checker) != 0:
@@ -1098,6 +1084,16 @@ class Command(BaseCommand):
 
         self.set_scores()
         self.check_are_any_tests_to_run()
+
+        for test in self.tests:
+            try:
+                package_util.get_time_limit(test, self.config, self.args)
+            except KeyError:
+                util.exit_with_error(f'Time limit was not defined for test {os.path.basename(test)} in config.yml.')
+            try:
+                package_util.get_memory_limit(test, self.config, self.args)
+            except KeyError:
+                util.exit_with_error(f'Memory limit was not defined for test {os.path.basename(test)} in config.yml.')
 
         self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
