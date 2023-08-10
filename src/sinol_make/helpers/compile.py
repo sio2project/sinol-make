@@ -73,10 +73,9 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
 
     compiled_exe = check_compiled(program)
     if compiled_exe is not None:
-        try:
+        if compile_log is not None:
             compile_log.write(f'Using cached executable {compiled_exe}\n')
-        except AttributeError:
-            pass
+            compile_log.close()
         if os.path.abspath(compiled_exe) != os.path.abspath(output):
             shutil.copy(compiled_exe, output)
         return True
