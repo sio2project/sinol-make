@@ -1,6 +1,7 @@
 import argparse, re, yaml
 from sinol_make import util
 from sinol_make.commands.run.structs import ResultChange, ValidationResult
+from sinol_make.structs.status_structs import Status
 from sinol_make.helpers import package_util
 from .util import *
 from ...util import *
@@ -55,7 +56,7 @@ def test_execution(create_package, time_tool):
 
     os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
     result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
-    assert result.Status == "OK"
+    assert result.Status == Status.OK
 
 
 def test_calculate_points():
@@ -63,11 +64,11 @@ def test_calculate_points():
     command = get_command()
     command.scores = command.config["scores"]
 
-    assert command.calculate_points({1: "OK", 2: "OK", 3: "OK", 4: "OK"}) == 100
-    assert command.calculate_points({1: "OK", 2: "OK", 3: "OK", 4: "WA"}) == 75
-    assert command.calculate_points({1: "OK", 2: "OK", 3: "TL"}) == 50
-    assert command.calculate_points({1: "OK"}) == 25
-    assert command.calculate_points({1: "WA"}) == 0
+    assert command.calculate_points({1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK}) == 100
+    assert command.calculate_points({1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.WA}) == 75
+    assert command.calculate_points({1: Status.OK, 2: Status.OK, 3: Status.TL}) == 50
+    assert command.calculate_points({1: Status.OK}) == 25
+    assert command.calculate_points({1: Status.WA}) == 0
 
 
 def test_run_solutions(create_package, time_tool):
@@ -91,10 +92,10 @@ def test_run_solutions(create_package, time_tool):
                                          for group, group_result in results[solution].items())
         return new_results
 
-    assert flatten_results(command.compile_and_run(["abc.cpp"])[0]) == {"abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"}}
+    assert flatten_results(command.compile_and_run(["abc.cpp"])[0]) == {"abc.cpp": {1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK}}
     assert flatten_results(command.compile_and_run(["abc.cpp", "abc4.cpp"])[0]) == {
-        "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
-        "abc4.cpp": {1: "OK", 2: "OK", 3: "WA", 4: "RE"}
+        "abc.cpp": {1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK},
+        "abc4.cpp": {1: Status.OK, 2: Status.OK, 3: "WA", 4: "RE"}
     }
 
 
