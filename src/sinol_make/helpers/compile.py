@@ -11,9 +11,10 @@ from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
 
-def _get_md5sums_path(file_path):
+def get_file_md5sum(file_path):
     """
-    Get path to a file's md5sums file
+    Calculate the md5 sum of a file and
+    return the path to the file named after the md5 sum.
     """
     file_md5sum = util.get_file_md5(file_path)
     return os.path.join(os.getcwd(), 'cache', 'md5sums', file_md5sum)
@@ -26,7 +27,7 @@ def check_compiled(file_path: str):
     :return: executable path if compiled, None otherwise
     """
     os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
-    md5sums_file_path = _get_md5sums_path(file_path)
+    md5sums_file_path = get_file_md5sum(file_path)
 
     try:
         with open(md5sums_file_path, 'r') as md5sums_file:
@@ -47,7 +48,7 @@ def save_compiled(file_path: str, exe_path: str):
     :param exe_path: Path to the compiled executable
     """
     os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
-    md5sums_file_path = _get_md5sums_path(file_path)
+    md5sums_file_path = get_file_md5sum(file_path)
 
     with open(md5sums_file_path, 'w') as md5sums_file:
         md5sums_file.write(exe_path)
