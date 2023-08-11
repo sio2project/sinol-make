@@ -345,10 +345,9 @@ class Command(BaseCommand):
         extra_compilation_args = []
         extra_compilation_files = []
         if use_extras:
-            if "extra_compilation_args" in self.config:
-                lang = os.path.splitext(source_file)[1][1:]
-                for file in self.config["extra_compilation_args"].get(lang, []):
-                    extra_compilation_args.append(os.path.join(os.getcwd(), "prog", file))
+            lang = os.path.splitext(source_file)[1][1:]
+            for file in self.config.get("extra_compilation_args", {}).get(lang, []):
+                extra_compilation_args.append(os.path.join(os.getcwd(), "prog", file))
 
             for file in self.config.get("extra_compilation_files", []):
                 extra_compilation_files.append(os.path.join(os.getcwd(), "prog", file))
