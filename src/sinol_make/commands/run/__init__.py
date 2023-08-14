@@ -689,7 +689,7 @@ class Command(BaseCommand):
         return _convert(dictionary)
 
     def print_expected_scores(self, expected_scores):
-        yaml_dict = { "sinol_expected_scores": self.convert_Status_to_string(expected_scores) }
+        yaml_dict = { "sinol_expected_scores": self.convert_status_to_string(expected_scores) }
         print(yaml.dump(yaml_dict, default_flow_style=None))
 
 
@@ -895,7 +895,7 @@ class Command(BaseCommand):
                         config_expected_scores[solution] = diff.new_expected_scores[solution]
 
 
-                self.config["sinol_expected_scores"] = self.convert_Status_to_string(config_expected_scores)
+                self.config["sinol_expected_scores"] = self.convert_status_to_string(config_expected_scores)
                 util.save_config(self.config)
                 print(util.info("Saved suggested expected scores description."))
             else:
