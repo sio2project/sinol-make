@@ -74,9 +74,9 @@ class Command(BaseCommand):
                 if package_util.extract_test_id(test) not in generated_tests:
                     shutil.copy(test, os.path.join(target_dir, ext))
 
-    def create_files(self, target_dir: str, config: dict):
+    def create_makefile_in(self, target_dir: str, config: dict):
         """
-        Creates required files in target directory (makefile.in).
+        Creates required `makefile.in` file.
         :param target_dir: Directory to create files in.
         :param config: Config dictionary.
         """
@@ -134,7 +134,7 @@ class Command(BaseCommand):
             os.makedirs(package_path)
 
             self.copy_package_required_files(package_path)
-            self.create_files(package_path, config)
+            self.create_makefile_in(package_path, config)
             archive = self.compress(tmpdir, package_path)
             shutil.copy(archive, self.export_dir)
 

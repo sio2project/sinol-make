@@ -29,7 +29,7 @@ def test_get_generated_tests():
 
 def test_copy_package_required_files():
     """
-    Test function copy_files.
+    Test function copy_package_required_files.
     """
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -56,9 +56,9 @@ def test_copy_package_required_files():
         assert set(os.listdir(os.path.join(res_dir, "out"))) == set()
 
 
-def test_create_files():
+def test_create_makefile_in():
     """
-    Test function create_files.
+    Test function create_makefile_in.
     """
 
     def _create_package(path):
@@ -70,13 +70,13 @@ def test_create_files():
     with tempfile.TemporaryDirectory() as tmpdir:
         command, config = _create_package(util.get_handwritten_package_path())
 
-        command.create_files(tmpdir, config)
+        command.create_makefile_in(tmpdir, config)
         with open(os.path.join(tmpdir, "makefile.in"), "r") as makefile:
             lines = makefile.readlines()
             assert_makefile_in(lines, "hwr", config)
 
         command, config = _create_package(util.get_library_package_path())
-        command.create_files(tmpdir, config)
+        command.create_makefile_in(tmpdir, config)
         with open(os.path.join(tmpdir, "makefile.in"), "r") as makefile:
             lines = makefile.readlines()
             assert_makefile_in(lines, "lib", config)
