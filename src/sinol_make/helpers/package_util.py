@@ -65,7 +65,7 @@ def get_time_limit(test_path, config, args=None):
     """
     Returns time limit for given test.
     """
-    if args is not None and args.tl is not None:
+    if args is not None and hasattr(args, "tl") and args.tl is not None:
         return args.tl * 1000
 
     str_config = util.stringify_keys(config)
@@ -84,7 +84,7 @@ def get_memory_limit(test_path, config, args=None):
     """
     Returns memory limit for given test.
     """
-    if args is not None and args.ml is not None:
+    if args is not None and hasattr(args, "ml") and args.ml is not None:
         return args.ml * 1024
 
     str_config = util.stringify_keys(config)
