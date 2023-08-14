@@ -23,6 +23,24 @@ def test_install_oiejq():
     assert util.install_oiejq()
 
 
+@pytest.mark.github_runner
+def test_check_oiejq():
+    if sys.platform != 'linux':
+        return
+
+    assert not util.check_oiejq()
+    os.makedirs(sys.path.expanduser('~/.local/bin/oiejq_sinol-make'), exist_ok=True)
+    assert not util.check_oiejq()
+    os.mkdir(sys.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh'))
+    assert not util.check_oiejq()
+    os.rmdir(sys.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh'))
+    with open(sys.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh'), 'w') as f:
+        f.write('abcdef')
+    assert not util.check_oiejq()
+    os.chmod(sys.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh'), 0o777)
+    assert not util.check_oiejq()
+
+
 def test_file_diff():
     with tempfile.TemporaryDirectory() as tmpdir:
         a_file = os.path.join(tmpdir, 'a')
