@@ -1,4 +1,4 @@
-# PYTHON_ARCOMPLETE_OK
+# PYTHON_ARGCOMPLETE_OK
 
 import argcomplete
 import argparse
