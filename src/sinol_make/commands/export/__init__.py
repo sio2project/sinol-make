@@ -42,10 +42,7 @@ class Command(BaseCommand):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             ingen_path = gen_util.get_ingen(self.task_id)
-            if os.path.splitext(ingen_path)[1] == '.sh':
-                ingen_exe = ingen_path
-            else:
-                ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
+            ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
             if not gen_util.run_ingen(ingen_exe, tmpdir):
                 util.exit_with_error('Failed to run ingen.')
 

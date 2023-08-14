@@ -97,11 +97,7 @@ class Command(BaseCommand):
         print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
 
         self.correct_solution = gen_util.get_correct_solution(self.task_id)
-
-        if os.path.splitext(self.ingen)[1] != '.sh':
-            self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
-        else:
-            self.ingen_exe = self.ingen
+        self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
 
         if gen_util.run_ingen(self.ingen_exe):
             print(util.info('Successfully generated input files.'))
