@@ -673,7 +673,7 @@ class Command(BaseCommand):
         names = solutions
         return self.run_solutions(compiled_commands, names, solutions)
 
-    def convert_Status_to_string(self, dictionary):
+    def convert_status_to_string(self, dictionary):
         """
         Converts all `Status` enums in dict to strings.
         """
