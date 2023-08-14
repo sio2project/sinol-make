@@ -15,7 +15,7 @@ def configure_parsers():
     )
     parser.add_argument("-v", "--version", action="version", version="%(prog)s " + __version__)
     subparsers = parser.add_subparsers(
-        title='commands',
+        title='command',
         description='sinol-make commands',
         dest='command',
     )

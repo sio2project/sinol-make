@@ -14,9 +14,9 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
         gpp_versions = 'g++'
 
     parser.add_argument('--c-compiler-path', dest='c_compiler_path', type=str, default=compiler.get_c_compiler_path(),
-                        help=f'C compiler to use (default {gcc_versions})')
+                        help=f'C compiler to use (default: {gcc_versions})')
     parser.add_argument('--cpp-compiler-path', dest='cpp_compiler_path', type=str, default=compiler.get_cpp_compiler_path(),
-                        help=f'C++ compiler to use (default {gpp_versions})')
+                        help=f'C++ compiler to use (default: {gpp_versions})')
     parser.add_argument('--python-interpreter-path', dest='python_interpreter_path', type=str, default=compiler.get_python_interpreter_path(),
                         help='Python interpreter to use (default: python3)')
     parser.add_argument('--java-compiler-path', dest='java_compiler_path', type=str, default=compiler.get_java_compiler_path(),

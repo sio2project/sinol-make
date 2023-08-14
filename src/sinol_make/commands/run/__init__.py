@@ -240,10 +240,8 @@ class Command(BaseCommand):
         parser.add_argument('--ml', type=float, help='memory limit (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
                             help='hide memory usage in report')
-        parser.add_argument('--solutions-report', dest='solutions_report', type=str,
-                            help='file to store report from solution executions (in markdown)')
         parser.add_argument('-T', '--time-tool', dest='time_tool', choices=['oiejq', 'time'], default=default_timetool,
-                            help='tool to measure time and memory usage (default when possible: oiejq)')
+                            help=f'tool to measure time and memory usage (default: {default_timetool})')
         parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
         add_compilation_arguments(parser)
