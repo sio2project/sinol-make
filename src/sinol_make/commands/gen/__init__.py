@@ -88,8 +88,7 @@ class Command(BaseCommand):
         return md5_sums, outputs_to_generate
 
     def run(self, args: argparse.Namespace):
-        if not util.check_if_project():
-            util.exit_with_error('You are not in a project directory (couldn\'t find config.yml in current directory).')
+        util.exit_if_not_package()
 
         self.args = args
         self.task_id = package_util.get_task_id()

@@ -116,9 +116,7 @@ class Command(BaseCommand):
         return archive
 
     def run(self, args: argparse.Namespace):
-        if not util.check_if_project():
-            print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
-            exit(1)
+        util.exit_if_not_package()
 
         self.args = args
         export_dir = args.output or 'export'
