@@ -671,6 +671,29 @@ class Command(BaseCommand):
         yaml_dict = { "sinol_expected_scores": expected_scores }
         print(yaml.dump(yaml_dict, default_flow_style=None))
 
+    def get_whole_groups(self):
+        """
+        Returns a list of groups for which all tests were run.
+        """
+        group_sizes = {}
+        for test in package_util.get_tests():
+            group = package_util.get_group(test)
+            if group not in group_sizes:
+                group_sizes[group] = 0
+            group_sizes[group] += 1
+
+        run_group_sizes = {}
+        for test in self.tests:
+            group = package_util.get_group(test)
+            if group not in run_group_sizes:
+                run_group_sizes[group] = 0
+            run_group_sizes[group] += 1
+
+        whole_groups = []
+        for group in group_sizes.keys():
+            if group in run_group_sizes and group_sizes[group] == run_group_sizes[group]:
+                whole_groups.append(group)
+        return whole_groups
 
     def validate_expected_scores(self, results):
         new_expected_scores = {} # Expected scores based on results
@@ -725,9 +748,21 @@ class Command(BaseCommand):
                 for group in config_expected_scores[solution]["expected"]:
                     used_groups.add(group)
         else:
-            for solution in results.keys():
-                for group in results[solution].keys():
-                    used_groups.add(group)
+            used_groups = self.get_whole_groups()
+
+            solutions_to_delete = []
+            for solution in new_expected_scores.keys():
+                groups_to_remove = []
+                for group in new_expected_scores[solution]["expected"]:
+                    if group not in used_groups:
+                        groups_to_remove.append(group)
+                for group in groups_to_remove:
+                    del new_expected_scores[solution]["expected"][group]
+                if len(new_expected_scores[solution]["expected"]) == 0:
+                    solutions_to_delete.append(solution)
+            for solution in solutions_to_delete:
+                del new_expected_scores[solution]
+
         used_groups = list(used_groups)
 
         expected_scores = {} # Expected scores from config with only solutions and groups that were run
@@ -743,7 +778,11 @@ class Command(BaseCommand):
                         expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
 
                 expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+                if len(expected_scores[solution]["expected"]) == 0:
+                    del expected_scores[solution]
 
+        if self.args.tests is not None:
+            print("Showing expected scores only for groups with all tests run.")
         print(util.bold("Expected scores from config:"))
         self.print_expected_scores(expected_scores)
         print(util.bold("\nExpected scores based on results:"))
