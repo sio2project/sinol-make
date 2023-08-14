@@ -130,6 +130,7 @@ def test_validate_expected_scores_success():
     command = get_command()
     os.chdir(get_simple_package_path())
     command.scores = command.config["scores"]
+    command.tests = package_util.get_tests(None)
 
     # Test with correct expected scores.
     command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
