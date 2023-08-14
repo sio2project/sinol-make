@@ -49,7 +49,7 @@ class Command(BaseCommand):
             tests = glob.glob(os.path.join(tmpdir, f'{self.task_id}*.in'))
             return [package_util.extract_test_id(test) for test in tests]
 
-    def copy_files(self, target_dir: str):
+    def copy_package_required_files(self, target_dir: str):
         """
         Copies files from current directory to target directory.
         :param target_dir: Directory to copy files to.
@@ -132,7 +132,7 @@ class Command(BaseCommand):
             package_path = os.path.join(tmpdir, self.task_id)
             os.makedirs(package_path)
 
-            self.copy_files(package_path)
+            self.copy_package_required_files(package_path)
             self.create_files(package_path, config)
             archive = self.compress(tmpdir, package_path)
             shutil.copy(archive, self.export_dir)

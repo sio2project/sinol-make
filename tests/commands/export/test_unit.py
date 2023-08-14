@@ -27,7 +27,7 @@ def test_get_generated_tests():
         assert set(command.get_generated_tests()) == {"1a", "2a", "3a", "4a"}
 
 
-def test_copy_files():
+def test_copy_package_required_files():
     """
     Test function copy_files.
     """
@@ -36,7 +36,7 @@ def test_copy_files():
         res_dir = os.path.join(tmpdir, "res")
         os.mkdir(res_dir)
         command = _create_package(tmpdir, util.get_handwritten_package_path())
-        command.copy_files(res_dir)
+        command.copy_package_required_files(res_dir)
 
         assert_configs_equal(os.getcwd(), res_dir)
         assert_progs_equal(os.getcwd(), res_dir)
@@ -47,7 +47,7 @@ def test_copy_files():
         shutil.rmtree(res_dir)
         os.mkdir(res_dir)
         command = _create_package(tmpdir, util.get_simple_package_path())
-        command.copy_files(res_dir)
+        command.copy_package_required_files(res_dir)
 
         assert_configs_equal(os.getcwd(), res_dir)
         assert_progs_equal(os.getcwd(), res_dir)
