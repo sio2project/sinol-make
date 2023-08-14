@@ -1,4 +1,3 @@
-import os
 import yaml
 import glob
 import pytest
@@ -6,8 +5,6 @@ import tarfile
 import tempfile
 
 from sinol_make import configure_parsers
-from sinol_make.commands.export import Command
-from sinol_make.helpers import package_util
 from tests import util
 from tests.fixtures import create_package
 from .util import *

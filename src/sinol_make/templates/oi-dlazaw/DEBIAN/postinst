@@ -1,5 +1,0 @@
-#!/bin/sh
-
-set -e
-
-chown -R zawodnik:zawodnik /home/zawodnik/dlazaw/
