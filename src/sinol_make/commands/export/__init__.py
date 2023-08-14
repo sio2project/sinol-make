@@ -24,7 +24,9 @@ class Command(BaseCommand):
         parser = subparser.add_parser(
             self.get_name(),
             help='Create archive for oioioi upload',
-            description='Creates archive ready to upload to oioioi.')
+            description='Creates archive ready to upload to oioioi. '
+                        'Output directory can be specified with the '
+                        '--output flag.')
 
         parser.add_argument('-o', '--output', type=str, default='export',
                             help='output directory. Default: export')
