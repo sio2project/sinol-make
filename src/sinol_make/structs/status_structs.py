@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class Status(str, Enum):
-    NO_STATUS = "  "
+    PENDING = "  "
     CE = "CE"
     TL = "TL"
     ML = "ML"

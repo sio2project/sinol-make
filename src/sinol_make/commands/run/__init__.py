@@ -44,7 +44,7 @@ def color_time(time, limit):
 
 def colorize_status(status):
     if status == Status.OK: return util.bold(util.color_green(status))
-    if status == Status.NO_STATUS: return util.warning(status)
+    if status == Status.PENDING: return util.warning(status)
     return util.error(status)
 
 
@@ -125,14 +125,14 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                     elif status == Status.ML:
                         program_memory[program] = (2 * package_util.get_memory_limit(test, config, args),
                                                    package_util.get_memory_limit(test, config, args))
-                    if status == Status.NO_STATUS:
-                        group_status = Status.NO_STATUS
+                    if status == Status.PENDING:
+                        group_status = Status.PENDING
                         min_points = 0
                     else:
                         group_status = update_group_status(group_status, status)
 
                 points = math.ceil(min_points / 100 * scores[group])
-                if any([results[test].Status == Status.NO_STATUS for test in results]):
+                if any([results[test].Status == Status.PENDING for test in results]):
                     print(" " * 3 + ("?" * len(str(scores[group]))).rjust(3) +
                           f'/{str(scores[group]).rjust(3)}', end=' | ')
                 else:
@@ -190,7 +190,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
             for program in program_group:
                 result = all_results[program][package_util.get_group(test)][test]
                 status = result.Status
-                if status == Status.NO_STATUS: print(10*' ', end=" | ")
+                if status == Status.PENDING: print(10 * ' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
                          ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config, args)))
@@ -602,7 +602,7 @@ class Command(BaseCommand):
                 for test in self.tests:
                     executions.append((name, executable, test, package_util.get_time_limit(test, self.config, self.args),
                                        package_util.get_memory_limit(test, self.config, self.args), self.timetool_path))
-                    all_results[name][self.get_group(test)][test] = ExecutionResult(Status.NO_STATUS)
+                    all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
             else:
                 for test in self.tests:
