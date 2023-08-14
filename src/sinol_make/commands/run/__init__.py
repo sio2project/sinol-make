@@ -44,7 +44,7 @@ def color_time(time, limit):
 
 def colorize_status(status):
     if status == Status.OK: return util.bold(util.color_green(status))
-    if status == Status.NO_STATUS or status == "??": return util.warning(status)
+    if status == Status.NO_STATUS: return util.warning(status)
     return util.error(status)
 
 
