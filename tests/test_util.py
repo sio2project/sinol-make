@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import time
 import json
@@ -28,6 +29,7 @@ def test_check_oiejq():
     if sys.platform != 'linux':
         return
 
+    shutil.rmtree(sys.path.expanduser('~/.local/bin/oiejq_sinol-make'), ignore_errors=True)
     assert not util.check_oiejq()
     os.makedirs(sys.path.expanduser('~/.local/bin/oiejq_sinol-make'), exist_ok=True)
     assert not util.check_oiejq()
