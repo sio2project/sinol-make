@@ -35,6 +35,9 @@ class Command(BaseCommand):
         Returns list of generated tests.
         Executes ingen to check what tests are generated.
         """
+        if not gen_util.ingen_exists(self.task_id):
+            return []
+
         with tempfile.TemporaryDirectory() as tmpdir:
             ingen_path = gen_util.get_ingen(self.task_id)
             if os.path.splitext(ingen_path)[1] == '.sh':

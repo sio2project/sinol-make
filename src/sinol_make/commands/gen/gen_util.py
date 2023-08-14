@@ -10,6 +10,15 @@ from sinol_make import util
 from sinol_make.helpers import compiler, package_util, compile
 
 
+def ingen_exists(task_id):
+    """
+    Checks if ingen source file exists.
+    :param task_id: task id, for example abc
+    :return: True if exists, False otherwise
+    """
+    return len(glob.glob(os.path.join(os.getcwd(), 'prog', task_id + 'ingen.*'))) > 0
+
+
 def get_ingen(task_id=None, ingen_path=None):
     """
     Find ingen source file in `prog/` directory.
