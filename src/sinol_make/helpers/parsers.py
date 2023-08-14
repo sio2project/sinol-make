@@ -22,4 +22,4 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--java-compiler-path', dest='java_compiler_path', type=str, default=compiler.get_java_compiler_path(),
                         help='Java compiler to use (default: javac)')
     parser.add_argument('-W', '--weak-compilation-flags', dest='weak_compilation_flags', action='store_true',
-                        help='use weaker compilation flags')
+                        help='disable all warning flags during C and C++ compilation')
