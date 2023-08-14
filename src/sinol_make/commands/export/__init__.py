@@ -29,7 +29,7 @@ class Command(BaseCommand):
                         '--output flag.')
 
         parser.add_argument('-o', '--output', type=str, default='export',
-                            help='output directory. Default: export')
+                            help='output directory (default: ./export)')
         parsers.add_compilation_arguments(parser)
 
     def get_generated_tests(self):
