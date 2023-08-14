@@ -66,10 +66,11 @@ class Command(BaseCommand):
 
         print('Generating tests...')
         generated_tests = self.get_generated_tests()
-        print('Copying only handwritten tests...')
+        print('Copying handwritten and example tests...')
         for ext in ['in', 'out']:
             os.mkdir(os.path.join(target_dir, ext))
-            for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}*.{ext}')):
+            for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}*.{ext}')) + \
+                    glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}0*.{ext}')):
                 if package_util.extract_test_id(test) not in generated_tests:
                     shutil.copy(test, os.path.join(target_dir, ext))
 
