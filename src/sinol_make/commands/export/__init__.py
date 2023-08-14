@@ -51,11 +51,12 @@ class Command(BaseCommand):
 
     def copy_package_required_files(self, target_dir: str):
         """
-        Copies files from current directory to target directory.
+        Copies package files and directories from
+        current directory to target directory.
         :param target_dir: Directory to copy files to.
         """
         files = ['config.yml', 'makefile.in', 'Makefile.in',
-                 'prog', 'doc', 'public', 'dlazaw']
+                 'prog', 'doc', 'attachments', 'dlazaw']
         for file in files:
             file_path = os.path.join(os.getcwd(), file)
             if os.path.exists(file_path):
