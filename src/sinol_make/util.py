@@ -1,4 +1,5 @@
 import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
+import shutil
 import tempfile
 import threading
 from typing import Union
@@ -41,8 +42,13 @@ def check_oiejq(path = None):
         return False
 
     def check(path):
+        if not os.path.isfile(path):
+            return False
+        if not os.access(path, os.X_OK):
+            return False
+
         try:
-            p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             p.wait()
             if p.returncode == 0:
                 return True
@@ -54,7 +60,7 @@ def check_oiejq(path = None):
     if path is not None:
         return check(path)
 
-    if not check(os.path.expanduser('~/.local/bin/oiejq')):
+    if not check(os.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh')):
         return False
     else:
         return True
@@ -90,15 +96,10 @@ def install_oiejq():
         with open(oiejq_path, 'wb') as oiejq_file:
             oiejq_file.write(request.content)
 
-        def strip(tar):
-            l = len('oiejq/')
-            for member in tar.getmembers():
-                member.name = member.name[l:]
-                yield member
-
         with tarfile.open(oiejq_path) as tar:
-            tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
-        os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
+            tar.extractall(path=tmpdir)
+
+        shutil.copytree(os.path.join(tmpdir, 'oiejq'), os.path.expanduser('~/.local/bin/oiejq_sinol-make'))
 
     return check_oiejq()
 
@@ -115,8 +116,8 @@ def get_oiejq_path():
         else:
             return False
 
-    if check(os.path.expanduser('~/.local/bin/oiejq')):
-        return os.path.expanduser('~/.local/bin/oiejq')
+    if check(os.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh')):
+        return os.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh')
     else:
         return None
 

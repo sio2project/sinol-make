@@ -43,7 +43,7 @@ def main():
                                    f' You can update it by running `pip3 install sinol-make --upgrade`.'))
 
             if sys.platform == 'linux' and not util.check_oiejq():
-                print(util.warning('`oiejq` in `~/.local/bin/` not detected, installing now...'))
+                print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
 
                 try:
                     if util.install_oiejq():
