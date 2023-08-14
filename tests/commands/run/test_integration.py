@@ -290,7 +290,7 @@ def test_memory_limit_flag(capsys, create_package, time_tool):
     create_ins_outs(package_path)
 
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--ml", "262144", "--time-tool", time_tool])  # 256 MB
+    args = parser.parse_args(["run", "--ml", "256", "--time-tool", time_tool])
     command = Command()
     with pytest.raises(SystemExit):
         command.run(args)
