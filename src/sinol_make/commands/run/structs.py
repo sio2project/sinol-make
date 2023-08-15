@@ -39,12 +39,12 @@ class ExecutionResult:
     # Error message
     Error: str
 
-    def __init__(self, status=None):
+    def __init__(self, status=None, Time=None, Memory=None, Points=0, Error=None):
         self.Status = status
-        self.Time = None
-        self.Memory = None
-        self.Points = 0
-        self.Error = None
+        self.Time = Time
+        self.Memory = Memory
+        self.Points = Points
+        self.Error = Error
 
 @dataclass
 class ExecutionData:
