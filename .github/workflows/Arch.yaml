@@ -11,7 +11,7 @@ jobs:
     container:
       image: archlinux:latest
       volumes:
-        - ~/.local/bin:/github/home/.local/bin
+        - /home/actions/oiejq:/github/home/.local/bin
       options:
         --privileged
     steps:
