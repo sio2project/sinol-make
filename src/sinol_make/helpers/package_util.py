@@ -85,7 +85,7 @@ def get_memory_limit(test_path, config, args=None):
     Returns memory limit for given test.
     """
     if args is not None and hasattr(args, "ml") and args.ml is not None:
-        return args.ml * 1024
+        return int(args.ml * 1024)
 
     str_config = util.stringify_keys(config)
     test_id = extract_test_id(test_path)
