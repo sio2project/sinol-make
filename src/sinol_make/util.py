@@ -105,6 +105,11 @@ def install_oiejq():
         # we rename the `oiejq.sh` executable to `oiejq_sinol-make`.
         # Otherwise, we rename it to `oiejq`.
         if os.path.isdir(os.path.expanduser('~/.local/bin/oiejq')):
+            if os.path.exists(os.path.expanduser('~/.local/bin/oiejq_sinol-make')) \
+                    and _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq_sinol-make')):
+                exit_with_error('Couldn\'t install oiejq (there is a directory named `oiejq` in `~/.local/bin` '
+                                'and `oiejq_sinol-make` is already an executable)')
+
             os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq_sinol-make'))
         else:
             os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq'))
