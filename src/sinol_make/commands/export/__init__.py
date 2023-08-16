@@ -23,7 +23,7 @@ class Command(BaseCommand):
         parser = subparser.add_parser(
             self.get_name(),
             help='Create archive for oioioi upload',
-            description='Creates archive in the current directory ready to upload to oioioi.')
+            description='Creates archive in the current directory ready to upload to sio2 or szkopul.')
         parsers.add_compilation_arguments(parser)
 
     def get_generated_tests(self):
