@@ -8,7 +8,11 @@ class OIContest(DefaultContest):
     """
 
     def get_test_score(self, result: ExecutionResult, time_limit, memory_limit):
-        """Full score if took less than half of limit and then decreasing to 1"""
+        """
+        Full score if took less than half of limit, otherwise linearly decreasing to 1.
+        This function is copied from `oioioi` code.
+        https://github.com/sio2project/oioioi/blob/40a377d3f2d5cd9c94d01f03e197501ce4aab597/oioioi/programs/utils.py#L107
+        """
         if result.Status != 'OK':
             return 0
         elif result.Time <= time_limit / 2.0:
