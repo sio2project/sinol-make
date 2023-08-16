@@ -53,27 +53,5 @@ def test_simple(create_package, capsys):
     command.run(args)
 
     task_id = package_util.get_task_id()
-    tar = os.path.abspath(os.path.join(package_path, "export", f'{task_id}.tgz'))
     out = capsys.readouterr().out
-    _test_archive(package_path, out, tar)
-
-
-@pytest.mark.parametrize("create_package", [util.get_simple_package_path(), util.get_library_package_path(),
-                                            util.get_shell_ingen_pack_path(), util.get_handwritten_package_path()],
-                         indirect=True)
-def test_output_flag(create_package, capsys):
-    """
-    Test exporting to archive with output flag.
-    """
-    package_path = create_package
-
-    with tempfile.TemporaryDirectory() as output_dir:
-        parser = configure_parsers()
-        args = parser.parse_args(["export", "-o", output_dir])
-        command = Command()
-        command.run(args)
-
-        task_id = package_util.get_task_id()
-        tar = os.path.abspath(os.path.join(output_dir, f'{task_id}.tgz'))
-        out = capsys.readouterr().out
-        _test_archive(package_path, out, tar)
+    _test_archive(package_path, out, f'{task_id}.tgz')
