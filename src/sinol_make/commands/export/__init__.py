@@ -35,6 +35,10 @@ class Command(BaseCommand):
             return []
 
         working_dir = os.path.join(os.getcwd(), 'cache', 'export', 'tests')
+        if os.path.exists(working_dir):
+            shutil.rmtree(working_dir)
+        os.makedirs(working_dir)
+
         ingen_path = gen_util.get_ingen(self.task_id)
         ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
         if not gen_util.run_ingen(ingen_exe, working_dir):
