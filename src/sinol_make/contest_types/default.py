@@ -7,6 +7,8 @@ from sinol_make.commands.run.structs import ExecutionResult
 class DefaultContest:
     """
     Default contest type.
+    Points for tests are equal to points from execution result.
+    Group score is equal to minimum score from tests.
     """
 
     def get_test_score(self, result: ExecutionResult, time_limit, memory_limit):
