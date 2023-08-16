@@ -34,6 +34,23 @@ def check_if_project():
     return False
 
 
+def _check_if_oiejq_executable(path):
+    if not os.path.isfile(path):
+        return False
+    if not os.access(path, os.X_OK):
+        return False
+
+    try:
+        p = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p.wait()
+        if p.returncode == 0:
+            return True
+        else:
+            return False
+    except FileNotFoundError:
+        return False
+
+
 def check_oiejq(path = None):
     """
     Function to check if oiejq is installed
@@ -41,29 +58,15 @@ def check_oiejq(path = None):
     if sys.platform != 'linux':
         return False
 
-    def check(path):
-        if not os.path.isfile(path):
-            return False
-        if not os.access(path, os.X_OK):
-            return False
-
-        try:
-            p = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            p.wait()
-            if p.returncode == 0:
-                return True
-            else:
-                return False
-        except FileNotFoundError:
-            return False
-
     if path is not None:
-        return check(path)
+        return _check_if_oiejq_executable(path)
 
-    if not check(os.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh')):
-        return False
-    else:
+    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
         return True
+    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq_sinol-make')):
+        return True
+    else:
+        return False
 
 
 def install_oiejq():
@@ -71,7 +74,6 @@ def install_oiejq():
     Function to install oiejq, if not installed.
     Returns True if successful.
     """
-
     if sys.platform != 'linux':
         return False
     if check_oiejq():
@@ -99,25 +101,26 @@ def install_oiejq():
         with tarfile.open(oiejq_path) as tar:
             tar.extractall(path=tmpdir)
 
-        shutil.copytree(os.path.join(tmpdir, 'oiejq'), os.path.expanduser('~/.local/bin/oiejq_sinol-make'))
+        # If the user has a directory named `oiejq` in `~/.local/bin`,
+        # we rename the `oiejq.sh` executable to `oiejq_sinol-make`.
+        # Otherwise, we rename it to `oiejq`.
+        if os.path.isdir(os.path.expanduser('~/.local/bin/oiejq')):
+            os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq_sinol-make'))
+        else:
+            os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq'))
+
+        shutil.copytree(os.path.join(tmpdir, 'oiejq'), os.path.expanduser('~/.local/bin/'), dirs_exist_ok=True)
 
     return check_oiejq()
 
 
 def get_oiejq_path():
-    if not check_oiejq():
-        return None
-
-    def check(path):
-        p = subprocess.Popen([path, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.wait()
-        if p.returncode == 0:
-            return True
-        else:
-            return False
-
-    if check(os.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh')):
-        return os.path.expanduser('~/.local/bin/oiejq_sinol-make/oiejq.sh')
+    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
+        return os.path.expanduser('~/.local/bin/oiejq')
+    # If the user has a directory named `oiejq` in `~/.local/bin`,
+    # then during installation we renamed the `oiejq.sh` executable to `oiejq_sinol-make`.
+    elif _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq_sinol-make')):
+        return os.path.expanduser('~/.local/bin/oiejq_sinol-make')
     else:
         return None
 
