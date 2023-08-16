@@ -114,7 +114,12 @@ def install_oiejq():
         else:
             os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq'))
 
-        shutil.copytree(os.path.join(tmpdir, 'oiejq'), os.path.expanduser('~/.local/bin/'), dirs_exist_ok=True)
+        for file in os.listdir(os.path.join(tmpdir, 'oiejq')):
+            if os.path.isfile(os.path.join(tmpdir, 'oiejq', file)):
+                shutil.copy(os.path.join(tmpdir, 'oiejq', file), os.path.expanduser('~/.local/bin/'))
+            elif os.path.isdir(os.path.join(tmpdir, 'oiejq', file)):
+                shutil.copytree(os.path.join(tmpdir, 'oiejq', file),
+                                os.path.join(os.path.expanduser('~/.local/bin/'), file))
 
     return check_oiejq()
 
