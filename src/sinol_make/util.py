@@ -337,6 +337,8 @@ def error(text):
 
 def exit_with_error(text, func=None):
     print(error(text))
-    if func is not None:
+    try:
         func()
+    except TypeError:
+        pass
     exit(1)

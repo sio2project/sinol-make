@@ -112,13 +112,13 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                 for test in results:
                     min_points = min(min_points, results[test].Points)
                     status = results[test].Status
-                    if getattr(results[test], "Time") is not None:
+                    if results[test].Time is not None:
                         if program_times[program][0] < results[test].Time:
                             program_times[program] = (results[test].Time, package_util.get_time_limit(test, config))
                     elif status == "TL":
                         program_times[program] = (2 * package_util.get_time_limit(test, config),
                                                   package_util.get_time_limit(test, config))
-                    if getattr(results[test], "Memory") is not None:
+                    if results[test].Memory is not None:
                         if program_memory[program][0] < results[test].Memory:
                             program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config))
                     elif status == "ML":
@@ -189,14 +189,14 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                 else:
                     print("%3s" % colorize_status(status),
                          ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config)))
-                         if getattr(result, "Time") is not None else 7*" ", end=" | ")
+                         if result.Time is not None else 7*" ", end=" | ")
             print()
             if not hide_memory:
                 print(8*" ", end=" | ")
                 for program in program_group:
                     result = all_results[program][package_util.get_group(test)][test]
                     print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config)))
-                          if getattr(result, "Memory") is not None else 10*" ", end=" | ")
+                          if result.Memory is not None else 10*" ", end=" | ")
                 print()
 
         print_table_end()
@@ -402,7 +402,12 @@ class Command(BaseCommand):
         Checks if the output file is correct.
         Returns a tuple (is correct, number of points).
         """
-        if not hasattr(self, "checker") or self.checker is None:
+        try:
+            has_checker = self.checker is not None
+        except AttributeError:
+            has_checker = False
+
+        if not has_checker:
             with open(answer_file_path, "r") as answer_file:
                 correct = util.lines_diff(output, answer_file.readlines())
             return correct, 100 if correct else 0
