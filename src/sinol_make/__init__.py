@@ -71,4 +71,4 @@ def main():
     except:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'
-                             'You can submit an issue here: https://github.com/sio2project/sinol-make/issues')
+                             'If that is a bug, please report it or submit a bugfix: https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
