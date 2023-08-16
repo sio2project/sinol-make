@@ -9,11 +9,11 @@ from sinol_make.interfaces.Errors import UnknownContestType
 def get_contest_type():
     with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
-        contest_type = config.get("sinol_contest_type", "default")
+        contest_type = config.get("sinol_contest_type", "default").lower()
 
     if contest_type == "default":
         return DefaultContest()
-    elif contest_type == "OI":
+    elif contest_type == "oi":
         return OIContest()
     else:
         raise UnknownContestType(f'Unknown contest type "{contest_type}"')
