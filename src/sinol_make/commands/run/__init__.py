@@ -750,6 +750,8 @@ class Command(BaseCommand):
         else:
             used_groups = self.get_whole_groups()
 
+            # This removes groups with not all tests run from `new_expected_scores` based on `used_groups`.
+            # If there was a solution with all groups removed, it is also removed.
             solutions_to_delete = []
             for solution in new_expected_scores.keys():
                 groups_to_remove = []
@@ -758,6 +760,8 @@ class Command(BaseCommand):
                         groups_to_remove.append(group)
                 for group in groups_to_remove:
                     del new_expected_scores[solution]["expected"][group]
+
+                # If there are no groups left, remove the solution.
                 if len(new_expected_scores[solution]["expected"]) == 0:
                     solutions_to_delete.append(solution)
             for solution in solutions_to_delete:
