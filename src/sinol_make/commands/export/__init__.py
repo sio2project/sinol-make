@@ -2,7 +2,6 @@ import os
 import glob
 import shutil
 import tarfile
-import tempfile
 import argparse
 import yaml
 
@@ -35,14 +34,14 @@ class Command(BaseCommand):
         if not gen_util.ingen_exists(self.task_id):
             return []
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ingen_path = gen_util.get_ingen(self.task_id)
-            ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
-            if not gen_util.run_ingen(ingen_exe, tmpdir):
-                util.exit_with_error('Failed to run ingen.')
+        working_dir = os.path.join(os.getcwd(), 'cache', 'export', 'tests')
+        ingen_path = gen_util.get_ingen(self.task_id)
+        ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
+        if not gen_util.run_ingen(ingen_exe, working_dir):
+            util.exit_with_error('Failed to run ingen.')
 
-            tests = glob.glob(os.path.join(tmpdir, f'{self.task_id}*.in'))
-            return [package_util.extract_test_id(test) for test in tests]
+        tests = glob.glob(os.path.join(working_dir, f'{self.task_id}*.in'))
+        return [package_util.extract_test_id(test) for test in tests]
 
     def copy_package_required_files(self, target_dir: str):
         """
@@ -108,14 +107,13 @@ class Command(BaseCommand):
                     f'CXXFLAGS += {cxx_flags}\n'
                     f'CFLAGS += {c_flags}\n')
 
-    def compress(self, tmpdir, target_dir):
+    def compress(self, target_dir):
         """
         Compresses target directory to archive.
-        :param tmpdir: Temporary directory path.
         :param target_dir: Target directory path.
         :return: Path to archive.
         """
-        archive = os.path.join(tmpdir, f'{self.task_id}.tgz')
+        archive = os.path.join(os.getcwd(), f'{self.task_id}.tgz')
         with tarfile.open(archive, "w:gz") as tar:
             tar.add(target_dir, arcname=os.path.basename(target_dir))
         return archive
@@ -126,16 +124,16 @@ class Command(BaseCommand):
         self.args = args
         self.task_id = package_util.get_task_id()
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
-                config = yaml.load(config_file, Loader=yaml.FullLoader)
+        with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
+            config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-            package_path = os.path.join(tmpdir, self.task_id)
-            os.makedirs(package_path)
+        export_package_path = os.path.join(os.getcwd(), 'cache', 'export', self.task_id)
+        if os.path.exists(export_package_path):
+            shutil.rmtree(export_package_path)
+        os.makedirs(export_package_path)
 
-            self.copy_package_required_files(package_path)
-            self.create_makefile_in(package_path, config)
-            archive = self.compress(tmpdir, package_path)
-            shutil.copy(archive, os.getcwd())
+        self.copy_package_required_files(export_package_path)
+        self.create_makefile_in(export_package_path, config)
+        archive = self.compress(export_package_path)
 
-            print(util.info(f'Exported to {self.task_id}.tgz'))
+        print(util.info(f'Exported to {self.task_id}.tgz'))
