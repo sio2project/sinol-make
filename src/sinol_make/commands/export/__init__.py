@@ -24,12 +24,7 @@ class Command(BaseCommand):
         parser = subparser.add_parser(
             self.get_name(),
             help='Create archive for oioioi upload',
-            description='Creates archive ready to upload to oioioi. '
-                        'Output directory can be specified with the '
-                        '--output flag.')
-
-        parser.add_argument('-o', '--output', type=str, default='export',
-                            help='output directory (default: ./export)')
+            description='Creates archive in the current directory ready to upload to oioioi.')
         parsers.add_compilation_arguments(parser)
 
     def get_generated_tests(self):
@@ -119,11 +114,7 @@ class Command(BaseCommand):
         util.exit_if_not_package()
 
         self.args = args
-        export_dir = args.output or 'export'
         self.task_id = package_util.get_task_id()
-        self.export_dir = os.path.abspath(export_dir)
-        if not os.path.exists(self.export_dir):
-            os.makedirs(self.export_dir)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
@@ -135,6 +126,6 @@ class Command(BaseCommand):
             self.copy_package_required_files(package_path)
             self.create_makefile_in(package_path, config)
             archive = self.compress(tmpdir, package_path)
-            shutil.copy(archive, self.export_dir)
+            shutil.copy(archive, os.getcwd())
 
-            print(util.info(f'Exported to {os.path.join(self.export_dir, self.task_id + ".tgz")}'))
+            print(util.info(f'Exported to {self.task_id}.tgz'))

@@ -68,8 +68,7 @@ Whenever the new input differs from the previous one, the model solution will be
 You can also specify your ingen source file which will be used. Run `sinol-make gen --help` to see available flags.
 - `sinol-make inwer` -- Verifies whether input files are correct using your "inwer.cpp" program. You can specify what inwer
 program to use, what tests to check and how many CPUs to use. Run `sinol-make inwer --help` to see available flags.
-- `sinol-make export` -- Creates archive ready to upload to oioioi.  Output directory can be specified with the --output
-flag. Run `sinol-make export --help` to see all available flags.
+- `sinol-make export` -- Creates archive ready to upload to oioioi. Run `sinol-make export --help` to see all available flags.
 
 ### Reporting bugs and contributing code
 
