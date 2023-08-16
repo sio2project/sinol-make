@@ -32,7 +32,7 @@ def configure_parsers():
     return parser
 
 
-def _main():
+def _main_exn():
     parser = configure_parsers()
     args = parser.parse_args()
     commands = util.get_commands()
@@ -67,7 +67,7 @@ def _main():
 
 def main():
     try:
-        _main()
+        _main_exn()
     except:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'
