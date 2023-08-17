@@ -32,7 +32,7 @@ def configure_parsers():
     return parser
 
 
-def _main_exn():
+def main_exn():
     parser = configure_parsers()
     args = parser.parse_args()
     commands = util.get_commands()
