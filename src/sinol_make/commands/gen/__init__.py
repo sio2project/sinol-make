@@ -88,8 +88,7 @@ class Command(BaseCommand):
         return md5_sums, outputs_to_generate
 
     def run(self, args: argparse.Namespace):
-        if not util.check_if_project():
-            util.exit_with_error('You are not in a project directory (couldn\'t find config.yml in current directory).')
+        util.exit_if_not_package()
 
         self.args = args
         self.task_id = package_util.get_task_id()
@@ -97,11 +96,7 @@ class Command(BaseCommand):
         print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
 
         self.correct_solution = gen_util.get_correct_solution(self.task_id)
-
-        if os.path.splitext(self.ingen)[1] != '.sh':
-            self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
-        else:
-            self.ingen_exe = self.ingen
+        self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
 
         if gen_util.run_ingen(self.ingen_exe):
             print(util.info('Successfully generated input files.'))

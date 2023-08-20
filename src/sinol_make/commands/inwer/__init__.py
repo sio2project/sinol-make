@@ -120,8 +120,7 @@ class Command(BaseCommand):
         return results
 
     def run(self, args: argparse.Namespace):
-        if not util.check_if_project():
-            util.exit_with_error('You are not in a project directory (couldn\'t find config.yml in current directory).')
+        util.exit_if_not_package()
 
         self.task_id = package_util.get_task_id()
         self.inwer = inwer_util.get_inwer_path(self.task_id, args.inwer_path)

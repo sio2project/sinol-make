@@ -1039,9 +1039,7 @@ class Command(BaseCommand):
             util.exit_with_error(error_msg)
 
     def run(self, args):
-        if not util.check_if_project():
-            print(util.warning('You are not in a project directory (couldn\'t find config.yml in current directory).'))
-            exit(1)
+        util.exit_if_not_package()
 
         self.set_constants()
         self.args = args
