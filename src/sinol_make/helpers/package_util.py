@@ -19,6 +19,8 @@ def extract_test_id(test_path):
 
 
 def get_group(test_path):
+    if extract_test_id(test_path).endswith("ocen"):
+        return 0
     return int("".join(filter(str.isdigit, extract_test_id(test_path))))
 
 
@@ -59,10 +61,13 @@ def get_executable_path(solution: str) -> str:
     return os.path.join(os.getcwd(), 'cache', 'executables', get_executable(solution))
 
 
-def get_time_limit(test_path, config):
+def get_time_limit(test_path, config, args=None):
     """
     Returns time limit for given test.
     """
+    if args is not None and hasattr(args, "tl") and args.tl is not None:
+        return args.tl * 1000
+
     str_config = util.stringify_keys(config)
     test_id = extract_test_id(test_path)
     test_group = str(get_group(test_path))
@@ -75,10 +80,13 @@ def get_time_limit(test_path, config):
     return str_config["time_limit"]
 
 
-def get_memory_limit(test_path, config):
+def get_memory_limit(test_path, config, args=None):
     """
     Returns memory limit for given test.
     """
+    if args is not None and hasattr(args, "ml") and args.ml is not None:
+        return int(args.ml * 1024)
+
     str_config = util.stringify_keys(config)
     test_id = extract_test_id(test_path)
     test_group = str(get_group(test_path))
