@@ -1,8 +1,10 @@
 # PYTHON_ARGCOMPLETE_OK
 
 import argcomplete
+import traceback
 import argparse
 import sys
+import os
 
 from sinol_make import util
 
@@ -30,7 +32,7 @@ def configure_parsers():
     return parser
 
 
-def main():
+def main_exn():
     parser = configure_parsers()
     args = parser.parse_args()
     commands = util.get_commands()
@@ -39,8 +41,9 @@ def main():
         if command.get_name() == args.command:
             new_version = util.check_for_updates(__version__)
             if new_version is not None:
-                print(util.warning(f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
-                                   f' You can update it by running `pip3 install sinol-make --upgrade`.'))
+                print(util.warning(
+                    f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
+                    f' You can update it by running `pip3 install sinol-make --upgrade`.'))
 
             if sys.platform == 'linux' and not util.check_oiejq():
                 print(util.warning('`oiejq` in `~/.local/bin/` not detected, installing now...'))
@@ -56,7 +59,16 @@ def main():
                 except Exception as err:
                     util.exit_with_error('`oiejq` could not be installed.\n' + err)
 
-            command.run(args)
-            exit(0)
+                command.run(args)
+                exit(0)
 
     parser.print_help()
+
+
+def main():
+    try:
+        _main_exn()
+    except:
+        print(traceback.format_exc())
+        util.exit_with_error('An error occurred while running the command.\n'
+                             'If that is a bug, please report it or submit a bugfix: https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
