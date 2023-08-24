@@ -1,4 +1,4 @@
-from math import floor
+from math import ceil
 from typing import List
 
 from sinol_make.commands.run.structs import ExecutionResult
@@ -16,4 +16,4 @@ class DefaultContest:
 
     def get_group_score(self, test_scores: List[int], group_max_score):
         min_score = min(test_scores)
-        return int(floor(group_max_score * (min_score / 100.0)))
+        return int(ceil(group_max_score * (min_score / 100.0)))
