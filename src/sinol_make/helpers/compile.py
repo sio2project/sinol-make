@@ -40,7 +40,6 @@ def save_compiled(file_path: str, exe_path: str):
     :param exe_path: Path to the compiled executable
     """
     os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
-
     md5sum = util.get_file_md5(file_path)
     info_file_path = os.path.join(os.getcwd(), 'cache', 'md5sums', md5sum)
 
