@@ -413,7 +413,7 @@ class Command(BaseCommand):
             return correct, 100 if correct else 0
         else:
             with open(output_file_path, "w") as output_file:
-                output_file.write("\n".join(output))
+                output_file.write("\n".join(output) + "\n")
             return self.check_output_checker(name, input_file, output_file_path, answer_file_path)
 
 
