@@ -67,7 +67,7 @@ def main_exn():
 
 def main():
     try:
-        _main_exn()
+        main_exn()
     except:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'
