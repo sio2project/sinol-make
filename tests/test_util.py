@@ -7,6 +7,8 @@ import requests
 import requests_mock
 import pytest
 
+from sinol_make import util
+
 
 def test_file_diff():
     with tempfile.TemporaryDirectory() as tmpdir:

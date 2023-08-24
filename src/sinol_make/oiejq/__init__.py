@@ -80,8 +80,8 @@ def install_oiejq():
 
 
 def get_oiejq_path():
-    # if not check_oiejq():
-    #     return None
+    if not check_oiejq():
+        return None
 
     def check(path):
         p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
