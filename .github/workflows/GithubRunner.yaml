@@ -6,9 +6,8 @@ jobs:
     strategy:
         matrix:
             python-version: ["3.7.17", "3.11.4"]
-            system: ["ubuntu:latest", "archlinux:latest", "macos:latest"]
-    name: pytest-github-runner-${{ matrix.system }}-python-${{ matrix.python-version }}
-    runs-on: ${{ matrix.system }}
+    name: pytest-github-runner-python-${{ matrix.python-version }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
