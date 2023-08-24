@@ -750,8 +750,8 @@ class Command(BaseCommand):
         else:
             used_groups = self.get_whole_groups()
 
-            # This removes groups with not all tests run from `new_expected_scores` based on `used_groups`.
-            # If there was a solution with all groups removed, it is also removed.
+            # This removes those groups from `new_expected_scores` that have not been run.
+            # Then, if there are any solutions for which no groups have been run, they are also removed.
             solutions_to_delete = []
             for solution in new_expected_scores.keys():
                 groups_to_remove = []
