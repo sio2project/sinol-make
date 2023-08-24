@@ -351,7 +351,10 @@ class Command(BaseCommand):
         extra_compilation_files = []
         if use_extras:
             lang = os.path.splitext(source_file)[1][1:]
-            for file in self.config.get("extra_compilation_args", {}).get(lang, []):
+            args = self.config.get("extra_compilation_args", {}).get(lang, [])
+            if isinstance(args, str):
+                args = [args]
+            for file in args:
                 extra_compilation_args.append(os.path.join(os.getcwd(), "prog", file))
 
             for file in self.config.get("extra_compilation_files", []):
