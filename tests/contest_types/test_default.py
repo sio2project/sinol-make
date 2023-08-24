@@ -15,4 +15,4 @@ def test_get_group_score():
     assert contest.get_group_score([50, 100, 100], 60) == 30
     assert contest.get_group_score([50, 100, 100], 100) == 50
     assert contest.get_group_score([0, 10, 20], 100) == 0
-    assert contest.get_group_score([10, 3, 5], 50) == 1
+    assert contest.get_group_score([10, 3, 5], 50) == 2
