@@ -61,7 +61,11 @@ def get_executable_path(solution: str) -> str:
     return os.path.join(os.getcwd(), 'cache', 'executables', get_executable(solution))
 
 
-def get_time_limit(test_path, config, args=None):
+def get_file_lang(file_path):
+    return os.path.splitext(file_path)[1][1:].lower()
+
+
+def get_time_limit(test_path, config, lang, args=None):
     """
     Returns time limit for given test.
     """
@@ -72,15 +76,28 @@ def get_time_limit(test_path, config, args=None):
     test_id = extract_test_id(test_path)
     test_group = str(get_group(test_path))
 
-    if "time_limits" in str_config:
-        if test_id in str_config["time_limits"]:
-            return str_config["time_limits"][test_id]
-        elif test_group in str_config["time_limits"]:
-            return str_config["time_limits"][test_group]
-    return str_config["time_limit"]
+    def get_time_limit_from_dict(dict):
+        if "time_limits" in dict:
+            if test_id in dict["time_limits"]:
+                return dict["time_limits"][test_id]
+            elif test_group in dict["time_limits"]:
+                return dict["time_limits"][test_group]
+        if "time_limit" in dict:
+            return dict["time_limit"]
+        else:
+            return None
+
+    if "override_limits" in str_config and lang in str_config["override_limits"]:
+        limit = get_time_limit_from_dict(str_config["override_limits"][lang])
+        if limit is None:
+            return get_time_limit_from_dict(str_config)
+        else:
+            return limit
+    else:
+        return get_time_limit_from_dict(str_config)
 
 
-def get_memory_limit(test_path, config, args=None):
+def get_memory_limit(test_path, config, lang, args=None):
     """
     Returns memory limit for given test.
     """
@@ -91,9 +108,22 @@ def get_memory_limit(test_path, config, args=None):
     test_id = extract_test_id(test_path)
     test_group = str(get_group(test_path))
 
-    if "memory_limits" in str_config:
-        if test_id in str_config["memory_limits"]:
-            return str_config["memory_limits"][test_id]
-        elif test_group in str_config["memory_limits"]:
-            return str_config["memory_limits"][test_group]
-    return str_config["memory_limit"]
+    def get_memory_limit_from_dict(dict):
+        if "memory_limits" in dict:
+            if test_id in dict["memory_limits"]:
+                return dict["memory_limits"][test_id]
+            elif test_group in dict["memory_limits"]:
+                return dict["memory_limits"][test_group]
+        if "memory_limit" in dict:
+            return dict["memory_limit"]
+        else:
+            return None
+
+    if "override_limits" in str_config and lang in str_config["override_limits"]:
+        limit = get_memory_limit_from_dict(str_config["override_limits"][lang])
+        if limit is None:
+            return get_memory_limit_from_dict(str_config)
+        else:
+            return limit
+    else:
+        return get_memory_limit_from_dict(str_config)
