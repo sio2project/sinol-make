@@ -59,8 +59,8 @@ def main_exn():
                 except Exception as err:
                     util.exit_with_error('`oiejq` could not be installed.\n' + err)
 
-                command.run(args)
-                exit(0)
+            command.run(args)
+            exit(0)
 
     parser.print_help()
 
@@ -68,6 +68,10 @@ def main_exn():
 def main():
     try:
         main_exn()
+    except argparse.ArgumentError as err:
+        util.exit_with_error(err)
+    except SystemExit as err:
+        exit(err.code)
     except:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'
