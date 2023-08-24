@@ -11,15 +11,6 @@ from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
 
-def get_file_md5sum(file_path):
-    """
-    Calculate the md5 sum of a file and
-    return the path to the file named after the md5 sum.
-    """
-    file_md5sum = util.get_file_md5(file_path)
-    return os.path.join(os.getcwd(), 'cache', 'md5sums', file_md5sum)
-
-
 def check_compiled(file_path: str):
     """
     Check if a file is compiled
@@ -27,15 +18,16 @@ def check_compiled(file_path: str):
     :return: executable path if compiled, None otherwise
     """
     os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
-    md5sums_file_path = get_file_md5sum(file_path)
+    md5sum = util.get_file_md5(file_path)
+    info_file_path = os.path.join(os.getcwd(), 'cache', 'md5sums', md5sum)
 
     try:
-        with open(md5sums_file_path, 'r') as md5sums_file:
+        with open(info_file_path, 'r') as md5sums_file:
             exe_file = md5sums_file.read().strip()
             if os.path.exists(exe_file):
                 return exe_file
             else:
-                os.unlink(md5sums_file_path)
+                os.unlink(info_file_path)
                 return None
     except FileNotFoundError:
         return None
@@ -48,9 +40,11 @@ def save_compiled(file_path: str, exe_path: str):
     :param exe_path: Path to the compiled executable
     """
     os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
-    md5sums_file_path = get_file_md5sum(file_path)
 
-    with open(md5sums_file_path, 'w') as md5sums_file:
+    md5sum = util.get_file_md5(file_path)
+    info_file_path = os.path.join(os.getcwd(), 'cache', 'md5sums', md5sum)
+
+    with open(info_file_path, 'w') as md5sums_file:
         md5sums_file.write(exe_path)
 
 
