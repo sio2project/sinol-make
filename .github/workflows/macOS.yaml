@@ -23,7 +23,7 @@ jobs:
           pip3 install .[tests]
       - name: Install Homebrew dependencies
         run: |
-          brew install gnu-time coreutils diffutils
+          brew install gnu-time coreutils diffutils dpkg
       - name: Run pytest
         run: |
           python3 -m pytest -v --time-tool time
