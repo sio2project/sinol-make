@@ -55,11 +55,16 @@ def assert_makefile_in(lines, task_id, config):
 
     cxx_flags = '-std=c++17'
     c_flags = '-std=c17'
+    def to_array(obj):
+        if isinstance(obj, str):
+            return [obj]
+        return obj
+
     if 'extra_compilation_args' in config:
         if 'cpp' in config['extra_compilation_args']:
-            cxx_flags += ' ' + ' '.join(config['extra_compilation_args']['cpp'])
+            cxx_flags += ' ' + ' '.join(to_array(config['extra_compilation_args']['cpp']))
         if 'c' in config['extra_compilation_args']:
-            c_flags += ' ' + ' '.join(config['extra_compilation_args']['c'])
+            c_flags += ' ' + ' '.join(to_array(config['extra_compilation_args']['c']))
 
     assert _get_value_from_key("CXXFLAGS", "+=") == cxx_flags
     assert _get_value_from_key("CFLAGS", "+=") == c_flags

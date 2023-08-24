@@ -32,6 +32,13 @@ def get_library_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "lib")
 
 
+def get_library_string_args_package_path():
+    """
+    Get path to package with library command with string extra_compilation_args (/test/packages/lsa)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "lsa")
+
+
 def get_weak_compilation_flags_package_path():
     """
     Get path to package for testing weak compilation flags (/test/packages/wcf)
