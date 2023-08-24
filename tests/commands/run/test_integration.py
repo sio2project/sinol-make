@@ -340,10 +340,12 @@ def test_override_limits(create_package, time_tool):
         }
     }
 
-    # With global `time_limit` deleted and `memory_limit` in `override_limits` deleted.
+    # With global `time_limit` deleted, `memory_limit` in `override_limits` deleted
+    # and global `memory_limit` set to 256.
     config = copy.deepcopy(original_config)
     del config["time_limit"]
     del config["override_limits"]['cpp']["memory_limit"]
+    config["memory_limit"] = 256
     with open(config_file_path, "w") as config_file:
         config_file.write(yaml.dump(config))
 

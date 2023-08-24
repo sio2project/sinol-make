@@ -1,6 +1,6 @@
 title: Package with `override_limits` set
 
-memory_limit: 128
+memory_limit: 2048
 time_limit: 100
 
 override_limits:
