@@ -76,3 +76,4 @@ sinol_contest_type: oi
 # Key `sinol_expected_scores` defines expected scores for each solution on each tests.
 # There should be no reason to change this key manually.
 # It is automatically generated and managed by sinol-make.
+sinol_expected_scores: {}
