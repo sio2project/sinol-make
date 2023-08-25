@@ -109,10 +109,14 @@ def check_perf_counters_enabled():
     oiejq = get_oiejq_path()
     test_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'perf_test.py')
     python_executable = sys.executable
-    process = subprocess.Popen([oiejq, python_executable, test_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output = process.communicate()[0].decode('utf-8')
+    with tempfile.TemporaryFile() as tmpfile:
+        process = subprocess.Popen([oiejq, python_executable, test_file], stdout=tmpfile, stderr=subprocess.DEVNULL)
+        process.wait()
+        tmpfile.seek(0)
+        output = tmpfile.read().decode('utf-8')
+        process.terminate()
 
-    if output.splitlines()[0] != "Test string":
+    if output != "Test string\n":
         util.exit_with_error("You don't have permission to use perf counters required by `oiejq`. "
                              "Please run `sudo sysctl kernel.perf_event_paranoid=-1` or "
                              "add `kernel.perf_event_paranoid=-1` to `/etc/sysctl.conf` and reboot.")
