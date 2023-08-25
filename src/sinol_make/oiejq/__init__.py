@@ -109,6 +109,8 @@ def check_perf_counters_enabled():
     oiejq = get_oiejq_path()
     test_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'perf_test.py')
     python_executable = sys.executable
+
+    # subprocess.Pipe is not used, because than the code would hang on process.communicate()
     with tempfile.TemporaryFile() as tmpfile:
         process = subprocess.Popen([oiejq, python_executable, test_file], stdout=tmpfile, stderr=subprocess.DEVNULL)
         process.wait()
