@@ -20,10 +20,7 @@ def check_oiejq(path = None):
             p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             p.wait()
             p.kill()
-            if p.returncode == 0:
-                return True
-            else:
-                return False
+            return p.returncode == 0
         except FileNotFoundError:
             return False
 
