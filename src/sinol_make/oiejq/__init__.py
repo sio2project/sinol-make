@@ -121,6 +121,4 @@ def check_perf_counters_enabled():
                              "  the current system session,\n"
                              "- or add `kernel.perf_event_paranoid=-1` to `/etc/sysctl.conf`\n"
                              "  and reboot to permanently make oiejq work.\n"
-                             "For more details, see https://github.com/sio2project/sio2jail#running or\n"
-                             "read `~/.local/bin/readme.txt`.\n"
-                             "Please keep in mind that oiejq doesn't work on macOS and Windows WSL.\n")
+                             "For more details, see https://github.com/sio2project/sio2jail#running.\n")
