@@ -41,10 +41,7 @@ def _check_if_oiejq_executable(path):
     try:
         p = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.wait()
-        if p.returncode == 0:
-            return True
-        else:
-            return False
+        return p.returncode == 0
     except FileNotFoundError:
         return False
 
