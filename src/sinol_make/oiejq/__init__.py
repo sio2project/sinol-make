@@ -119,6 +119,10 @@ def check_perf_counters_enabled():
         process.terminate()
 
     if output != "Test string\n":
-        util.exit_with_error("You don't have permission to use perf counters required by `oiejq`. "
-                             "Please run `sudo sysctl kernel.perf_event_paranoid=-1` or "
-                             "add `kernel.perf_event_paranoid=-1` to `/etc/sysctl.conf` and reboot.")
+        util.exit_with_error("To use the recommended tool for measuring time called oiejq, please:\n"
+                             "- execute `sudo sysctl kernel.perf_event_paranoid=-1` to make oiejq work for\n"
+                             "  the current system session,\n"
+                             "- or add `kernel.perf_event_paranoid=-1` to `/etc/sysctl.conf`\n"
+                             "  and reboot to permanently make oiejq work.\n"
+                             "For more details, see https://github.com/sio2project/sio2jail#running or\n"
+                             "read `~/.local/bin/readme.txt`.")
