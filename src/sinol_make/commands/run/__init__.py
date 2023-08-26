@@ -922,7 +922,7 @@ class Command(BaseCommand):
                                      'we do not recommend using operating systems such as Windows or macOS.\n'
                                      'Nevertheless, you can still run sinol-make by specifying\n'
                                      'another way of measuring time through the `--time-tool` flag.\n'
-                                     'See `sinol-make run --help` for more information about the flag.\n
+                                     'See `sinol-make run --help` for more information about the flag.\n'
                                      'See https://github.com/sio2project/sinol-make#why for more information about `oiejq`.\n')
 
             oiejq.check_perf_counters_enabled()
