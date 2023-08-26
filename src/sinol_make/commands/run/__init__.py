@@ -918,7 +918,11 @@ class Command(BaseCommand):
         timetool_path = None
         if args.time_tool == 'oiejq':
             if sys.platform != 'linux':
-                util.exit_with_error('oiejq is only available on Linux.')
+                util.exit_with_error('As `oiejq` works only on Linux-based operating systems,\n'
+                                     'we do not recommend using operating systems such as Windows or macOS.\n'
+                                     'Nevertheless, if you want to use them, you can specify\n'
+                                     'another time tool with `--time-tool` flag.\n'
+                                     'See https://github.com/sio2project/sinol-make#installation for more information.\n')
 
             oiejq.check_perf_counters_enabled()
             if 'oiejq_path' in args and args.oiejq_path is not None:
