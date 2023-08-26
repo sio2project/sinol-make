@@ -22,13 +22,7 @@ def test_install_oiejq():
         assert not util.check_oiejq()
 
     assert util.install_oiejq()
-
-    shutil.rmtree(os.path.expanduser('~/.local/bin/'), ignore_errors=True)
-    os.makedirs(os.path.expanduser('~/.local/bin/oiejq'), exist_ok=True)
-    assert not util.check_oiejq()
-    assert util.install_oiejq()
-    assert util.check_oiejq()
-    assert util.get_oiejq_path() == os.path.expanduser('~/.local/bin/oiejq_sinol-make')
+    assert util.get_oiejq_path() == os.path.expanduser('~/.local/bin/oiejq')
 
 
 @pytest.mark.github_runner
@@ -36,20 +30,19 @@ def test_check_oiejq():
     if sys.platform != 'linux':
         return
 
-    for file in ['~/.local/bin/oiejq', '~/.local/bin/oiejq_sinol-make']:
-        shutil.rmtree(os.path.expanduser('~/.local/bin/'), ignore_errors=True)
-        assert not util.check_oiejq()
-        os.makedirs(os.path.expanduser(file), exist_ok=True)
-        assert not util.check_oiejq()
-        os.rmdir(os.path.expanduser(file))
-        with open(os.path.expanduser(file), 'w') as f:
-            f.write('abcdef')
-        assert not util.check_oiejq()
-        os.chmod(os.path.expanduser(file), 0o777)
-        assert not util.check_oiejq()
-        with open(os.path.expanduser(file), 'w') as f:
-            f.write('#!/bin/bash\necho "test"')
-        assert util.check_oiejq()
+    shutil.rmtree(os.path.expanduser('~/.local/bin/'), ignore_errors=True)
+    assert not util.check_oiejq()
+    os.makedirs(os.path.expanduser('~/.local/bin/oiejq'), exist_ok=True)
+    assert not util.check_oiejq()
+    os.rmdir(os.path.expanduser('~/.local/bin/oiejq'))
+    with open(os.path.expanduser('~/.local/bin/oiejq'), 'w') as f:
+        f.write('abcdef')
+    assert not util.check_oiejq()
+    os.chmod(os.path.expanduser('~/.local/bin/oiejq'), 0o777)
+    assert not util.check_oiejq()
+    with open(os.path.expanduser('~/.local/bin/oiejq'), 'w') as f:
+        f.write('#!/bin/bash\necho "test"')
+    assert util.check_oiejq()
 
 
 def test_file_diff():
