@@ -63,8 +63,6 @@ def check_oiejq(path = None):
 
     if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
         return True
-    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq_sinol-make')):
-        return True
     else:
         return False
 
@@ -81,6 +79,13 @@ def install_oiejq():
 
     if not os.path.exists(os.path.expanduser('~/.local/bin')):
         os.makedirs(os.path.expanduser('~/.local/bin'), exist_ok=True)
+
+    if os.path.exists(os.path.expanduser('~/.local/bin/oiejq')) and \
+            not _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
+        exit_with_error("Couldn't install `oiejq`.\n"
+                        "There is a file/directory named `oiejq` in `~/.local/bin`\n"
+                        "which isn't an `oiejq` executable. Please rename it or\n"
+                        "remove it and try again.")
 
     try:
         request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz')
@@ -101,19 +106,6 @@ def install_oiejq():
         with tarfile.open(oiejq_path) as tar:
             tar.extractall(path=tmpdir)
 
-        # If the user has a directory named `oiejq` in `~/.local/bin`,
-        # we rename the `oiejq.sh` executable to `oiejq_sinol-make`.
-        # Otherwise, we rename it to `oiejq`.
-        if os.path.isdir(os.path.expanduser('~/.local/bin/oiejq')):
-            if os.path.exists(os.path.expanduser('~/.local/bin/oiejq_sinol-make')) \
-                    and _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq_sinol-make')):
-                exit_with_error('Couldn\'t install oiejq (there is a directory named `oiejq` in `~/.local/bin` '
-                                'and `oiejq_sinol-make` is already an executable)')
-
-            os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq_sinol-make'))
-        else:
-            os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq'))
-
         for file in os.listdir(os.path.join(tmpdir, 'oiejq')):
             if os.path.isfile(os.path.join(tmpdir, 'oiejq', file)):
                 shutil.copy(os.path.join(tmpdir, 'oiejq', file), os.path.expanduser('~/.local/bin/'))
@@ -127,10 +119,6 @@ def install_oiejq():
 def get_oiejq_path():
     if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
         return os.path.expanduser('~/.local/bin/oiejq')
-    # If the user has a directory named `oiejq` in `~/.local/bin`,
-    # then during installation we renamed the `oiejq.sh` executable to `oiejq_sinol-make`.
-    elif _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq_sinol-make')):
-        return os.path.expanduser('~/.local/bin/oiejq_sinol-make')
     else:
         return None
 
