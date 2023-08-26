@@ -106,13 +106,8 @@ def install_oiejq():
         with tarfile.open(oiejq_path) as tar:
             tar.extractall(path=tmpdir)
         os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq'))
-
-        for file in os.listdir(os.path.join(tmpdir, 'oiejq')):
-            if os.path.isfile(os.path.join(tmpdir, 'oiejq', file)):
-                shutil.copy(os.path.join(tmpdir, 'oiejq', file), os.path.expanduser('~/.local/bin/'))
-            elif os.path.isdir(os.path.join(tmpdir, 'oiejq', file)):
-                shutil.copytree(os.path.join(tmpdir, 'oiejq', file),
-                                os.path.join(os.path.expanduser('~/.local/bin/'), file))
+        shutil.copy(os.path.join(tmpdir, 'oiejq', 'oiejq'), os.path.expanduser('~/.local/bin/'))
+        shutil.copy(os.path.join(tmpdir, 'oiejq', 'sio2jail'), os.path.expanduser('~/.local/bin/'))
 
     return check_oiejq()
 
