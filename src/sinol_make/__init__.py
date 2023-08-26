@@ -1,12 +1,14 @@
-# PYTHON_ARCOMPLETE_OK
+# PYTHON_ARGCOMPLETE_OK
 
 import argcomplete
+import traceback
 import argparse
 import sys
+import os
 
 from sinol_make import util
 
-__version__ = "1.4.2"
+__version__ = "1.5.0"
 
 def configure_parsers():
     parser = argparse.ArgumentParser(
@@ -15,7 +17,7 @@ def configure_parsers():
     )
     parser.add_argument("-v", "--version", action="version", version="%(prog)s " + __version__)
     subparsers = parser.add_subparsers(
-        title='commands',
+        title='command',
         description='sinol-make commands',
         dest='command',
     )
@@ -30,7 +32,7 @@ def configure_parsers():
     return parser
 
 
-def main():
+def main_exn():
     parser = configure_parsers()
     args = parser.parse_args()
     commands = util.get_commands()
@@ -39,8 +41,9 @@ def main():
         if command.get_name() == args.command:
             new_version = util.check_for_updates(__version__)
             if new_version is not None:
-                print(util.warning(f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
-                                   f' You can update it by running `pip3 install sinol-make --upgrade`.'))
+                print(util.warning(
+                    f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
+                    f' You can update it by running `pip3 install sinol-make --upgrade`.'))
 
             if sys.platform == 'linux' and not util.check_oiejq():
                 print(util.warning('`oiejq` in `~/.local/bin/` not detected, installing now...'))
@@ -60,3 +63,16 @@ def main():
             exit(0)
 
     parser.print_help()
+
+
+def main():
+    try:
+        main_exn()
+    except argparse.ArgumentError as err:
+        util.exit_with_error(err)
+    except SystemExit as err:
+        exit(err.code)
+    except:
+        print(traceback.format_exc())
+        util.exit_with_error('An error occurred while running the command.\n'
+                             'If that is a bug, please report it or submit a bugfix: https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')

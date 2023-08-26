@@ -101,14 +101,15 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
 
     extra_compilation_files = [os.path.join(os.getcwd(), "prog", file)
                                for file in config.get("extra_compilation_files", [])]
-    extra_compilation_args = config.get('extra_compilation_args', {}).get(os.path.splitext(name)[1], [])
+    extra_compilation_args = [os.path.join(os.getcwd(), "prog", file)
+                              for file in config.get('extra_compilation_args', {}).get(os.path.splitext(file_path)[1][1:], [])]
 
     output = os.path.join(executable_dir, name)
     compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')
     with open(compile_log_path, 'w') as compile_log:
         try:
-            if compile(file_path, output, compilers, compile_log, weak_compilation_flags, extra_compilation_files,
-                       extra_compilation_args):
+            if compile(file_path, output, compilers, compile_log, weak_compilation_flags, extra_compilation_args,
+                       extra_compilation_files):
                 return output, compile_log_path
         except CompilationError:
             pass

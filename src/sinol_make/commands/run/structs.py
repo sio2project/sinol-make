@@ -1,12 +1,15 @@
 from typing import List
 from dataclasses import dataclass
 
+from sinol_make.structs.status_structs import Status
+
+
 @dataclass
 class ResultChange:
     solution: str
     group: int
-    old_result: str
-    result: str
+    old_result: Status
+    result: Status
 
 @dataclass
 class PointsChange:
@@ -27,9 +30,9 @@ class ValidationResult:
 
 @dataclass
 class ExecutionResult:
-    # Result status of execution. Can be one of:
-    # "OK", "WA", "TL", "ML", "RE", "CE"
-    Status: str
+    # Result status of execution. Possible values
+    #  can be found in `Status` enum definition.
+    Status: Status
     # Time in milliseconds
     Time: float
     # Memory in KB

@@ -60,6 +60,12 @@ def get_limits_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "lim")
 
 
+def get_handwritten_package_path():
+    """
+    Get path to package with handwritten tests (/test/packages/hw)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "hwr")
+
 def create_ins(package_path):
     """
     Create .in files for package.

@@ -22,15 +22,23 @@ def get_commands():
     return commands
 
 
-def check_if_project():
+def check_if_package():
     """
-    Function to check if current directory is a project
+    Function to check if current directory is a package
     """
 
     cwd = os.getcwd()
     if os.path.exists(os.path.join(cwd, 'config.yml')):
         return True
     return False
+
+
+def exit_if_not_package():
+    """
+    Function that exits if current directory is not a package
+    """
+    if not check_if_package():
+        exit_with_error('You are not in a package directory (couldn\'t find config.yml in current directory).')
 
 
 def check_oiejq(path = None):
@@ -297,7 +305,15 @@ def get_terminal_size():
     return has_terminal, terminal_width, terminal_height
 
 
-def fix_file_endings(file):
+def get_templates_dir():
+    """
+    Function to get the path to the templates' directory.
+    :return: path to the templates directory
+    """
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "templates"))
+
+
+def fix_line_endings(file):
     with open(file, "rb") as f:
         content = f.read()
     with open(file, "wb") as f:

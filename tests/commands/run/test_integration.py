@@ -1,5 +1,6 @@
 import copy
 import sys
+import pytest
 
 from ...fixtures import *
 from .util import *
@@ -318,3 +319,45 @@ def test_no_limits_in_config(capsys, create_package, time_tool):
 
     out = capsys.readouterr().out
     assert "Use flag --apply-suggestions to apply suggestions." in out
+
+
+@pytest.mark.parametrize("create_package", [get_limits_package_path()], indirect=True)
+def test_time_limit_flag(capsys, create_package, time_tool):
+    """
+    Test flag --tl.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--tl", "20", "--time-tool", time_tool])
+    command = Command()
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+    out = capsys.readouterr().out
+    assert "Solution lim1.cpp passed group 1 with status OK while it should pass with status TL." in out
+    assert "Solution lim2.cpp passed group 1 with status OK while it should pass with status TL." in out
+    assert "Solution lim2.cpp passed group 2 with status OK while it should pass with status TL." in out
+
+
+@pytest.mark.parametrize("create_package", [get_limits_package_path()], indirect=True)
+def test_memory_limit_flag(capsys, create_package, time_tool):
+    """
+    Test flag --ml.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--ml", "256", "--time-tool", time_tool])
+    command = Command()
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+    out = capsys.readouterr().out
+    assert "Solution lim3.cpp passed group 1 with status OK while it should pass with status ML." in out
+    assert "Solution lim4.cpp passed group 1 with status OK while it should pass with status ML." in out
+    assert "Solution lim4.cpp passed group 2 with status OK while it should pass with status ML." in out
