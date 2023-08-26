@@ -35,8 +35,6 @@ def check_if_project():
 
 
 def _check_if_oiejq_executable(path):
-    if not os.path.isfile(path):
-        return False
     if not os.access(path, os.X_OK):
         return False
 
