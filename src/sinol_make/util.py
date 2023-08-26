@@ -105,6 +105,7 @@ def install_oiejq():
 
         with tarfile.open(oiejq_path) as tar:
             tar.extractall(path=tmpdir)
+        os.rename(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.join(tmpdir, 'oiejq', 'oiejq'))
 
         for file in os.listdir(os.path.join(tmpdir, 'oiejq')):
             if os.path.isfile(os.path.join(tmpdir, 'oiejq', file)):
