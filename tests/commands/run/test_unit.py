@@ -1,5 +1,6 @@
 import argparse, re, yaml
-from sinol_make import util
+
+from sinol_make import util, oiejq
 from sinol_make.commands.run.structs import ResultChange, ValidationResult
 from sinol_make.structs.status_structs import Status
 from sinol_make.helpers import package_util
@@ -55,7 +56,7 @@ def test_execution(create_package, time_tool):
         config = yaml.load(config_file, Loader=yaml.FullLoader)
 
     os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
-    result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], util.get_oiejq_path()))
+    result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], oiejq.get_oiejq_path()))
     assert result.Status == Status.OK
 
 
@@ -83,7 +84,7 @@ def test_run_solutions(create_package, time_tool):
     command.possible_score = command.get_possible_score(command.groups)
     command.memory_limit = command.config["memory_limit"]
     command.time_limit = command.config["time_limit"]
-    command.timetool_path = util.get_oiejq_path()
+    command.timetool_path = oiejq.get_oiejq_path()
 
     def flatten_results(results):
         new_results = {}
