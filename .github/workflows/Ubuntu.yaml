@@ -11,7 +11,7 @@ jobs:
     container:
       image: ubuntu:latest
       volumes:
-        - /oiejq_sinol-make:/github/home/.local/bin
+        - /home/actions/oiejq:/github/home/.local/bin
       env:
         DEB_PYTHON_INSTALL_LAYOUT: deb
       options:

@@ -11,7 +11,7 @@ jobs:
     container:
       image: archlinux:latest
       volumes:
-        - /oiejq_sinol-make:/github/home/.local/bin
+        - /home/actions/oiejq:/github/home/.local/bin
       options:
         --privileged
     steps:
