@@ -1,5 +1,6 @@
 import os
-from typing import List, Union
+from enum import Enum
+from typing import List, Union, Dict, Any
 
 from sinol_make import util
 
@@ -65,6 +66,44 @@ def get_file_lang(file_path):
     return os.path.splitext(file_path)[1][1:].lower()
 
 
+class LimitTypes(Enum):
+    TIME_LIMIT = 1
+    MEMORY_LIMIT = 2
+
+
+def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: str, test_group: str):
+    if limit_type == LimitTypes.TIME_LIMIT:
+        limit_name = "time_limit"
+        plural_limit_name = "time_limits"
+    elif limit_type == LimitTypes.MEMORY_LIMIT:
+        limit_name = "memory_limit"
+        plural_limit_name = "memory_limits"
+    else:
+        raise ValueError("Invalid limit type.")
+
+    if plural_limit_name in dict:
+        if test_id in dict[plural_limit_name]:
+            return dict[plural_limit_name][test_id]
+        elif test_group in dict[plural_limit_name]:
+            return dict[plural_limit_name][test_group]
+    if limit_name in dict:
+        return dict[limit_name]
+    else:
+        return None
+
+
+def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any]):
+    test_id = extract_test_id(test_path)
+    test_group = str(get_group(test_path))
+    global_limit = _get_limit_from_dict(config, limit_type, test_id, test_group)
+    override_limits_dict = config.get("override_limits", {})
+    overriden_limit = _get_limit_from_dict(override_limits_dict, limit_type, test_id, test_group)
+    if overriden_limit is not None:
+        return overriden_limit
+    else:
+        return global_limit
+
+
 def get_time_limit(test_path, config, lang, args=None):
     """
     Returns time limit for given test.
@@ -73,28 +112,7 @@ def get_time_limit(test_path, config, lang, args=None):
         return args.tl * 1000
 
     str_config = util.stringify_keys(config)
-    test_id = extract_test_id(test_path)
-    test_group = str(get_group(test_path))
-
-    def get_time_limit_from_dict(dict):
-        if "time_limits" in dict:
-            if test_id in dict["time_limits"]:
-                return dict["time_limits"][test_id]
-            elif test_group in dict["time_limits"]:
-                return dict["time_limits"][test_group]
-        if "time_limit" in dict:
-            return dict["time_limit"]
-        else:
-            return None
-
-    if "override_limits" in str_config and lang in str_config["override_limits"]:
-        limit = get_time_limit_from_dict(str_config["override_limits"][lang])
-        if limit is None:
-            return get_time_limit_from_dict(str_config)
-        else:
-            return limit
-    else:
-        return get_time_limit_from_dict(str_config)
+    return _get_limit(LimitTypes.TIME_LIMIT, test_path, str_config)
 
 
 def get_memory_limit(test_path, config, lang, args=None):
@@ -105,25 +123,4 @@ def get_memory_limit(test_path, config, lang, args=None):
         return int(args.ml * 1024)
 
     str_config = util.stringify_keys(config)
-    test_id = extract_test_id(test_path)
-    test_group = str(get_group(test_path))
-
-    def get_memory_limit_from_dict(dict):
-        if "memory_limits" in dict:
-            if test_id in dict["memory_limits"]:
-                return dict["memory_limits"][test_id]
-            elif test_group in dict["memory_limits"]:
-                return dict["memory_limits"][test_group]
-        if "memory_limit" in dict:
-            return dict["memory_limit"]
-        else:
-            return None
-
-    if "override_limits" in str_config and lang in str_config["override_limits"]:
-        limit = get_memory_limit_from_dict(str_config["override_limits"][lang])
-        if limit is None:
-            return get_memory_limit_from_dict(str_config)
-        else:
-            return limit
-    else:
-        return get_memory_limit_from_dict(str_config)
+    return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config)
