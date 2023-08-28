@@ -20,12 +20,11 @@ scores:
 
 # Time limit for all tests is defined in `time_limit` key.
 # More precise time limit for each group or test can be defined in `time_limits` key.
-# The more precise time limit has higher priority (first test, then group, then global time limit).
+# The more precise time limit has higher priority (first group, then global time limit).
 # Time limit is in milliseconds.
 time_limit: 1000
 time_limits:
   1: 2000
-  1a: 2500
 
 # Memory limit for all tests is defined in `memory_limit` key.
 # More precise memory limits can be defined in `memory_limits` key.
@@ -34,7 +33,6 @@ time_limits:
 memory_limit: 262144
 memory_limits:
   3: 131072
-  3b: 262144
 
 # Time and memory limits can be overriden for other languages in `override_limits` key.
 # If this key is not specified, then all languages have the same limits.
