@@ -27,6 +27,8 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         extra_compilation_args = []
     if isinstance(extra_compilation_args, str):
         extra_compilation_args = [extra_compilation_args]
+    assert isinstance(extra_compilation_args, list) and all(isinstance(arg, str) for arg in extra_compilation_args)
+
     if extra_compilation_files is None:
         extra_compilation_files = []
 
