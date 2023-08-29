@@ -43,7 +43,8 @@ As `oiejq` works only on Linux-based operating systems,
 Nevertheless `sinol-make` supports those operating systems,
 though there are additional installation steps required to use
 other tools for measuring time (which are non-deterministic and produce reports different from sio2):
-- Windows (WSL): `apt install time`
+- Debian-based systems (Ubuntu, usually Windows WSL): `apt install time`
+- Arch-based systems: `pacman -S time`
 - macOS: `brew install gnu-time coreutils`
 
 ### Autocompletion (optional)
@@ -68,6 +69,7 @@ Whenever the new input differs from the previous one, the model solution will be
 You can also specify your ingen source file which will be used. Run `sinol-make gen --help` to see available flags.
 - `sinol-make inwer` -- Verifies whether input files are correct using your "inwer.cpp" program. You can specify what inwer
 program to use, what tests to check and how many CPUs to use. Run `sinol-make inwer --help` to see available flags.
+- `sinol-make export` -- Creates archive ready to upload to sio2 or szkopul. Run `sinol-make export --help` to see all available flags.
 
 ### Reporting bugs and contributing code
 

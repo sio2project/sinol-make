@@ -10,6 +10,15 @@ from sinol_make import util
 from sinol_make.helpers import compiler, package_util, compile
 
 
+def ingen_exists(task_id):
+    """
+    Checks if ingen source file exists.
+    :param task_id: task id, for example abc
+    :return: True if exists, False otherwise
+    """
+    return len(glob.glob(os.path.join(os.getcwd(), 'prog', task_id + 'ingen.*'))) > 0
+
+
 def get_ingen(task_id=None, ingen_path=None):
     """
     Find ingen source file in `prog/` directory.
@@ -42,12 +51,18 @@ def get_ingen(task_id=None, ingen_path=None):
 def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_flags=False):
     """
     Compiles ingen and returns path to compiled executable.
+    If ingen_path is shell script, then it will be returned.
     """
+    if os.path.splitext(ingen_path)[1] == '.sh':
+        return ingen_path
+
     compilers = compiler.verify_compilers(args, [ingen_path])
-    ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers, weak_compilation_flags)
+    ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers,
+                                                       weak_compilation_flags)
 
     if ingen_exe is None:
-        util.exit_with_error('Failed ingen compilation.', lambda: compile.print_compile_log(compile_log_path))
+        compile.print_compile_log(compile_log_path)
+        util.exit_with_error('Failed ingen compilation.')
     else:
         print(util.info('Successfully compiled ingen.'))
     return ingen_exe
@@ -81,21 +96,24 @@ def compile_correct_solution(solution_path: str, args: argparse.Namespace, weak_
     return correct_solution_exe
 
 
-
-def run_ingen(ingen_exe):
+def run_ingen(ingen_exe, working_dir=None):
     """
     Runs ingen and generates all input files.
     :param ingen_exe: path to ingen executable
+    :param working_dir: working directory for ingen. If None, then {os.getcwd()}/in is used.
     :return: True if ingen was successful, False otherwise
     """
+    if working_dir is None:
+        working_dir = os.path.join(os.getcwd(), 'in')
+
     is_shell = os.path.splitext(ingen_exe)[1] == '.sh'
     if is_shell:
-        util.fix_file_endings(ingen_exe)
+        util.fix_line_endings(ingen_exe)
         st = os.stat(ingen_exe)
         os.chmod(ingen_exe, st.st_mode | stat.S_IEXEC)
 
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                               cwd=os.path.join(os.getcwd(), 'in'), shell=is_shell)
+                               cwd=working_dir, shell=is_shell)
     while process.poll() is None:
         print(process.stdout.readline().decode('utf-8'), end='')
 
