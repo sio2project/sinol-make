@@ -5,10 +5,13 @@ import time
 import json
 import tempfile
 import requests
+import resource
 import requests_mock
 import pytest
 
-from sinol_make import util
+from sinol_make import util, configure_parsers
+from tests import util as test_util
+from tests.commands.run import util as run_util
 
 
 def test_file_diff():
@@ -91,3 +94,25 @@ def test_check_version(**kwargs):
     mocker.get("https://pypi.python.org/pypi/sinol-make/json", exc=requests.exceptions.ConnectTimeout)
     util.check_version()
     assert not version_file.is_file()
+
+
+@pytest.mark.parametrize("create_package", [test_util.get_stack_size_package_path()], indirect=True)
+def test_change_stack_size(create_package, time_tool):
+    package_path = create_package
+
+    hard_limit = resource.getrlimit(resource.RLIMIT_STACK)[1]
+    resource.setrlimit(resource.RLIMIT_STACK, (10 * 1024 * 1024, hard_limit))  # Set to 10 MB
+    assert resource.getrlimit(resource.RLIMIT_STACK)[0] == 10 * 1024 * 1024
+
+    original_func = util.change_stack_size
+    util.change_stack_size = lambda: None
+    command = run_util.get_command()
+    test_util.create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+    util.change_stack_size = original_func
+    command.run(args)
+    assert resource.getrlimit(resource.RLIMIT_STACK)[0] == 30000 * 1024

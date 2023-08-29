@@ -66,6 +66,14 @@ def get_handwritten_package_path():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "hwr")
 
+
+def get_stack_size_package_path():
+    """
+    Get path to package for testing of changing stack size (/test/packages/stc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "stc")
+
+
 def create_ins(package_path):
     """
     Create .in files for package.

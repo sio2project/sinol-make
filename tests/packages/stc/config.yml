@@ -1,0 +1,4 @@
+title: Package for testing if changing stack size works
+
+memory_limit: 30000
+time_limit: 5
