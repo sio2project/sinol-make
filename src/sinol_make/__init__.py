@@ -6,9 +6,9 @@ import argparse
 import sys
 import os
 
-from sinol_make import util
+from sinol_make import util, oiejq
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 
 def configure_parsers():
     parser = argparse.ArgumentParser(
@@ -45,11 +45,11 @@ def main_exn():
                     f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
                     f' You can update it by running `pip3 install sinol-make --upgrade`.'))
 
-            if sys.platform == 'linux' and not util.check_oiejq():
-                print(util.warning('`oiejq` in `~/.local/bin/` not detected, installing now...'))
+            if sys.platform == 'linux' and not oiejq.check_oiejq():
+                print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
 
                 try:
-                    if util.install_oiejq():
+                    if oiejq.install_oiejq():
                         print(util.info('`oiejq` was successfully installed.'))
                     else:
                         util.exit_with_error('`oiejq` could not be installed.\n'
