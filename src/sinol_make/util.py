@@ -1,5 +1,6 @@
 import glob, importlib, os, sys, requests, yaml
 import threading
+import resource
 from typing import Union
 
 
@@ -241,6 +242,16 @@ def stringify_keys(d):
         return [stringify_keys(x) for x in d]
     else:
         return d
+
+
+def change_stack_size_to_unlimited():
+    """
+    Function to change the stack size to unlimited.
+    """
+    try:
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+    except resource.error:
+        exit_with_error("Failed to change stack size to unlimited. Try doing it manually with `ulimit -s unlimited`.")
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

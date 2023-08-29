@@ -1145,6 +1145,7 @@ class Command(BaseCommand):
         self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
 
+        util.change_stack_size_to_unlimited()
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)
         validation_results = self.validate_expected_scores(results)

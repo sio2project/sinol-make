@@ -98,6 +98,7 @@ class Command(BaseCommand):
         self.correct_solution = gen_util.get_correct_solution(self.task_id)
         self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
 
+        util.change_stack_size_to_unlimited()
         if gen_util.run_ingen(self.ingen_exe):
             print(util.info('Successfully generated input files.'))
         else:

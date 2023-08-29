@@ -136,6 +136,7 @@ class Command(BaseCommand):
             shutil.rmtree(export_package_path)
         os.makedirs(export_package_path)
 
+        util.change_stack_size_to_unlimited()
         self.copy_package_required_files(export_package_path)
         self.create_makefile_in(export_package_path, config)
         archive = self.compress(export_package_path)

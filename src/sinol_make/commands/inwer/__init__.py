@@ -140,6 +140,7 @@ class Command(BaseCommand):
         else:
             print('Verifying tests: ' + util.bold(', '.join(self.tests)))
 
+        util.change_stack_size_to_unlimited()
         self.compile_inwer(args)
         results: Dict[str, TestResult] = self.verify_and_print_table()
         print('')
