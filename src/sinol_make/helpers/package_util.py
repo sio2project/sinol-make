@@ -28,7 +28,7 @@ def get_test_key(test):
     return get_group(test), test
 
 
-def get_tests(arg_tests: Union[List[str], None]) -> List[str]:
+def get_tests(arg_tests: Union[List[str], None] = None) -> List[str]:
     """
     Returns list of tests to run.
     :param arg_tests: Tests specified in command line arguments. If None, all tests are returned.

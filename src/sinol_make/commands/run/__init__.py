@@ -8,6 +8,7 @@ from io import StringIO
 import glob
 from typing import Dict
 
+from sinol_make import oiejq
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, \
     PointsChange, PrintData
 from sinol_make.helpers.parsers import add_compilation_arguments
@@ -695,6 +696,29 @@ class Command(BaseCommand):
         yaml_dict = { "sinol_expected_scores": self.convert_status_to_string(expected_scores) }
         print(yaml.dump(yaml_dict, default_flow_style=None))
 
+    def get_whole_groups(self):
+        """
+        Returns a list of groups for which all tests were run.
+        """
+        group_sizes = {}
+        for test in package_util.get_tests():
+            group = package_util.get_group(test)
+            if group not in group_sizes:
+                group_sizes[group] = 0
+            group_sizes[group] += 1
+
+        run_group_sizes = {}
+        for test in self.tests:
+            group = package_util.get_group(test)
+            if group not in run_group_sizes:
+                run_group_sizes[group] = 0
+            run_group_sizes[group] += 1
+
+        whole_groups = []
+        for group in group_sizes.keys():
+            if group in run_group_sizes and group_sizes[group] == run_group_sizes[group]:
+                whole_groups.append(group)
+        return whole_groups
 
     def validate_expected_scores(self, results):
         new_expected_scores = {} # Expected scores based on results
@@ -749,9 +773,25 @@ class Command(BaseCommand):
                 for group in config_expected_scores[solution]["expected"]:
                     used_groups.add(group)
         else:
-            for solution in results.keys():
-                for group in results[solution].keys():
-                    used_groups.add(group)
+            used_groups = self.get_whole_groups()
+
+            # This removes those groups from `new_expected_scores` that have not been run.
+            # Then, if there are any solutions for which no groups have been run, they are also removed.
+            solutions_to_delete = []
+            for solution in new_expected_scores.keys():
+                groups_to_remove = []
+                for group in new_expected_scores[solution]["expected"]:
+                    if group not in used_groups:
+                        groups_to_remove.append(group)
+                for group in groups_to_remove:
+                    del new_expected_scores[solution]["expected"][group]
+
+                # If there are no groups left, remove the solution.
+                if len(new_expected_scores[solution]["expected"]) == 0:
+                    solutions_to_delete.append(solution)
+            for solution in solutions_to_delete:
+                del new_expected_scores[solution]
+
         used_groups = list(used_groups)
 
         expected_scores = {} # Expected scores from config with only solutions and groups that were run
@@ -767,7 +807,11 @@ class Command(BaseCommand):
                         expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
 
                 expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+                if len(expected_scores[solution]["expected"]) == 0:
+                    del expected_scores[solution]
 
+        if self.args.tests is not None:
+            print("Showing expected scores only for groups with all tests run.")
         print(util.bold("Expected scores from config:"))
         self.print_expected_scores(expected_scores)
         print(util.bold("\nExpected scores based on results:"))
@@ -922,13 +966,20 @@ class Command(BaseCommand):
         timetool_path = None
         if args.time_tool == 'oiejq':
             if sys.platform != 'linux':
-                util.exit_with_error('oiejq is only available on Linux.')
+                util.exit_with_error('As `oiejq` works only on Linux-based operating systems,\n'
+                                     'we do not recommend using operating systems such as Windows or macOS.\n'
+                                     'Nevertheless, you can still run sinol-make by specifying\n'
+                                     'another way of measuring time through the `--time-tool` flag.\n'
+                                     'See `sinol-make run --help` for more information about the flag.\n'
+                                     'See https://github.com/sio2project/sinol-make#why for more information about `oiejq`.\n')
+
+            oiejq.check_perf_counters_enabled()
             if 'oiejq_path' in args and args.oiejq_path is not None:
-                if not util.check_oiejq(args.oiejq_path):
+                if not oiejq.check_oiejq(args.oiejq_path):
                     util.exit_with_error('Invalid oiejq path.')
                 timetool_path = args.oiejq_path
             else:
-                timetool_path = util.get_oiejq_path()
+                timetool_path = oiejq.get_oiejq_path()
             if timetool_path is None:
                 util.exit_with_error('oiejq is not installed.')
         elif args.time_tool == 'time':

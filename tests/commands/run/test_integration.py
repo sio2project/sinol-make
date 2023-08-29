@@ -1,3 +1,5 @@
+import copy
+import sys
 import pytest
 
 from ...fixtures import *
@@ -141,6 +143,66 @@ def test_flag_tests(create_package, time_tool):
         pass
 
     assert command.tests == [test]
+
+
+@pytest.mark.parametrize("create_package", [get_checker_package_path()], indirect=True)
+def test_groups_in_flag_test(capsys, create_package, time_tool):
+    """
+    Test flag --tests with whole and partial groups.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+
+    parser = configure_parsers()
+
+    # Test with only one test from group 1.
+    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+    out = capsys.readouterr().out
+    assert "Showing expected scores only for groups with all tests run." in out
+    assert "sinol_expected_scores: {}" in out
+    assert "Expected scores are correct!" in out
+
+    # Test with all tests from group 1.
+    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "in/chk1b.in", "in/chk1c.in", "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+    out = capsys.readouterr().out
+    assert 'sinol_expected_scores:\n' \
+           '  chk.cpp:\n' \
+           '    expected: {1: OK}\n' \
+           '    points: 50\n' \
+           '  chk1.cpp:\n' \
+           '    expected: {1: WA}\n' \
+           '    points: 0\n' \
+           '  chk2.cpp:\n' \
+           '    expected:\n' \
+           '      1: {points: 25, status: OK}\n' \
+           '    points: 25\n' \
+           '  chk3.cpp:\n' \
+           '    expected: {1: OK}\n' \
+           '    points: 50' in out
+
+    # Test with incorrect expected scores for first group.
+    with open(os.path.join(package_path, "config.yml"), "r") as config_file:
+        correct_config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    config = copy.deepcopy(correct_config)
+    config["sinol_expected_scores"]["chk.cpp"]["expected"][1] = "WA"
+    config["sinol_expected_scores"]["chk.cpp"]["points"] = 50
+    with open(os.path.join(package_path, "config.yml"), "w") as config_file:
+        config_file.write(yaml.dump(config))
+
+    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "in/chk1b.in", "in/chk1c.in", "--time-tool", time_tool,
+                              "--apply-suggestions"])
+    command = Command()
+    command.run(args)
+    out = capsys.readouterr().out
+    sys.stdout.write(out)
+    assert "Solution chk.cpp passed group 1 with status OK while it should pass with status WA." in out
+    with open(os.path.join(package_path, "config.yml"), "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    assert config == correct_config
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
