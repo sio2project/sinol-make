@@ -248,7 +248,7 @@ def is_wsl():
     """
     Function to check if the program is running on Windows Subsystem for Linux.
     """
-    return "microsoft" in platform.uname().release.lower()
+    return sys.platform == "linux" and "microsoft" in platform.uname().release.lower()
 
 
 def is_linux():
