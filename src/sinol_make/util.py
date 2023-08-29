@@ -1,4 +1,5 @@
 import glob, importlib, os, sys, requests, yaml
+import platform
 import threading
 from typing import Union
 
@@ -241,6 +242,20 @@ def stringify_keys(d):
         return [stringify_keys(x) for x in d]
     else:
         return d
+
+
+def is_wsl():
+    """
+    Function to check if the program is running on Windows Subsystem for Linux.
+    """
+    return "microsoft" in platform.uname().release.lower()
+
+
+def is_linux():
+    """
+    Function to check if the program is running on Linux and not WSL.
+    """
+    return sys.platform == "linux" and not is_wsl()
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

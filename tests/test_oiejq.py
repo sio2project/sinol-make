@@ -2,7 +2,7 @@ import os
 import sys
 import pytest
 
-from sinol_make import oiejq
+from sinol_make import oiejq, util
 
 
 @pytest.mark.github_runner
@@ -34,4 +34,6 @@ def test_perf_counters_set():
     """
     Test `oiejq.check_perf_counters_enabled` with perf counters enabled
     """
+    if not util.is_linux():
+        return
     oiejq.check_perf_counters_enabled()

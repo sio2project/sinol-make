@@ -12,7 +12,7 @@ def check_oiejq(path = None):
     """
     Function to check if oiejq is installed
     """
-    if sys.platform != 'linux':
+    if not util.is_linux():
         return False
 
     def check(path):
@@ -39,7 +39,7 @@ def install_oiejq():
     Returns True if successful.
     """
 
-    if sys.platform != 'linux':
+    if not util.is_linux():
         return False
     if check_oiejq():
         return True
@@ -100,7 +100,7 @@ def check_perf_counters_enabled():
     Checks if `kernel.perf_event_paranoid` is set to -1.
     :return:
     """
-    if sys.platform != 'linux' or not check_oiejq():
+    if not util.is_linux() or not check_oiejq():
         return
 
     oiejq = get_oiejq_path()
