@@ -6,43 +6,9 @@ import json
 import tempfile
 import requests
 import requests_mock
-
 import pytest
 
 from sinol_make import util
-
-
-@pytest.mark.github_runner
-def test_install_oiejq():
-    if sys.platform != 'linux':
-        return
-
-    if util.check_oiejq():
-        shutil.rmtree(os.path.expanduser('~/.local/bin/'), ignore_errors=True)
-        assert not util.check_oiejq()
-
-    assert util.install_oiejq()
-    assert util.get_oiejq_path() == os.path.expanduser('~/.local/bin/oiejq')
-
-
-@pytest.mark.github_runner
-def test_check_oiejq():
-    if sys.platform != 'linux':
-        return
-
-    shutil.rmtree(os.path.expanduser('~/.local/bin/'), ignore_errors=True)
-    assert not util.check_oiejq()
-    os.makedirs(os.path.expanduser('~/.local/bin/oiejq'), exist_ok=True)
-    assert not util.check_oiejq()
-    os.rmdir(os.path.expanduser('~/.local/bin/oiejq'))
-    with open(os.path.expanduser('~/.local/bin/oiejq'), 'w') as f:
-        f.write('abcdef')
-    assert not util.check_oiejq()
-    os.chmod(os.path.expanduser('~/.local/bin/oiejq'), 0o777)
-    assert not util.check_oiejq()
-    with open(os.path.expanduser('~/.local/bin/oiejq'), 'w') as f:
-        f.write('#!/bin/bash\necho "test"')
-    assert util.check_oiejq()
 
 
 def test_file_diff():

@@ -1,6 +1,4 @@
-import glob, importlib, os, sys, subprocess, requests, tarfile, yaml
-import shutil
-import tempfile
+import glob, importlib, os, sys, requests, yaml
 import threading
 from typing import Union
 
@@ -23,9 +21,9 @@ def get_commands():
     return commands
 
 
-def check_if_project():
+def check_if_package():
     """
-    Function to check if current directory is a project
+    Function to check if current directory is a package
     """
 
     cwd = os.getcwd()
@@ -34,83 +32,12 @@ def check_if_project():
     return False
 
 
-def _check_if_oiejq_executable(path):
-    if not os.access(path, os.X_OK):
-        return False
-
-    try:
-        p = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.wait()
-        return p.returncode == 0
-    except FileNotFoundError:
-        return False
-
-
-def check_oiejq(path = None):
+def exit_if_not_package():
     """
-    Function to check if oiejq is installed
+    Function that exits if current directory is not a package
     """
-    if sys.platform != 'linux':
-        return False
-
-    if path is not None:
-        return _check_if_oiejq_executable(path)
-
-    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
-        return True
-    else:
-        return False
-
-
-def install_oiejq():
-    """
-    Function to install oiejq, if not installed.
-    Returns True if successful.
-    """
-    if sys.platform != 'linux':
-        return False
-    if check_oiejq():
-        return True
-
-    if not os.path.exists(os.path.expanduser('~/.local/bin')):
-        os.makedirs(os.path.expanduser('~/.local/bin'), exist_ok=True)
-
-    if os.path.exists(os.path.expanduser('~/.local/bin/oiejq')) and \
-            not _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
-        exit_with_error("Couldn't install `oiejq`.\n"
-                        "There is a file/directory named `oiejq` in `~/.local/bin`\n"
-                        "which isn't an `oiejq` executable. Please rename it or\n"
-                        "remove it and try again.")
-
-    try:
-        request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz')
-    except requests.exceptions.ConnectionError:
-        raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz couldn\'t connect)')
-    if request.status_code != 200:
-        raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
-
-    # oiejq is downloaded to a temporary directory and not to the `cache` dir,
-    # as there is no guarantee that the current directory is the package directory.
-    # The `cache` dir is only used for files that are part of the package and those
-    # that the package creator might want to look into.
-    with tempfile.TemporaryDirectory() as tmpdir:
-        oiejq_path = os.path.join(tmpdir, 'oiejq.tar.gz')
-        with open(oiejq_path, 'wb') as oiejq_file:
-            oiejq_file.write(request.content)
-
-        with tarfile.open(oiejq_path) as tar:
-            tar.extractall(path=tmpdir)
-        shutil.copy(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
-        shutil.copy(os.path.join(tmpdir, 'oiejq', 'sio2jail'), os.path.expanduser('~/.local/bin/'))
-
-    return check_oiejq()
-
-
-def get_oiejq_path():
-    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
-        return os.path.expanduser('~/.local/bin/oiejq')
-    else:
-        return None
+    if not check_if_package():
+        exit_with_error('You are not in a package directory (couldn\'t find config.yml in current directory).')
 
 
 def save_config(config):
@@ -289,7 +216,15 @@ def get_terminal_size():
     return has_terminal, terminal_width, terminal_height
 
 
-def fix_file_endings(file):
+def get_templates_dir():
+    """
+    Function to get the path to the templates' directory.
+    :return: path to the templates directory
+    """
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "templates"))
+
+
+def fix_line_endings(file):
     with open(file, "rb") as f:
         content = f.read()
     with open(file, "wb") as f:
