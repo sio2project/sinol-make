@@ -92,11 +92,11 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
         return None
 
 
-def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any]):
+def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], lang: str):
     test_id = extract_test_id(test_path)
     test_group = str(get_group(test_path))
     global_limit = _get_limit_from_dict(config, limit_type, test_id, test_group)
-    override_limits_dict = config.get("override_limits", {})
+    override_limits_dict = config.get("override_limits", {}).get(lang, {})
     overriden_limit = _get_limit_from_dict(override_limits_dict, limit_type, test_id, test_group)
     if overriden_limit is not None:
         return overriden_limit
@@ -112,7 +112,7 @@ def get_time_limit(test_path, config, lang, args=None):
         return args.tl * 1000
 
     str_config = util.stringify_keys(config)
-    return _get_limit(LimitTypes.TIME_LIMIT, test_path, str_config)
+    return _get_limit(LimitTypes.TIME_LIMIT, test_path, str_config, lang)
 
 
 def get_memory_limit(test_path, config, lang, args=None):
@@ -123,4 +123,4 @@ def get_memory_limit(test_path, config, lang, args=None):
         return int(args.ml * 1024)
 
     str_config = util.stringify_keys(config)
-    return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config)
+    return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang)
