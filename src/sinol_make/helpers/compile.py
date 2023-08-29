@@ -13,7 +13,8 @@ from sinol_make.structs.compiler_structs import Compilers
 
 def get_executable_info_file(file_path):
     """
-    Get the path to the file containing path to the compiled executable based on the file's md5 sum.
+    Calculate the md5 sum of file's content and return the path to file `cache/md5sums/<md5sum>`.
+    If this file exists it contains the path to the compiled executable.
     """
     os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
     md5sum = util.get_file_md5(file_path)
@@ -42,7 +43,8 @@ def check_compiled(file_path: str):
 
 def save_compiled(file_path: str, exe_path: str):
     """
-    Save md5 sum of file to cache, so we know it is compiled.
+    Save the compiled executable path to cache in `cache/md5sums/<md5sum>`,
+    where <md5sum> is the md5 sum of the file's content.
     :param file_path: Path to the file
     :param exe_path: Path to the compiled executable
     """
