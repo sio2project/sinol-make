@@ -1,11 +1,24 @@
 import os
 import subprocess
 import sys
+import shutil
 import tarfile
 import tempfile
 import requests
 
 from sinol_make import util
+
+
+def _check_if_oiejq_executable(path):
+    if not os.access(path, os.X_OK):
+        return False
+
+    try:
+        p = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p.wait()
+        return p.returncode == 0
+    except FileNotFoundError:
+        return False
 
 
 def check_oiejq(path = None):
@@ -15,22 +28,13 @@ def check_oiejq(path = None):
     if sys.platform != 'linux':
         return False
 
-    def check(path):
-        try:
-            p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            p.wait()
-            p.kill()
-            return p.returncode == 0
-        except FileNotFoundError:
-            return False
-
     if path is not None:
-        return check(path)
+        return _check_if_oiejq_executable(path)
 
-    if not check(os.path.expanduser('~/.local/bin/oiejq')):
-        return False
-    else:
+    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
         return True
+    else:
+        return False
 
 
 def install_oiejq():
@@ -38,7 +42,6 @@ def install_oiejq():
     Function to install oiejq, if not installed.
     Returns True if successful.
     """
-
     if sys.platform != 'linux':
         return False
     if check_oiejq():
@@ -46,6 +49,12 @@ def install_oiejq():
 
     if not os.path.exists(os.path.expanduser('~/.local/bin')):
         os.makedirs(os.path.expanduser('~/.local/bin'), exist_ok=True)
+
+    if os.path.exists(os.path.expanduser('~/.local/bin/oiejq')) and \
+            not _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
+        util.exit_with_error("Couldn't install `oiejq`.\n"
+                        "There is a file/directory named `oiejq` in `~/.local/bin` which isn't an `oiejq` executable.\n"
+                        "Please rename it or remove it and try again.")
 
     try:
         request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz')
@@ -63,33 +72,16 @@ def install_oiejq():
         with open(oiejq_path, 'wb') as oiejq_file:
             oiejq_file.write(request.content)
 
-        def strip(tar):
-            l = len('oiejq/')
-            for member in tar.getmembers():
-                member.name = member.name[l:]
-                yield member
-
         with tarfile.open(oiejq_path) as tar:
-            tar.extractall(path=os.path.expanduser('~/.local/bin'), members=strip(tar))
-        os.rename(os.path.expanduser('~/.local/bin/oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
+            tar.extractall(path=tmpdir)
+        shutil.copy(os.path.join(tmpdir, 'oiejq', 'oiejq.sh'), os.path.expanduser('~/.local/bin/oiejq'))
+        shutil.copy(os.path.join(tmpdir, 'oiejq', 'sio2jail'), os.path.expanduser('~/.local/bin/'))
 
     return check_oiejq()
 
 
 def get_oiejq_path():
-    if not check_oiejq():
-        return None
-
-    def check(path):
-        p = subprocess.Popen([path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.wait()
-        p.kill()
-        if p.returncode == 0:
-            return True
-        else:
-            return False
-
-    if check(os.path.expanduser('~/.local/bin/oiejq')):
+    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
         return os.path.expanduser('~/.local/bin/oiejq')
     else:
         return None
