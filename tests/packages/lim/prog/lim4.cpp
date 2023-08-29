@@ -8,9 +8,7 @@ int main() {
 
     vector<long long> mem;
     int times = 2;
-    if (a == 2 && b == 1)
-        times = 5;
-    else if (a == 2 && b == 2)
+    if (a == 2)
         times = 1;
 
     for (int i = 1; i <= times * 1280000; i++) {

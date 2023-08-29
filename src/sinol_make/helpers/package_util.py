@@ -74,7 +74,7 @@ def get_time_limit(test_path, config, args=None):
 
     if "time_limits" in str_config:
         if test_id in str_config["time_limits"]:
-            return str_config["time_limits"][test_id]
+            util.exit_with_error("Specifying time limit for single test is a bad practice and is not supported.")
         elif test_group in str_config["time_limits"]:
             return str_config["time_limits"][test_group]
     return str_config["time_limit"]
@@ -93,7 +93,7 @@ def get_memory_limit(test_path, config, args=None):
 
     if "memory_limits" in str_config:
         if test_id in str_config["memory_limits"]:
-            return str_config["memory_limits"][test_id]
+            util.exit_with_error("Specifying memory limit for single test is a bad practice and is not supported.")
         elif test_group in str_config["memory_limits"]:
             return str_config["memory_limits"][test_group]
     return str_config["memory_limit"]

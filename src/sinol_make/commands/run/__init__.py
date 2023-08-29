@@ -8,12 +8,12 @@ from io import StringIO
 import glob
 from typing import Dict
 
-from sinol_make import oiejq
+from sinol_make import contest_types, oiejq
 from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, \
     PointsChange, PrintData
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
-from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException
+from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
 from sinol_make.helpers import compile, compiler, package_util, printer
 from sinol_make.structs.status_structs import Status
 import sinol_make.util as util
@@ -57,7 +57,7 @@ def update_group_status(group_status, new_status):
 
 
 def print_view(term_width, term_height, program_groups_scores, all_results, print_data: PrintData, names, executions,
-               groups, scores, tests, possible_score, cpus, hide_memory, config, args):
+               groups, scores, tests, possible_score, cpus, hide_memory, config, contest, args):
     width = term_width - 13  # First column has 6 characters, the " | " separator has 3 characters and 4 for margin
     programs_in_row = width // 13  # Each program has 10 characters and the " | " separator has 3 characters
 
@@ -109,10 +109,10 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
             for program in program_group:
                 results = all_results[program][group]
                 group_status = Status.OK
-                min_points = 100
+                test_scores = []
 
                 for test in results:
-                    min_points = min(min_points, results[test].Points)
+                    test_scores.append(results[test].Points)
                     status = results[test].Status
                     if getattr(results[test], "Time") is not None:
                         if program_times[program][0] < results[test].Time:
@@ -128,11 +128,10 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                                                    package_util.get_memory_limit(test, config, args))
                     if status == Status.PENDING:
                         group_status = Status.PENDING
-                        min_points = 0
                     else:
                         group_status = update_group_status(group_status, status)
 
-                points = math.ceil(min_points / 100 * scores[group])
+                points = contest.get_group_score(test_scores, scores[group])
                 if any([results[test].Status == Status.PENDING for test in results]):
                     print(" " * 3 + ("?" * len(str(scores[group]))).rjust(3) +
                           f'/{str(scores[group]).rjust(3)}', end=' | ')
@@ -414,7 +413,7 @@ class Command(BaseCommand):
             return correct, 100 if correct else 0
         else:
             with open(output_file_path, "w") as output_file:
-                output_file.write("\n".join(output))
+                output_file.write("\n".join(output) + "\n")
             return self.check_output_checker(name, input_file, output_file_path, answer_file_path)
 
 
@@ -619,14 +618,16 @@ class Command(BaseCommand):
             thr = threading.Thread(target=printer.printer_thread,
                                    args=(run_event, print_view, program_groups_scores, all_results, print_data, names,
                                          executions, self.groups, self.scores, self.tests, self.possible_score,
-                                         self.cpus, self.args.hide_memory, self.config, self.args))
+                                         self.cpus, self.args.hide_memory, self.config, self.contest, self.args))
             thr.start()
 
         pool = mp.Pool(self.cpus)
         keyboard_interrupt = False
         try:
             for i, result in enumerate(pool.imap(self.run_solution, executions)):
-                (name, executable, test) = executions[i][:3]
+                (name, executable, test, time_limit, memory_limit) = executions[i][:5]
+                contest_points = self.contest.get_test_score(result, time_limit, memory_limit)
+                result.Points = contest_points
                 all_results[name][self.get_group(test)][test] = result
                 print_data.i = i
             pool.terminate()
@@ -640,7 +641,7 @@ class Command(BaseCommand):
 
         print("\n".join(print_view(terminal_width, terminal_height, program_groups_scores, all_results, print_data,
                                    names, executions, self.groups, self.scores, self.tests, self.possible_score,
-                                   self.cpus, self.args.hide_memory, self.config, self.args)[0]))
+                                   self.cpus, self.args.hide_memory, self.config, self.contest, self.args)[0]))
 
         if keyboard_interrupt:
             util.exit_with_error("Stopped due to keyboard interrupt.")
@@ -1099,6 +1100,11 @@ class Command(BaseCommand):
                 self.config = yaml.load(config, Loader=yaml.FullLoader)
             except AttributeError:
                 self.config = yaml.load(config)
+
+        try:
+            self.contest = contest_types.get_contest_type()
+        except UnknownContestType as e:
+            util.exit_with_error(str(e))
 
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')
