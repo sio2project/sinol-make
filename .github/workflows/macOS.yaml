@@ -23,7 +23,8 @@ jobs:
           pip3 install .[tests]
       - name: Install Homebrew dependencies
         run: |
-          rm -f '/usr/local/bin/2to3' '/usr/local/bin/2to3-3.11' # Homebrew will fail if these exist
+          rm -f /usr/local/bin/2to3* /usr/local/bin/python3* /usr/local/bin/idle3* \
+          /usr/local/bin/pydoc3* # Homebrew will fail if these exist
           brew install gnu-time coreutils diffutils dpkg
       - name: Run pytest
         run: |
