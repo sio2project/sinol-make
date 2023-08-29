@@ -1,6 +1,6 @@
 title: Package with `time_limits` and `memory_limits` set
 
-memory_limit: 30000
+memory_limit: 15000
 memory_limits:
   2: 60000
 
