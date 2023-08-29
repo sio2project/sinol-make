@@ -15,6 +15,7 @@ def get_executable_info_file(file_path):
     """
     Calculate the md5 sum of file's content and return the path to file `cache/md5sums/<md5sum>`.
     If this file exists it contains the path to the compiled executable.
+    Thanks to that, we cache the compiled solutions and recompile them when they change.
     """
     os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
     md5sum = util.get_file_md5(file_path)
