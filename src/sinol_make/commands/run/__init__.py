@@ -529,13 +529,15 @@ class Command(BaseCommand):
                 result.Time = round(float(lines[0].strip()) * 1000)
                 result.Memory = int(lines[1].strip())
                 program_exit_code = int(lines[2].strip())
-            if len(lines) > 0 and "Command terminated by signal " in lines[0]:
+            elif len(lines) > 0 and "Command terminated by signal " in lines[0]:
                 """
                 If there was a runtime error, the first line is the error message with signal number.
                 For example:
                     Command terminated by signal 11
                 """
                 program_exit_code = int(lines[0].strip().split(" ")[-1])
+            else:
+                util.exit_with_error("Unexpected output from time command: " + "\n".join(lines))
 
         if program_exit_code is not None and program_exit_code != 0:
             result.Status = Status.RE
