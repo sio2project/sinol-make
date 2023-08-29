@@ -18,12 +18,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Set up Homebrew
         uses: Homebrew/actions/setup-homebrew@master
+      - name: Install Homebrew dependencies
+        run: |
+          rm -f /usr/local/bin/2to3* /usr/local/bin/python3* /usr/local/bin/idle3* \
+          /usr/local/bin/pydoc3* # Homebrew will fail if these exist
+          brew install gnu-time coreutils diffutils dpkg
       - name: Install Python dependencies
         run: |
           pip3 install .[tests]
-      - name: Install Homebrew dependencies
-        run: |
-          brew install gnu-time coreutils diffutils dpkg
       - name: Run pytest
         run: |
           python3 -m pytest -v --time-tool time

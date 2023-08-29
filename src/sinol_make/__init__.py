@@ -46,7 +46,7 @@ def main_exn():
                     f' You can update it by running `pip3 install sinol-make --upgrade`.'))
 
             if util.is_linux() and not oiejq.check_oiejq():
-                print(util.warning('`oiejq` in `~/.local/bin/` not detected, installing now...'))
+                print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
 
                 try:
                     if oiejq.install_oiejq():
