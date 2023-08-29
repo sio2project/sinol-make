@@ -11,6 +11,7 @@ import pytest
 
 from sinol_make import util, configure_parsers
 from tests import util as test_util
+from tests.fixtures import create_package
 from tests.commands.run import util as run_util
 
 
@@ -99,20 +100,20 @@ def test_check_version(**kwargs):
 @pytest.mark.parametrize("create_package", [test_util.get_stack_size_package_path()], indirect=True)
 def test_change_stack_size(create_package, time_tool):
     package_path = create_package
-
-    hard_limit = resource.getrlimit(resource.RLIMIT_STACK)[1]
-    resource.setrlimit(resource.RLIMIT_STACK, (10 * 1024 * 1024, hard_limit))  # Set to 10 MB
-    assert resource.getrlimit(resource.RLIMIT_STACK)[0] == 10 * 1024 * 1024
-
     original_func = util.change_stack_size
     util.change_stack_size = lambda: None
     command = run_util.get_command()
     test_util.create_ins_outs(package_path)
     parser = configure_parsers()
+
+    hard_limit = resource.getrlimit(resource.RLIMIT_STACK)[1]
+    resource.setrlimit(resource.RLIMIT_STACK, (1 * 1024 * 1024, hard_limit))  # Set to 1 MB
+    assert resource.getrlimit(resource.RLIMIT_STACK)[0] == 1 * 1024 * 1024
+
     args = parser.parse_args(["run", "--time-tool", time_tool])
     with pytest.raises(SystemExit):
         command.run(args)
 
     util.change_stack_size = original_func
     command.run(args)
-    assert resource.getrlimit(resource.RLIMIT_STACK)[0] == 30000 * 1024
+    assert resource.getrlimit(resource.RLIMIT_STACK)[0] == 70000 * 1024
