@@ -45,7 +45,7 @@ def main_exn():
                     f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
                     f' You can update it by running `pip3 install sinol-make --upgrade`.'))
 
-            if sys.platform == 'linux' and not oiejq.check_oiejq():
+            if util.is_linux() and not oiejq.check_oiejq():
                 print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
 
                 try:

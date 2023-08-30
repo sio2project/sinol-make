@@ -240,7 +240,7 @@ class Command(BaseCommand):
                 After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
         )
 
-        default_timetool = 'oiejq' if sys.platform == 'linux' else 'time'
+        default_timetool = 'oiejq' if util.is_linux() else 'time'
 
         parser.add_argument('-s', '--solutions', type=str, nargs='+',
                             help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
@@ -974,7 +974,7 @@ class Command(BaseCommand):
 
         timetool_path = None
         if args.time_tool == 'oiejq':
-            if sys.platform != 'linux':
+            if not util.is_linux():
                 util.exit_with_error('As `oiejq` works only on Linux-based operating systems,\n'
                                      'we do not recommend using operating systems such as Windows or macOS.\n'
                                      'Nevertheless, you can still run sinol-make by specifying\n'
