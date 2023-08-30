@@ -3,11 +3,11 @@ import os, glob
 import argparse
 import yaml
 
+from sinol_make.contest_types import get_contest_type
 from sinol_make.structs.compiler_structs import Compilers
 from ...util import *
 from sinol_make.commands.run import Command
 from sinol_make.helpers import compiler
-from sinol_make.helpers import compile
 
 
 def get_command(path = None):
@@ -29,6 +29,7 @@ def get_command(path = None):
         command.config = yaml.load(config_file, Loader=yaml.FullLoader)
     command.checker = None
     command.failed_compilations = []
+    command.contest = get_contest_type()
     set_default_args(command)
     return command
 

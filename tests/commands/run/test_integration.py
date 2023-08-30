@@ -322,6 +322,8 @@ def test_no_limits_in_config(capsys, create_package, time_tool):
         command.run(args)
 
     out = capsys.readouterr().out
+    assert "Solution lim2.cpp passed group 1 with status TL while it should pass with status OK." in out
+    assert "Solution lim4.cpp passed group 2 with status ML while it should pass with status OK." in out
     assert "Use flag --apply-suggestions to apply suggestions." in out
 
 
@@ -341,8 +343,6 @@ def test_time_limit_flag(capsys, create_package, time_tool):
         command.run(args)
 
     out = capsys.readouterr().out
-    assert "Solution lim1.cpp passed group 1 with status OK while it should pass with status TL." in out
-    assert "Solution lim2.cpp passed group 1 with status OK while it should pass with status TL." in out
     assert "Solution lim2.cpp passed group 2 with status OK while it should pass with status TL." in out
 
 
@@ -364,7 +364,6 @@ def test_memory_limit_flag(capsys, create_package, time_tool):
     out = capsys.readouterr().out
     assert "Solution lim3.cpp passed group 1 with status OK while it should pass with status ML." in out
     assert "Solution lim4.cpp passed group 1 with status OK while it should pass with status ML." in out
-    assert "Solution lim4.cpp passed group 2 with status OK while it should pass with status ML." in out
 
 
 @pytest.mark.parametrize("create_package", [get_override_limits_package_path()], indirect=True)

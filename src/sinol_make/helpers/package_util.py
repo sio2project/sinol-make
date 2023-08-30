@@ -83,7 +83,7 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
 
     if plural_limit_name in dict:
         if test_id in dict[plural_limit_name]:
-            return dict[plural_limit_name][test_id]
+            util.exit_with_error("Specifying limit for single test is a bad practice and is not supported.")
         elif test_group in dict[plural_limit_name]:
             return dict[plural_limit_name][test_group]
     if limit_name in dict:

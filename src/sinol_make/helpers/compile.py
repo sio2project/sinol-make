@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, Dict
 import os
 import sys
 import shutil
@@ -7,8 +7,53 @@ import subprocess
 import yaml
 
 import sinol_make.helpers.compiler as compiler
+from sinol_make import util
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
+
+
+def get_executable_info_file(file_path):
+    """
+    Calculate the md5 sum of file's content and return the path to file `cache/md5sums/<md5sum>`.
+    If this file exists it contains the path to the compiled executable.
+    Thanks to that, we cache the compiled solutions and recompile them when they change.
+    """
+    os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
+    md5sum = util.get_file_md5(file_path)
+    return os.path.join(os.getcwd(), 'cache', 'md5sums', md5sum)
+
+
+def check_compiled(file_path: str):
+    """
+    Check if a file is compiled
+    :param file_path: Path to the file
+    :return: executable path if compiled, None otherwise
+    """
+    info_file_path = get_executable_info_file(file_path)
+
+    try:
+        with open(info_file_path, 'r') as md5sums_file:
+            exe_file = md5sums_file.read().strip()
+            if os.path.exists(exe_file):
+                return exe_file
+            else:
+                os.unlink(info_file_path)
+                return None
+    except FileNotFoundError:
+        return None
+
+
+def save_compiled(file_path: str, exe_path: str):
+    """
+    Save the compiled executable path to cache in `cache/md5sums/<md5sum>`,
+    where <md5sum> is the md5 sum of the file's content.
+    :param file_path: Path to the file
+    :param exe_path: Path to the compiled executable
+    """
+    info_file_path = get_executable_info_file(file_path)
+
+    with open(info_file_path, 'w') as md5sums_file:
+        md5sums_file.write(exe_path)
 
 
 def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
@@ -27,6 +72,15 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         extra_compilation_args = []
     if extra_compilation_files is None:
         extra_compilation_files = []
+
+    compiled_exe = check_compiled(program)
+    if compiled_exe is not None:
+        if compile_log is not None:
+            compile_log.write(f'Using cached executable {compiled_exe}\n')
+            compile_log.close()
+        if os.path.abspath(compiled_exe) != os.path.abspath(output):
+            shutil.copy(compiled_exe, output)
+        return True
 
     for file in extra_compilation_files:
         shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
@@ -77,6 +131,7 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
+        save_compiled(program, output)
         return True
 
 
