@@ -1,0 +1,77 @@
+### Keys used by sio2:
+
+# Title of the package is defined in `title` key.
+title: Example task package
+# Title can be different for different languages.
+# They are defined in `title_<lang>` keys.
+# <lang> is a language code (for example 'pl' or 'en').
+# Available languages are defined in settings of `oioioi` instance.
+title_pl: Przykładowe zadanie
+
+# Number of points for each group can be defined in `scores` key.
+# If this key is not specified, then all groups have the same number of points.
+# (if number of groups doesn't divide 100, then the last groups will have the remaining points).
+# Group 0 always has zero points.
+scores:
+  1: 20
+  2: 30
+  3: 25
+  4: 25
+
+# Time limit for all tests is defined in `time_limit` key.
+# More precise time limit for each group or test can be defined in `time_limits` key.
+# The more precise time limit has higher priority (first group, then global time limit).
+# Time limit is in milliseconds.
+time_limit: 1000
+time_limits:
+  1: 2000
+
+# Memory limit for all tests is defined in `memory_limit` key.
+# More precise memory limits can be defined in `memory_limits` key.
+# Same as with time limits, the more precise memory limit has higher priority.
+# Memory limit is in kB
+memory_limit: 262144
+memory_limits:
+  3: 131072
+
+# Time and memory limits can be overriden for other languages in `override_limits` key.
+# If this key is not specified, then all languages have the same limits.
+override_limits:
+  py:
+    time_limit: 5000
+    memory_limit: 524288
+
+# Extra compilation arguments can be defined in `extra_compile_args` key.
+# Each language can have different extra arguments.
+extra_compilation_args:
+  cpp: 'abclib.cpp'
+# The arguments can also be in an array:
+extra_compilation_args:
+  cpp:
+    - 'abclib.cpp'
+    - 'abclib2.cpp'
+
+# Additional files used in compilation can be defined in `extra_compilation_files` key.
+# They are copied to the directory where the source code is compiled.
+# All languages have the same additional files.
+extra_compilation_files: ['abclib.cpp', 'abclib.py']
+
+
+### Keys used by sinol-make:
+
+# sinol-make can behave differently depending on the value of `sinol_contest_type` key.
+# Mainly, it affects how points are calculated.
+# If the key is not specified, then `default` is used.
+# Possible values are:
+# - `default` - Points for a test can only be 100 or 0 (unless checker assigns points).
+#               Points for a group are calculated based of the lowest number of points for a test in this group.
+# - `oi` - Points for a test are unchanged if the execution time is less or equal to the time limit.
+#          Otherwise, number of points decreases linearly to one depending on the execution time.
+#          Points for a group are calculated same as in `default` mode.
+sinol_contest_type: oi
+
+# sinol-make can check if the solutions run as expected when using `run` command.
+# Key `sinol_expected_scores` defines expected scores for each solution on each tests.
+# There should be no reason to change this key manually.
+# It is automatically generated and managed by sinol-make.
+sinol_expected_scores: {}

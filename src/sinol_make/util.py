@@ -1,5 +1,7 @@
 import glob, importlib, os, sys, requests, yaml
 import platform
+import tempfile
+import hashlib
 import threading
 from typing import Union
 
@@ -258,6 +260,11 @@ def is_linux():
     return sys.platform == "linux" and not is_wsl()
 
 
+def get_file_md5(path):
+    with open(path, "rb") as f:
+        return hashlib.md5(f.read()).hexdigest()
+
+
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
@@ -273,6 +280,8 @@ def error(text):
 
 def exit_with_error(text, func=None):
     print(error(text))
-    if func is not None:
+    try:
         func()
+    except TypeError:
+        pass
     exit(1)

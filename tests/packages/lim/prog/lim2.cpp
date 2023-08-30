@@ -12,7 +12,7 @@ int main() {
         this_thread::sleep_for(6s);
     }
     else {
-        this_thread::sleep_for(1.1s);
+        this_thread::sleep_for(2s);
     }
 
     cout << a + b << endl;
