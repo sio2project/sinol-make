@@ -74,8 +74,10 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
     program_memory = collections.defaultdict(lambda: (-1, 0))
 
     time_sum = 0
-    for test in tests:
-        time_sum += package_util.get_time_limit(test, config, args)
+    for solution in names:
+        lang = package_util.get_file_lang(solution)
+        for test in tests:
+            time_sum += package_util.get_time_limit(test, config, lang, args)
 
     time_remaining = (len(executions) - print_data.i - 1) * 2 * time_sum / cpus / 1000.0
     title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
@@ -107,6 +109,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
         for group in groups:
             print(margin + "%6s" % group, end=" | ")
             for program in program_group:
+                lang = package_util.get_file_lang(program)
                 results = all_results[program][group]
                 group_status = Status.OK
                 test_scores = []
@@ -116,16 +119,18 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                     status = results[test].Status
                     if results[test].Time is not None:
                         if program_times[program][0] < results[test].Time:
-                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, config, args))
+                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, config,
+                                                                                                      lang, args))
                     elif status == Status.TL:
-                        program_times[program] = (2 * package_util.get_time_limit(test, config, args),
-                                                  package_util.get_time_limit(test, config, args))
+                        program_times[program] = (2 * package_util.get_time_limit(test, config, lang, args),
+                                                  package_util.get_time_limit(test, config, lang, args))
                     if results[test].Memory is not None:
                         if program_memory[program][0] < results[test].Memory:
-                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config, args))
+                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config,
+                                                                                                           lang, args))
                     elif status == Status.ML:
-                        program_memory[program] = (2 * package_util.get_memory_limit(test, config, args),
-                                                   package_util.get_memory_limit(test, config, args))
+                        program_memory[program] = (2 * package_util.get_memory_limit(test, config, lang, args),
+                                                   package_util.get_memory_limit(test, config, lang, args))
                     if status == Status.PENDING:
                         group_status = Status.PENDING
                     else:
@@ -188,19 +193,21 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
 
             print(margin + "%6s" % package_util.extract_test_id(test), end=" | ")
             for program in program_group:
+                lang = package_util.get_file_lang(program)
                 result = all_results[program][package_util.get_group(test)][test]
                 status = result.Status
                 if status == Status.PENDING: print(10 * ' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
-                         ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config, args)))
+                         ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config, lang, args)))
                          if result.Time is not None else 7*" ", end=" | ")
             print()
             if not hide_memory:
                 print(8*" ", end=" | ")
                 for program in program_group:
+                    lang = package_util.get_file_lang(program)
                     result = all_results[program][package_util.get_group(test)][test]
-                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, args)))
+                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, args)))
                           if result.Memory is not None else 10*" ", end=" | ")
                 print()
 
@@ -601,10 +608,11 @@ class Command(BaseCommand):
         all_results = collections.defaultdict(
             lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
         for (name, executable, result) in compiled_commands:
+            lang = package_util.get_file_lang(name)
             if result:
                 for test in self.tests:
-                    executions.append((name, executable, test, package_util.get_time_limit(test, self.config, self.args),
-                                       package_util.get_memory_limit(test, self.config, self.args), self.timetool_path))
+                    executions.append((name, executable, test, package_util.get_time_limit(test, self.config, lang, self.args),
+                                       package_util.get_memory_limit(test, self.config, lang, self.args), self.timetool_path))
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
             else:
@@ -1113,10 +1121,6 @@ class Command(BaseCommand):
 
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')
-        if 'time_limit' not in self.config.keys() and 'time_limits' not in self.config.keys():
-            util.exit_with_error('Time limit was not defined in config.yml.')
-        if 'memory_limit' not in self.config.keys() and 'memory_limits' not in self.config.keys():
-            util.exit_with_error('Memory limit was not defined in config.yml.')
 
         self.compilers, self.timetool_path = self.validate_arguments(args)
 
@@ -1142,19 +1146,20 @@ class Command(BaseCommand):
 
         self.set_scores()
         self.check_are_any_tests_to_run()
-
-        for test in self.tests:
-            try:
-                package_util.get_time_limit(test, self.config, self.args)
-            except KeyError:
-                util.exit_with_error(f'Time limit was not defined for test {os.path.basename(test)} in config.yml.')
-            try:
-                package_util.get_memory_limit(test, self.config, self.args)
-            except KeyError:
-                util.exit_with_error(f'Memory limit was not defined for test {os.path.basename(test)} in config.yml.')
-
         self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
+
+        for solution in solutions:
+            lang = package_util.get_file_lang(solution)
+            for test in self.tests:
+                try:
+                    package_util.get_time_limit(test, self.config, lang, self.args)
+                except KeyError:
+                    util.exit_with_error(f'Time limit was not defined for test {os.path.basename(test)} in config.yml.')
+                try:
+                    package_util.get_memory_limit(test, self.config, lang, self.args)
+                except KeyError:
+                    util.exit_with_error(f'Memory limit was not defined for test {os.path.basename(test)} in config.yml.')
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)

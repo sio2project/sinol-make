@@ -39,12 +39,29 @@ def test_get_time_limit():
         "time_limits": {
             "0": 5000,
             "2": 2000,
+        },
+        "override_limits": {
+            "py": {
+                "time_limit": 2000,
+                "time_limits": {
+                    "0": 6000,
+                    "2": 3000,
+                },
+            }
         }
     }
 
-    assert package_util.get_time_limit("in/abc1a.in", config) == 1000
-    assert package_util.get_time_limit("in/abc2b.in", config) == 2000
-    assert package_util.get_time_limit("in/abc3ocen.in", config) == 5000
+    assert package_util.get_time_limit("in/abc1a.in", config, "cpp") == 1000
+    assert package_util.get_time_limit("in/abc2a.in", config, "cpp") == 2000
+    assert package_util.get_time_limit("in/abc2b.in", config, "cpp") == 2000
+    assert package_util.get_time_limit("in/abc3a.in", config, "cpp") == 1000
+    assert package_util.get_time_limit("in/abc3ocen.in", config, "cpp") == 5000
+
+    assert package_util.get_time_limit("in/abc1a.in", config, "py") == 2000
+    assert package_util.get_time_limit("in/abc2a.in", config, "py") == 3000
+    assert package_util.get_time_limit("in/abc2b.in", config, "py") == 3000
+    assert package_util.get_time_limit("in/abc3a.in", config, "py") == 2000
+    assert package_util.get_time_limit("in/abc3ocen.in", config, "py") == 6000
 
 
 def test_get_memory_limit():
@@ -53,10 +70,24 @@ def test_get_memory_limit():
         "memory_limits": {
             "0": 128,
             "2": 512,
+        },
+        "override_limits": {
+            "py": {
+                "memory_limit": 512,
+                "memory_limits": {
+                    "0": 256,
+                    "2": 1024,
+                },
+            }
         }
     }
 
-    assert package_util.get_memory_limit("in/abc1a.in", config) == 256
-    assert package_util.get_memory_limit("in/abc2a.in", config) == 512
-    assert package_util.get_memory_limit("in/abc2b.in", config) == 512
-    assert package_util.get_memory_limit("in/abc3ocen.in", config) == 128
+    assert package_util.get_memory_limit("in/abc1a.in", config, "cpp") == 256
+    assert package_util.get_memory_limit("in/abc2a.in", config, "cpp") == 512
+    assert package_util.get_memory_limit("in/abc2b.in", config, "cpp") == 512
+    assert package_util.get_memory_limit("in/abc3ocen.in", config, "cpp") == 128
+
+    assert package_util.get_memory_limit("in/abc1a.in", config, "py") == 512
+    assert package_util.get_memory_limit("in/abc2a.in", config, "py") == 1024
+    assert package_util.get_memory_limit("in/abc2b.in", config, "py") == 1024
+    assert package_util.get_memory_limit("in/abc3ocen.in", config, "py") == 256
