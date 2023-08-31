@@ -1090,8 +1090,7 @@ class Command(BaseCommand):
         for solution in results:
             for group in results[solution]:
                 for test in results[solution][group]:
-                    if results[solution][group][test].Status == Status.CE and \
-                       results[solution][group][test].Error is not None:
+                    if results[solution][group][test].Error is not None:
                         error_msg += f'Solution {solution} had an error on test {test}: {results[solution][group][test].Error}\n'
         if error_msg != "":
             util.exit_with_error(error_msg)
