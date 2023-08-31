@@ -78,8 +78,10 @@ def test_get_time_limit():
     }
     assert package_util.get_time_limit("in/abc1a.in", config, "cpp") == 1000
     assert package_util.get_time_limit("in/abc1a.in", config, "py") == 2000
-    assert package_util.get_time_limit("in/abc2a.in", config, "cpp") is None
-    assert package_util.get_time_limit("in/abc2a.in", config, "py") is None
+    with pytest.raises(SystemExit):
+        package_util.get_time_limit("in/abc2a.in", config, "cpp")
+    with pytest.raises(SystemExit):
+        package_util.get_time_limit("in/abc2a.in", config, "py")
 
     config = {
         "time_limits": {
@@ -95,7 +97,8 @@ def test_get_time_limit():
         }
     }
     assert package_util.get_time_limit("in/abc1a.in", config, "cpp") == 1000
-    assert package_util.get_time_limit("in/abc2a.in", config, "cpp") is None
+    with pytest.raises(SystemExit):
+        package_util.get_time_limit("in/abc2a.in", config, "cpp")
     assert package_util.get_time_limit("in/abc1a.in", config, "py") == 1000
     assert package_util.get_time_limit("in/abc2a.in", config, "py") == 500
 
@@ -144,8 +147,10 @@ def test_get_memory_limit():
     }
     assert package_util.get_memory_limit("in/abc1a.in", config, "cpp") == 1024
     assert package_util.get_memory_limit("in/abc1a.in", config, "py") == 2048
-    assert package_util.get_memory_limit("in/abc2a.in", config, "cpp") is None
-    assert package_util.get_memory_limit("in/abc2a.in", config, "py") is None
+    with pytest.raises(SystemExit):
+        package_util.get_memory_limit("in/abc2a.in", config, "cpp")
+    with pytest.raises(SystemExit):
+        package_util.get_memory_limit("in/abc2a.in", config, "py")
 
     config = {
         "memory_limits": {
@@ -161,6 +166,7 @@ def test_get_memory_limit():
         }
     }
     assert package_util.get_memory_limit("in/abc1a.in", config, "cpp") == 1024
-    assert package_util.get_memory_limit("in/abc2a.in", config, "cpp") is None
+    with pytest.raises(SystemExit):
+        package_util.get_memory_limit("in/abc2a.in", config, "cpp")
     assert package_util.get_memory_limit("in/abc1a.in", config, "py") == 1024
     assert package_util.get_memory_limit("in/abc2a.in", config, "py") == 512
