@@ -1152,10 +1152,9 @@ class Command(BaseCommand):
         for solution in solutions:
             lang = package_util.get_file_lang(solution)
             for test in self.tests:
-                if package_util.get_time_limit(test, self.config, lang, self.args) is None:
-                    util.exit_with_error(f'Time limit was not defined for test {os.path.basename(test)} in config.yml.')
-                if package_util.get_memory_limit(test, self.config, lang, self.args) is None:
-                    util.exit_with_error(f'Memory limit was not defined for test {os.path.basename(test)} in config.yml.')
+                # The functions will exit if the limits are not set
+                package_util.get_time_limit(test, self.config, lang, self.args)
+                package_util.get_memory_limit(test, self.config, lang, self.args)
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)
