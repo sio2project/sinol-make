@@ -538,7 +538,9 @@ class Command(BaseCommand):
                 """
                 program_exit_code = int(lines[0].strip().split(" ")[-1])
             else:
-                util.exit_with_error("Unexpected output from time command: " + "\n".join(lines))
+                result.Status = Status.RE
+                result.Error = "Unexpected output from time command: " + "\n".join(lines)
+                return result
 
         if program_exit_code is not None and program_exit_code != 0:
             result.Status = Status.RE
