@@ -1,9 +1,12 @@
 import glob, importlib, os, sys, requests, yaml
 import platform
 import tempfile
+import shutil
 import hashlib
 import threading
 from typing import Union
+
+import sinol_make
 
 
 def get_commands():
@@ -263,6 +266,16 @@ def is_linux():
 def get_file_md5(path):
     with open(path, "rb") as f:
         return hashlib.md5(f.read()).hexdigest()
+
+
+def make_version_changes():
+    """
+    Function to make changes after updating sinol-make.
+    """
+    # Move `cache` directory to `.cache` directory if the version is higher than 1.5.2.
+    if compare_versions("1.5.2", sinol_make.__version__) == -1:
+        if check_if_package() and os.path.exists("cache"):
+            shutil.move(os.path.join(os.getcwd(), "cache"), os.path.join(os.getcwd(), ".cache"))
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

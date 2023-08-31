@@ -960,7 +960,7 @@ class Command(BaseCommand):
 
     def set_constants(self):
         self.ID = package_util.get_task_id()
-        self.TMP_DIR = os.path.join(os.getcwd(), "cache")
+        self.TMP_DIR = os.path.join(os.getcwd(), ".cache")
         self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
         self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
         self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")

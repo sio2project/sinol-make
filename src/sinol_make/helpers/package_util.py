@@ -59,7 +59,7 @@ def get_executable_path(solution: str) -> str:
     """
     Returns path to compiled executable for given solution.
     """
-    return os.path.join(os.getcwd(), 'cache', 'executables', get_executable(solution))
+    return os.path.join(os.getcwd(), '.cache', 'executables', get_executable(solution))
 
 
 def get_file_lang(file_path):

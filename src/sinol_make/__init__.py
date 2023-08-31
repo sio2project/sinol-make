@@ -8,7 +8,7 @@ import os
 
 from sinol_make import util, oiejq
 
-__version__ = "1.5.2"
+__version__ = "1.5.3"
 
 def configure_parsers():
     parser = argparse.ArgumentParser(
@@ -33,6 +33,7 @@ def configure_parsers():
 
 
 def main_exn():
+    util.make_version_changes()
     parser = configure_parsers()
     args = parser.parse_args()
     commands = util.get_commands()

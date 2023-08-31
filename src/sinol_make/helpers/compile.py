@@ -14,13 +14,13 @@ from sinol_make.structs.compiler_structs import Compilers
 
 def get_executable_info_file(file_path):
     """
-    Calculate the md5 sum of file's content and return the path to file `cache/md5sums/<md5sum>`.
+    Calculate the md5 sum of file's content and return the path to file `.cache/md5sums/<md5sum>`.
     If this file exists it contains the path to the compiled executable.
-    Thanks to that, we cache the compiled solutions and recompile them when they change.
+    Thanks to that, we .cache the compiled solutions and recompile them when they change.
     """
-    os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
+    os.makedirs(os.path.join(os.getcwd(), '.cache', 'md5sums'), exist_ok=True)
     md5sum = util.get_file_md5(file_path)
-    return os.path.join(os.getcwd(), 'cache', 'md5sums', md5sum)
+    return os.path.join(os.getcwd(), '.cache', 'md5sums', md5sum)
 
 
 def check_compiled(file_path: str):
@@ -45,7 +45,7 @@ def check_compiled(file_path: str):
 
 def save_compiled(file_path: str, exe_path: str):
     """
-    Save the compiled executable path to cache in `cache/md5sums/<md5sum>`,
+    Save the compiled executable path to .cache in `.cache/md5sums/<md5sum>`,
     where <md5sum> is the md5 sum of the file's content.
     :param file_path: Path to the file
     :param exe_path: Path to the compiled executable
@@ -146,8 +146,8 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
 
-    executable_dir = os.path.join(os.getcwd(), 'cache', 'executables')
-    compile_log_dir = os.path.join(os.getcwd(), 'cache', 'compilation')
+    executable_dir = os.path.join(os.getcwd(), '.cache', 'executables')
+    compile_log_dir = os.path.join(os.getcwd(), '.cache', 'compilation')
     os.makedirs(executable_dir, exist_ok=True)
     os.makedirs(compile_log_dir, exist_ok=True)
 

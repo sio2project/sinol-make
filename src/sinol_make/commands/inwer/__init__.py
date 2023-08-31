@@ -52,7 +52,7 @@ class Command(BaseCommand):
         """
         Verifies a test and returns the result of inwer on this test.
         """
-        output_dir = os.path.join(os.getcwd(), 'cache', 'executions', execution.test_name)
+        output_dir = os.path.join(os.getcwd(), '.cache', 'executions', execution.test_name)
         os.makedirs(output_dir, exist_ok=True)
 
         command = [execution.inwer_exe_path]
