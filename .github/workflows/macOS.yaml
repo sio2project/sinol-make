@@ -28,7 +28,7 @@ jobs:
           brew install gnu-time coreutils diffutils dpkg
       - name: Install Python dependencies
         run: |
-          pip3 install .[tests]
+          python3 -m pip install .[tests]
       - name: Run pytest
         run: |
           python3 -m pytest -v --time-tool time
