@@ -249,17 +249,18 @@ def change_stack_size():
     """
     Function to change the stack size to max memory limit.
     """
-    max_memory = 60000 * 1024  # Default memory limit is 66000kB, `resource` module uses bytes.
     with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-    max_memory = max(config.get("memory_limit", 0) * 1024, max_memory)
-    for memory_limit in config.get("memory_limits", {}).values():
-        max_memory = max(memory_limit * 1024, max_memory)
-    for override in config.get("override_limits", {}).values():
-        max_memory = max(override.get("memory_limit", 0) * 1024, max_memory)
-        for memory_limit in override.get("memory_limits", {}).values():
+    def get_max_memory_from_dict(d):
+        max_memory = d.get("memory_limit", 0) * 1024
+        for memory_limit in d.get("memory_limits", {}).values():
             max_memory = max(memory_limit * 1024, max_memory)
+        return max_memory
+
+    max_memory = get_max_memory_from_dict(config)
+    for override in config.get("override_limits", {}).values():
+        max_memory = max(get_max_memory_from_dict(override), max_memory)
 
     hard_limit = resource.getrlimit(resource.RLIMIT_STACK)[1]
     if hard_limit < max_memory and hard_limit != resource.RLIM_INFINITY:
