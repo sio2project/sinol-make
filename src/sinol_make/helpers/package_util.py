@@ -101,7 +101,13 @@ def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], l
     if overriden_limit is not None:
         return overriden_limit
     else:
-        return global_limit
+        if global_limit is not None:
+            return global_limit
+        else:
+            if limit_type == LimitTypes.TIME_LIMIT:
+                util.exit_with_error(f'Time limit was not defined for test {os.path.basename(test_path)} in config.yml.')
+            elif limit_type == LimitTypes.MEMORY_LIMIT:
+                util.exit_with_error(f'Memory limit was not defined for test {os.path.basename(test_path)} in config.yml.')
 
 
 def get_time_limit(test_path, config, lang, args=None):
