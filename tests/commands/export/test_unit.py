@@ -75,8 +75,10 @@ def test_create_makefile_in():
             lines = makefile.readlines()
             assert_makefile_in(lines, "hwr", config)
 
-        command, config = _create_package(util.get_library_package_path())
-        command.create_makefile_in(tmpdir, config)
-        with open(os.path.join(tmpdir, "makefile.in"), "r") as makefile:
-            lines = makefile.readlines()
-            assert_makefile_in(lines, "lib", config)
+        for package in [util.get_library_package_path(), util.get_library_string_args_package_path()]:
+            task_name = os.path.basename(package)
+            command, config = _create_package(package)
+            command.create_makefile_in(tmpdir, config)
+            with open(os.path.join(tmpdir, "makefile.in"), "r") as makefile:
+                lines = makefile.readlines()
+                assert_makefile_in(lines, task_name, config)

@@ -70,6 +70,10 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     """
     if extra_compilation_args is None:
         extra_compilation_args = []
+    if isinstance(extra_compilation_args, str):
+        extra_compilation_args = [extra_compilation_args]
+    assert isinstance(extra_compilation_args, list) and all(isinstance(arg, str) for arg in extra_compilation_args)
+
     if extra_compilation_files is None:
         extra_compilation_files = []
 
@@ -156,8 +160,11 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
 
     extra_compilation_files = [os.path.join(os.getcwd(), "prog", file)
                                for file in config.get("extra_compilation_files", [])]
-    extra_compilation_args = [os.path.join(os.getcwd(), "prog", file)
-                              for file in config.get('extra_compilation_args', {}).get(os.path.splitext(file_path)[1][1:], [])]
+    lang = os.path.splitext(file_path)[1][1:]
+    args = config.get('extra_compilation_args', {}).get(lang, [])
+    if isinstance(args, str):
+        args = [args]
+    extra_compilation_args = [os.path.join(os.getcwd(), "prog", file) for file in args]
 
     output = os.path.join(executable_dir, name)
     compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')

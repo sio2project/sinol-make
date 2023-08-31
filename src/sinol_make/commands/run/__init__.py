@@ -358,7 +358,10 @@ class Command(BaseCommand):
         extra_compilation_files = []
         if use_extras:
             lang = os.path.splitext(source_file)[1][1:]
-            for file in self.config.get("extra_compilation_args", {}).get(lang, []):
+            args = self.config.get("extra_compilation_args", {}).get(lang, [])
+            if isinstance(args, str):
+                args = [args]
+            for file in args:
                 extra_compilation_args.append(os.path.join(os.getcwd(), "prog", file))
 
             for file in self.config.get("extra_compilation_files", []):
@@ -501,7 +504,6 @@ class Command(BaseCommand):
 
     def execute_time(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
                       time_limit, memory_limit, hard_time_limit):
-
         timeout = False
         with open(input_file_path, "r") as input_file:
             process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
@@ -538,13 +540,17 @@ class Command(BaseCommand):
                 result.Time = round(float(lines[0].strip()) * 1000)
                 result.Memory = int(lines[1].strip())
                 program_exit_code = int(lines[2].strip())
-            if len(lines) > 0 and "Command terminated by signal " in lines[0]:
+            elif len(lines) > 0 and "Command terminated by signal " in lines[0]:
                 """
                 If there was a runtime error, the first line is the error message with signal number.
                 For example:
                     Command terminated by signal 11
                 """
                 program_exit_code = int(lines[0].strip().split(" ")[-1])
+            else:
+                result.Status = Status.RE
+                result.Error = "Unexpected output from time command: " + "\n".join(lines)
+                return result
 
         if program_exit_code is not None and program_exit_code != 0:
             result.Status = Status.RE
@@ -1097,8 +1103,7 @@ class Command(BaseCommand):
         for solution in results:
             for group in results[solution]:
                 for test in results[solution][group]:
-                    if results[solution][group][test].Status == Status.CE and \
-                       results[solution][group][test].Error is not None:
+                    if results[solution][group][test].Error is not None:
                         error_msg += f'Solution {solution} had an error on test {test}: {results[solution][group][test].Error}\n'
         if error_msg != "":
             util.exit_with_error(error_msg)
@@ -1133,7 +1138,7 @@ class Command(BaseCommand):
             print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
             checker_basename = os.path.basename(self.checker)
-            self.checker_executable = os.path.join(self.EXECUTABLES_DIR, os.path.splitext(checker_basename)[0] + ".e")
+            self.checker_executable = os.path.join(self.EXECUTABLES_DIR, checker_basename + ".e")
 
             checker_compilation = self.compile_solutions([self.checker])
             if not checker_compilation[0]:

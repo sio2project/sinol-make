@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Prepare system
+        run: |
+          rm -f '/usr/local/bin/2to3' # Homebrew will fail if this exists
       - name: Install Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:

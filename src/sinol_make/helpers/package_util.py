@@ -52,7 +52,7 @@ def get_file_name_without_extension(file_path):
 
 
 def get_executable(file_path):
-    return get_file_name_without_extension(file_path) + ".e"
+    return os.path.basename(file_path) + ".e"
 
 
 def get_executable_path(solution: str) -> str:
