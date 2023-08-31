@@ -493,7 +493,6 @@ class Command(BaseCommand):
 
     def execute_time(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
                       time_limit, memory_limit, hard_time_limit):
-
         timeout = False
         with open(input_file_path, "r") as input_file:
             process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
@@ -1124,7 +1123,7 @@ class Command(BaseCommand):
             print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
             checker_basename = os.path.basename(self.checker)
-            self.checker_executable = os.path.join(self.EXECUTABLES_DIR, os.path.splitext(checker_basename)[0] + ".e")
+            self.checker_executable = os.path.join(self.EXECUTABLES_DIR, checker_basename + ".e")
 
             checker_compilation = self.compile_solutions([self.checker])
             if not checker_compilation[0]:

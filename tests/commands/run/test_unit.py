@@ -29,7 +29,7 @@ def test_get_solutions():
 def test_get_executable_key():
     os.chdir(get_simple_package_path())
     command = get_command()
-    assert command.get_executable_key("abc1.e") == (0, 1)
+    assert command.get_executable_key("abc1.cpp.e") == (0, 1)
 
 
 def test_compile_solutions(create_package):

@@ -30,7 +30,7 @@ def test_extract_file_name():
 
 
 def test_get_executable():
-    assert package_util.get_executable("abc.cpp") == "abc.e"
+    assert package_util.get_executable("abc.cpp") == "abc.cpp.e"
 
 
 def test_get_time_limit():
