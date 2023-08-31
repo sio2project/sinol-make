@@ -73,6 +73,14 @@ def get_handwritten_package_path():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "hwr")
 
+
+def get_override_limits_package_path():
+    """
+    Get path to package with `override_limits` present in config (/test/packages/ovl)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "ovl")
+
+
 def create_ins(package_path):
     """
     Create .in files for package.
