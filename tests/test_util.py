@@ -100,6 +100,7 @@ def test_check_version(**kwargs):
 @pytest.mark.parametrize("create_package", [test_util.get_stack_size_package_path()], indirect=True)
 def test_change_stack_size(create_package, time_tool):
     package_path = create_package
+    util.change_stack_size()
     original_func = util.change_stack_size
     util.change_stack_size = lambda: None
     command = run_util.get_command()
