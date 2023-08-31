@@ -1153,8 +1153,8 @@ class Command(BaseCommand):
             lang = package_util.get_file_lang(solution)
             for test in self.tests:
                 # The functions will exit if the limits are not set
-                package_util.get_time_limit(test, self.config, lang, self.args)
-                package_util.get_memory_limit(test, self.config, lang, self.args)
+                _ = package_util.get_time_limit(test, self.config, lang, self.args)
+                _ = package_util.get_memory_limit(test, self.config, lang, self.args)
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)
