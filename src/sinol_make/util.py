@@ -1,4 +1,5 @@
 import glob, importlib, os, sys, requests, yaml
+import subprocess
 import threading
 import resource
 from typing import Union
@@ -259,7 +260,10 @@ def change_stack_size():
         max_memory = max(override.get("memory_limit", 0) * 1024, max_memory)
         for memory_limit in override.get("memory_limits", {}).values():
             max_memory = max(memory_limit * 1024, max_memory)
+
     hard_limit = resource.getrlimit(resource.RLIMIT_STACK)[1]
+    if hard_limit < max_memory and hard_limit != resource.RLIM_INFINITY:
+        hard_limit = max_memory
 
     try:
         resource.setrlimit(resource.RLIMIT_STACK, (max_memory, hard_limit))
