@@ -101,7 +101,13 @@ def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], l
     if overriden_limit is not None:
         return overriden_limit
     else:
-        return global_limit
+        if global_limit is not None:
+            return global_limit
+        else:
+            if limit_type == LimitTypes.TIME_LIMIT:
+                return 10000  # Default time limit is 10 seconds.
+            elif limit_type == LimitTypes.MEMORY_LIMIT:
+                return 66000  # Default memory limit is 66000kB.
 
 
 def get_time_limit(test_path, config, lang, args=None):
