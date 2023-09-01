@@ -4,6 +4,11 @@ from sinol_make.helpers import package_util
 
 
 def test_get_task_id(create_package):
+    package_path = create_package
+    assert package_util.get_task_id() == "abc"
+    os.chdir(os.path.join(package_path, ".."))
+    shutil.copytree(package_path, "Long name")
+    os.chdir("Long name")
     assert package_util.get_task_id() == "abc"
 
 

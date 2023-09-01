@@ -1,4 +1,5 @@
 import os
+import glob
 from enum import Enum
 from typing import List, Union, Dict, Any
 
@@ -6,7 +7,13 @@ from sinol_make import util
 
 
 def get_task_id() -> str:
-    return os.path.split(os.getcwd())[-1]
+    task_id = os.path.split(os.getcwd())[-1]
+    if len(task_id) == 3:
+        return task_id
+    else:
+        ingen = glob.glob(os.path.join(os.getcwd(), "prog", "???ingen.*"))
+        if len(ingen) == 1:
+            return os.path.basename(ingen[0])[:3]
 
 
 def extract_test_id(test_path):
