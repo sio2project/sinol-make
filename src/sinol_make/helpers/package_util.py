@@ -71,7 +71,7 @@ class LimitTypes(Enum):
     MEMORY_LIMIT = 2
 
 
-def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: str, test_group: str):
+def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: str, test_group: str, test_path: str):
     if limit_type == LimitTypes.TIME_LIMIT:
         limit_name = "time_limit"
         plural_limit_name = "time_limits"
@@ -82,8 +82,8 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
         raise ValueError("Invalid limit type.")
 
     if plural_limit_name in dict:
-        if test_id in dict[plural_limit_name]:
-            util.exit_with_error("Specifying limit for single test is a bad practice and is not supported.")
+        if test_id in dict[plural_limit_name] and test_id != "0":
+            util.exit_with_error(f'{os.path.basename(test_path)}: Specifying limit for single test is a bad practice and is not supported.')
         elif test_group in dict[plural_limit_name]:
             return dict[plural_limit_name][test_group]
     if limit_name in dict:
@@ -95,9 +95,9 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
 def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], lang: str):
     test_id = extract_test_id(test_path)
     test_group = str(get_group(test_path))
-    global_limit = _get_limit_from_dict(config, limit_type, test_id, test_group)
+    global_limit = _get_limit_from_dict(config, limit_type, test_id, test_group, test_path)
     override_limits_dict = config.get("override_limits", {}).get(lang, {})
-    overriden_limit = _get_limit_from_dict(override_limits_dict, limit_type, test_id, test_group)
+    overriden_limit = _get_limit_from_dict(override_limits_dict, limit_type, test_id, test_group, test_path)
     if overriden_limit is not None:
         return overriden_limit
     else:
