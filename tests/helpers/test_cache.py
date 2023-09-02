@@ -6,6 +6,7 @@ from sinol_make.helpers import compile
 
 def test_compilation_caching():
     with tempfile.TemporaryDirectory() as tmpdir:
+        os.chdir(tmpdir)
         program = os.path.join(tmpdir, 'program.cpp')
         open(program, 'w').write('int main() { return 0; }')
 
