@@ -59,6 +59,10 @@ extra_compilation_files: ['abclib.cpp', 'abclib.py']
 
 ### Keys used by sinol-make:
 
+# This key is used to identify the task id. This should be the short name of the task.
+# It's important if the directory name is not the same as the task id.
+sinol_task_id: abc
+
 # sinol-make can behave differently depending on the value of `sinol_contest_type` key.
 # Mainly, it affects how points are calculated.
 # If the key is not specified, then `default` is used.
