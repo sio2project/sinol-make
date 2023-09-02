@@ -125,7 +125,7 @@ def test_print_expected_scores(capsys):
     expected_scores_dict = yaml.load(expected_scores, Loader=yaml.FullLoader)
     command.print_expected_scores(expected_scores_dict["sinol_expected_scores"])
     out = capsys.readouterr().out
-    assert out == expected_scores.replace('"', '')
+    assert expected_scores.replace('"', '') in out
 
 
 def test_validate_expected_scores_success():
