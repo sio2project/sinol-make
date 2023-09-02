@@ -268,6 +268,7 @@ def get_file_md5(path):
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
+def color_gray(text): return "\033[90m{}\033[00m".format(text)
 def bold(text): return "\033[01m{}\033[00m".format(text)
 
 def info(text):
