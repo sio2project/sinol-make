@@ -12,15 +12,8 @@ from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
 
-def get_executable_info_file(file_path):
-    """
-    Calculate the md5 sum of file's content and return the path to file `cache/md5sums/<md5sum>`.
-    If this file exists it contains the path to the compiled executable.
-    Thanks to that, we cache the compiled solutions and recompile them when they change.
-    """
-    os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
-    md5sum = util.get_file_md5(file_path)
-    return os.path.join(os.getcwd(), 'cache', 'md5sums', md5sum)
+def create_compilation_cache():
+    os.makedirs(os.path.join(os.getcwd(), "cache", "md5sums"), exist_ok=True)
 
 
 def check_compiled(file_path: str):
@@ -29,31 +22,36 @@ def check_compiled(file_path: str):
     :param file_path: Path to the file
     :return: executable path if compiled, None otherwise
     """
-    info_file_path = get_executable_info_file(file_path)
-
+    create_compilation_cache()
+    md5sum = util.get_file_md5(file_path)
     try:
-        with open(info_file_path, 'r') as md5sums_file:
-            exe_file = md5sums_file.read().strip()
-            if os.path.exists(exe_file):
-                return exe_file
-            else:
-                os.unlink(info_file_path)
-                return None
+        info_file_path = os.path.join(os.getcwd(), "cache", "md5sums", os.path.basename(file_path))
+        with open(info_file_path, 'r') as info_file:
+            info = yaml.load(info_file, Loader=yaml.FullLoader)
+            if info.get("md5sum", "") == md5sum:
+                exe_path = info.get("executable_path", "")
+                if os.path.exists(exe_path):
+                    return exe_path
+            return None
     except FileNotFoundError:
         return None
 
 
 def save_compiled(file_path: str, exe_path: str):
     """
-    Save the compiled executable path to cache in `cache/md5sums/<md5sum>`,
-    where <md5sum> is the md5 sum of the file's content.
+    Save the compiled executable path to cache in `cache/md5sums/<basename of file_path>`,
+    which contains the md5sum of the file and the path to the executable.
     :param file_path: Path to the file
     :param exe_path: Path to the compiled executable
     """
-    info_file_path = get_executable_info_file(file_path)
-
-    with open(info_file_path, 'w') as md5sums_file:
-        md5sums_file.write(exe_path)
+    create_compilation_cache()
+    info_file_path = os.path.join(os.getcwd(), "cache", "md5sums", os.path.basename(file_path))
+    info = {
+        "md5sum": util.get_file_md5(file_path),
+        "executable_path": exe_path
+    }
+    with open(info_file_path, 'w') as info_file:
+        yaml.dump(info, info_file)
 
 
 def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
