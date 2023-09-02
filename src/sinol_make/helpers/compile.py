@@ -32,7 +32,6 @@ def check_compiled(file_path: str):
                 exe_path = info.get("executable_path", "")
                 if os.path.exists(exe_path):
                     return exe_path
-            os.unlink(info_file_path)
             return None
     except FileNotFoundError:
         return None
