@@ -13,7 +13,7 @@ def test_compilation_caching():
         assert compile.check_compiled(program) is None
 
         assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
-        exe_path = compile.check_compiled(program) is not None
+        exe_path = compile.check_compiled(program)
         assert exe_path is not None
 
         assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
