@@ -5,6 +5,7 @@ import tarfile
 import tempfile
 
 from sinol_make import configure_parsers
+from sinol_make.commands.doc import Command as DocCommand
 from tests import util
 from tests.fixtures import create_package
 from .util import *
@@ -56,3 +57,26 @@ def test_simple(create_package, capsys):
     task_id = package_util.get_task_id()
     out = capsys.readouterr().out
     _test_archive(package_path, out, f'{task_id}.tgz')
+
+
+@pytest.mark.parametrize("create_package", [util.get_doc_package_path()], indirect=True)
+def test_doc_cleared(create_package):
+    """
+    Test if files in `doc` directory are cleared.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["doc"])
+    command = DocCommand()
+    command.run(args)
+    args = parser.parse_args(["export"])
+    command = Command()
+    command.run(args)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{package_util.get_task_id()}.tgz', "r") as tar:
+            tar.extractall(tmpdir)
+
+        extracted = os.path.join(tmpdir, package_util.get_task_id())
+        assert os.path.exists(extracted)
+        for pattern in ['doc/*~', 'doc/*.aux', 'doc/*.log', 'doc/*.dvi', 'doc/*.err', 'doc/*.inf']:
+            assert glob.glob(os.path.join(extracted, pattern)) == []
