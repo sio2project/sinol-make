@@ -1,15 +1,19 @@
+import pytest
+
 from ..commands.run.util import create_ins
 from ..fixtures import *
+from tests import util
 from sinol_make.helpers import package_util
 
 
+@pytest.mark.parametrize("create_package", [util.get_long_name_package_path()], indirect=True)
 def test_get_task_id(create_package):
     package_path = create_package
-    assert package_util.get_task_id() == "abc"
-    os.chdir(os.path.join(package_path, ".."))
-    shutil.copytree(package_path, "Long name")
-    os.chdir("Long name")
-    assert package_util.get_task_id() == "abc"
+    assert package_util.get_task_id() == "lpn"
+    with open(os.path.join(package_path, "config.yml"), "w") as config_file:
+        config_file.write("title: Long package name\n")
+    with pytest.raises(SystemExit):
+        package_util.get_task_id()
 
 
 def test_extract_test_id():
@@ -106,7 +110,6 @@ def test_get_time_limit():
         package_util.get_time_limit("in/abc2a.in", config, "cpp")
     assert package_util.get_time_limit("in/abc1a.in", config, "py") == 1000
     assert package_util.get_time_limit("in/abc2a.in", config, "py") == 500
-
 
 
 def test_get_memory_limit():
