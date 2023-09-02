@@ -33,7 +33,6 @@ def configure_parsers():
 
 
 def main_exn():
-    util.make_version_changes()
     parser = configure_parsers()
     args = parser.parse_args()
     commands = util.get_commands()

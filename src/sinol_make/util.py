@@ -268,16 +268,6 @@ def get_file_md5(path):
         return hashlib.md5(f.read()).hexdigest()
 
 
-def make_version_changes():
-    """
-    Function to make changes after updating sinol-make.
-    """
-    # Move `cache` directory to `.cache` directory if the version is higher than 1.5.2.
-    if compare_versions("1.5.2", sinol_make.__version__) == -1:
-        if check_if_package() and os.path.exists("cache"):
-            shutil.move(os.path.join(os.getcwd(), "cache"), os.path.join(os.getcwd(), ".cache"))
-
-
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
