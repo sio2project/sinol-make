@@ -81,6 +81,13 @@ def get_override_limits_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "ovl")
 
 
+def get_long_name_package_path():
+    """
+    Get path to package with long name (/test/packages/long_package_name)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "long_package_name")
+
+
 def create_ins(package_path):
     """
     Create .in files for package.

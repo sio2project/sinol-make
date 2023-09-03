@@ -1,4 +1,6 @@
 import os
+import yaml
+import glob
 from enum import Enum
 from typing import List, Union, Dict, Any
 
@@ -6,7 +8,17 @@ from sinol_make import util
 
 
 def get_task_id() -> str:
-    return os.path.split(os.getcwd())[-1]
+    with open(os.path.join(os.getcwd(), "config.yml")) as config_file:
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
+    if "sinol_task_id" in config:
+        return config["sinol_task_id"]
+    else:
+        print(util.warning("sinol_task_id not specified in config.yml. Using task id from directory name."))
+        task_id = os.path.split(os.getcwd())[-1]
+        if len(task_id) == 3:
+            return task_id
+        else:
+            util.exit_with_error("Invalid task id. Task id should be 3 characters long.")
 
 
 def extract_test_id(test_path):
