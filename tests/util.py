@@ -2,8 +2,7 @@ import os
 import glob
 import subprocess
 
-from sinol_make.helpers import compile
-
+from sinol_make.helpers import compile, paths
 
 
 def get_simple_package_path():
@@ -79,8 +78,8 @@ def create_ins(package_path):
     Create .in files for package.
     """
     ingen = glob.glob(os.path.join(package_path, "prog", "*ingen.*"))[0]
-    ingen_executable = os.path.join(package_path, ".cache", "executables", "ingen.e")
-    os.makedirs(os.path.join(package_path, ".cache", "executables"), exist_ok=True)
+    ingen_executable = paths.get_path_in_executables("ingen.e")
+    os.makedirs(paths.get_executables_path(), exist_ok=True)
     assert compile.compile(ingen, ingen_executable)
     os.chdir(os.path.join(package_path, "in"))
     os.system("../.cache/executables/ingen.e")
@@ -92,8 +91,8 @@ def create_outs(package_path):
     Create .out files for package.
     """
     solution = glob.glob(os.path.join(package_path, "prog", "???.*"))[0]
-    solution_executable = os.path.join(package_path, ".cache", "executables", "solution.e")
-    os.makedirs(os.path.join(package_path, ".cache", "executables"), exist_ok=True)
+    solution_executable = paths.get_path_in_executables("solution.e")
+    os.makedirs(paths.get_executables_path(), exist_ok=True)
     assert compile.compile(solution, solution_executable)
     os.chdir(os.path.join(package_path, "in"))
     for file in glob.glob("*.in"):

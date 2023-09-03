@@ -55,8 +55,8 @@ def test_execution(create_package, time_tool):
     with open(os.path.join(package_path, "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-    os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
-    result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], oiejq.get_oiejq_path()))
+    os.makedirs(paths.get_path_in_executions(solution), exist_ok=True)
+    result = command.run_solution((solution, paths.get_path_in_executables(executable), test, config['time_limit'], config['memory_limit'], oiejq.get_oiejq_path()))
     assert result.Status == Status.OK
 
 
