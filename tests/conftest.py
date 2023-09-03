@@ -42,7 +42,7 @@ def pytest_configure(config):
                 continue
 
             for d in ["compilation", "executables"]:
-                os.makedirs(paths.get_path_in_cache(d), exist_ok=True)
+                os.makedirs(os.path.join(package, ".cache", d), exist_ok=True)
 
             for program in glob.glob(os.path.join(package, "prog", "*")):
                 if os.path.isfile(program) and os.path.splitext(program)[1] in [".c", ".cpp", ".py", ".java"]:
