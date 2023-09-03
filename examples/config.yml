@@ -59,10 +59,10 @@ extra_compilation_files: ['abclib.cpp', 'abclib.py']
 
 ### Keys used by sinol-make:
 
-# This key is used to identify the task id. This should be the short name of the task.
-# It's important if the directory name is not the same as the task id.
-# This key is only used by `sinol-make`. If you export the package by hand remember to
-# name the directory with the task the same as the task id.
+# This key represents the short name (consisting of 3 letters) of the task.
+# The names of files in `prog/`, `doc/`, `in/` and `out/` directories have to start with this task id.
+# This key is only used by `sinol-make`: running `sinol-make export` creates
+# an archive with the proper name, which sio2 uses as the task id.
 sinol_task_id: abc
 
 # sinol-make can behave differently depending on the value of `sinol_contest_type` key.
