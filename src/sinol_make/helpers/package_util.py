@@ -5,6 +5,7 @@ from enum import Enum
 from typing import List, Union, Dict, Any
 
 from sinol_make import util
+from sinol_make.helpers import paths
 
 
 def get_task_id() -> str:
@@ -71,7 +72,7 @@ def get_executable_path(solution: str) -> str:
     """
     Returns path to compiled executable for given solution.
     """
-    return os.path.join(os.getcwd(), 'cache', 'executables', get_executable(solution))
+    return paths.get_executables_path(get_executable(solution))
 
 
 def get_file_lang(file_path):

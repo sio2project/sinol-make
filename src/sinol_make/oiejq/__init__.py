@@ -63,9 +63,9 @@ def install_oiejq():
     if request.status_code != 200:
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
 
-    # oiejq is downloaded to a temporary directory and not to the `cache` dir,
+    # oiejq is downloaded to a temporary directory and not to the `.cache` dir,
     # as there is no guarantee that the current directory is the package directory.
-    # The `cache` dir is only used for files that are part of the package and those
+    # The `.cache` dir is only used for files that are part of the package and those
     # that the package creator might want to look into.
     with tempfile.TemporaryDirectory() as tmpdir:
         oiejq_path = os.path.join(tmpdir, 'oiejq.tar.gz')

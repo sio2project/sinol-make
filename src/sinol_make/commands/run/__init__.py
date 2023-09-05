@@ -14,7 +14,7 @@ from sinol_make.commands.run.structs import ExecutionResult, ResultChange, Valid
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
-from sinol_make.helpers import compile, compiler, package_util, printer
+from sinol_make.helpers import compile, compiler, package_util, printer, paths
 from sinol_make.structs.status_structs import Status
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
@@ -339,8 +339,8 @@ class Command(BaseCommand):
 
 
     def compile_solutions(self, solutions):
-        os.makedirs(self.COMPILATION_DIR, exist_ok=True)
-        os.makedirs(self.EXECUTABLES_DIR, exist_ok=True)
+        os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
+        os.makedirs(paths.get_executables_path(), exist_ok=True)
         print("Compiling %d solutions..." % len(solutions))
         args = [(solution, True) for solution in solutions]
         with mp.Pool(self.cpus) as pool:
@@ -349,10 +349,9 @@ class Command(BaseCommand):
 
 
     def compile(self, solution, use_extras = False):
-        compile_log_file = os.path.join(
-            self.COMPILATION_DIR, "%s.compile_log" % package_util.get_file_name(solution))
+        compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
-        output = os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
+        output = paths.get_executables_path(package_util.get_executable(solution))
 
         extra_compilation_args = []
         extra_compilation_files = []
@@ -581,7 +580,7 @@ class Command(BaseCommand):
         """
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
-        file_no_ext = os.path.join(self.EXECUTIONS_DIR, name, package_util.extract_test_id(test))
+        file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
@@ -620,7 +619,7 @@ class Command(BaseCommand):
                     executions.append((name, executable, test, package_util.get_time_limit(test, self.config, lang, self.args),
                                        package_util.get_memory_limit(test, self.config, lang, self.args), self.timetool_path))
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
-                os.makedirs(os.path.join(self.EXECUTIONS_DIR, name), exist_ok=True)
+                os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
                 for test in self.tests:
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.CE)
@@ -685,9 +684,8 @@ class Command(BaseCommand):
         for i in range(len(solutions)):
             if not compilation_results[i]:
                 self.failed_compilations.append(solutions[i])
-        os.makedirs(self.EXECUTIONS_DIR, exist_ok=True)
-        executables = [os.path.join(self.EXECUTABLES_DIR, package_util.get_executable(solution))
-                       for solution in solutions]
+        os.makedirs(paths.get_executions_path(), exist_ok=True)
+        executables = [paths.get_executables_path(package_util.get_executable(solution)) for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
         names = solutions
         return self.run_solutions(compiled_commands, names, solutions)
@@ -966,12 +964,7 @@ class Command(BaseCommand):
 
     def set_constants(self):
         self.ID = package_util.get_task_id()
-        self.TMP_DIR = os.path.join(os.getcwd(), "cache")
-        self.COMPILATION_DIR = os.path.join(self.TMP_DIR, "compilation")
-        self.EXECUTIONS_DIR = os.path.join(self.TMP_DIR, "executions")
-        self.EXECUTABLES_DIR = os.path.join(self.TMP_DIR, "executables")
         self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
-        self.PROGRAMS_IN_ROW = 8
         self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
 
 
@@ -1138,7 +1131,7 @@ class Command(BaseCommand):
             print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
             checker_basename = os.path.basename(self.checker)
-            self.checker_executable = os.path.join(self.EXECUTABLES_DIR, checker_basename + ".e")
+            self.checker_executable = paths.get_executables_path(checker_basename + ".e")
 
             checker_compilation = self.compile_solutions([self.checker])
             if not checker_compilation[0]:

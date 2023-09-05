@@ -1,9 +1,12 @@
 import glob, importlib, os, sys, requests, yaml
 import platform
 import tempfile
+import shutil
 import hashlib
 import threading
 from typing import Union
+
+import sinol_make
 
 
 def get_commands():

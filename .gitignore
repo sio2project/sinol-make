@@ -6,6 +6,7 @@ build
 .idea
 __pycache__
 /tests/packages/**/cache
+/tests/packages/**/.cache
 src/sinol_make/data
 
 # pytest-cov

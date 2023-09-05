@@ -8,12 +8,13 @@ import yaml
 
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
+from sinol_make.helpers import paths
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
 
 def create_compilation_cache():
-    os.makedirs(os.path.join(os.getcwd(), "cache", "md5sums"), exist_ok=True)
+    os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
 
 
 def check_compiled(file_path: str):
@@ -25,7 +26,7 @@ def check_compiled(file_path: str):
     create_compilation_cache()
     md5sum = util.get_file_md5(file_path)
     try:
-        info_file_path = os.path.join(os.getcwd(), "cache", "md5sums", os.path.basename(file_path))
+        info_file_path = paths.get_cache_path("md5sums", os.path.basename(file_path))
         with open(info_file_path, 'r') as info_file:
             info = yaml.load(info_file, Loader=yaml.FullLoader)
             if info.get("md5sum", "") == md5sum:
@@ -39,13 +40,13 @@ def check_compiled(file_path: str):
 
 def save_compiled(file_path: str, exe_path: str):
     """
-    Save the compiled executable path to cache in `cache/md5sums/<basename of file_path>`,
+    Save the compiled executable path to cache in `.cache/md5sums/<basename of file_path>`,
     which contains the md5sum of the file and the path to the executable.
     :param file_path: Path to the file
     :param exe_path: Path to the compiled executable
     """
     create_compilation_cache()
-    info_file_path = os.path.join(os.getcwd(), "cache", "md5sums", os.path.basename(file_path))
+    info_file_path = paths.get_cache_path("md5sums", os.path.basename(file_path))
     info = {
         "md5sum": util.get_file_md5(file_path),
         "executable_path": exe_path
@@ -147,11 +148,8 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
     :param weak_compilation_flags: Use weaker compilation flags
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
-
-    executable_dir = os.path.join(os.getcwd(), 'cache', 'executables')
-    compile_log_dir = os.path.join(os.getcwd(), 'cache', 'compilation')
-    os.makedirs(executable_dir, exist_ok=True)
-    os.makedirs(compile_log_dir, exist_ok=True)
+    os.makedirs(paths.get_executables_path(), exist_ok=True)
+    os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
 
     with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -164,8 +162,8 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
         args = [args]
     extra_compilation_args = [os.path.join(os.getcwd(), "prog", file) for file in args]
 
-    output = os.path.join(executable_dir, name)
-    compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')
+    output = paths.get_executables_path(name)
+    compile_log_path = paths.get_compilation_log_path(os.path.splitext(name)[0] + '.compile_log')
     with open(compile_log_path, 'w') as compile_log:
         try:
             if compile(file_path, output, compilers, compile_log, weak_compilation_flags, extra_compilation_args,

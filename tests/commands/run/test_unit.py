@@ -55,8 +55,8 @@ def test_execution(create_package, time_tool):
     with open(os.path.join(package_path, "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-    os.makedirs(os.path.join(command.EXECUTIONS_DIR, solution), exist_ok=True)
-    result = command.run_solution((solution, os.path.join(command.EXECUTABLES_DIR, executable), test, config['time_limit'], config['memory_limit'], oiejq.get_oiejq_path()))
+    os.makedirs(paths.get_executions_path(solution), exist_ok=True)
+    result = command.run_solution((solution, paths.get_executables_path(executable), test, config['time_limit'], config['memory_limit'], oiejq.get_oiejq_path()))
     assert result.Status == Status.OK
 
 
@@ -129,8 +129,8 @@ def test_print_expected_scores(capsys):
 
 
 def test_validate_expected_scores_success():
-    command = get_command()
     os.chdir(get_simple_package_path())
+    command = get_command()
     command.scores = command.config["scores"]
     command.tests = package_util.get_tests(None)
 
@@ -195,8 +195,8 @@ def test_validate_expected_scores_success():
 
 
 def test_validate_expected_scores_fail(capsys):
-    command = get_command()
     os.chdir(get_simple_package_path())
+    command = get_command()
     command.scores = {1: 20, 2: 20, 3: 20, 4: 20}
 
     # Test with missing points for group in config.
