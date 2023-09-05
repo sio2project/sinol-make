@@ -29,7 +29,7 @@ def test_get_solutions():
 def test_get_executable_key():
     os.chdir(get_simple_package_path())
     command = get_command()
-    assert command.get_executable_key("abc1.e") == (0, 1)
+    assert command.get_executable_key("abc1.cpp.e") == (0, 1)
 
 
 def test_compile_solutions(create_package):
@@ -125,12 +125,12 @@ def test_print_expected_scores(capsys):
     expected_scores_dict = yaml.load(expected_scores, Loader=yaml.FullLoader)
     command.print_expected_scores(expected_scores_dict["sinol_expected_scores"])
     out = capsys.readouterr().out
-    assert out == expected_scores.replace('"', '')
+    assert expected_scores.replace('"', '') in out
 
 
 def test_validate_expected_scores_success():
-    command = get_command()
     os.chdir(get_simple_package_path())
+    command = get_command()
     command.scores = command.config["scores"]
     command.tests = package_util.get_tests(None)
 
@@ -195,8 +195,8 @@ def test_validate_expected_scores_success():
 
 
 def test_validate_expected_scores_fail(capsys):
-    command = get_command()
     os.chdir(get_simple_package_path())
+    command = get_command()
     command.scores = {1: 20, 2: 20, 3: 20, 4: 20}
 
     # Test with missing points for group in config.

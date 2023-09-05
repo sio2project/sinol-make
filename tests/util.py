@@ -31,6 +31,13 @@ def get_library_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "lib")
 
 
+def get_library_string_args_package_path():
+    """
+    Get path to package with library command with string extra_compilation_args (/test/packages/lsa)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "lsa")
+
+
 def get_weak_compilation_flags_package_path():
     """
     Get path to package for testing weak compilation flags (/test/packages/wcf)
@@ -71,6 +78,13 @@ def get_override_limits_package_path():
     Get path to package with `override_limits` present in config (/test/packages/ovl)
     """
     return os.path.join(os.path.dirname(__file__), "packages", "ovl")
+
+
+def get_long_name_package_path():
+    """
+    Get path to package with long name (/test/packages/long_package_name)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "long_package_name")
 
 
 def create_ins(package_path):

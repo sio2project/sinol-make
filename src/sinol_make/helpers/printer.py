@@ -57,6 +57,7 @@ def _printer(stdscr, run_event, func, *args, **kwargs):
     curses.init_pair(1, curses.COLOR_RED, -1)
     curses.init_pair(2, curses.COLOR_GREEN, -1)
     curses.init_pair(3, curses.COLOR_YELLOW, -1)
+    curses.init_pair(4, curses.A_DIM, -1)
 
     curr_row = 0
     last_output = []
@@ -168,6 +169,8 @@ def _print_to_scr(scr, output, has_title):
                     color = curses.color_pair(2)
                 elif output[i + 1:i + 5] == '[93m':  # Escape sequence for yellow.
                     color = curses.color_pair(3)
+                elif output[i + 1:i + 5] == '[90m':  # Escape sequence for gray.
+                    color = curses.color_pair(4)
                 else:
                     color = curses.A_NORMAL
             i += 4  # Skip the escape sequence.

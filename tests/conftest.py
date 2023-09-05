@@ -52,6 +52,7 @@ def pytest_configure(config):
         with mp.Pool(config.getoption("--cpus")) as pool:
             for i, _ in enumerate(pool.imap(_compile, files_to_compile)):
                 print(f"Precompiled {i + 1}/{len(files_to_compile)} solutions", end="\r")
+        print("\nPrecompilation finished")
     else:
         print("Skipping precompilation")
 

@@ -91,12 +91,15 @@ def print_view(term_width, term_height, table_data: TableData):
         else:
             output.append("")
 
-        print(output[0].ljust(column_lengths[3]))
-        output.pop(0)
+        if output == []:
+            print(util.color_gray("No output"))
+        else:
+            print(output[0].ljust(column_lengths[3]))
+            output.pop(0)
 
-        for line in output:
-            print(" " * (column_lengths[0] + 2) + " | " + " " * (column_lengths[1] - 1) + " | " +
-                  " " * (column_lengths[2] - 1) + " | " + line.ljust(column_lengths[3]))
+            for line in output:
+                print(" " * (column_lengths[0] + 2) + " | " + " " * (column_lengths[1] - 1) + " | " +
+                      " " * (column_lengths[2] - 1) + " | " + line.ljust(column_lengths[3]))
 
     print_line_separator()
     print()

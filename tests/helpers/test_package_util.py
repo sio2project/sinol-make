@@ -1,10 +1,19 @@
+import pytest
+
 from ..commands.run.util import create_ins
 from ..fixtures import *
+from tests import util
 from sinol_make.helpers import package_util
 
 
+@pytest.mark.parametrize("create_package", [util.get_long_name_package_path()], indirect=True)
 def test_get_task_id(create_package):
-    assert package_util.get_task_id() == "abc"
+    package_path = create_package
+    assert package_util.get_task_id() == "lpn"
+    with open(os.path.join(package_path, "config.yml"), "w") as config_file:
+        config_file.write("title: Long package name\n")
+    with pytest.raises(SystemExit):
+        package_util.get_task_id()
 
 
 def test_extract_test_id():
@@ -30,7 +39,7 @@ def test_extract_file_name():
 
 
 def test_get_executable():
-    assert package_util.get_executable("abc.cpp") == "abc.e"
+    assert package_util.get_executable("abc.cpp") == "abc.cpp.e"
 
 
 def test_get_time_limit():
@@ -63,6 +72,45 @@ def test_get_time_limit():
     assert package_util.get_time_limit("in/abc3a.in", config, "py") == 2000
     assert package_util.get_time_limit("in/abc3ocen.in", config, "py") == 6000
 
+    # Test getting default time limit.
+    config = {
+        "time_limits": {
+            "1": 1000,
+        },
+        "override_limits": {
+            "py": {
+                "time_limits": {
+                    "1": 2000,
+                }
+            }
+        }
+    }
+    assert package_util.get_time_limit("in/abc1a.in", config, "cpp") == 1000
+    assert package_util.get_time_limit("in/abc1a.in", config, "py") == 2000
+    with pytest.raises(SystemExit):
+        package_util.get_time_limit("in/abc2a.in", config, "cpp")
+    with pytest.raises(SystemExit):
+        package_util.get_time_limit("in/abc2a.in", config, "py")
+
+    config = {
+        "time_limits": {
+            "1": 1000,
+        },
+        "override_limits": {
+            "py": {
+                "time_limit": 500,
+                "time_limits": {
+                    "1": 1000,
+                }
+            }
+        }
+    }
+    assert package_util.get_time_limit("in/abc1a.in", config, "cpp") == 1000
+    with pytest.raises(SystemExit):
+        package_util.get_time_limit("in/abc2a.in", config, "cpp")
+    assert package_util.get_time_limit("in/abc1a.in", config, "py") == 1000
+    assert package_util.get_time_limit("in/abc2a.in", config, "py") == 500
+
 
 def test_get_memory_limit():
     config = {
@@ -91,3 +139,42 @@ def test_get_memory_limit():
     assert package_util.get_memory_limit("in/abc2a.in", config, "py") == 1024
     assert package_util.get_memory_limit("in/abc2b.in", config, "py") == 1024
     assert package_util.get_memory_limit("in/abc3ocen.in", config, "py") == 256
+
+    # Test getting default memory limit.
+    config = {
+        "memory_limits": {
+            "1": 1024,
+        },
+        "override_limits": {
+            "py": {
+                "memory_limits": {
+                    "1": 2048,
+                }
+            }
+        }
+    }
+    assert package_util.get_memory_limit("in/abc1a.in", config, "cpp") == 1024
+    assert package_util.get_memory_limit("in/abc1a.in", config, "py") == 2048
+    with pytest.raises(SystemExit):
+        package_util.get_memory_limit("in/abc2a.in", config, "cpp")
+    with pytest.raises(SystemExit):
+        package_util.get_memory_limit("in/abc2a.in", config, "py")
+
+    config = {
+        "memory_limits": {
+            "1": 1024,
+        },
+        "override_limits": {
+            "py": {
+                "memory_limit": 512,
+                "memory_limits": {
+                    "1": 1024,
+                }
+            }
+        }
+    }
+    assert package_util.get_memory_limit("in/abc1a.in", config, "cpp") == 1024
+    with pytest.raises(SystemExit):
+        package_util.get_memory_limit("in/abc2a.in", config, "cpp")
+    assert package_util.get_memory_limit("in/abc1a.in", config, "py") == 1024
+    assert package_util.get_memory_limit("in/abc2a.in", config, "py") == 512
