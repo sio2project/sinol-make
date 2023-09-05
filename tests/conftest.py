@@ -11,8 +11,8 @@ from sinol_make.helpers import compile, paths
 def _compile(args):
     package, file_path = args
     os.chdir(package)
-    output = paths.get_path_in_executables(os.path.splitext(os.path.basename(file_path))[0] + ".e")
-    with open(paths.get_path_in_compilation_log(os.path.basename(file_path) + ".compile_log"), "w") as compile_log:
+    output = paths.get_executables_path(os.path.splitext(os.path.basename(file_path))[0] + ".e")
+    with open(paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log"), "w") as compile_log:
         compile.compile(file_path, output, compile_log=compile_log)
 
 

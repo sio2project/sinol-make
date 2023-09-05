@@ -349,9 +349,9 @@ class Command(BaseCommand):
 
 
     def compile(self, solution, use_extras = False):
-        compile_log_file = paths.get_path_in_compilation_log("%s.compile_log" % package_util.get_file_name(solution))
+        compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
-        output = paths.get_path_in_executables(package_util.get_executable(solution))
+        output = paths.get_executables_path(package_util.get_executable(solution))
 
         extra_compilation_args = []
         extra_compilation_files = []
@@ -574,7 +574,7 @@ class Command(BaseCommand):
         """
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
-        file_no_ext = paths.get_path_in_executions(name, package_util.extract_test_id(test))
+        file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
@@ -613,7 +613,7 @@ class Command(BaseCommand):
                     executions.append((name, executable, test, package_util.get_time_limit(test, self.config, lang, self.args),
                                        package_util.get_memory_limit(test, self.config, lang, self.args), self.timetool_path))
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
-                os.makedirs(paths.get_path_in_executions(name), exist_ok=True)
+                os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
                 for test in self.tests:
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.CE)
@@ -679,7 +679,7 @@ class Command(BaseCommand):
             if not compilation_results[i]:
                 self.failed_compilations.append(solutions[i])
         os.makedirs(paths.get_executions_path(), exist_ok=True)
-        executables = [paths.get_path_in_executables(package_util.get_executable(solution)) for solution in solutions]
+        executables = [paths.get_executables_path(package_util.get_executable(solution)) for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
         names = solutions
         return self.run_solutions(compiled_commands, names, solutions)
@@ -1126,7 +1126,7 @@ class Command(BaseCommand):
             print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
             checker_basename = os.path.basename(self.checker)
-            self.checker_executable = paths.get_path_in_executables(os.path.splitext(checker_basename)[0] + ".e")
+            self.checker_executable = paths.get_executables_path(os.path.splitext(checker_basename)[0] + ".e")
 
             checker_compilation = self.compile_solutions([self.checker])
             if not checker_compilation[0]:

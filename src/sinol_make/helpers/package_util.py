@@ -60,7 +60,7 @@ def get_executable_path(solution: str) -> str:
     """
     Returns path to compiled executable for given solution.
     """
-    return paths.get_path_in_executables(get_executable(solution))
+    return paths.get_executables_path(get_executable(solution))
 
 
 def get_file_lang(file_path):

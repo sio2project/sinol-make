@@ -19,9 +19,9 @@ def get_executable_info_file(file_path):
     If this file exists it contains the path to the compiled executable.
     Thanks to that, we .cache the compiled solutions and recompile them when they change.
     """
-    os.makedirs(paths.get_path_in_cache("md5sums"), exist_ok=True)
+    os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
     md5sum = util.get_file_md5(file_path)
-    return paths.get_path_in_cache("md5sums", md5sum)
+    return paths.get_cache_path("md5sums", md5sum)
 
 
 def check_compiled(file_path: str):
@@ -157,8 +157,8 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
     extra_compilation_args = [os.path.join(os.getcwd(), "prog", file)
                               for file in config.get('extra_compilation_args', {}).get(os.path.splitext(file_path)[1][1:], [])]
 
-    output = paths.get_path_in_executables(name)
-    compile_log_path = paths.get_path_in_compilation_log(os.path.splitext(name)[0] + '.compile_log')
+    output = paths.get_executables_path(name)
+    compile_log_path = paths.get_compilation_log_path(os.path.splitext(name)[0] + '.compile_log')
     with open(compile_log_path, 'w') as compile_log:
         try:
             if compile(file_path, output, compilers, compile_log, weak_compilation_flags, extra_compilation_args,
