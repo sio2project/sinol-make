@@ -1,6 +1,6 @@
 title: Package for testing if changing stack size works
 
-memory_limit: 70000
+memory_limit: 20000
 time_limit: 10
 
 sinol_expected_scores:

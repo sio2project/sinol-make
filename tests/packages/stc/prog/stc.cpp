@@ -2,18 +2,10 @@
 
 using namespace std;
 
-int t[10];
-
-int recursion(int i) {
-    if (i == 800000)
-        return i;
-    t[i % 10] += i + recursion(i + 1);
-    return i;
-}
-
-int main() {
-    int a, b, c;
-    c = recursion(0);
-    cin >> a >> b;
-    cout << a + b + t[c % 10];
+int main()
+{
+    char stack[10000000]; // ~10MB
+    cin >> stack[0] >> stack[1];
+    cout << (stack[0] + stack[1] - 2 * '0');
+    return 0;
 }
