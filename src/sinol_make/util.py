@@ -245,32 +245,15 @@ def stringify_keys(d):
         return d
 
 
-def change_stack_size():
+def change_stack_size_to_unlimited():
     """
-    Function to change the stack size to max memory limit.
+    Function to change the stack size to unlimited.
     """
-    with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
-        config = yaml.load(config_file, Loader=yaml.FullLoader)
-
-    def get_max_memory_from_dict(d):
-        max_memory = d.get("memory_limit", 0) * 1024
-        for memory_limit in d.get("memory_limits", {}).values():
-            max_memory = max(memory_limit * 1024, max_memory)
-        return max_memory
-
-    max_memory = get_max_memory_from_dict(config)
-    for override in config.get("override_limits", {}).values():
-        max_memory = max(get_max_memory_from_dict(override), max_memory)
-
-    hard_limit = resource.getrlimit(resource.RLIMIT_STACK)[1]
-    if hard_limit < max_memory and hard_limit != resource.RLIM_INFINITY:
-        hard_limit = max_memory
-
     try:
-        resource.setrlimit(resource.RLIMIT_STACK, (max_memory, hard_limit))
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
     except (resource.error, ValueError):
-        print(error(f'Failed to change stack size. Please set it to at least {max_memory // 1024}kB '
-                    f'with `ulimit -s {max_memory // 1024}`.'))
+        print(error(f'Failed to change stack size to unlimited. Please run `ulimit -s unlimited` '
+                    f'to make sure that solutions with large stack size will work.'))
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)
