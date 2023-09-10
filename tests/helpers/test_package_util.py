@@ -179,3 +179,25 @@ def test_get_memory_limit():
         package_util.get_memory_limit("in/abc2a.in", config, "cpp")
     assert package_util.get_memory_limit("in/abc1a.in", config, "py") == 1024
     assert package_util.get_memory_limit("in/abc2a.in", config, "py") == 512
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
+def test_validate_files(create_package, capsys):
+    package_path = create_package
+    util.create_ins_outs(package_path)
+    task_id = package_util.get_task_id()
+    assert task_id == "abc"
+    package_util.validate_files(task_id)
+
+    os.rename(os.path.join(package_path, "in", "abc1a.in"), os.path.join(package_path, "in", "def1a.in"))
+    with pytest.raises(SystemExit):
+        package_util.validate_files(task_id)
+    out = capsys.readouterr().out
+    assert "def1a.in" in out
+
+    os.rename(os.path.join(package_path, "in", "def1a.in"), os.path.join(package_path, "in", "abc1a.in"))
+    os.rename(os.path.join(package_path, "out", "abc1a.out"), os.path.join(package_path, "out", "def1a.out"))
+    with pytest.raises(SystemExit):
+        package_util.validate_files(task_id)
+    out = capsys.readouterr().out
+    assert "def1a.out" in out
