@@ -252,6 +252,7 @@ def change_stack_size_to_unlimited():
     try:
         resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
     except (resource.error, ValueError):
+        # We can't run `ulimit -s unlimited` in the code, because since it failed, it probably requires root.
         print(error(f'Failed to change stack size to unlimited. Please run `ulimit -s unlimited` '
                     f'to make sure that solutions with large stack size will work.'))
 
