@@ -87,7 +87,7 @@ class Command(BaseCommand):
         sorted_tests = sorted(self.tests, key=lambda x: x[0])
         executions: List[InwerExecution] = []
         for test in sorted_tests:
-            results[test] = TestResult(test)
+            results[test] = TestResult(test, self.task_id)
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()

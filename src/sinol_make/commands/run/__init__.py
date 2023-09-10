@@ -185,7 +185,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
 
         last_group = None
         for test in tests:
-            group = package_util.get_group(test)
+            group = package_util.get_group(test, task_id)
             if last_group != group:
                 if last_group is not None:
                     print_group_seperator()
@@ -194,7 +194,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
             print(margin + "%6s" % package_util.extract_test_id(test, task_id), end=" | ")
             for program in program_group:
                 lang = package_util.get_file_lang(program)
-                result = all_results[program][package_util.get_group(test)][test]
+                result = all_results[program][package_util.get_group(test, task_id)][test]
                 status = result.Status
                 if status == Status.PENDING: print(10 * ' ', end=" | ")
                 else:
@@ -206,7 +206,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 print(8*" ", end=" | ")
                 for program in program_group:
                     lang = package_util.get_file_lang(program)
-                    result = all_results[program][package_util.get_group(test)][test]
+                    result = all_results[program][package_util.get_group(test, task_id)][test]
                     print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, args)))
                           if result.Memory is not None else 10*" ", end=" | ")
                 print()
@@ -715,14 +715,14 @@ class Command(BaseCommand):
         """
         group_sizes = {}
         for test in package_util.get_tests():
-            group = package_util.get_group(test)
+            group = package_util.get_group(test, self.ID)
             if group not in group_sizes:
                 group_sizes[group] = 0
             group_sizes[group] += 1
 
         run_group_sizes = {}
         for test in self.tests:
-            group = package_util.get_group(test)
+            group = package_util.get_group(test, self.ID)
             if group not in run_group_sizes:
                 run_group_sizes[group] = 0
             run_group_sizes[group] += 1

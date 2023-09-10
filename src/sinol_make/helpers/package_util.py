@@ -41,10 +41,10 @@ def extract_test_id(test_path, task_id=None):
     return os.path.split(os.path.splitext(test_path)[0])[1][len(task_id):]
 
 
-def get_group(test_path):
-    if extract_test_id(test_path).endswith("ocen"):
+def get_group(test_path, task_id=None):
+    if extract_test_id(test_path, task_id).endswith("ocen"):
         return 0
-    return int("".join(filter(str.isdigit, extract_test_id(test_path))))
+    return int("".join(filter(str.isdigit, extract_test_id(test_path, task_id))))
 
 
 def get_test_key(test):
