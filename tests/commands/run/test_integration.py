@@ -1,5 +1,6 @@
 import copy
 import sys
+import time
 import pytest
 
 from ...fixtures import *
@@ -361,3 +362,25 @@ def test_memory_limit_flag(capsys, create_package, time_tool):
     assert "Solution lim3.cpp passed group 1 with status OK while it should pass with status ML." in out
     assert "Solution lim4.cpp passed group 1 with status OK while it should pass with status ML." in out
     assert "Solution lim4.cpp passed group 2 with status OK while it should pass with status ML." in out
+
+
+@pytest.mark.parametrize("create_package", [get_stack_size_package_path()], indirect=True)
+def test_mem_limit_kill(create_package, time_tool):
+    """
+    Test if `sinol-make` kills solution if it runs with memory limit exceeded.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    start_time = time.time()
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+    end_time = time.time()
+
+    assert e.value.code == 1
+    assert end_time - start_time < 3  # The solution runs for 20 seconds, but it immediately exceeds memory limit,
+                                      # so it should be killed.

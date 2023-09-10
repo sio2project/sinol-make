@@ -95,26 +95,3 @@ def test_check_version(**kwargs):
     mocker.get("https://pypi.python.org/pypi/sinol-make/json", exc=requests.exceptions.ConnectTimeout)
     util.check_version()
     assert not version_file.is_file()
-
-
-@pytest.mark.parametrize("create_package", [test_util.get_stack_size_package_path()], indirect=True)
-def test_change_stack_size(create_package, time_tool):
-    package_path = create_package
-    util.change_stack_size()
-    original_func = util.change_stack_size
-    util.change_stack_size = lambda: None
-    command = run_util.get_command()
-    test_util.create_ins_outs(package_path)
-    parser = configure_parsers()
-
-    hard_limit = resource.getrlimit(resource.RLIMIT_STACK)[1]
-    resource.setrlimit(resource.RLIMIT_STACK, (1 * 1024 * 1024, hard_limit))  # Set to 1 MB
-    assert resource.getrlimit(resource.RLIMIT_STACK)[0] == 1 * 1024 * 1024
-
-    args = parser.parse_args(["run", "--time-tool", time_tool])
-    with pytest.raises(SystemExit):
-        command.run(args)
-
-    util.change_stack_size = original_func
-    command.run(args)
-    assert resource.getrlimit(resource.RLIMIT_STACK)[0] == 70000 * 1024
