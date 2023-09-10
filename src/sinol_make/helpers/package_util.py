@@ -1,4 +1,5 @@
 import os
+import re
 import yaml
 import glob
 from enum import Enum
@@ -22,14 +23,22 @@ def get_task_id() -> str:
             util.exit_with_error("Invalid task id. Task id should be 3 characters long.")
 
 
-def extract_test_id(test_path):
+def extract_test_id(test_path, task_id=None):
     """
     Extracts test group and number from test path.
     For example for test abc1a.in it returns 1a.
     :param test_path: Path to test file.
+    :param task_id: Task id. If None, it is extracted from config.yml.
+                    If not found, it's assumed that the length of task id is 3.
     :return: Test group and number.
     """
-    return os.path.split(os.path.splitext(test_path)[0])[1][3:]
+    if task_id is None:
+        try:
+            task_id = get_task_id()
+        except FileNotFoundError:
+            task_id = "abc"
+
+    return os.path.split(os.path.splitext(test_path)[0])[1][len(task_id):]
 
 
 def get_group(test_path):
@@ -143,3 +152,30 @@ def get_memory_limit(test_path, config, lang, args=None):
 
     str_config = util.stringify_keys(config)
     return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang)
+
+
+def validate_files(task_id):
+    """
+    Checks if all files in the package have valid names.
+    """
+    def get_invalid_files(path, *patterns):
+        invalid_files = []
+        for file in glob.glob(os.path.join(os.getcwd(), path)):
+            invalid = True
+            for pattern in patterns:
+                if pattern.match(os.path.basename(file)):
+                    invalid = False
+                    break
+            if invalid:
+                invalid_files.append(os.path.basename(file))
+        return invalid_files
+
+    in_test_re = re.compile(r'^(%s(([0-9]+)([a-z]?[a-z0-9]*))).in$' % (re.escape(task_id)))
+    invalid_in_tests = get_invalid_files(os.path.join("in", "*.in"), in_test_re)
+    if len(invalid_in_tests) > 0:
+        util.exit_with_error(f'Input tests with invalid names: {", ".join(invalid_in_tests)}.')
+
+    out_test_re = re.compile(r'^(%s(([0-9]+)([a-z]?[a-z0-9]*))).out$' % (re.escape(task_id)))
+    invalid_out_tests = get_invalid_files(os.path.join("out", "*.out"), out_test_re)
+    if len(invalid_out_tests) > 0:
+        util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')

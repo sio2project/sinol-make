@@ -56,7 +56,7 @@ def update_group_status(group_status, new_status):
     return group_status
 
 
-def print_view(term_width, term_height, program_groups_scores, all_results, print_data: PrintData, names, executions,
+def print_view(term_width, term_height, task_id, program_groups_scores, all_results, print_data: PrintData, names, executions,
                groups, scores, tests, possible_score, cpus, hide_memory, config, contest, args):
     width = term_width - 13  # First column has 6 characters, the " | " separator has 3 characters and 4 for margin
     programs_in_row = width // 13  # Each program has 10 characters and the " | " separator has 3 characters
@@ -191,7 +191,7 @@ def print_view(term_width, term_height, program_groups_scores, all_results, prin
                     print_group_seperator()
                 last_group = group
 
-            print(margin + "%6s" % package_util.extract_test_id(test), end=" | ")
+            print(margin + "%6s" % package_util.extract_test_id(test, task_id), end=" | ")
             for program in program_group:
                 lang = package_util.get_file_lang(program)
                 result = all_results[program][package_util.get_group(test)][test]
@@ -275,9 +275,9 @@ class Command(BaseCommand):
 
 
     def get_group(self, test_path):
-        if package_util.extract_test_id(test_path).endswith("ocen"):
+        if package_util.extract_test_id(test_path, self.ID).endswith("ocen"):
             return 0
-        return int("".join(filter(str.isdigit, package_util.extract_test_id(test_path))))
+        return int("".join(filter(str.isdigit, package_util.extract_test_id(test_path, self.ID))))
 
 
     def get_executable_key(self, executable):
@@ -580,7 +580,7 @@ class Command(BaseCommand):
         """
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
-        file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test))
+        file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test, self.ID))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
@@ -634,8 +634,8 @@ class Command(BaseCommand):
             run_event = threading.Event()
             run_event.set()
             thr = threading.Thread(target=printer.printer_thread,
-                                   args=(run_event, print_view, program_groups_scores, all_results, print_data, names,
-                                         executions, self.groups, self.scores, self.tests, self.possible_score,
+                                   args=(run_event, print_view, self.ID, program_groups_scores, all_results, print_data,
+                                         names, executions, self.groups, self.scores, self.tests, self.possible_score,
                                          self.cpus, self.args.hide_memory, self.config, self.contest, self.args))
             thr.start()
 
@@ -657,7 +657,7 @@ class Command(BaseCommand):
                 run_event.clear()
                 thr.join()
 
-        print("\n".join(print_view(terminal_width, terminal_height, program_groups_scores, all_results, print_data,
+        print("\n".join(print_view(terminal_width, terminal_height, self.ID, program_groups_scores, all_results, print_data,
                                    names, executions, self.groups, self.scores, self.tests, self.possible_score,
                                    self.cpus, self.args.hide_memory, self.config, self.contest, self.args)[0]))
 
@@ -1047,10 +1047,10 @@ class Command(BaseCommand):
         Returns list of input files that have corresponding output file.
         """
         output_tests = glob.glob(os.path.join(os.getcwd(), "out", "*.out"))
-        output_tests_ids = [package_util.extract_test_id(test) for test in output_tests]
+        output_tests_ids = [package_util.extract_test_id(test, self.ID) for test in output_tests]
         valid_input_files = []
         for test in self.tests:
-            if package_util.extract_test_id(test) in output_tests_ids:
+            if package_util.extract_test_id(test, self.ID) in output_tests_ids:
                 valid_input_files.append(test)
         return valid_input_files
 
@@ -1105,6 +1105,7 @@ class Command(BaseCommand):
         util.exit_if_not_package()
 
         self.set_constants()
+        package_util.validate_files(self.ID)
         self.args = args
         with open(os.path.join(os.getcwd(), "config.yml"), 'r') as config:
             try:

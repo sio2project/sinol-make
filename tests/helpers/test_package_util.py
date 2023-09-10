@@ -21,6 +21,7 @@ def test_extract_test_id():
     assert package_util.extract_test_id("in/abc10a.in") == "10a"
     assert package_util.extract_test_id("in/abc12ca.in") == "12ca"
     assert package_util.extract_test_id("in/abc0ocen.in") == "0ocen"
+    assert package_util.extract_test_id("in/long_task_id2bc.in", "long_task_id") == "2bc"
 
 
 def test_get_group():
