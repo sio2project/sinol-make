@@ -23,21 +23,14 @@ def get_task_id() -> str:
             util.exit_with_error("Invalid task id. Task id should be 3 characters long.")
 
 
-def extract_test_id(test_path, task_id=None):
+def extract_test_id(test_path, task_id):
     """
     Extracts test group and number from test path.
     For example for test abc1a.in it returns 1a.
     :param test_path: Path to test file.
-    :param task_id: Task id. If None, it is extracted from config.yml.
-                    If not found, it's assumed that the length of task id is 3.
+    :param task_id: Task id.
     :return: Test group and number.
     """
-    if task_id is None:
-        try:
-            task_id = get_task_id()
-        except FileNotFoundError:
-            task_id = "abc"
-
     return os.path.split(os.path.splitext(test_path)[0])[1][len(task_id):]
 
 
@@ -114,8 +107,8 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
         return None
 
 
-def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], lang: str):
-    test_id = extract_test_id(test_path)
+def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], lang: str, task_id: str):
+    test_id = extract_test_id(test_path, task_id)
     test_group = str(get_group(test_path))
     global_limit = _get_limit_from_dict(config, limit_type, test_id, test_group, test_path)
     override_limits_dict = config.get("override_limits", {}).get(lang, {})
@@ -132,7 +125,7 @@ def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], l
                 util.exit_with_error(f'Memory limit was not defined for test {os.path.basename(test_path)} in config.yml.')
 
 
-def get_time_limit(test_path, config, lang, args=None):
+def get_time_limit(test_path, config, lang, task_id, args=None):
     """
     Returns time limit for given test.
     """
@@ -140,10 +133,10 @@ def get_time_limit(test_path, config, lang, args=None):
         return args.tl * 1000
 
     str_config = util.stringify_keys(config)
-    return _get_limit(LimitTypes.TIME_LIMIT, test_path, str_config, lang)
+    return _get_limit(LimitTypes.TIME_LIMIT, test_path, str_config, lang, task_id)
 
 
-def get_memory_limit(test_path, config, lang, args=None):
+def get_memory_limit(test_path, config, lang, task_id, args=None):
     """
     Returns memory limit for given test.
     """
@@ -151,7 +144,7 @@ def get_memory_limit(test_path, config, lang, args=None):
         return int(args.ml * 1024)
 
     str_config = util.stringify_keys(config)
-    return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang)
+    return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang, task_id)
 
 
 def validate_test_names(task_id):

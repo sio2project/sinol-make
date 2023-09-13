@@ -77,7 +77,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
     for solution in names:
         lang = package_util.get_file_lang(solution)
         for test in tests:
-            time_sum += package_util.get_time_limit(test, config, lang, args)
+            time_sum += package_util.get_time_limit(test, config, lang, task_id, args)
 
     time_remaining = (len(executions) - print_data.i - 1) * 2 * time_sum / cpus / 1000.0
     title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
@@ -120,17 +120,17 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                     if results[test].Time is not None:
                         if program_times[program][0] < results[test].Time:
                             program_times[program] = (results[test].Time, package_util.get_time_limit(test, config,
-                                                                                                      lang, args))
+                                                                                                      lang, task_id, args))
                     elif status == Status.TL:
-                        program_times[program] = (2 * package_util.get_time_limit(test, config, lang, args),
-                                                  package_util.get_time_limit(test, config, lang, args))
+                        program_times[program] = (2 * package_util.get_time_limit(test, config, lang, task_id, args),
+                                                  package_util.get_time_limit(test, config, lang, task_id, args))
                     if results[test].Memory is not None:
                         if program_memory[program][0] < results[test].Memory:
                             program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config,
-                                                                                                           lang, args))
+                                                                                                           lang, task_id, args))
                     elif status == Status.ML:
-                        program_memory[program] = (2 * package_util.get_memory_limit(test, config, lang, args),
-                                                   package_util.get_memory_limit(test, config, lang, args))
+                        program_memory[program] = (2 * package_util.get_memory_limit(test, config, lang, task_id, args),
+                                                   package_util.get_memory_limit(test, config, lang, task_id, args))
                     if status == Status.PENDING:
                         group_status = Status.PENDING
                     else:
@@ -199,7 +199,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 if status == Status.PENDING: print(10 * ' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
-                         ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config, lang, args)))
+                         ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config, lang, task_id, args)))
                          if result.Time is not None else 7*" ", end=" | ")
             print()
             if not hide_memory:
@@ -207,7 +207,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 for program in program_group:
                     lang = package_util.get_file_lang(program)
                     result = all_results[program][package_util.get_group(test, task_id)][test]
-                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, args)))
+                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, task_id, args)))
                           if result.Memory is not None else 10*" ", end=" | ")
                 print()
 
@@ -616,8 +616,10 @@ class Command(BaseCommand):
             lang = package_util.get_file_lang(name)
             if result:
                 for test in self.tests:
-                    executions.append((name, executable, test, package_util.get_time_limit(test, self.config, lang, self.args),
-                                       package_util.get_memory_limit(test, self.config, lang, self.args), self.timetool_path))
+                    executions.append((name, executable, test,
+                                       package_util.get_time_limit(test, self.config, lang, self.ID, self.args),
+                                       package_util.get_memory_limit(test, self.config, lang, self.ID, self.args),
+                                       self.timetool_path))
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
@@ -1152,8 +1154,8 @@ class Command(BaseCommand):
             lang = package_util.get_file_lang(solution)
             for test in self.tests:
                 # The functions will exit if the limits are not set
-                _ = package_util.get_time_limit(test, self.config, lang, self.args)
-                _ = package_util.get_memory_limit(test, self.config, lang, self.args)
+                _ = package_util.get_time_limit(test, self.config, lang, self.ID, self.args)
+                _ = package_util.get_memory_limit(test, self.config, lang, self.ID, self.args)
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)
