@@ -2,6 +2,7 @@ import os
 import re
 import yaml
 import glob
+import fnmatch
 from enum import Enum
 from typing import List, Union, Dict, Any
 
@@ -34,28 +35,29 @@ def extract_test_id(test_path, task_id):
     return os.path.split(os.path.splitext(test_path)[0])[1][len(task_id):]
 
 
-def get_group(test_path, task_id=None):
+def get_group(test_path, task_id):
     if extract_test_id(test_path, task_id).endswith("ocen"):
         return 0
     return int("".join(filter(str.isdigit, extract_test_id(test_path, task_id))))
 
 
-def get_test_key(test):
-    return get_group(test), test
+def get_test_key(test, task_id):
+    return get_group(test, task_id), test
 
 
-def get_tests(arg_tests: Union[List[str], None] = None) -> List[str]:
+def get_tests(task_id: str, arg_tests: Union[List[str], None] = None) -> List[str]:
     """
     Returns list of tests to run.
+    :param task_id: Task id.
     :param arg_tests: Tests specified in command line arguments. If None, all tests are returned.
     :return: List of tests to run.
     """
     if arg_tests is None:
         all_tests = ["in/%s" % test for test in os.listdir("in/")
                      if test[-3:] == ".in"]
-        return sorted(all_tests, key=get_test_key)
+        return sorted(all_tests, key=lambda test: get_test_key(test, task_id))
     else:
-        return sorted(list(set(arg_tests)), key=get_test_key)
+        return sorted(list(set(arg_tests)), key=lambda test: get_test_key(test, task_id))
 
 
 def get_file_name(file_path):
@@ -109,7 +111,7 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
 
 def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], lang: str, task_id: str):
     test_id = extract_test_id(test_path, task_id)
-    test_group = str(get_group(test_path))
+    test_group = str(get_group(test_path, task_id))
     global_limit = _get_limit_from_dict(config, limit_type, test_id, test_group, test_path)
     override_limits_dict = config.get("override_limits", {}).get(lang, {})
     overriden_limit = _get_limit_from_dict(override_limits_dict, limit_type, test_id, test_group, test_path)
@@ -167,3 +169,36 @@ def validate_test_names(task_id):
     invalid_out_tests = get_invalid_files(os.path.join("out", "*.out"), out_test_re)
     if len(invalid_out_tests) > 0:
         util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')
+
+
+def get_all_code_files(task_id: str) -> List[str]:
+    """
+    Returns all code files in package.
+    :param task_id: Task id.
+    :return: List of code files.
+    """
+    result = glob.glob(os.path.join(os.getcwd(), "prog", f"{task_id}ingen.sh"))
+    for ext in ["c", "cpp", "py", "java"]:
+        result += glob.glob(os.path.join(os.getcwd(), f"prog/{task_id}*.{ext}"))
+    return result
+
+
+def get_files_matching_pattern(task_id: str, pattern: str) -> List[str]:
+    """
+    Returns all files in package matching given pattern.
+    :param task_id: Task id.
+    :param pattern: Pattern to match.
+    :return: List of files matching the pattern.
+    """
+    all_files = get_all_code_files(task_id)
+    return [file for file in all_files if fnmatch.fnmatch(os.path.basename(file), pattern)]
+
+
+def any_files_matching_pattern(task_id: str, pattern: str) -> bool:
+    """
+    Returns True if any file in package matches given pattern.
+    :param task_id: Task id.
+    :param pattern: Pattern to match.
+    :return: True if any file in package matches given pattern.
+    """
+    return len(get_files_matching_pattern(task_id, pattern)) > 0

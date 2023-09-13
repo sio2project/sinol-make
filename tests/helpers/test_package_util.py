@@ -25,13 +25,15 @@ def test_extract_test_id():
 
 
 def test_get_group():
-    assert package_util.get_group("in/abc1a.in") == 1
+    assert package_util.get_group("in/abc1a.in", "abc") == 1
+    assert package_util.get_group("in/long_name2ocen.in", "long_name") == 0
 
 
 def test_get_tests(create_package):
-    create_ins(create_package)
     os.chdir(create_package)
-    tests = package_util.get_tests(None)
+    task_id = package_util.get_task_id()
+    create_ins(create_package, task_id)
+    tests = package_util.get_tests("abc", None)
     assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
 
 

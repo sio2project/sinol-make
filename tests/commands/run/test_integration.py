@@ -59,7 +59,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 
     out = capsys.readouterr().out
     assert "Solutions were added:" in out
-    solution = glob.glob(os.path.join(package_path, "prog", "???.*"))[0]
+    solution = package_util.get_files_matching_pattern(command.ID, f"{command.ID}.*")[0]
     assert os.path.basename(solution) in out
 
 
@@ -219,7 +219,8 @@ def test_flag_solutions(capsys, create_package, time_tool):
     package_path = create_package
     create_ins_outs(package_path)
 
-    solutions = glob.glob(os.path.join(package_path, "prog", "????.*"))
+    task_id = package_util.get_task_id()
+    solutions = package_util.get_files_matching_pattern(task_id, f'{task_id}?.*')
     parser = configure_parsers()
     args = parser.parse_args(["run", "--solutions", solutions[0], "--time-tool", time_tool])
     command = Command()

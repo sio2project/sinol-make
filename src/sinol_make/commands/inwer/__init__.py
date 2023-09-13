@@ -134,7 +134,7 @@ class Command(BaseCommand):
         print(f'Verifying with inwer {util.bold(relative_path)}')
 
         self.cpus = args.cpus or mp.cpu_count()
-        self.tests = package_util.get_tests(args.tests)
+        self.tests = package_util.get_tests(self.task_id, args.tests)
 
         if len(self.tests) == 0:
             util.exit_with_error('No tests found.')

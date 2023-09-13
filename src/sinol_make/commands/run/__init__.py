@@ -716,7 +716,7 @@ class Command(BaseCommand):
         Returns a list of groups for which all tests were run.
         """
         group_sizes = {}
-        for test in package_util.get_tests():
+        for test in package_util.get_tests(self.ID):
             group = package_util.get_group(test, self.ID)
             if group not in group_sizes:
                 group_sizes[group] = 0
@@ -1005,7 +1005,7 @@ class Command(BaseCommand):
                 cnt=len(self.failed_compilations), letter='' if len(self.failed_compilations) == 1 else 's'))
 
     def set_scores(self):
-        self.tests = package_util.get_tests(self.args.tests)
+        self.tests = package_util.get_tests(self.ID, self.args.tests)
         self.groups = self.get_groups(self.tests)
         self.scores = collections.defaultdict(int)
 
@@ -1129,7 +1129,7 @@ class Command(BaseCommand):
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or mp.cpu_count()
 
-        checker = glob.glob(os.path.join(os.getcwd(), "prog", f'{self.ID}chk.*'))
+        checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
             print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
@@ -1142,7 +1142,7 @@ class Command(BaseCommand):
         else:
             self.checker = None
 
-        lib = glob.glob(os.path.join(os.getcwd(), "prog", f'{self.ID}lib.*'))
+        lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0
 
         self.set_scores()

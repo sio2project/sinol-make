@@ -18,7 +18,7 @@ def get_inwer_path(task_id: str, path = None) -> Union[str, None]:
     Returns path to inwer executable for given task or None if no inwer was found.
     """
     if path is None:
-        inwers = glob.glob(os.path.join(os.getcwd(), 'prog', f'{task_id}inwer.*'))
+        inwers = package_util.get_files_matching_pattern(task_id, f'{task_id}inwer.*')
         if len(inwers) == 0:
             return None
         return inwers[0]

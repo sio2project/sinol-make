@@ -16,15 +16,14 @@ def ingen_exists(task_id):
     :param task_id: task id, for example abc
     :return: True if exists, False otherwise
     """
-    return len(glob.glob(os.path.join(os.getcwd(), 'prog', task_id + 'ingen.*'))) > 0
+    return package_util.any_files_matching_pattern(task_id, f'{task_id}ingen.*')
 
 
-def get_ingen(task_id=None, ingen_path=None):
+def get_ingen(task_id, ingen_path=None):
     """
     Find ingen source file in `prog/` directory.
     If `ingen_path` is specified, then it will be used (if exists).
-    :param task_id: task id, for example abc. If None, then
-                    will return any ingen matching "*ingen.*"
+    :param task_id: task id, for example abc.
     :param ingen_path: path to ingen source file
     :return: path to ingen source file or None if not found
     """
@@ -35,9 +34,7 @@ def get_ingen(task_id=None, ingen_path=None):
         else:
             util.exit_with_error(f'Ingen source file {ingen_path} does not exist.')
 
-    if task_id is None:
-        task_id = '*'
-    ingen = glob.glob(os.path.join(os.getcwd(), 'prog', task_id + 'ingen.*'))
+    ingen = package_util.get_files_matching_pattern(task_id, f'{task_id}ingen.*')
     if len(ingen) == 0:
         util.exit_with_error(f'Ingen source file for task {task_id} does not exist.')
 
@@ -78,7 +75,7 @@ def get_correct_solution(task_id):
     :param task_id: task id, for example abc
     :return: path to correct solution or None if not found
     """
-    correct_solution = glob.glob(os.path.join(os.getcwd(), 'prog', task_id + '.*'))
+    correct_solution = package_util.get_files_matching_pattern(task_id, f'{task_id}.*')
     if len(correct_solution) == 0:
         util.exit_with_error(f'Correct solution for task {task_id} does not exist.')
     return correct_solution[0]
