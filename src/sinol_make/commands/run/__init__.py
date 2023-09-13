@@ -1105,7 +1105,7 @@ class Command(BaseCommand):
         util.exit_if_not_package()
 
         self.set_constants()
-        package_util.validate_files(self.ID)
+        package_util.validate_test_names(self.ID)
         self.args = args
         with open(os.path.join(os.getcwd(), "config.yml"), 'r') as config:
             try:

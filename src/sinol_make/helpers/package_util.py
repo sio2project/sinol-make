@@ -154,19 +154,14 @@ def get_memory_limit(test_path, config, lang, args=None):
     return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang)
 
 
-def validate_files(task_id):
+def validate_test_names(task_id):
     """
     Checks if all files in the package have valid names.
     """
-    def get_invalid_files(path, *patterns):
+    def get_invalid_files(path, pattern):
         invalid_files = []
         for file in glob.glob(os.path.join(os.getcwd(), path)):
-            invalid = True
-            for pattern in patterns:
-                if pattern.match(os.path.basename(file)):
-                    invalid = False
-                    break
-            if invalid:
+            if not pattern.match(os.path.basename(file)):
                 invalid_files.append(os.path.basename(file))
         return invalid_files
 

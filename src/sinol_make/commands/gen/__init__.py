@@ -93,7 +93,7 @@ class Command(BaseCommand):
 
         self.args = args
         self.task_id = package_util.get_task_id()
-        package_util.validate_files(self.task_id)
+        package_util.validate_test_names(self.task_id)
         self.ingen = gen_util.get_ingen(self.task_id, args.ingen_path)
         print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
 
