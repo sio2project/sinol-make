@@ -1,8 +1,14 @@
 import glob, importlib, os, sys, requests, yaml
+import platform
+import tempfile
+import shutil
+import hashlib
 import subprocess
 import threading
 import resource
 from typing import Union
+
+import sinol_make
 
 
 def get_commands():
@@ -257,9 +263,29 @@ def change_stack_size_to_unlimited():
                     f'to make sure that solutions with large stack size will work.'))
 
 
+def is_wsl():
+    """
+    Function to check if the program is running on Windows Subsystem for Linux.
+    """
+    return sys.platform == "linux" and "microsoft" in platform.uname().release.lower()
+
+
+def is_linux():
+    """
+    Function to check if the program is running on Linux and not WSL.
+    """
+    return sys.platform == "linux" and not is_wsl()
+
+
+def get_file_md5(path):
+    with open(path, "rb") as f:
+        return hashlib.md5(f.read()).hexdigest()
+
+
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
+def color_gray(text): return "\033[90m{}\033[00m".format(text)
 def bold(text): return "\033[01m{}\033[00m".format(text)
 
 def info(text):
@@ -272,6 +298,8 @@ def error(text):
 
 def exit_with_error(text, func=None):
     print(error(text))
-    if func is not None:
+    try:
         func()
+    except TypeError:
+        pass
     exit(1)

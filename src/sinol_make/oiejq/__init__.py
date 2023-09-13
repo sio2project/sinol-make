@@ -25,7 +25,7 @@ def check_oiejq(path = None):
     """
     Function to check if oiejq is installed
     """
-    if sys.platform != 'linux':
+    if not util.is_linux():
         return False
 
     if path is not None:
@@ -42,7 +42,7 @@ def install_oiejq():
     Function to install oiejq, if not installed.
     Returns True if successful.
     """
-    if sys.platform != 'linux':
+    if not util.is_linux():
         return False
     if check_oiejq():
         return True
@@ -63,9 +63,9 @@ def install_oiejq():
     if request.status_code != 200:
         raise Exception('Couldn\'t download oiejq (https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz returned status code: ' + str(request.status_code) + ')')
 
-    # oiejq is downloaded to a temporary directory and not to the `cache` dir,
+    # oiejq is downloaded to a temporary directory and not to the `.cache` dir,
     # as there is no guarantee that the current directory is the package directory.
-    # The `cache` dir is only used for files that are part of the package and those
+    # The `.cache` dir is only used for files that are part of the package and those
     # that the package creator might want to look into.
     with tempfile.TemporaryDirectory() as tmpdir:
         oiejq_path = os.path.join(tmpdir, 'oiejq.tar.gz')
@@ -92,7 +92,7 @@ def check_perf_counters_enabled():
     Checks if `kernel.perf_event_paranoid` is set to -1.
     :return:
     """
-    if sys.platform != 'linux' or not check_oiejq():
+    if not util.is_linux() or not check_oiejq():
         return
 
     oiejq = get_oiejq_path()

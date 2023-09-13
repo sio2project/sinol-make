@@ -117,3 +117,21 @@ def test_flag_tests(capsys, create_package):
     assert "wer1a.in" in out
     assert "wer2a.in" in out
     assert "wer3a.in" not in out
+
+
+@pytest.mark.parametrize("create_package", [util.get_inwer_package_path()], indirect=True)
+def test_no_output(capsys, create_package):
+    """
+    Test `inwer` command when inwer doesn't print anything.
+    """
+    package_path = create_package
+    util.create_ins(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["inwer", "prog/werinwer4.cpp"])
+    command = Command()
+
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+    assert e.value.code == 0
+    out = capsys.readouterr().out
+    assert "No output" in out

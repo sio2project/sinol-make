@@ -5,11 +5,9 @@ using namespace std;
 using namespace std::chrono_literals;
 
 int main() {
+    this_thread::sleep_for(2s);
+
     int a, b;
     cin >> a >> b;
-
-    vector<int> v(5, 0);
-    this_thread::sleep_for(1.1s);
-
-    cout << a + b << endl;
+    cout << a + b;
 }

@@ -168,6 +168,8 @@ def _print_to_scr(scr, output, has_title):
                     color = curses.color_pair(2)
                 elif output[i + 1:i + 5] == '[93m':  # Escape sequence for yellow.
                     color = curses.color_pair(3)
+                elif output[i + 1:i + 5] == '[90m':  # Escape sequence for gray.
+                    color = curses.A_DIM
                 else:
                     color = curses.A_NORMAL
             i += 4  # Skip the escape sequence.

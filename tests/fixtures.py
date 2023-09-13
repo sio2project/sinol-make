@@ -8,9 +8,9 @@ def create_package(request):
     Fixture to create a temporary directory with specified package (by default simple package).
     Changes the current working directory to the package directory.
     """
-    if hasattr(request, 'param') and request.param is not None:
+    try:
         path = request.param
-    else:
+    except AttributeError:
         path = get_simple_package_path()
     task_id = os.path.basename(path)
 

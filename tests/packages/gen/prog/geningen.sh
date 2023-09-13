@@ -12,7 +12,7 @@ function generate() {
     done
 }
 
-cache=$(dirname "$0")/../cache
+cache=$(dirname "$0")/../.cache
 mkdir -p "$cache"
 g++ gen_helper.cpp -o "$cache"/gen
 

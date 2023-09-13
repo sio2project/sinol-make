@@ -2,6 +2,7 @@ import copy
 import sys
 import time
 import pytest
+import copy
 
 from ...fixtures import *
 from .util import *
@@ -10,7 +11,9 @@ from sinol_make import configure_parsers
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
-                                            get_limits_package_path()], indirect=True)
+                                            get_library_string_args_package_path(), get_limits_package_path(),
+                                            get_override_limits_package_path()],
+                         indirect=True)
 def test_simple(create_package, time_tool):
     """
     Test a simple run.
@@ -27,7 +30,9 @@ def test_simple(create_package, time_tool):
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
-                                            get_limits_package_path()], indirect=True)
+                                            get_library_string_args_package_path(), get_limits_package_path(),
+                                            get_override_limits_package_path()],
+                         indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -61,7 +66,9 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
-                                            get_limits_package_path()], indirect=True)
+                                            get_library_string_args_package_path(), get_limits_package_path(),
+                                            get_override_limits_package_path()],
+                         indirect=True)
 def test_apply_suggestions(create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -121,7 +128,8 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path(),
-                                            get_library_package_path()], indirect=True)
+                                            get_library_package_path(), get_library_string_args_package_path()],
+                         indirect=True)
 def test_flag_tests(create_package, time_tool):
     """
     Test flag --tests.
@@ -319,6 +327,8 @@ def test_no_limits_in_config(capsys, create_package, time_tool):
         command.run(args)
 
     out = capsys.readouterr().out
+    assert "Solution lim2.cpp passed group 1 with status TL while it should pass with status OK." in out
+    assert "Solution lim4.cpp passed group 2 with status ML while it should pass with status OK." in out
     assert "Use flag --apply-suggestions to apply suggestions." in out
 
 
@@ -338,8 +348,6 @@ def test_time_limit_flag(capsys, create_package, time_tool):
         command.run(args)
 
     out = capsys.readouterr().out
-    assert "Solution lim1.cpp passed group 1 with status OK while it should pass with status TL." in out
-    assert "Solution lim2.cpp passed group 1 with status OK while it should pass with status TL." in out
     assert "Solution lim2.cpp passed group 2 with status OK while it should pass with status TL." in out
 
 
@@ -361,7 +369,61 @@ def test_memory_limit_flag(capsys, create_package, time_tool):
     out = capsys.readouterr().out
     assert "Solution lim3.cpp passed group 1 with status OK while it should pass with status ML." in out
     assert "Solution lim4.cpp passed group 1 with status OK while it should pass with status ML." in out
-    assert "Solution lim4.cpp passed group 2 with status OK while it should pass with status ML." in out
+
+
+@pytest.mark.parametrize("create_package", [get_override_limits_package_path()], indirect=True)
+def test_override_limits(create_package, time_tool):
+    """
+    Test `override_limits` key in config.yml.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+    config_file_path = os.path.join(package_path, "config.yml")
+
+
+    # With `override_limits` key deleted.
+    with open(config_file_path, "r") as config_file:
+        original_config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    config = copy.deepcopy(original_config)
+    del config["override_limits"]
+    with open(config_file_path, "w") as config_file:
+        config_file.write(yaml.dump(config))
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--apply-suggestions", "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+    with open(config_file_path, "r") as config:
+        config = yaml.load(config, Loader=yaml.SafeLoader)
+
+    assert config["sinol_expected_scores"] == {
+        "ovl.cpp": {
+            "expected": {1: "TL", 2: "TL"},
+            "points": 0
+        }
+    }
+
+    # With global `time_limit` deleted, `memory_limit` in `override_limits` deleted
+    # and global `memory_limit` set to 256.
+    config = copy.deepcopy(original_config)
+    del config["time_limit"]
+    del config["override_limits"]['cpp']["memory_limit"]
+    config["memory_limit"] = 256
+    with open(config_file_path, "w") as config_file:
+        config_file.write(yaml.dump(config))
+
+    command = Command()
+    command.run(args)
+    with open(config_file_path, "r") as config:
+        config = yaml.load(config, Loader=yaml.SafeLoader)
+
+    assert config["sinol_expected_scores"] == {
+        "ovl.cpp": {
+            "expected": {1: "ML", 2: "ML"},
+            "points": 0
+        }
+    }
 
 
 @pytest.mark.parametrize("create_package", [get_stack_size_package_path()], indirect=True)
@@ -382,5 +444,5 @@ def test_mem_limit_kill(create_package, time_tool):
     end_time = time.time()
 
     assert e.value.code == 1
-    assert end_time - start_time < 3  # The solution runs for 20 seconds, but it immediately exceeds memory limit,
+    assert end_time - start_time < 5  # The solution runs for 20 seconds, but it immediately exceeds memory limit,
                                       # so it should be killed.

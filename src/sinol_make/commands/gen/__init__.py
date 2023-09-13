@@ -80,7 +80,8 @@ class Command(BaseCommand):
         outputs_to_generate = []
         for file in glob.glob(os.path.join(os.getcwd(), 'in', '*.in')):
             basename = os.path.basename(file)
-            md5_sums[basename] = hashlib.md5(open(file, 'rb').read()).hexdigest()
+            md5_sums[basename] = util.get_file_md5(file)
+
             if old_md5_sums is None or old_md5_sums.get(basename, '') != md5_sums[basename]:
                 output_basename = os.path.splitext(os.path.basename(basename))[0] + '.out'
                 outputs_to_generate.append(os.path.join(os.getcwd(), "out", output_basename))

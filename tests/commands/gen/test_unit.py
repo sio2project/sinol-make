@@ -50,7 +50,7 @@ def test_get_ingen():
 
         os.rename("prog/gen_helper.cpp", "prog/geningen.cpp")
         ingen_path = gen_util.get_ingen("gen")
-        assert os.path.basename(ingen_path) == "geningen.cpp"
+        assert os.path.basename(ingen_path) == "geningen.sh"
 
 
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)

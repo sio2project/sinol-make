@@ -9,7 +9,7 @@ from typing import Dict, List
 
 from sinol_make import util
 from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult, TableData
-from sinol_make.helpers import package_util, compile, printer
+from sinol_make.helpers import package_util, compile, printer, paths
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.inwer import inwer_util
@@ -52,7 +52,7 @@ class Command(BaseCommand):
         """
         Verifies a test and returns the result of inwer on this test.
         """
-        output_dir = os.path.join(os.getcwd(), 'cache', 'executions', execution.test_name)
+        output_dir = paths.get_executables_path(execution.test_name)
         os.makedirs(output_dir, exist_ok=True)
 
         command = [execution.inwer_exe_path]

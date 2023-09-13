@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, Dict
 import os
 import sys
 import shutil
@@ -7,8 +7,52 @@ import subprocess
 import yaml
 
 import sinol_make.helpers.compiler as compiler
+from sinol_make import util
+from sinol_make.helpers import paths
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
+
+
+def create_compilation_cache():
+    os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
+
+
+def check_compiled(file_path: str):
+    """
+    Check if a file is compiled
+    :param file_path: Path to the file
+    :return: executable path if compiled, None otherwise
+    """
+    create_compilation_cache()
+    md5sum = util.get_file_md5(file_path)
+    try:
+        info_file_path = paths.get_cache_path("md5sums", os.path.basename(file_path))
+        with open(info_file_path, 'r') as info_file:
+            info = yaml.load(info_file, Loader=yaml.FullLoader)
+            if info.get("md5sum", "") == md5sum:
+                exe_path = info.get("executable_path", "")
+                if os.path.exists(exe_path):
+                    return exe_path
+            return None
+    except FileNotFoundError:
+        return None
+
+
+def save_compiled(file_path: str, exe_path: str):
+    """
+    Save the compiled executable path to cache in `.cache/md5sums/<basename of file_path>`,
+    which contains the md5sum of the file and the path to the executable.
+    :param file_path: Path to the file
+    :param exe_path: Path to the compiled executable
+    """
+    create_compilation_cache()
+    info_file_path = paths.get_cache_path("md5sums", os.path.basename(file_path))
+    info = {
+        "md5sum": util.get_file_md5(file_path),
+        "executable_path": exe_path
+    }
+    with open(info_file_path, 'w') as info_file:
+        yaml.dump(info, info_file)
 
 
 def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
@@ -25,8 +69,21 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     """
     if extra_compilation_args is None:
         extra_compilation_args = []
+    if isinstance(extra_compilation_args, str):
+        extra_compilation_args = [extra_compilation_args]
+    assert isinstance(extra_compilation_args, list) and all(isinstance(arg, str) for arg in extra_compilation_args)
+
     if extra_compilation_files is None:
         extra_compilation_files = []
+
+    compiled_exe = check_compiled(program)
+    if compiled_exe is not None:
+        if compile_log is not None:
+            compile_log.write(f'Using cached executable {compiled_exe}\n')
+            compile_log.close()
+        if os.path.abspath(compiled_exe) != os.path.abspath(output):
+            shutil.copy(compiled_exe, output)
+        return True
 
     for file in extra_compilation_files:
         shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
@@ -77,6 +134,7 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
+        save_compiled(program, output)
         return True
 
 
@@ -90,22 +148,22 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
     :param weak_compilation_flags: Use weaker compilation flags
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
-
-    executable_dir = os.path.join(os.getcwd(), 'cache', 'executables')
-    compile_log_dir = os.path.join(os.getcwd(), 'cache', 'compilation')
-    os.makedirs(executable_dir, exist_ok=True)
-    os.makedirs(compile_log_dir, exist_ok=True)
+    os.makedirs(paths.get_executables_path(), exist_ok=True)
+    os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
 
     with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
 
     extra_compilation_files = [os.path.join(os.getcwd(), "prog", file)
                                for file in config.get("extra_compilation_files", [])]
-    extra_compilation_args = [os.path.join(os.getcwd(), "prog", file)
-                              for file in config.get('extra_compilation_args', {}).get(os.path.splitext(file_path)[1][1:], [])]
+    lang = os.path.splitext(file_path)[1][1:]
+    args = config.get('extra_compilation_args', {}).get(lang, [])
+    if isinstance(args, str):
+        args = [args]
+    extra_compilation_args = [os.path.join(os.getcwd(), "prog", file) for file in args]
 
-    output = os.path.join(executable_dir, name)
-    compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')
+    output = paths.get_executables_path(name)
+    compile_log_path = paths.get_compilation_log_path(os.path.splitext(name)[0] + '.compile_log')
     with open(compile_log_path, 'w') as compile_log:
         try:
             if compile(file_path, output, compilers, compile_log, weak_compilation_flags, extra_compilation_args,
