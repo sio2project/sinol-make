@@ -73,6 +73,14 @@ def get_handwritten_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "hwr")
 
 
+def get_stack_size_package_path():
+    """
+    Get path to package for testing of changing stack size (/test/packages/stc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "stc")
+
+
+
 def get_override_limits_package_path():
     """
     Get path to package with `override_limits` present in config (/test/packages/ovl)

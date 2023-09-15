@@ -1,0 +1,9 @@
+title: Package for testing if changing stack size works
+
+memory_limit: 1000
+time_limit: 10000
+
+sinol_expected_scores:
+  stc.cpp:
+    expected: {1: OK}
+    points: 100

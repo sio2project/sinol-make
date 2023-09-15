@@ -3,7 +3,9 @@ import platform
 import tempfile
 import shutil
 import hashlib
+import subprocess
 import threading
+import resource
 from typing import Union
 
 import sinol_make
@@ -247,6 +249,18 @@ def stringify_keys(d):
         return [stringify_keys(x) for x in d]
     else:
         return d
+
+
+def change_stack_size_to_unlimited():
+    """
+    Function to change the stack size to unlimited.
+    """
+    try:
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+    except (resource.error, ValueError):
+        # We can't run `ulimit -s unlimited` in the code, because since it failed, it probably requires root.
+        print(error(f'Failed to change stack size to unlimited. Please run `ulimit -s unlimited` '
+                    f'to make sure that solutions with large stack size will work.'))
 
 
 def is_wsl():
