@@ -19,5 +19,7 @@ jobs:
         run: |
           pip install .[tests]
       - name: Run pytest
+        env:
+          PYTEST_ADDOPTS: "--color=yes"
         run: |
           python -m pytest -v --github-runner

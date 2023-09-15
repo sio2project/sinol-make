@@ -30,5 +30,7 @@ jobs:
         run: |
           python3 -m pip install .[tests]
       - name: Run pytest
+        env:
+          PYTEST_ADDOPTS: "--color=yes"
         run: |
           python3 -m pytest -v --time-tool time
