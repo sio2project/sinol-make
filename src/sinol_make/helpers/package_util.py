@@ -53,7 +53,11 @@ def get_tests(arg_tests: Union[List[str], None] = None) -> List[str]:
                      if test[-3:] == ".in"]
         return sorted(all_tests, key=get_test_key)
     else:
-        return sorted(list(set(arg_tests)), key=get_test_key)
+        existing_tests = set()
+        for test in arg_tests:
+            if os.path.exists(test):
+                existing_tests.add(test)
+        return sorted(list(existing_tests), key=get_test_key)
 
 
 def get_file_name(file_path):
