@@ -416,8 +416,8 @@ def test_set_scores(create_package):
     """
     package_path = create_package
     command = get_command(package_path)
-    command.args = argparse.Namespace(tests=["in/abc0a.in", "in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in",
-                                             "in/abc5a.in", "in/abc6a.in"])
+    command.tests = ["in/abc0a.in", "in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in",
+                     "in/abc5a.in", "in/abc6a.in"]
     del command.config["scores"]
     command.set_scores()
     assert command.scores == {

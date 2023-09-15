@@ -237,6 +237,7 @@ def test_weak_compilation_flags(create_package):
     """
     Test flag --weak-compilation-flags.
     """
+    package_path = create_package
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", "time"])
     command = Command()
