@@ -112,7 +112,6 @@ def run_ingen(ingen_exe, working_dir=None):
 
     is_shell = os.path.splitext(ingen_exe)[1] == '.sh'
     if is_shell:
-        util.fix_line_endings(ingen_exe)
         st = os.stat(ingen_exe)
         os.chmod(ingen_exe, st.st_mode | stat.S_IEXEC)
 
