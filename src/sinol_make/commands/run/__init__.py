@@ -1030,7 +1030,7 @@ class Command(BaseCommand):
             return 'time', 'time'
 
         timetool_path, timetool_name = None, None
-        default_timetool = use_oiejq if util.is_linux() else use_time
+        use_default_timetool = use_oiejq if util.is_linux() else use_time
 
         if args.time_tool is None and self.config.get('sinol_undocumented_time_tool', '') != '':
             if self.config.get('sinol_undocumented_time_tool', '') == 'oiejq':
@@ -1038,12 +1038,11 @@ class Command(BaseCommand):
             else:
                 timetool_path, timetool_name = use_time()
         elif args.time_tool is None:
-            timetool_path, timetool_name = default_timetool()
+            timetool_path, timetool_name = use_default_timetool()
         elif args.time_tool == 'oiejq':
             timetool_path, timetool_name = use_oiejq()
         elif args.time_tool == 'time':
             timetool_path, timetool_name = use_time()
-        print(timetool_path)
         return compilers, timetool_path, timetool_name
 
     def exit(self):
