@@ -996,7 +996,9 @@ class Command(BaseCommand):
         compilers = compiler.verify_compilers(args, self.get_solutions(None))
 
         timetool_path = None
-        if args.time_tool == 'oiejq':
+        default_timetool = 'oiejq' if util.is_linux() else 'time'
+        if args.time_tool == 'oiejq' or \
+                (args.time_tool == default_timetool and self.config.get('sinol_undocumented_time_tool', '') == 'oiejq'):
             if not util.is_linux():
                 util.exit_with_error('As `oiejq` works only on Linux-based operating systems,\n'
                                      'we do not recommend using operating systems such as Windows or macOS.\n'
@@ -1014,7 +1016,8 @@ class Command(BaseCommand):
                 timetool_path = oiejq.get_oiejq_path()
             if timetool_path is None:
                 util.exit_with_error('oiejq is not installed.')
-        elif args.time_tool == 'time':
+        elif args.time_tool == 'time' or \
+                (args.time_tool == default_timetool and self.config.get('sinol_undocumented_time_tool', '') == 'time'):
             if sys.platform == 'win32' or sys.platform == 'cygwin':
                 util.exit_with_error('Measuring with `time` is not supported on Windows.')
             timetool_path = 'time'
