@@ -6,7 +6,7 @@ import copy
 
 from ...fixtures import *
 from .util import *
-from sinol_make import configure_parsers
+from sinol_make import configure_parsers, util, oiejq
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
@@ -446,3 +446,32 @@ def test_mem_limit_kill(create_package, time_tool):
     assert e.value.code == 1
     assert end_time - start_time < 5  # The solution runs for 20 seconds, but it immediately exceeds memory limit,
                                       # so it should be killed.
+
+
+@pytest.mark.parametrize("create_package", [get_undocumented_options_package_path()], indirect=True)
+def test_undocumented_time_tool_option(create_package):
+    """
+    Test if `undocumented_time_tool` option works.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run"])
+    command = Command()
+    command.run(args)
+    assert command.timetool_path == "time"
+
+
+@pytest.mark.oiejq
+@pytest.mark.parametrize("create_package", [get_undocumented_options_package_path()], indirect=True)
+def test_override_undocumented_time_tool_option(create_package):
+    """
+    Test if overriding `undocumented_time_tool` option with --time-tool flag works.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", "oiejq"])
+    command = Command()
+    command.run(args)
+    assert command.timetool_path == oiejq.get_oiejq_path()
