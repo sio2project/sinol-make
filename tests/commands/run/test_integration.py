@@ -475,3 +475,30 @@ def test_override_undocumented_time_tool_option(create_package):
     command = Command()
     command.run(args)
     assert command.timetool_path == oiejq.get_oiejq_path()
+
+
+@pytest.mark.parametrize("create_package", [get_undocumented_options_package_path()], indirect=True)
+def test_undocumented_test_limits_option(create_package, capsys):
+    """
+    Test if `undocumented_test_limits` option works.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run"])
+    command = Command()
+    command.run(args)
+
+    with open(os.path.join(os.getcwd(), "config.yml")) as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    del config["sinol_undocumented_test_limits"]
+    with open(os.path.join(os.getcwd(), "config.yml"), "w") as config_file:
+        config_file.write(yaml.dump(config))
+
+    command = Command()
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "und1a.in: Specifying limit for single test is a bad practice and is not supported." in out
