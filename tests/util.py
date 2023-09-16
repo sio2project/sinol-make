@@ -95,6 +95,13 @@ def get_long_name_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "long_package_name")
 
 
+def get_undocumented_options_package_path():
+    """
+    Get path to package with undocumented options in config.yml (/test/packages/undoc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "undocumented_options")
+
+
 def create_ins(package_path):
     """
     Create .in files for package.
