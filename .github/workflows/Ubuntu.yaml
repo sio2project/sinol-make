@@ -14,6 +14,8 @@ jobs:
         - /home/actions/oiejq:/github/home/.local/bin
       env:
         DEB_PYTHON_INSTALL_LAYOUT: deb
+        DEBIAN_FRONTEND: noninteractive
+        TZ: Europe/Warsaw
       options:
         --privileged
     steps:
