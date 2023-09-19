@@ -62,6 +62,27 @@ def get_cpp_compiler_path():
         return None
 
 
+def get_cpp_standard(compiler_path):
+    """
+    Get avaiable c++ standard
+    """
+    def check(standard):
+        try:
+            process = subprocess.Popen([compiler_path, f'--std={standard}'],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        except FileNotFoundError:
+            return False
+        _, out = process.communicate()
+        return "fatal error: no input files" in out.decode("utf-8")
+
+    if check("c++20"):
+        return "c++20"
+    elif check("c++2a"):
+        return "c++2a"
+    else:
+        return "c++17"
+
+
 def get_python_interpreter_path():
     """
     Get the Python interpreter
