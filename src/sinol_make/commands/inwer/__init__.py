@@ -87,7 +87,7 @@ class Command(BaseCommand):
         sorted_tests = sorted(self.tests, key=lambda x: x[0])
         executions: List[InwerExecution] = []
         for test in sorted_tests:
-            results[test] = TestResult(test)
+            results[test] = TestResult(test, self.task_id)
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
@@ -123,6 +123,7 @@ class Command(BaseCommand):
         util.exit_if_not_package()
 
         self.task_id = package_util.get_task_id()
+        package_util.validate_test_names(self.task_id)
         self.inwer = inwer_util.get_inwer_path(self.task_id, args.inwer_path)
         if self.inwer is None:
             if args.inwer_path is None:
@@ -133,7 +134,7 @@ class Command(BaseCommand):
         print(f'Verifying with inwer {util.bold(relative_path)}')
 
         self.cpus = args.cpus or mp.cpu_count()
-        self.tests = package_util.get_tests(args.tests)
+        self.tests = package_util.get_tests(self.task_id, args.tests)
 
         if len(self.tests) == 0:
             util.exit_with_error('No tests found.')

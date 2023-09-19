@@ -45,7 +45,7 @@ class Command(BaseCommand):
             util.exit_with_error('Failed to run ingen.')
 
         tests = glob.glob(os.path.join(working_dir, f'{self.task_id}*.in'))
-        return [package_util.extract_test_id(test) for test in tests]
+        return [package_util.extract_test_id(test, self.task_id) for test in tests]
 
     def copy_package_required_files(self, target_dir: str):
         """
@@ -74,7 +74,7 @@ class Command(BaseCommand):
         tests_to_copy = []
         for ext in ['in', 'out']:
             for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}*.{ext}')):
-                if package_util.extract_test_id(test) not in generated_tests:
+                if package_util.extract_test_id(test, self.task_id) not in generated_tests:
                     tests_to_copy.append(test)
 
         if len(tests_to_copy) > 0:
@@ -132,6 +132,7 @@ class Command(BaseCommand):
 
         self.args = args
         self.task_id = package_util.get_task_id()
+        package_util.validate_test_names(self.task_id)
 
         with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
             config = yaml.load(config_file, Loader=yaml.FullLoader)

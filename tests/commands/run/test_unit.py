@@ -50,7 +50,7 @@ def test_execution(create_package, time_tool):
     assert result == [True]
 
     create_ins_outs(package_path)
-    test = package_util.get_tests(None)[0]
+    test = package_util.get_tests("abc", None)[0]
 
     with open(os.path.join(package_path, "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -78,7 +78,7 @@ def test_run_solutions(create_package, time_tool):
     command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool, weak_compilation_flags=False,
                                       hide_memory=False)
     create_ins_outs(package_path)
-    command.tests = package_util.get_tests(None)
+    command.tests = package_util.get_tests("abc", None)
     command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
     command.scores = command.config["scores"]
     command.possible_score = command.get_possible_score(command.groups)
@@ -132,7 +132,7 @@ def test_validate_expected_scores_success():
     os.chdir(get_simple_package_path())
     command = get_command()
     command.scores = command.config["scores"]
-    command.tests = package_util.get_tests(None)
+    command.tests = package_util.get_tests("abc", None)
 
     # Test with correct expected scores.
     command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
@@ -439,7 +439,7 @@ def test_get_valid_input_files(create_package):
     package_path = create_package
     command = get_command(package_path)
     create_ins_outs(package_path)
-    command.tests = package_util.get_tests(None)
+    command.tests = package_util.get_tests(command.ID, None)
 
     outputs = glob.glob(os.path.join(package_path, "out", "*.out"))
     os.unlink(outputs[0])

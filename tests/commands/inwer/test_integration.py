@@ -2,6 +2,7 @@ import pytest
 
 from sinol_make import configure_parsers
 from sinol_make.commands.inwer import Command
+from sinol_make.helpers import package_util
 from tests import util
 from tests.fixtures import *
 
@@ -12,7 +13,8 @@ def test_default(capsys, create_package):
     Test `inwer` command with no parameters.
     """
     package_path = create_package
-    util.create_ins(package_path)
+    task_id = package_util.get_task_id()
+    util.create_ins(package_path, task_id)
     parser = configure_parsers()
     args = parser.parse_args(["inwer"])
     command = Command()
@@ -33,7 +35,8 @@ def test_specified_inwer(capsys, create_package):
     Test `inwer` command with specified inwer.
     """
     package_path = create_package
-    util.create_ins(package_path)
+    task_id = package_util.get_task_id()
+    util.create_ins(package_path, task_id)
     parser = configure_parsers()
     args = parser.parse_args(["inwer", "prog/werinwer.cpp"])
     command = Command()
@@ -66,7 +69,8 @@ def test_asserting_inwer(capsys, create_package):
     Test `inwer` command with inwer that uses assert for verifying.
     """
     package_path = create_package
-    util.create_ins(package_path)
+    task_id = package_util.get_task_id()
+    util.create_ins(package_path, task_id)
     parser = configure_parsers()
     args = parser.parse_args(["inwer", "prog/werinwer3.cpp"])
     command = Command()
@@ -87,7 +91,8 @@ def test_flag_tests(capsys, create_package):
     Test `inwer` command with --tests flag.
     """
     package_path = create_package
-    util.create_ins(package_path)
+    task_id = package_util.get_task_id()
+    util.create_ins(package_path, task_id)
     parser = configure_parsers()
     args = parser.parse_args(["inwer", "prog/werinwer.cpp", "--tests", "in/wer2a.in"])
     command = Command()
@@ -125,7 +130,8 @@ def test_no_output(capsys, create_package):
     Test `inwer` command when inwer doesn't print anything.
     """
     package_path = create_package
-    util.create_ins(package_path)
+    task_id = package_util.get_task_id()
+    util.create_ins(package_path, task_id)
     parser = configure_parsers()
     args = parser.parse_args(["inwer", "prog/werinwer4.cpp"])
     command = Command()
