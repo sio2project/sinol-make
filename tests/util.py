@@ -2,8 +2,7 @@ import os
 import glob
 import subprocess
 
-from sinol_make.helpers import compile
-
+from sinol_make.helpers import compile, paths
 
 
 def get_simple_package_path():
@@ -74,6 +73,14 @@ def get_handwritten_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "hwr")
 
 
+def get_stack_size_package_path():
+    """
+    Get path to package for testing of changing stack size (/test/packages/stc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "stc")
+
+
+
 def get_override_limits_package_path():
     """
     Get path to package with `override_limits` present in config (/test/packages/ovl)
@@ -87,17 +94,24 @@ def get_doc_package_path():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "doc")
 
+ 
+def get_long_name_package_path():
+    """
+    Get path to package with long name (/test/packages/long_package_name)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "long_package_name")
+
 
 def create_ins(package_path):
     """
     Create .in files for package.
     """
     ingen = glob.glob(os.path.join(package_path, "prog", "*ingen.*"))[0]
-    ingen_executable = os.path.join(package_path, "cache", "executables", "ingen.e")
-    os.makedirs(os.path.join(package_path, "cache", "executables"), exist_ok=True)
+    ingen_executable = paths.get_executables_path("ingen.e")
+    os.makedirs(paths.get_executables_path(), exist_ok=True)
     assert compile.compile(ingen, ingen_executable)
     os.chdir(os.path.join(package_path, "in"))
-    os.system("../cache/executables/ingen.e")
+    os.system("../.cache/executables/ingen.e")
     os.chdir(package_path)
 
 
@@ -106,13 +120,13 @@ def create_outs(package_path):
     Create .out files for package.
     """
     solution = glob.glob(os.path.join(package_path, "prog", "???.*"))[0]
-    solution_executable = os.path.join(package_path, "cache", "executables", "solution.e")
-    os.makedirs(os.path.join(package_path, "cache", "executables"), exist_ok=True)
+    solution_executable = paths.get_executables_path("solution.e")
+    os.makedirs(paths.get_executables_path(), exist_ok=True)
     assert compile.compile(solution, solution_executable)
     os.chdir(os.path.join(package_path, "in"))
     for file in glob.glob("*.in"):
         with open(file, "r") as in_file, open(os.path.join("../out", file.replace(".in", ".out")), "w") as out_file:
-            subprocess.Popen([os.path.join(package_path, "cache", "executables", "solution.e")],
+            subprocess.Popen([os.path.join(package_path, ".cache", "executables", "solution.e")],
                              stdin=in_file, stdout=out_file).wait()
     os.chdir(package_path)
 

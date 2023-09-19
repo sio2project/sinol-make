@@ -5,10 +5,14 @@ import time
 import json
 import tempfile
 import requests
+import resource
 import requests_mock
 import pytest
 
-from sinol_make import util
+from sinol_make import util, configure_parsers
+from tests import util as test_util
+from tests.fixtures import create_package
+from tests.commands.run import util as run_util
 
 
 def test_file_diff():

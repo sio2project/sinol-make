@@ -6,7 +6,7 @@ import argparse
 import yaml
 
 from sinol_make import util
-from sinol_make.helpers import package_util, parsers
+from sinol_make.helpers import package_util, parsers, paths
 from sinol_make.commands.gen import gen_util
 from sinol_make.interfaces.BaseCommand import BaseCommand
 
@@ -34,7 +34,7 @@ class Command(BaseCommand):
         if not gen_util.ingen_exists(self.task_id):
             return []
 
-        working_dir = os.path.join(os.getcwd(), 'cache', 'export', 'tests')
+        working_dir = paths.get_cache_path('export', 'tests')
         if os.path.exists(working_dir):
             shutil.rmtree(working_dir)
         os.makedirs(working_dir)
@@ -100,8 +100,8 @@ class Command(BaseCommand):
         :param config: Config dictionary.
         """
         with open(os.path.join(target_dir, 'makefile.in'), 'w') as f:
-            cxx_flags = '-std=c++17'
-            c_flags = '-std=c17'
+            cxx_flags = '-std=c++20'
+            c_flags = '-std=gnu99'
             def format_multiple_arguments(obj):
                 if isinstance(obj, str):
                     return obj
@@ -146,11 +146,12 @@ class Command(BaseCommand):
         with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
             config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-        export_package_path = os.path.join(os.getcwd(), 'cache', 'export', self.task_id)
+        export_package_path = paths.get_cache_path('export', self.task_id)
         if os.path.exists(export_package_path):
             shutil.rmtree(export_package_path)
         os.makedirs(export_package_path)
 
+        util.change_stack_size_to_unlimited()
         self.copy_package_required_files(export_package_path)
         self.clear_files(export_package_path)
         self.create_makefile_in(export_package_path, config)

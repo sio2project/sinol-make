@@ -42,10 +42,14 @@ def get_ingen(task_id=None, ingen_path=None):
         util.exit_with_error(f'Ingen source file for task {task_id} does not exist.')
 
     # Sio2 first chooses shell scripts, then non-shell source codes.
-    if os.path.splitext(ingen[0])[1] == '.sh' and len(ingen) > 1:
-        return ingen[1]
-    else:
-        return ingen[0]
+    correct_ingen = None
+    for i in ingen:
+        if os.path.splitext(i)[1] == '.sh':
+            correct_ingen = i
+            break
+    if correct_ingen is None:
+        correct_ingen = ingen[0]
+    return correct_ingen
 
 
 def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_flags=False):

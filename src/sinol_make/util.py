@@ -1,9 +1,14 @@
 import glob, importlib, os, sys, requests, yaml
 import platform
 import tempfile
+import shutil
 import hashlib
+import subprocess
 import threading
+import resource
 from typing import Union
+
+import sinol_make
 
 
 def get_commands():
@@ -246,6 +251,18 @@ def stringify_keys(d):
         return d
 
 
+def change_stack_size_to_unlimited():
+    """
+    Function to change the stack size to unlimited.
+    """
+    try:
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+    except (resource.error, ValueError):
+        # We can't run `ulimit -s unlimited` in the code, because since it failed, it probably requires root.
+        print(error(f'Failed to change stack size to unlimited. Please run `ulimit -s unlimited` '
+                    f'to make sure that solutions with large stack size will work.'))
+
+
 def is_wsl():
     """
     Function to check if the program is running on Windows Subsystem for Linux.
@@ -268,6 +285,7 @@ def get_file_md5(path):
 def color_red(text): return "\033[91m{}\033[00m".format(text)
 def color_green(text): return "\033[92m{}\033[00m".format(text)
 def color_yellow(text): return "\033[93m{}\033[00m".format(text)
+def color_gray(text): return "\033[90m{}\033[00m".format(text)
 def bold(text): return "\033[01m{}\033[00m".format(text)
 
 def info(text):

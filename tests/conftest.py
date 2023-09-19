@@ -5,15 +5,14 @@ import os
 import pytest
 import multiprocessing as mp
 
-from sinol_make.helpers import compile
+from sinol_make.helpers import compile, paths
 
 
 def _compile(args):
     package, file_path = args
     os.chdir(package)
-    output = os.path.join(package, "cache", "executables", os.path.splitext(os.path.basename(file_path))[0] + ".e")
-    with open(os.path.join(package, "cache", "compilation",
-                           os.path.basename(file_path) + ".compile_log"), "w") as compile_log:
+    output = paths.get_executables_path(os.path.splitext(os.path.basename(file_path))[0] + ".e")
+    with open(paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log"), "w") as compile_log:
         compile.compile(file_path, output, compile_log=compile_log)
 
 
@@ -43,7 +42,7 @@ def pytest_configure(config):
                 continue
 
             for d in ["compilation", "executables"]:
-                os.makedirs(os.path.join(package, "cache", d), exist_ok=True)
+                os.makedirs(os.path.join(package, ".cache", d), exist_ok=True)
 
             for program in glob.glob(os.path.join(package, "prog", "*")):
                 if os.path.isfile(program) and os.path.splitext(program)[1] in [".c", ".cpp", ".py", ".java"]:

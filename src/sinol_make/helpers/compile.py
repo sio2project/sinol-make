@@ -8,19 +8,13 @@ import yaml
 
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
+from sinol_make.helpers import paths
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
 
-def get_executable_info_file(file_path):
-    """
-    Calculate the md5 sum of file's content and return the path to file `cache/md5sums/<md5sum>`.
-    If this file exists it contains the path to the compiled executable.
-    Thanks to that, we cache the compiled solutions and recompile them when they change.
-    """
-    os.makedirs(os.path.join(os.getcwd(), 'cache', 'md5sums'), exist_ok=True)
-    md5sum = util.get_file_md5(file_path)
-    return os.path.join(os.getcwd(), 'cache', 'md5sums', md5sum)
+def create_compilation_cache():
+    os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
 
 
 def check_compiled(file_path: str):
@@ -29,31 +23,36 @@ def check_compiled(file_path: str):
     :param file_path: Path to the file
     :return: executable path if compiled, None otherwise
     """
-    info_file_path = get_executable_info_file(file_path)
-
+    create_compilation_cache()
+    md5sum = util.get_file_md5(file_path)
     try:
-        with open(info_file_path, 'r') as md5sums_file:
-            exe_file = md5sums_file.read().strip()
-            if os.path.exists(exe_file):
-                return exe_file
-            else:
-                os.unlink(info_file_path)
-                return None
+        info_file_path = paths.get_cache_path("md5sums", os.path.basename(file_path))
+        with open(info_file_path, 'r') as info_file:
+            info = yaml.load(info_file, Loader=yaml.FullLoader)
+            if info.get("md5sum", "") == md5sum:
+                exe_path = info.get("executable_path", "")
+                if os.path.exists(exe_path):
+                    return exe_path
+            return None
     except FileNotFoundError:
         return None
 
 
 def save_compiled(file_path: str, exe_path: str):
     """
-    Save the compiled executable path to cache in `cache/md5sums/<md5sum>`,
-    where <md5sum> is the md5 sum of the file's content.
+    Save the compiled executable path to cache in `.cache/md5sums/<basename of file_path>`,
+    which contains the md5sum of the file and the path to the executable.
     :param file_path: Path to the file
     :param exe_path: Path to the compiled executable
     """
-    info_file_path = get_executable_info_file(file_path)
-
-    with open(info_file_path, 'w') as md5sums_file:
-        md5sums_file.write(exe_path)
+    create_compilation_cache()
+    info_file_path = paths.get_cache_path("md5sums", os.path.basename(file_path))
+    info = {
+        "md5sum": util.get_file_md5(file_path),
+        "executable_path": exe_path
+    }
+    with open(info_file_path, 'w') as info_file:
+        yaml.dump(info, info_file)
 
 
 def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
@@ -101,11 +100,11 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     if ext == '.cpp':
         arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
-                    f'--std=c++17 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
+                    f'--std=c++20 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
     elif ext == '.c':
         arguments = [compilers.c_compiler_path or compiler.get_c_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
-                    f'--std=c17 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
+                    f'--std=gnu99 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             # TODO: Make this work on Windows
@@ -149,11 +148,8 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
     :param weak_compilation_flags: Use weaker compilation flags
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
-
-    executable_dir = os.path.join(os.getcwd(), 'cache', 'executables')
-    compile_log_dir = os.path.join(os.getcwd(), 'cache', 'compilation')
-    os.makedirs(executable_dir, exist_ok=True)
-    os.makedirs(compile_log_dir, exist_ok=True)
+    os.makedirs(paths.get_executables_path(), exist_ok=True)
+    os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
 
     with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -166,8 +162,8 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
         args = [args]
     extra_compilation_args = [os.path.join(os.getcwd(), "prog", file) for file in args]
 
-    output = os.path.join(executable_dir, name)
-    compile_log_path = os.path.join(compile_log_dir, os.path.splitext(name)[0] + '.compile_log')
+    output = paths.get_executables_path(name)
+    compile_log_path = paths.get_compilation_log_path(os.path.splitext(name)[0] + '.compile_log')
     with open(compile_log_path, 'w') as compile_log:
         try:
             if compile(file_path, output, compilers, compile_log, weak_compilation_flags, extra_compilation_args,
