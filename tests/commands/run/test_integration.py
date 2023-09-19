@@ -1,5 +1,6 @@
 import copy
 import sys
+import time
 import pytest
 import copy
 
@@ -11,7 +12,7 @@ from sinol_make import configure_parsers
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_limits_package_path(), get_override_limits_package_path()],
+                                            get_override_limits_package_path()],
                          indirect=True)
 def test_simple(create_package, time_tool):
     """
@@ -30,7 +31,7 @@ def test_simple(create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_limits_package_path(), get_override_limits_package_path()],
+                                            get_override_limits_package_path()],
                          indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
@@ -66,7 +67,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_limits_package_path(), get_override_limits_package_path()],
+                                            get_override_limits_package_path()],
                          indirect=True)
 def test_apply_suggestions(create_package, time_tool):
     """
@@ -424,3 +425,25 @@ def test_override_limits(create_package, time_tool):
             "points": 0
         }
     }
+
+
+@pytest.mark.parametrize("create_package", [get_stack_size_package_path()], indirect=True)
+def test_mem_limit_kill(create_package, time_tool):
+    """
+    Test if `sinol-make` kills solution if it runs with memory limit exceeded.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    start_time = time.time()
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+    end_time = time.time()
+
+    assert e.value.code == 1
+    assert end_time - start_time < 5  # The solution runs for 20 seconds, but it immediately exceeds memory limit,
+                                      # so it should be killed.

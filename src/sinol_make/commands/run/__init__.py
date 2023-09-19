@@ -4,8 +4,10 @@
 import subprocess
 import signal
 import threading
-from io import StringIO
+import time
+import psutil
 import glob
+from io import StringIO
 from typing import Dict
 
 from sinol_make import contest_types, oiejq
@@ -503,7 +505,10 @@ class Command(BaseCommand):
 
     def execute_time(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
                       time_limit, memory_limit, hard_time_limit):
+
+        executable = package_util.get_executable(name)
         timeout = False
+        mem_limit_exceeded = False
         with open(input_file_path, "r") as input_file:
             process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                        preexec_fn=os.setsid)
@@ -516,11 +521,27 @@ class Command(BaseCommand):
                 sys.exit(1)
             signal.signal(signal.SIGINT, sigint_handler)
 
-            try:
-                output, _ = process.communicate(timeout=hard_time_limit)
-            except subprocess.TimeoutExpired:
-                timeout = True
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            start_time = time.time()
+            while process.poll() is None:
+                try:
+                    time_process = psutil.Process(process.pid)
+                    executable_process = None
+                    for child in time_process.children():
+                        if child.name() == executable:
+                            executable_process = child
+                            break
+                    if executable_process is not None and executable_process.memory_info().rss > memory_limit * 1024:
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        mem_limit_exceeded = True
+                        break
+                except psutil.NoSuchProcess:
+                    pass
+
+                if time.time() - start_time > hard_time_limit:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                    timeout = True
+                    break
+            output, _ = process.communicate()
 
         result = ExecutionResult()
         program_exit_code = None
@@ -546,7 +567,7 @@ class Command(BaseCommand):
                     Command terminated by signal 11
                 """
                 program_exit_code = int(lines[0].strip().split(" ")[-1])
-            else:
+            elif not mem_limit_exceeded:
                 result.Status = Status.RE
                 result.Error = "Unexpected output from time command: " + "\n".join(lines)
                 return result
@@ -555,6 +576,9 @@ class Command(BaseCommand):
             result.Status = Status.RE
         elif timeout:
             result.Status = Status.TL
+        elif mem_limit_exceeded:
+            result.Memory = memory_limit + 1  # Add one so that the memory is red in the table
+            result.Status = Status.ML
         elif result.Time > time_limit:
             result.Status = Status.TL
         elif result.Memory > memory_limit:
@@ -1150,6 +1174,7 @@ class Command(BaseCommand):
         self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
 
+        util.change_stack_size_to_unlimited()
         for solution in solutions:
             lang = package_util.get_file_lang(solution)
             for test in self.tests:

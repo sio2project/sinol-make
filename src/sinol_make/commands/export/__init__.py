@@ -90,8 +90,8 @@ class Command(BaseCommand):
         :param config: Config dictionary.
         """
         with open(os.path.join(target_dir, 'makefile.in'), 'w') as f:
-            cxx_flags = '-std=c++17'
-            c_flags = '-std=c17'
+            cxx_flags = '-std=c++20'
+            c_flags = '-std=gnu99'
             def format_multiple_arguments(obj):
                 if isinstance(obj, str):
                     return obj
@@ -142,6 +142,7 @@ class Command(BaseCommand):
             shutil.rmtree(export_package_path)
         os.makedirs(export_package_path)
 
+        util.change_stack_size_to_unlimited()
         self.copy_package_required_files(export_package_path)
         self.create_makefile_in(export_package_path, config)
         archive = self.compress(export_package_path)
