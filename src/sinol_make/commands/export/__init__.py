@@ -83,6 +83,16 @@ class Command(BaseCommand):
                 print(util.warning(f'Coping {os.path.basename(test)}...'))
                 shutil.copy(test, os.path.join(target_dir, os.path.splitext(os.path.basename(test))[1]))
 
+    def clear_files(self, target_dir: str):
+        """
+        Clears unnecessary files from target directory.
+        :param target_dir: Directory to clear files from.
+        """
+        files_to_remove = ['doc/*~', 'doc/*.aux', 'doc/*.log', 'doc/*.dvi', 'doc/*.err', 'doc/*.inf']
+        for pattern in files_to_remove:
+            for f in glob.glob(os.path.join(target_dir, pattern)):
+                os.remove(f)
+
     def create_makefile_in(self, target_dir: str, config: dict):
         """
         Creates required `makefile.in` file.
@@ -144,6 +154,7 @@ class Command(BaseCommand):
 
         util.change_stack_size_to_unlimited()
         self.copy_package_required_files(export_package_path)
+        self.clear_files(export_package_path)
         self.create_makefile_in(export_package_path, config)
         archive = self.compress(export_package_path)
 

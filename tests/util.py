@@ -88,6 +88,13 @@ def get_override_limits_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "ovl")
 
 
+def get_doc_package_path():
+    """
+    Get path to package for testing `doc` command (/test/packages/doc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "doc")
+
+ 
 def get_long_name_package_path():
     """
     Get path to package with long name (/test/packages/long_package_name)
