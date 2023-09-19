@@ -1035,14 +1035,18 @@ class Command(BaseCommand):
         if args.time_tool is None and self.config.get('sinol_undocumented_time_tool', '') != '':
             if self.config.get('sinol_undocumented_time_tool', '') == 'oiejq':
                 timetool_path, timetool_name = use_oiejq()
-            else:
+            elif self.config.get('sinol_undocumented_time_tool', '') == 'time':
                 timetool_path, timetool_name = use_time()
+            else:
+                util.exit_with_error('Invalid time tool specified in config.yml.')
         elif args.time_tool is None:
             timetool_path, timetool_name = use_default_timetool()
         elif args.time_tool == 'oiejq':
             timetool_path, timetool_name = use_oiejq()
         elif args.time_tool == 'time':
             timetool_path, timetool_name = use_time()
+        else:
+            util.exit_with_error('Invalid time tool specified.')
         return compilers, timetool_path, timetool_name
 
     def exit(self):
