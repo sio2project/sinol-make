@@ -36,7 +36,8 @@ def test_asserting_inwer(create_package):
     Test asserting inwer.
     """
     package_path = create_package
-    util.create_ins(package_path)
+    task_id = package_util.get_task_id()
+    util.create_ins(package_path, task_id)
     inwer_path = os.path.join(os.getcwd(), 'prog', 'werinwer3.cpp')
     args = argparse.Namespace(
         c_compiler_path=compiler.get_c_compiler_path(),
