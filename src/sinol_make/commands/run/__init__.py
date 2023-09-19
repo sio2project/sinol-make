@@ -254,7 +254,7 @@ class Command(BaseCommand):
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
                             help='hide memory usage in report')
-        parser.add_argument('-T', '--time-tool', dest='time_tool', choices=['oiejq', 'time'], default=default_timetool,
+        parser.add_argument('-T', '--time-tool', dest='time_tool', choices=['oiejq', 'time'],
                             help=f'tool to measure time and memory usage (default: {default_timetool})')
         parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
@@ -456,7 +456,10 @@ class Command(BaseCommand):
                 output, lines = process.communicate(timeout=hard_time_limit)
             except subprocess.TimeoutExpired:
                 timeout = True
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
                 process.communicate()
 
         result = ExecutionResult()
@@ -531,14 +534,20 @@ class Command(BaseCommand):
                             executable_process = child
                             break
                     if executable_process is not None and executable_process.memory_info().rss > memory_limit * 1024:
-                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        try:
+                            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                        except ProcessLookupError:
+                            pass
                         mem_limit_exceeded = True
                         break
                 except psutil.NoSuchProcess:
                     pass
 
                 if time.time() - start_time > hard_time_limit:
-                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                    try:
+                        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass
                     timeout = True
                     break
             output, _ = process.communicate()
@@ -609,12 +618,12 @@ class Command(BaseCommand):
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
-        if self.args.time_tool == 'oiejq':
+        if self.timetool_name == 'oiejq':
             command = f'"{timetool_path}" "{executable}"'
 
             return self.execute_oiejq(command, name, result_file, test, output_file, self.get_output_file(test),
                                       time_limit, memory_limit, hard_time_limit_in_s)
-        elif self.args.time_tool == 'time':
+        elif self.timetool_name == 'time':
             if sys.platform == 'darwin':
                 timeout_name = 'gtimeout'
                 time_name = 'gtime'
@@ -997,8 +1006,8 @@ class Command(BaseCommand):
     def validate_arguments(self, args):
         compilers = compiler.verify_compilers(args, self.get_solutions(None))
 
-        timetool_path = None
-        if args.time_tool == 'oiejq':
+        def use_oiejq():
+            timetool_path = None
             if not util.is_linux():
                 util.exit_with_error('As `oiejq` works only on Linux-based operating systems,\n'
                                      'we do not recommend using operating systems such as Windows or macOS.\n'
@@ -1016,12 +1025,31 @@ class Command(BaseCommand):
                 timetool_path = oiejq.get_oiejq_path()
             if timetool_path is None:
                 util.exit_with_error('oiejq is not installed.')
-        elif args.time_tool == 'time':
+            return timetool_path, 'oiejq'
+        def use_time():
             if sys.platform == 'win32' or sys.platform == 'cygwin':
                 util.exit_with_error('Measuring with `time` is not supported on Windows.')
-            timetool_path = 'time'
+            return 'time', 'time'
 
-        return compilers, timetool_path
+        timetool_path, timetool_name = None, None
+        use_default_timetool = use_oiejq if util.is_linux() else use_time
+
+        if args.time_tool is None and self.config.get('sinol_undocumented_time_tool', '') != '':
+            if self.config.get('sinol_undocumented_time_tool', '') == 'oiejq':
+                timetool_path, timetool_name = use_oiejq()
+            elif self.config.get('sinol_undocumented_time_tool', '') == 'time':
+                timetool_path, timetool_name = use_time()
+            else:
+                util.exit_with_error('Invalid time tool specified in config.yml.')
+        elif args.time_tool is None:
+            timetool_path, timetool_name = use_default_timetool()
+        elif args.time_tool == 'oiejq':
+            timetool_path, timetool_name = use_oiejq()
+        elif args.time_tool == 'time':
+            timetool_path, timetool_name = use_time()
+        else:
+            util.exit_with_error('Invalid time tool specified.')
+        return compilers, timetool_path, timetool_name
 
     def exit(self):
         if len(self.failed_compilations) > 0:
@@ -1147,7 +1175,7 @@ class Command(BaseCommand):
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')
 
-        self.compilers, self.timetool_path = self.validate_arguments(args)
+        self.compilers, self.timetool_path, self.timetool_name = self.validate_arguments(args)
 
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))

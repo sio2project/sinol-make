@@ -44,6 +44,7 @@ def test_execution(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
     command.args.time_tool = time_tool
+    command.timetool_name = time_tool
     solution = "abc.cpp"
     executable = package_util.get_executable(solution)
     result = command.compile_solutions([solution])
@@ -85,7 +86,7 @@ def test_run_solutions(create_package, time_tool):
     command.memory_limit = command.config["memory_limit"]
     command.time_limit = command.config["time_limit"]
     command.timetool_path = oiejq.get_oiejq_path()
-
+    command.timetool_name = time_tool
     def flatten_results(results):
         new_results = {}
         for solution in results.keys():
