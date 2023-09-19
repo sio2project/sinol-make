@@ -1,7 +1,8 @@
 import os
+import sys
 import tempfile
 
-from sinol_make.helpers import compile
+from sinol_make.helpers import compile, compiler
 
 
 def test_compilation_caching():
@@ -16,3 +17,10 @@ def test_compilation_caching():
         compile.save_compiled(os.path.join(os.getcwd(), "test.txt"),
                               os.path.join(os.getcwd(), "test.e"))
         assert compile.check_compiled(os.path.join(os.getcwd(), "test.txt")) == os.path.join(os.getcwd(), "test.e")
+
+
+def test_get_cpp_standard():
+    if sys.platform == "darwin":
+        assert compiler.get_cpp_standard("g++-12") == "c++20"
+    else:
+        assert compiler.get_cpp_standard("g++") == "c++20"
