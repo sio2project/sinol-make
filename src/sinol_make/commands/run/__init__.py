@@ -968,7 +968,7 @@ class Command(BaseCommand):
     def set_constants(self):
         self.ID = package_util.get_task_id()
         self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
-        self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
+        self.SOLUTIONS_RE = package_util.get_solutions_re(self.ID)
 
 
     def validate_arguments(self, args):

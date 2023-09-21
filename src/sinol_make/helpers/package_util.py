@@ -84,7 +84,7 @@ def get_files_matching(patterns: List[str], directory: str) -> List[str]:
             # If solution does not have `<directory>/` prefix:
             files_matching.update(glob.glob(os.path.join(os.getcwd(), directory, solution)))
 
-    return list(set(files_matching))
+    return list(files_matching)
 
 
 def get_tests(task_id: str, arg_tests: Union[List[str], None] = None) -> List[str]:
@@ -128,7 +128,6 @@ def get_solutions(task_id: str, args_solutions: Union[List[str], None] = None) -
             if solutions_re.match(os.path.basename(solution)) is not None:
                 solutions.append(os.path.basename(solution))
 
-        solutions = list(set(solutions))
         return sorted(solutions, key=get_executable_key)
 
 
