@@ -313,11 +313,23 @@ class Command(BaseCommand):
             return sorted(solutions, key=self.get_executable_key)
         else:
             solutions = []
+            files_to_check = []
             for solution in args_solutions:
+                if os.path.isabs(solution):
+                    files_to_check.append(solution)
+                else:
+                    # If solution already has `prog/` prefix:
+                    files_to_check.extend(glob.glob(os.path.join(os.getcwd(), solution)))
+                    # If solution does not have `prog/` prefix:
+                    files_to_check.extend(glob.glob(os.path.join(os.getcwd(), "prog", solution)))
+
+            for solution in files_to_check:
                 if not os.path.isfile(solution):
                     util.exit_with_error("Solution %s does not exist" % solution)
                 if self.SOLUTIONS_RE.match(os.path.basename(solution)) is not None:
                     solutions.append(os.path.basename(solution))
+
+            solutions = list(set(solutions))
             return sorted(solutions, key=self.get_executable_key)
 
 
