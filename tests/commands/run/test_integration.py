@@ -233,6 +233,33 @@ def test_flag_solutions(capsys, create_package, time_tool):
     assert os.path.basename(solutions[1]) not in out
 
 
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
+                                            get_checker_package_path()], indirect=True)
+def test_flag_solutions_multiple(capsys, create_package, time_tool):
+    """
+    Test flag --solutions with multiple solutions.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+
+    task_id = package_util.get_task_id()
+    solutions = [
+        os.path.basename(file)
+        for file in package_util.get_files_matching_pattern(task_id, f'{task_id}?.*')
+    ]
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--solutions", solutions[0], os.path.join("prog", solutions[1]),
+                              "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+
+    out = capsys.readouterr().out
+
+    assert os.path.basename(solutions[0]) in out
+    assert os.path.basename(solutions[1]) in out
+    assert os.path.basename(solutions[2]) not in out
+
+
 @pytest.mark.parametrize("create_package", [get_weak_compilation_flags_package_path()], indirect=True)
 def test_weak_compilation_flags(create_package):
     """

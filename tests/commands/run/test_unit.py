@@ -25,6 +25,32 @@ def test_get_solutions():
     assert solutions == ["abc.cpp"]
     assert "abc1.cpp" not in solutions
 
+    with tempfile.TemporaryDirectory() as tmpdir:
+        def create_file(name):
+            with open(os.path.join(tmpdir, "prog", name), "w") as f:
+                f.write("")
+
+        os.chdir(tmpdir)
+        os.mkdir("prog")
+
+        create_file("abc.cpp")
+        create_file("abc1.cpp")
+        create_file("abc2.cpp")
+        create_file("abcs1.cpp")
+        create_file("abcs2.cpp")
+
+        assert command.get_solutions(None) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert command.get_solutions(["prog/abc.cpp"]) == ["abc.cpp"]
+        assert command.get_solutions(["abc.cpp"]) == ["abc.cpp"]
+        assert command.get_solutions([os.path.join(tmpdir, "prog", "abc.cpp")]) == ["abc.cpp"]
+        assert command.get_solutions(["prog/abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
+        assert command.get_solutions(["abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
+        assert command.get_solutions(["prog/abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert command.get_solutions(["abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert command.get_solutions(["prog/abc.cpp", "abc1.cpp"]) == ["abc.cpp", "abc1.cpp"]
+        assert command.get_solutions(["prog/abc.cpp", "abc?.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp"]
+        assert command.get_solutions(["abc.cpp", "abc2.cpp", "abcs2.cpp"]) == ["abc.cpp", "abc2.cpp", "abcs2.cpp"]
+
 
 def test_get_executable_key():
     os.chdir(get_simple_package_path())
