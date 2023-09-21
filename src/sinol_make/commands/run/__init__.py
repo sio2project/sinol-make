@@ -282,22 +282,6 @@ class Command(BaseCommand):
         return int("".join(filter(str.isdigit, package_util.extract_test_id(test_path, self.ID))))
 
 
-    def get_executable_key(self, executable):
-        name = package_util.get_file_name(executable)
-        value = [0, 0]
-        if name[3] == 's':
-            value[0] = 1
-            suffix = name.split(".")[0][4:]
-        elif name[3] == 'b':
-            value[0] = 2
-            suffix = name.split(".")[0][4:]
-        else:
-            suffix = name.split(".")[0][3:]
-        if suffix != "":
-            value[1] = int(suffix)
-        return tuple(value)
-
-
     def get_solution_from_exe(self, executable):
         file = os.path.splitext(executable)[0]
         for ext in self.SOURCE_EXTENSIONS:
@@ -305,36 +289,8 @@ class Command(BaseCommand):
                 return file + ext
         util.exit_with_error("Source file not found for executable %s" % executable)
 
-
-    def get_solutions(self, args_solutions):
-        if args_solutions is None:
-            solutions = [solution for solution in os.listdir("prog/")
-                         if self.SOLUTIONS_RE.match(solution)]
-            return sorted(solutions, key=self.get_executable_key)
-        else:
-            solutions = []
-            files_to_check = []
-            for solution in args_solutions:
-                if os.path.isabs(solution):
-                    files_to_check.append(solution)
-                else:
-                    # If solution already has `prog/` prefix:
-                    files_to_check.extend(glob.glob(os.path.join(os.getcwd(), solution)))
-                    # If solution does not have `prog/` prefix:
-                    files_to_check.extend(glob.glob(os.path.join(os.getcwd(), "prog", solution)))
-
-            for solution in files_to_check:
-                if not os.path.isfile(solution):
-                    util.exit_with_error("Solution %s does not exist" % solution)
-                if self.SOLUTIONS_RE.match(os.path.basename(solution)) is not None:
-                    solutions.append(os.path.basename(solution))
-
-            solutions = list(set(solutions))
-            return sorted(solutions, key=self.get_executable_key)
-
-
     def get_executables(self, args_solutions):
-        return [package_util.get_executable(solution) for solution in self.get_solutions(args_solutions)]
+        return [package_util.get_executable(solution) for solution in package_util.get_solutions(self.ID, args_solutions)]
 
 
     def get_possible_score(self, groups):
@@ -671,7 +627,7 @@ class Command(BaseCommand):
                 for test in self.tests:
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.CE)
         print()
-        executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
+        executions.sort(key = lambda x: (package_util.get_executable_key(x[1]), x[2]))
         program_groups_scores = collections.defaultdict(dict)
         print_data = PrintData(0)
 
@@ -1016,7 +972,7 @@ class Command(BaseCommand):
 
 
     def validate_arguments(self, args):
-        compilers = compiler.verify_compilers(args, self.get_solutions(None))
+        compilers = compiler.verify_compilers(args, package_util.get_solutions(self.ID, None))
 
         def use_oiejq():
             timetool_path = None
@@ -1217,7 +1173,7 @@ class Command(BaseCommand):
         self.check_are_any_tests_to_run()
         self.set_scores()
         self.failed_compilations = []
-        solutions = self.get_solutions(self.args.solutions)
+        solutions = package_util.get_solutions(self.ID, self.args.solutions)
 
         util.change_stack_size_to_unlimited()
         for solution in solutions:
