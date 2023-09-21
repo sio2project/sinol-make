@@ -238,6 +238,7 @@ def test_weak_compilation_flags(create_package):
     """
     Test flag --weak-compilation-flags.
     """
+    package_path = create_package
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", "time"])
     command = Command()
@@ -503,3 +504,52 @@ def test_undocumented_test_limits_option(create_package, capsys):
     assert e.value.code == 1
     out = capsys.readouterr().out
     assert "und1a.in: Specifying limit for a single test is not allowed in sinol-make." in out
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_example_tests_package_path()], indirect=True)
+def test_no_tests(create_package, time_tool, capsys):
+    """
+    Test if `sinol-make` doesn't crash when there are no tests to run.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "There are no tests to run." in out
+
+
+@pytest.mark.parametrize("create_package", [get_example_tests_package_path()], indirect=True)
+def test_only_example_tests(create_package, time_tool, capsys):
+    """
+    Test if `sinol-make` works only on example tests
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+    out = capsys.readouterr().out
+    assert "Expected scores are correct!" in out
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path(),
+                                            get_library_package_path()], indirect=True)
+def test_flag_tests_not_existing_tests(create_package, time_tool, capsys):
+    """
+    Test flag --tests with not existing tests.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--tests", "in/non_existing_file", "--time-tool", time_tool])
+    command = Command()
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "There are no tests to run." in out

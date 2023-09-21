@@ -4,3 +4,8 @@ time_limit: 1000
 
 scores:
   1: 100
+
+sinol_expected_scores:
+  wcf.cpp:
+    expected: {1: OK}
+    points: 100

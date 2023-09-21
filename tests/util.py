@@ -109,6 +109,13 @@ def get_undocumented_options_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "undocumented_options")
 
 
+def get_example_tests_package_path():
+    """
+    Get path to package with only example tests (/tests/packages/example_tests)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "example_tests")
+
+
 def create_ins(package_path, task_id):
     """
     Create .in files for package.

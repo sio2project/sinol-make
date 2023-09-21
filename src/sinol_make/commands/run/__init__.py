@@ -1057,7 +1057,6 @@ class Command(BaseCommand):
                 cnt=len(self.failed_compilations), letter='' if len(self.failed_compilations) == 1 else 's'))
 
     def set_scores(self):
-        self.tests = package_util.get_tests(self.ID, self.args.tests)
         self.groups = self.get_groups(self.tests)
         self.scores = collections.defaultdict(int)
 
@@ -1068,6 +1067,11 @@ class Command(BaseCommand):
             if self.groups[0] == 0:
                 num_groups -= 1
                 self.scores[0] = 0
+
+            # This only happens when running only on group 0.
+            if num_groups == 0:
+                self.possible_score = 0
+                return
 
             points_per_group = 100 // num_groups
             for group in self.groups:
@@ -1138,7 +1142,7 @@ class Command(BaseCommand):
             if not self.has_lib:
                 self.validate_existence_of_outputs()
         else:
-            print(util.warning('There are no tests to run.'))
+            util.exit_with_error('There are no tests to run.')
 
     def check_errors(self, results: Dict[str, Dict[str, Dict[str, ExecutionResult]]]):
         """
@@ -1197,8 +1201,9 @@ class Command(BaseCommand):
         lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0
 
-        self.set_scores()
+        self.tests = package_util.get_tests(self.ID, self.args.tests)
         self.check_are_any_tests_to_run()
+        self.set_scores()
         self.failed_compilations = []
         solutions = self.get_solutions(self.args.solutions)
 

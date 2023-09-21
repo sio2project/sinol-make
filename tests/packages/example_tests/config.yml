@@ -1,0 +1,8 @@
+title: Package with example tests
+memory_limit: 10240
+time_limit: 1000
+sinol_expected_scores:
+  exa.cpp:
+    expected: {0: OK}
+    points: 0
+sinol_task_id: exa

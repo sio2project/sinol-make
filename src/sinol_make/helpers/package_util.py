@@ -57,7 +57,11 @@ def get_tests(task_id: str, arg_tests: Union[List[str], None] = None) -> List[st
                      if test[-3:] == ".in"]
         return sorted(all_tests, key=lambda test: get_test_key(test, task_id))
     else:
-        return sorted(list(set(arg_tests)), key=lambda test: get_test_key(test, task_id))
+        existing_tests = set()
+        for test in arg_tests:
+            if os.path.exists(test):
+                existing_tests.add(test)
+        return sorted(list(existing_tests), key=lambda test: get_test_key(test, task_id))
 
 
 def get_file_name(file_path):
