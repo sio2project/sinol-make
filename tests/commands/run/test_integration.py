@@ -147,7 +147,7 @@ def test_flag_tests(create_package, time_tool):
     except SystemExit:
         pass
 
-    assert command.tests == [test]
+    assert command.tests == [os.path.join("in", os.path.basename(test))]
 
 
 @pytest.mark.parametrize("create_package", [get_checker_package_path()], indirect=True)

@@ -15,53 +15,10 @@ def test_get_output_file():
     assert command.get_output_file("in/abc1a.in") == "out/abc1a.out"
 
 
-def test_get_solutions():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-
-    solutions = command.get_solutions(None)
-    assert solutions == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abc3.cpp", "abc4.cpp"]
-    solutions = command.get_solutions(["prog/abc.cpp"])
-    assert solutions == ["abc.cpp"]
-    assert "abc1.cpp" not in solutions
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        def create_file(name):
-            with open(os.path.join(tmpdir, "prog", name), "w") as f:
-                f.write("")
-
-        os.chdir(tmpdir)
-        os.mkdir("prog")
-
-        create_file("abc.cpp")
-        create_file("abc1.cpp")
-        create_file("abc2.cpp")
-        create_file("abcs1.cpp")
-        create_file("abcs2.cpp")
-
-        assert command.get_solutions(None) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
-        assert command.get_solutions(["prog/abc.cpp"]) == ["abc.cpp"]
-        assert command.get_solutions(["abc.cpp"]) == ["abc.cpp"]
-        assert command.get_solutions([os.path.join(tmpdir, "prog", "abc.cpp")]) == ["abc.cpp"]
-        assert command.get_solutions(["prog/abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
-        assert command.get_solutions(["abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
-        assert command.get_solutions(["prog/abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
-        assert command.get_solutions(["abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
-        assert command.get_solutions(["prog/abc.cpp", "abc1.cpp"]) == ["abc.cpp", "abc1.cpp"]
-        assert command.get_solutions(["prog/abc.cpp", "abc?.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp"]
-        assert command.get_solutions(["abc.cpp", "abc2.cpp", "abcs2.cpp"]) == ["abc.cpp", "abc2.cpp", "abcs2.cpp"]
-
-
-def test_get_executable_key():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.get_executable_key("abc1.cpp.e") == (0, 1)
-
-
 def test_compile_solutions(create_package):
     package_path = create_package
     command = get_command(package_path)
-    solutions = command.get_solutions(None)
+    solutions = package_util.get_solutions("abc", None)
     result = command.compile_solutions(solutions)
     assert result == [True for _ in solutions]
 
