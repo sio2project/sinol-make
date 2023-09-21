@@ -5,6 +5,8 @@ import glob
 
 from sinol_make import configure_parsers
 from sinol_make.commands.gen import Command
+from sinol_make.commands.gen import gen_util
+from sinol_make.helpers import package_util
 from tests.fixtures import *
 from tests import util
 
@@ -79,3 +81,17 @@ def test_changed_inputs(capsys, create_package):
         assert "Successfully generated output file " + os.path.basename(file.replace("in", "out")) in out
     assert "Successfully generated all output files." in out
     assert correct_md5 == get_md5_sums(create_package)
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path()], indirect=True)
+def test_shell_ingen_unchanged(create_package):
+    """
+    Test if ingen.sh is unchanged after running `ingen` command.
+    """
+    package_path = create_package
+    task_id = package_util.get_task_id()
+    shell_ingen_path = gen_util.get_ingen(task_id)
+    assert os.path.splitext(shell_ingen_path)[1] == ".sh"
+    edited_time = os.path.getmtime(shell_ingen_path)
+    simple_run()
+    assert edited_time == os.path.getmtime(shell_ingen_path)
