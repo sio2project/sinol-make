@@ -1,12 +1,13 @@
 import os
 import yaml
+from typing import Union
 
 from sinol_make import util
 from sinol_make.structs.cache_structs import CacheFile
 from sinol_make.helpers import paths
 
 
-def get_cache_file(solution_path: str):
+def get_cache_file(solution_path: str) -> CacheFile:
     """
     Returns content of cache file for given solution
     :param solution_path: Path to solution
@@ -21,7 +22,7 @@ def get_cache_file(solution_path: str):
         return CacheFile()
 
 
-def check_compiled(file_path: str):
+def check_compiled(file_path: str) -> Union[str, None]:
     """
     Check if a file is compiled
     :param file_path: Path to the file
@@ -39,14 +40,22 @@ def check_compiled(file_path: str):
         return None
 
 
-def save_compiled(file_path: str, exe_path: str):
+def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
     """
     Save the compiled executable path to cache in `.cache/md5sums/<basename of file_path>`,
     which contains the md5sum of the file and the path to the executable.
     :param file_path: Path to the file
     :param exe_path: Path to the compiled executable
+    :param is_checker: Whether the compiled file is a checker. If True, all cached tests are removed.
     """
     info = get_cache_file(file_path)
     info.executable_path = exe_path
     info.md5sum = util.get_file_md5(file_path)
     info.save(file_path)
+
+    if is_checker:
+        for solution in os.listdir(paths.get_cache_path('md5sums')):
+            info = get_cache_file(solution)
+            print(info)
+            info.tests = {}
+            info.save(solution)

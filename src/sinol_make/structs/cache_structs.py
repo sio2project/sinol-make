@@ -28,7 +28,7 @@ class CacheTest:
         self.time_tool = time_tool
         self.result = result
 
-    def to_dict(self):
+    def to_dict(self) -> Dict:
         return {
             "time_limit": self.time_limit,
             "memory_limit": self.memory_limit,
@@ -53,7 +53,7 @@ class CacheFile:
         self.executable_path = executable_path
         self.tests = tests
 
-    def to_dict(self):
+    def to_dict(self) -> Dict:
         return {
             "md5sum": self.md5sum,
             "executable_path": self.executable_path,
@@ -61,7 +61,7 @@ class CacheFile:
         }
 
     @staticmethod
-    def from_dict(dict):
+    def from_dict(dict) -> 'CacheFile':
         return CacheFile(
             md5sum=dict.get("md5sum", ""),
             executable_path=dict.get("executable_path", ""),

@@ -14,7 +14,7 @@ from sinol_make.structs.compiler_structs import Compilers
 
 
 def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
-            extra_compilation_args = None, extra_compilation_files = None):
+            extra_compilation_args = None, extra_compilation_files = None, is_checker = False):
     """
     Compile a program.
     :param program: Path to the program to compile
@@ -24,6 +24,7 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     :param weak_compilation_flags: If True, disable all warnings
     :param extra_compilation_args: Extra compilation arguments
     :param extra_compilation_files: Extra compilation files
+    :param is_checker: Set to True if compiling a checker. This will remove all cached test results.
     """
     if extra_compilation_args is None:
         extra_compilation_args = []
@@ -92,7 +93,7 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
-        save_compiled(program, output)
+        save_compiled(program, output, is_checker)
         return True
 
 

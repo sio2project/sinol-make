@@ -340,17 +340,17 @@ class Command(BaseCommand):
         return sorted(list(set([self.get_group(test) for test in tests])))
 
 
-    def compile_solutions(self, solutions):
+    def compile_solutions(self, solutions, is_checker=False):
         os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
         os.makedirs(paths.get_executables_path(), exist_ok=True)
         print("Compiling %d solutions..." % len(solutions))
-        args = [(solution, True) for solution in solutions]
+        args = [(solution, True, is_checker) for solution in solutions]
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.starmap(self.compile, args)
         return compilation_results
 
 
-    def compile(self, solution, use_extras = False):
+    def compile(self, solution, use_extras = False, is_checker = False):
         compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = paths.get_executables_path(package_util.get_executable(solution))
@@ -371,7 +371,7 @@ class Command(BaseCommand):
         try:
             with open(compile_log_file, "w") as compile_log:
                 compile.compile(source_file, output, self.compilers, compile_log, self.args.weak_compilation_flags,
-                                extra_compilation_args, extra_compilation_files)
+                                extra_compilation_args, extra_compilation_files, is_checker=is_checker)
             print(util.info("Compilation of file %s was successful."
                             % package_util.get_file_name(solution)))
             return True
@@ -1185,6 +1185,14 @@ class Command(BaseCommand):
         if error_msg != "":
             util.exit_with_error(error_msg)
 
+    def compile_checker(self):
+        checker_basename = os.path.basename(self.checker)
+        self.checker_executable = paths.get_executables_path(checker_basename + ".e")
+
+        checker_compilation = self.compile_solutions([self.checker], is_checker=True)
+        if not checker_compilation[0]:
+            util.exit_with_error('Checker compilation failed.')
+
     def run(self, args):
         util.exit_if_not_package()
 
@@ -1215,12 +1223,7 @@ class Command(BaseCommand):
         if len(checker) != 0:
             print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
-            checker_basename = os.path.basename(self.checker)
-            self.checker_executable = paths.get_executables_path(checker_basename + ".e")
-
-            checker_compilation = self.compile_solutions([self.checker])
-            if not checker_compilation[0]:
-                util.exit_with_error('Checker compilation failed.')
+            self.compile_checker()
         else:
             self.checker = None
 
