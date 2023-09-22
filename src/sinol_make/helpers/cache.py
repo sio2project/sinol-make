@@ -1,14 +1,9 @@
 import os
-from typing import Dict
-
 import yaml
 
 from sinol_make import util
+from sinol_make.structs.cache_structs import CacheFile
 from sinol_make.helpers import paths
-
-
-def create_compilation_cache():
-    os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
 
 
 def get_cache_file(solution_path: str):
@@ -17,23 +12,13 @@ def get_cache_file(solution_path: str):
     :param solution_path: Path to solution
     :return: Content of cache file
     """
-    create_compilation_cache()
+    os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
     try:
         with open(paths.get_cache_path("md5sums", os.path.basename(solution_path)), 'r') as cache_file:
-            return yaml.load(cache_file, Loader=yaml.FullLoader)
+            data = yaml.load(cache_file, Loader=yaml.FullLoader)
+            return CacheFile.from_dict(data)
     except FileNotFoundError:
-        return {}
-
-
-def write_cache_file(solution_path: str, contents: Dict):
-    """
-    Writes contents to cache file for given solution
-    :param solution_path: Path to solution
-    :param contents: Contents to write
-    """
-    create_compilation_cache()
-    with open(paths.get_cache_path("md5sums", os.path.basename(solution_path)), 'w') as cache_file:
-        yaml.dump(contents, cache_file)
+        return CacheFile()
 
 
 def check_compiled(file_path: str):
@@ -45,8 +30,8 @@ def check_compiled(file_path: str):
     md5sum = util.get_file_md5(file_path)
     try:
         info = get_cache_file(file_path)
-        if info.get("md5sum", "") == md5sum:
-            exe_path = info.get("executable_path", "")
+        if info.md5sum == md5sum:
+            exe_path = info.executable_path
             if os.path.exists(exe_path):
                 return exe_path
         return None
@@ -61,7 +46,7 @@ def save_compiled(file_path: str, exe_path: str):
     :param file_path: Path to the file
     :param exe_path: Path to the compiled executable
     """
-    write_cache_file(file_path, {
-        "md5sum": util.get_file_md5(file_path),
-        "executable_path": exe_path
-    })
+    info = get_cache_file(file_path)
+    info.executable_path = exe_path
+    info.md5sum = util.get_file_md5(file_path)
+    info.save(file_path)

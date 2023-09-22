@@ -1,6 +1,7 @@
 from typing import List
 import sys
 import glob
+import yaml
 import os
 import pytest
 import multiprocessing as mp
@@ -31,11 +32,11 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
+    packages = glob.glob(os.path.join(os.path.dirname(__file__), "packages", "*"))
     if not config.getoption("--no-precompile"):
         print("Collecting solutions...")
 
         files_to_compile = []
-        packages = glob.glob(os.path.join(os.path.dirname(__file__), "packages", "*"))
         for package in packages:
             if os.path.exists(os.path.join(package, "no-precompile")):
                 print(f'Skipping precompilation for {package} due to no-precompile file')
@@ -55,6 +56,25 @@ def pytest_configure(config):
         print("\nPrecompilation finished")
     else:
         print("Skipping precompilation")
+
+    # We remove tests cache as it may interfere with testing.
+    for package in packages:
+        for md5sum_file in glob.glob(os.path.join(package, ".cache", "md5sums", "*")):
+            try:
+                with open(md5sum_file, "r") as f:
+                    data = yaml.load(f, Loader=yaml.FullLoader)
+
+                try:
+                    if "tests" in data:
+                        print(f"Removing tests cache for `{os.path.basename(md5sum_file)}`")
+                        data["tests"] = {}
+                        with open(md5sum_file, "w") as f:
+                            yaml.dump(data, f)
+                except TypeError:
+                    # Cache file is probably old/broken, we can delete it.
+                    os.unlink(md5sum_file)
+            except FileNotFoundError:
+                pass
 
 
 def pytest_generate_tests(metafunc):

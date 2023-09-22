@@ -1,8 +1,7 @@
 import argparse, re, yaml
 
 from sinol_make import util, oiejq
-from sinol_make.commands.run.structs import ResultChange, ValidationResult
-from sinol_make.structs.status_structs import Status
+from sinol_make.structs.status_structs import Status, ResultChange, ValidationResult
 from sinol_make.helpers import package_util
 from .util import *
 from ...util import *

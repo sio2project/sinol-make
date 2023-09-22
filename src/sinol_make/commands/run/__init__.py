@@ -11,13 +11,13 @@ from io import StringIO
 from typing import Dict
 
 from sinol_make import contest_types, oiejq
-from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, \
-    PointsChange, PrintData
+from sinol_make.structs.run_structs import ExecutionData, PrintData
+from sinol_make.structs.cache_structs import CacheTest, CacheFile
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
-from sinol_make.helpers import compile, compiler, package_util, printer, paths
-from sinol_make.structs.status_structs import Status
+from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
+from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
@@ -432,7 +432,6 @@ class Command(BaseCommand):
                 output_file.write("\n".join(output) + "\n")
             return self.check_output_checker(name, input_file, output_file_path, answer_file_path)
 
-
     def execute_oiejq(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
                       time_limit, memory_limit, hard_time_limit):
         env = os.environ.copy()
@@ -643,17 +642,29 @@ class Command(BaseCommand):
         """
 
         executions = []
+        all_cache_files: Dict[str, CacheFile] = {}
         all_results = collections.defaultdict(
             lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
+
         for (name, executable, result) in compiled_commands:
             lang = package_util.get_file_lang(name)
+            solution_cache = cache.get_cache_file(os.path.join(os.getcwd(), "prog", name))
+            all_cache_files[name] = solution_cache
+
             if result:
                 for test in self.tests:
-                    executions.append((name, executable, test,
-                                       package_util.get_time_limit(test, self.config, lang, self.ID, self.args),
-                                       package_util.get_memory_limit(test, self.config, lang, self.ID, self.args),
-                                       self.timetool_path))
-                    all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
+                    test_time_limit = package_util.get_time_limit(test, self.config, lang, self.ID, self.args)
+                    test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.ID, self.args)
+
+                    test_result: CacheTest = solution_cache.tests.get(self.test_md5sums[os.path.basename(test)], None)
+                    if test_result is not None and test_result.time_limit == test_time_limit and \
+                            test_result.memory_limit == test_memory_limit and \
+                            test_result.time_tool == self.timetool_name:
+                        all_results[name][self.get_group(test)][test] = test_result.result
+                    else:
+                        executions.append((name, executable, test, test_time_limit, test_memory_limit,
+                                           self.timetool_path))
+                        all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
                 for test in self.tests:
@@ -683,6 +694,17 @@ class Command(BaseCommand):
                 result.Points = contest_points
                 all_results[name][self.get_group(test)][test] = result
                 print_data.i = i
+
+                # We store the result in dictionary to write it to cache files later.
+                lang = package_util.get_file_lang(name)
+                test_time_limit = package_util.get_time_limit(test, self.config, lang, self.ID, self.args)
+                test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.ID, self.args)
+                all_cache_files[name].tests[self.test_md5sums[os.path.basename(test)]] = CacheTest(
+                    time_limit=test_time_limit,
+                    memory_limit=test_memory_limit,
+                    time_tool=self.timetool_name,
+                    result=result
+                )
             pool.terminate()
         except KeyboardInterrupt:
             keyboard_interrupt = True
@@ -695,6 +717,10 @@ class Command(BaseCommand):
         print("\n".join(print_view(terminal_width, terminal_height, self.ID, program_groups_scores, all_results, print_data,
                                    names, executions, self.groups, self.scores, self.tests, self.possible_score,
                                    self.cpus, self.args.hide_memory, self.config, self.contest, self.args)[0]))
+
+        # Write cache files.
+        for solution, cache_data in all_cache_files.items():
+            cache_data.save(os.path.join(os.getcwd(), "prog", solution))
 
         if keyboard_interrupt:
             util.exit_with_error("Stopped due to keyboard interrupt.")
@@ -1202,6 +1228,7 @@ class Command(BaseCommand):
         self.has_lib = len(lib) != 0
 
         self.tests = package_util.get_tests(self.ID, self.args.tests)
+        self.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in self.tests}
         self.check_are_any_tests_to_run()
         self.set_scores()
         self.failed_compilations = []

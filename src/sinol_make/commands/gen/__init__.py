@@ -1,15 +1,14 @@
 import argparse
 import glob
 import os
-import hashlib
 import yaml
 
 import multiprocessing as mp
 
 from sinol_make import util
 from sinol_make.commands.gen import gen_util
-from sinol_make.commands.gen.structs import OutputGenerationArguments
-from sinol_make.helpers import parsers, package_util, compile
+from sinol_make.structs.gen_structs import OutputGenerationArguments
+from sinol_make.helpers import parsers, package_util
 from sinol_make.interfaces.BaseCommand import BaseCommand
 
 
