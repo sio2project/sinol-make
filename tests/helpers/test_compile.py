@@ -14,5 +14,5 @@ def test_compilation_caching():
 
         assert check_compiled(os.path.join(os.getcwd(), "test.txt")) is None
         save_compiled(os.path.join(os.getcwd(), "test.txt"),
-                                               os.path.join(os.getcwd(), "test.e"))
+                      os.path.join(os.getcwd(), "test.e"))
         assert check_compiled(os.path.join(os.getcwd(), "test.txt")) == os.path.join(os.getcwd(), "test.e")
