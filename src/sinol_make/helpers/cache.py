@@ -16,6 +16,8 @@ def get_cache_file(solution_path: str) -> CacheFile:
     os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
     try:
         with open(paths.get_cache_path("md5sums", os.path.basename(solution_path)), 'r') as cache_file:
+            print(cache_file.read()) # For debugging workflow
+        with open(paths.get_cache_path("md5sums", os.path.basename(solution_path)), 'r') as cache_file:
             data = yaml.load(cache_file, Loader=yaml.FullLoader)
             print(data) # For debugging workflow
             return CacheFile.from_dict(data)
