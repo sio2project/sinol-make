@@ -7,14 +7,20 @@ import pytest
 import multiprocessing as mp
 
 from sinol_make.helpers import compile, paths
+from sinol_make.interfaces.Errors import CompilationError
 
 
 def _compile(args):
     package, file_path = args
     os.chdir(package)
     output = paths.get_executables_path(os.path.splitext(os.path.basename(file_path))[0] + ".e")
-    with open(paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log"), "w") as compile_log:
-        compile.compile(file_path, output, compile_log=compile_log)
+    compile_log_path = paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log")
+    try:
+        with open(compile_log_path, "w") as compile_log:
+            compile.compile(file_path, output, compile_log=compile_log)
+    except CompilationError:
+        compile.print_compile_log(compile_log_path)
+        raise
 
 
 def pytest_addoption(parser):
