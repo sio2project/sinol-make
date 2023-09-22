@@ -1,4 +1,4 @@
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union
 import os
 import sys
 import shutil
@@ -7,52 +7,10 @@ import subprocess
 import yaml
 
 import sinol_make.helpers.compiler as compiler
-from sinol_make import util
 from sinol_make.helpers import paths
+from sinol_make.helpers.cache import check_compiled, save_compiled
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
-
-
-def create_compilation_cache():
-    os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
-
-
-def check_compiled(file_path: str):
-    """
-    Check if a file is compiled
-    :param file_path: Path to the file
-    :return: executable path if compiled, None otherwise
-    """
-    create_compilation_cache()
-    md5sum = util.get_file_md5(file_path)
-    try:
-        info_file_path = paths.get_cache_path("md5sums", os.path.basename(file_path))
-        with open(info_file_path, 'r') as info_file:
-            info = yaml.load(info_file, Loader=yaml.FullLoader)
-            if info.get("md5sum", "") == md5sum:
-                exe_path = info.get("executable_path", "")
-                if os.path.exists(exe_path):
-                    return exe_path
-            return None
-    except FileNotFoundError:
-        return None
-
-
-def save_compiled(file_path: str, exe_path: str):
-    """
-    Save the compiled executable path to cache in `.cache/md5sums/<basename of file_path>`,
-    which contains the md5sum of the file and the path to the executable.
-    :param file_path: Path to the file
-    :param exe_path: Path to the compiled executable
-    """
-    create_compilation_cache()
-    info_file_path = paths.get_cache_path("md5sums", os.path.basename(file_path))
-    info = {
-        "md5sum": util.get_file_md5(file_path),
-        "executable_path": exe_path
-    }
-    with open(info_file_path, 'w') as info_file:
-        yaml.dump(info, info_file)
 
 
 def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
