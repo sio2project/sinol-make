@@ -17,6 +17,7 @@ def get_cache_file(solution_path: str) -> CacheFile:
     try:
         with open(paths.get_cache_path("md5sums", os.path.basename(solution_path)), 'r') as cache_file:
             data = yaml.load(cache_file, Loader=yaml.FullLoader)
+            print(data) # For debugging workflow
             return CacheFile.from_dict(data)
     except FileNotFoundError:
         return CacheFile()
@@ -48,6 +49,7 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
     :param exe_path: Path to the compiled executable
     :param is_checker: Whether the compiled file is a checker. If True, all cached tests are removed.
     """
+    print(file_path, exe_path, is_checker) # For debugging workflow
     info = get_cache_file(file_path)
     info.executable_path = exe_path
     info.md5sum = util.get_file_md5(file_path)
@@ -56,6 +58,5 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
     if is_checker:
         for solution in os.listdir(paths.get_cache_path('md5sums')):
             info = get_cache_file(solution)
-            print(info)
             info.tests = {}
             info.save(solution)
