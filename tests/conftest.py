@@ -65,7 +65,7 @@ def pytest_configure(config):
                     data = yaml.load(f, Loader=yaml.FullLoader)
 
                 try:
-                    if "tests" in data:
+                    if "tests" in data and data["tests"] != {}:
                         print(f"Removing tests cache for `{os.path.basename(md5sum_file)}`")
                         data["tests"] = {}
                         with open(md5sum_file, "w") as f:
