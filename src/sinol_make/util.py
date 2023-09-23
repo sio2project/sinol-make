@@ -29,9 +29,11 @@ def get_commands():
     return commands
 
 
-def check_if_package():
+def find_and_chdir_package():
     """
-    Function to check if current directory is a package
+    Checks if current directory or parent directory is a package directory.
+    If it is, it changes the current working directory to it and returns True.
+    If it isn't, it returns False.
     """
     if os.path.exists(os.path.join(os.getcwd(), 'config.yml')):
         return True
@@ -44,9 +46,11 @@ def check_if_package():
 
 def exit_if_not_package():
     """
-    Function that exits if current directory is not a package
+    Checks if current directory or parent directory is a package directory.
+    If it is, current working directory is changed to it.
+    If it isn't, it exits with an error.
     """
-    if not check_if_package():
+    if not find_and_chdir_package():
         exit_with_error('You are not in a package directory (couldn\'t find config.yml in current directory).')
 
 
