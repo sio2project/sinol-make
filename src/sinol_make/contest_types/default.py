@@ -86,7 +86,7 @@ class DefaultContest:
         min_score = min(test_scores)
         return int(ceil(group_max_score * (min_score / 100.0)))
 
-    def get_global_score(self, groups_scores: Dict[str, Dict], global_max_score) -> int:
+    def get_global_score(self, groups_scores: Dict[int, Dict], global_max_score) -> int:
         """
         Calculates global score based on groups scores.
         :param groups_scores: Dictionary: {"<group>: {"status": Status, "points": <points for group>}
