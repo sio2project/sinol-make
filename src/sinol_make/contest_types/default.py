@@ -31,7 +31,6 @@ class DefaultContest:
 
         # This only happens when running only on group 0.
         if num_groups == 0:
-            possible_score = 0
             return scores
 
         points_per_group = 100 // num_groups
