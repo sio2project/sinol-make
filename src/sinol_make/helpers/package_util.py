@@ -53,10 +53,6 @@ def get_solutions_re(task_id: str) -> re.Pattern:
     return re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % task_id)
 
 
-def get_solutions_re(task_id):
-    return re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % task_id)
-
-
 def get_executable_key(executable):
     name = get_file_name(executable)
     value = [0, 0]

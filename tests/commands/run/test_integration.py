@@ -611,7 +611,8 @@ def test_results_caching(create_package, time_tool):
     end_time = time.time() - start_time
     assert end_time - start_time < length / 2
 
-    solutions = command.get_solutions(None)
+    task_id = package_util.get_task_id()
+    solutions = package_util.get_solutions(task_id, None)
     for solution in solutions:
         cache_file: CacheFile = cache.get_cache_file(solution)
         for test in command.tests:
@@ -647,7 +648,8 @@ def test_results_caching_checker_changed(create_package, time_tool):
 
     # Compile checker check if test results are removed.
     command.compile_checker()
-    solutions = command.get_solutions(None)
+    task_id = package_util.get_task_id()
+    solutions = package_util.get_solutions(task_id, None)
     for solution in solutions:
         cache_file: CacheFile = cache.get_cache_file(solution)
         assert cache_file.tests == {}
@@ -678,7 +680,8 @@ def test_extra_compilation_files_change(create_package, time_tool):
         change_file(os.path.join(os.getcwd(), "prog", file_to_change), comment_character)
 
         cache.save_to_cache_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
-        solutions = command.get_solutions(None)
+        task_id = package_util.get_task_id()
+        solutions = package_util.get_solutions(task_id, None)
         for solution in solutions:
             if package_util.get_file_lang(solution) == lang:
                 print(file_to_change, solution)
