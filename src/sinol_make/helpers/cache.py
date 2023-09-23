@@ -14,13 +14,20 @@ def get_cache_file(solution_path: str) -> CacheFile:
     :return: Content of cache file
     """
     os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
+    cache_file_path = paths.get_cache_path("md5sums", os.path.basename(solution_path))
     try:
-        with open(paths.get_cache_path("md5sums", os.path.basename(solution_path)), 'r') as cache_file:
+        with open(cache_file_path, 'r') as cache_file:
             data = yaml.load(cache_file, Loader=yaml.FullLoader)
             if not isinstance(data, dict):
+                print(util.warning(f"Cache file for program {os.path.basename(solution_path)} is corrupted."))
+                os.unlink(cache_file_path)
                 return CacheFile()
             return CacheFile.from_dict(data)
-    except (FileNotFoundError, yaml.YAMLError, TypeError):
+    except FileNotFoundError:
+        return CacheFile()
+    except (yaml.YAMLError, TypeError):
+        print(util.warning(f"Cache file for program {os.path.basename(solution_path)} is corrupted."))
+        os.unlink(cache_file_path)
         return CacheFile()
 
 
