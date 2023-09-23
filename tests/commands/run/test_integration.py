@@ -650,7 +650,7 @@ def test_extra_compilation_files_change(create_package, time_tool):
         # Change file
         change_file(os.path.join(os.getcwd(), "prog", file_to_change), comment_character)
 
-        cache.check_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
+        cache.save_to_cache_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
         solutions = command.get_solutions(None)
         for solution in solutions:
             if package_util.get_file_lang(solution) == lang:

@@ -73,9 +73,9 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
             info.save(solution)
 
 
-def check_extra_compilation_files(extra_compilation_files, task_id):
+def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
     """
-    Checks if extra compilation files have changed.
+    Checks if extra compilation files have changed and saves them to cache.
     If they have, removes all cached solutions that use them.
     :param extra_compilation_files: List of extra compilation files
     :param task_id: Task id

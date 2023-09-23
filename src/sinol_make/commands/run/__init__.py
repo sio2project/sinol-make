@@ -1218,7 +1218,7 @@ class Command(BaseCommand):
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or mp.cpu_count()
-        cache.check_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
+        cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
