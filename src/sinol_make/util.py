@@ -33,13 +33,11 @@ def check_if_package():
     """
     Function to check if current directory is a package
     """
-    if os.path.exists(os.path.join(os.getcwd(), 'config.yml')):
+
+    cwd = os.getcwd()
+    if os.path.exists(os.path.join(cwd, 'config.yml')):
         return True
-    elif os.path.exists(os.path.join(os.getcwd(), '..', 'config.yml')):
-        os.chdir('..')
-        return True
-    else:
-        return False
+    return False
 
 
 def exit_if_not_package():
