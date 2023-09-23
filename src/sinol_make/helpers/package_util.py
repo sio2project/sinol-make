@@ -45,6 +45,14 @@ def get_test_key(test, task_id):
     return get_group(test, task_id), test
 
 
+def get_solutions_re(task_id: str) -> re.Pattern:
+    """
+    Returns regex pattern matching all solutions for given task.
+    :param task_id: Task id.
+    """
+    return re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % task_id)
+
+
 def get_tests(task_id: str, arg_tests: Union[List[str], None] = None) -> List[str]:
     """
     Returns list of tests to run.

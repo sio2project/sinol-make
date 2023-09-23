@@ -4,7 +4,7 @@ from typing import Union
 
 from sinol_make import util
 from sinol_make.structs.cache_structs import CacheFile
-from sinol_make.helpers import paths
+from sinol_make.helpers import paths, package_util
 
 
 def get_cache_file(solution_path: str) -> CacheFile:
@@ -60,3 +60,32 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
             info = get_cache_file(solution)
             info.tests = {}
             info.save(solution)
+
+
+def check_extra_compilation_files(extra_compilation_files, task_id):
+    """
+    Checks if extra compilation files have changed.
+    If they have, removes all cached solutions that use them.
+    :param extra_compilation_files: List of extra compilation files
+    :param task_id: Task id
+    """
+    solutions_re = package_util.get_solutions_re(task_id)
+    for file in extra_compilation_files:
+        file_path = os.path.join(os.getcwd(), "prog", file)
+        if not os.path.exists(file_path):
+            continue
+        md5sum = util.get_file_md5(file_path)
+        lang = package_util.get_file_lang(file)
+        if lang == 'h':
+            lang = 'cpp'
+        info = get_cache_file(file_path)
+
+        if info.md5sum != md5sum:
+            for solution in os.listdir(paths.get_cache_path('md5sums')):
+                # Remove only files in the same language and matching the solution regex
+                if package_util.get_file_lang(solution) == lang and \
+                        solutions_re.match(solution) is not None:
+                    os.unlink(paths.get_cache_path('md5sums', solution))
+
+        info.md5sum = md5sum
+        info.save(file_path)

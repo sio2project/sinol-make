@@ -1026,7 +1026,7 @@ class Command(BaseCommand):
     def set_constants(self):
         self.ID = package_util.get_task_id()
         self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
-        self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
+        self.SOLUTIONS_RE = package_util.get_solutions_re(self.ID)
 
 
     def validate_arguments(self, args):
@@ -1218,6 +1218,7 @@ class Command(BaseCommand):
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or mp.cpu_count()
+        cache.check_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
