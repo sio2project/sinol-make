@@ -41,6 +41,10 @@ def get_group(test_path, task_id):
     return int("".join(filter(str.isdigit, extract_test_id(test_path, task_id))))
 
 
+def get_groups(tests, task_id):
+    return sorted(list(set([get_group(test, task_id) for test in tests])))
+
+
 def get_test_key(test, task_id):
     return get_group(test, task_id), test
 

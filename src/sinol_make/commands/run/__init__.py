@@ -147,9 +147,11 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                         util.color_red(group_status)),
                           "%3s/%3s" % (points, scores[group]),
                           end=" | ")
-                program_scores[program] += points if group_status == Status.OK else 0
                 program_groups_scores[program][group] = {"status": group_status, "points": points}
             print()
+        for program in program_group:
+            program_scores[program] = contest.get_global_score(program_groups_scores[program], possible_score)
+
         print(8 * " ", end=" | ")
         for program in program_group:
             print(10 * " ", end=" | ")
@@ -258,9 +260,11 @@ class Command(BaseCommand):
                             help=f'tool to measure time and memory usage (default: {default_timetool})')
         parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
-        add_compilation_arguments(parser)
+        parser.add_argument('-p', '--print-expected-scores', dest='print_expected_scores', action='store_true',
+                            help='print whole expected scores report')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
+        add_compilation_arguments(parser)
 
     def parse_time(self, time_str):
         if len(time_str) < 3: return -1
@@ -701,19 +705,6 @@ class Command(BaseCommand):
 
         return program_groups_scores, all_results
 
-
-    def calculate_points(self, results):
-        points = 0
-        for group, result in results.items():
-            if group != 0 and group not in self.scores:
-                util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
-            if isinstance(result, str):
-                if result == Status.OK:
-                    points += self.scores[group]
-            elif isinstance(result, dict):
-                points += result["points"]
-        return points
-
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
         for i in range(len(solutions)):
@@ -776,33 +767,17 @@ class Command(BaseCommand):
                 if group not in self.scores:
                     util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
 
-        def convert_to_expected(results):
-            new_results = {}
-            for solution in results.keys():
-                new_results[solution] = {}
-                for group, result in results[solution].items():
-                    if result["status"] == Status.OK:
-                        if result["points"] == self.scores[group]:
-                            new_results[solution][group] = Status.OK
-                        else:
-                            new_results[solution][group] = result
-                    else:
-                        new_results[solution][group] = result["status"]
-            return new_results
-
-        results = convert_to_expected(results)
-
         if self.checker is None:
             for solution in results.keys():
                 new_expected_scores[solution] = {
                     "expected": results[solution],
-                    "points": self.calculate_points(results[solution])
+                    "points": self.contest.get_global_score(results[solution], self.possible_score)
                 }
         else:
             for solution in results.keys():
                 new_expected_scores[solution] = {
                     "expected": results[solution],
-                    "points": self.calculate_points(results[solution])
+                    "points": self.contest.get_global_score(results[solution], self.possible_score)
                 }
 
         config_expected_scores = self.config.get("sinol_expected_scores", {})
@@ -818,8 +793,7 @@ class Command(BaseCommand):
         used_groups = set()
         if self.args.tests == None and config_expected_scores: # If no groups were specified, use all groups from config
             for solution in config_expected_scores.keys():
-                for group in config_expected_scores[solution]["expected"]:
-                    used_groups.add(group)
+                used_groups.update(config_expected_scores[solution]["expected"].keys())
         else:
             used_groups = self.get_whole_groups()
 
@@ -854,16 +828,18 @@ class Command(BaseCommand):
                     if group in config_expected_scores[solution]["expected"]:
                         expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
 
-                expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+                expected_scores[solution]["points"] = self.contest.get_global_score(expected_scores[solution]["expected"],
+                                                                                    self.possible_score)
                 if len(expected_scores[solution]["expected"]) == 0:
                     del expected_scores[solution]
 
-        if self.args.tests is not None:
-            print("Showing expected scores only for groups with all tests run.")
-        print(util.bold("Expected scores from config:"))
-        self.print_expected_scores(expected_scores)
-        print(util.bold("\nExpected scores based on results:"))
-        self.print_expected_scores(new_expected_scores)
+        if self.args.print_expected_scores:
+            if self.args.tests is not None:
+                print("Showing expected scores only for groups with all tests run.")
+            print(util.bold("Expected scores from config:"))
+            self.print_expected_scores(expected_scores)
+            print(util.bold("\nExpected scores based on results:"))
+            self.print_expected_scores(new_expected_scores)
 
         expected_scores_diff = dictdiffer.diff(expected_scores, new_expected_scores)
         added_solutions = set()
@@ -967,11 +943,17 @@ class Command(BaseCommand):
             def delete_group(solution, group):
                 if group in config_expected_scores[solution]["expected"]:
                     del config_expected_scores[solution]["expected"][group]
-                    config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+                    config_expected_scores[solution]["points"] = self.contest.get_global_score(
+                        config_expected_scores[solution]["expected"],
+                        self.possible_score
+                    )
 
             def set_group_result(solution, group, result):
                 config_expected_scores[solution]["expected"][group] = result
-                config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+                config_expected_scores[solution]["points"] = self.contest.get_global_score(
+                    config_expected_scores[solution]["expected"],
+                    self.possible_score
+                )
 
 
             if self.args.apply_suggestions:
@@ -994,7 +976,8 @@ class Command(BaseCommand):
                 util.save_config(self.config)
                 print(util.info("Saved suggested expected scores description."))
             else:
-                util.exit_with_error("Use flag --apply-suggestions to apply suggestions.")
+                util.exit_with_error("To see expected scores from config and results, run sinol-make with flag --print-expected-scores.\n"
+                                     "Use flag --apply-suggestions to apply suggestions.")
 
 
     def set_constants(self):
@@ -1061,33 +1044,7 @@ class Command(BaseCommand):
         self.scores = collections.defaultdict(int)
 
         if 'scores' not in self.config.keys():
-            print(util.warning('Scores are not defined in config.yml. Points will be assigned equally to all groups.'))
-            num_groups = len(self.groups)
-            self.scores = {}
-            if self.groups[0] == 0:
-                num_groups -= 1
-                self.scores[0] = 0
-
-            # This only happens when running only on group 0.
-            if num_groups == 0:
-                self.possible_score = 0
-                return
-
-            points_per_group = 100 // num_groups
-            for group in self.groups:
-                if group == 0:
-                    continue
-                self.scores[group] = points_per_group
-
-            if points_per_group * num_groups != 100:
-                self.scores[self.groups[-1]] += 100 - points_per_group * num_groups
-
-            print("Points will be assigned as follows:")
-            total_score = 0
-            for group in self.scores:
-                print("%2d: %3d" % (group, self.scores[group]))
-                total_score += self.scores[group]
-            print()
+            self.scores = self.contest.assign_scores(self.groups)
         else:
             total_score = 0
             for group in self.config["scores"]:
@@ -1098,7 +1055,7 @@ class Command(BaseCommand):
                 print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
                 print()
 
-        self.possible_score = self.get_possible_score(self.groups)
+        self.possible_score = self.contest.get_possible_score(self.groups, self.scores)
 
     def get_valid_input_files(self):
         """
