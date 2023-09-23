@@ -32,8 +32,10 @@ class Status(str, Enum):
             return Status.WA
         elif status == "OK":
             return Status.OK
-        else:
+        elif status == "  ":
             return Status.PENDING
+        else:
+            raise ValueError(f"Unknown status: '{status}'")
 
 
 @dataclass

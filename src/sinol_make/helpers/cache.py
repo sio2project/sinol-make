@@ -22,7 +22,11 @@ def get_cache_file(solution_path: str) -> CacheFile:
                 print(util.warning(f"Cache file for program {os.path.basename(solution_path)} is corrupted."))
                 os.unlink(cache_file_path)
                 return CacheFile()
-            return CacheFile.from_dict(data)
+            try:
+                return CacheFile.from_dict(data)
+            except ValueError as exc:
+                print(util.error(f"An error occured while parsing cache file for solution {os.path.basename(solution_path)}."))
+                util.exit_with_error(str(exc))
     except FileNotFoundError:
         return CacheFile()
     except (yaml.YAMLError, TypeError):
