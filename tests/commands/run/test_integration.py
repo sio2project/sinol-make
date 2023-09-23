@@ -553,3 +553,17 @@ def test_flag_tests_not_existing_tests(create_package, time_tool, capsys):
     assert e.value.code == 1
     out = capsys.readouterr().out
     assert "There are no tests to run." in out
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+def test_cwd_in_prog(create_package):
+    """
+    Test if `sinol-make` works when cwd is in prog.
+    """
+    package_path = create_package
+    os.chdir("prog")
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run"])
+    command = Command()
+    command.run(args)
