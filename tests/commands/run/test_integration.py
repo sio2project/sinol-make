@@ -624,3 +624,41 @@ def test_results_caching_checker_changed(create_package, time_tool):
     for solution in solutions:
         cache_file: CacheFile = cache.get_cache_file(solution)
         assert cache_file.tests == {}
+
+
+@pytest.mark.parametrize("create_package", [get_library_package_path()], indirect=True)
+def test_extra_compilation_files_change(create_package, time_tool):
+    """
+    Test if after changing extra compilation files, all cached test results are removed.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+
+    def change_file(file, comment_character):
+        with open(file, "r") as f:
+            source = f.read()
+        with open(file, "w") as f:
+            f.write(f"{comment_character} Changed source code.\n" + source)
+
+    def test(file_to_change, lang, comment_character):
+        # First run to cache test results.
+        command.run(args)
+
+        # Change file
+        change_file(os.path.join(os.getcwd(), "prog", file_to_change), comment_character)
+
+        cache.check_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
+        solutions = command.get_solutions(None)
+        for solution in solutions:
+            if package_util.get_file_lang(solution) == lang:
+                print(file_to_change, solution)
+                assert not os.path.exists(paths.get_cache_path("md5sums", solution))
+                info = cache.get_cache_file(solution)
+                assert info == CacheFile()
+
+    test("liblib.cpp", "cpp", "//")
+    test("liblib.h", "cpp", "//")
+    test("liblib.py", "py", "#")

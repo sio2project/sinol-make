@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from sinol_make.helpers import compile
+from sinol_make.helpers import compile, paths
 from sinol_make.helpers import cache
 from sinol_make.structs.cache_structs import CacheFile, CacheTest
 from sinol_make.structs.status_structs import ExecutionResult, Status
@@ -37,11 +37,11 @@ def test_compilation_caching():
 def test_cache():
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
-        assert cache.get_cache_file("program.cpp") == CacheFile()
+        assert cache.get_cache_file("abc.cpp") == CacheFile()
 
         cache_file = CacheFile(
             md5sum="md5sum",
-            executable_path="program.e",
+            executable_path="abc.e",
             tests={
                 "md5sum1": CacheTest(
                     time_limit=1000,
@@ -68,9 +68,29 @@ def test_cache():
             }
         )
 
-        with open("program.cpp", "w") as f:
+        with open("abc.cpp", "w") as f:
             f.write("int main() { return 0; }")
-        cache_file.save("program.cpp")
-        assert cache.get_cache_file("program.cpp") == cache_file
-        cache.save_compiled("program.cpp", "program.e", is_checker=True)
-        assert cache.get_cache_file("program.cpp").tests == {}
+        cache_file.save("abc.cpp")
+        assert cache.get_cache_file("abc.cpp") == cache_file
+        cache.save_compiled("abc.cpp", "abc.e", is_checker=True)
+        assert cache.get_cache_file("abc.cpp").tests == {}
+
+        # Test that cache is cleared when extra compilation files change
+        cache_file.save("abc.cpp")
+        os.mkdir("prog")
+        with open("prog/abclib.cpp", "w") as f:
+            f.write("int main() { return 0; }")
+
+        cache.check_extra_compilation_files(["abclib.cpp"], "abc")
+        assert cache.get_cache_file("/some/very/long/path/abc.cpp") == CacheFile()
+        assert cache.get_cache_file("abclib.cpp") != CacheFile()
+
+        cache_file.save("abc.cpp")
+        cache_file.save("abc.py")
+        with open("prog/abclib.cpp", "w") as f:
+            f.write("/* Changed file */ int main() { return 0; }")
+        cache.check_extra_compilation_files(["abclib.cpp"], "abc")
+        assert not os.path.exists(paths.get_cache_path("md5sums", "abc.cpp"))
+        assert os.path.exists(paths.get_cache_path("md5sums", "abc.py"))
+        assert cache.get_cache_file("abc.py") == cache_file
+        assert cache.get_cache_file("abc.cpp") == CacheFile()
