@@ -108,7 +108,7 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
     config_path = os.path.join(package_path, "config.yml")
     with open(config_path, "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
-    config["sinol_expected_scores"]["abc.cpp"]["expected"][1] = "WA"
+    config["sinol_expected_scores"]["abc.cpp"]["expected"][1] = {"status": "WA", "points": 0}
     config["sinol_expected_scores"]["abc.cpp"]["points"] = 75
     with open(config_path, "w") as config_file:
         config_file.write(yaml.dump(config))
@@ -161,7 +161,7 @@ def test_groups_in_flag_test(capsys, create_package, time_tool):
     parser = configure_parsers()
 
     # Test with only one test from group 1.
-    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "--time-tool", time_tool])
+    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "--print-expected-scores", "--time-tool", time_tool])
     command = Command()
     command.run(args)
     out = capsys.readouterr().out
@@ -170,30 +170,34 @@ def test_groups_in_flag_test(capsys, create_package, time_tool):
     assert "Expected scores are correct!" in out
 
     # Test with all tests from group 1.
-    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "in/chk1b.in", "in/chk1c.in", "--time-tool", time_tool])
+    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "in/chk1b.in", "in/chk1c.in", "--print-expected-scores",
+                              "--time-tool", time_tool])
     command = Command()
     command.run(args)
     out = capsys.readouterr().out
     assert 'sinol_expected_scores:\n' \
            '  chk.cpp:\n' \
-           '    expected: {1: OK}\n' \
+           '    expected:\n' \
+           '      1: {points: 50, status: OK}\n' \
            '    points: 50\n' \
            '  chk1.cpp:\n' \
-           '    expected: {1: WA}\n' \
+           '    expected:\n' \
+           '      1: {points: 0, status: WA}\n' \
            '    points: 0\n' \
            '  chk2.cpp:\n' \
            '    expected:\n' \
            '      1: {points: 25, status: OK}\n' \
            '    points: 25\n' \
            '  chk3.cpp:\n' \
-           '    expected: {1: OK}\n' \
+           '    expected:\n' \
+           '      1: {points: 50, status: OK}\n' \
            '    points: 50' in out
 
     # Test with incorrect expected scores for first group.
     with open(os.path.join(package_path, "config.yml"), "r") as config_file:
         correct_config = yaml.load(config_file, Loader=yaml.SafeLoader)
     config = copy.deepcopy(correct_config)
-    config["sinol_expected_scores"]["chk.cpp"]["expected"][1] = "WA"
+    config["sinol_expected_scores"]["chk.cpp"]["expected"][1] = {"status": "WA", "points": 0}
     config["sinol_expected_scores"]["chk.cpp"]["points"] = 50
     with open(os.path.join(package_path, "config.yml"), "w") as config_file:
         config_file.write(yaml.dump(config))
@@ -383,7 +387,6 @@ def test_override_limits(create_package, time_tool):
     create_ins_outs(package_path)
     config_file_path = os.path.join(package_path, "config.yml")
 
-
     # With `override_limits` key deleted.
     with open(config_file_path, "r") as config_file:
         original_config = yaml.load(config_file, Loader=yaml.SafeLoader)
@@ -401,7 +404,7 @@ def test_override_limits(create_package, time_tool):
 
     assert config["sinol_expected_scores"] == {
         "ovl.cpp": {
-            "expected": {1: "TL", 2: "TL"},
+            "expected": {1: {"status": "TL", "points": 0}, 2: {"status": "TL", "points": 0}},
             "points": 0
         }
     }
@@ -422,7 +425,7 @@ def test_override_limits(create_package, time_tool):
 
     assert config["sinol_expected_scores"] == {
         "ovl.cpp": {
-            "expected": {1: "ML", 2: "ML"},
+            "expected": {1: {"status": "ML", "points": 0}, 2: {"status": "ML", "points": 0}},
             "points": 0
         }
     }

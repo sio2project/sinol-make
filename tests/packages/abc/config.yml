@@ -1,26 +1,44 @@
 title: Simple test package
 memory_limit: 16000
 time_limit: 1000
-
 scores:
   1: 25
   2: 25
   3: 25
   4: 25
-
 sinol_expected_scores:
   abc.cpp:
+    expected:
+      1: {points: 25, status: OK}
+      2: {points: 25, status: OK}
+      3: {points: 25, status: OK}
+      4: {points: 25, status: OK}
     points: 100
-    expected: {1: "OK", 2: "OK", 3: "OK", 4: "OK"}
   abc1.cpp:
+    expected:
+      1: {points: 25, status: OK}
+      2: {points: 25, status: OK}
+      3: {points: 25, status: OK}
+      4: {points: 0, status: WA}
     points: 75
-    expected: {1: "OK", 2: "OK", 3: "OK", 4: "WA"}
   abc2.cpp:
+    expected:
+      1: {points: 25, status: OK}
+      2: {points: 0, status: WA}
+      3: {points: 0, status: WA}
+      4: {points: 0, status: TL}
     points: 25
-    expected: {1: "OK", 2: "WA", 3: "WA", 4: "TL"}
   abc3.cpp:
+    expected:
+      1: {points: 25, status: OK}
+      2: {points: 0, status: WA}
+      3: {points: 0, status: WA}
+      4: {points: 0, status: ML}
     points: 25
-    expected: {1: "OK", 2: "WA", 3: "WA", 4: "ML"}
   abc4.cpp:
+    expected:
+      1: {points: 25, status: OK}
+      2: {points: 25, status: OK}
+      3: {points: 0, status: WA}
+      4: {points: 0, status: RE}
     points: 50
-    expected: {1: "OK", 2: "OK", 3: "WA", 4: "RE"}

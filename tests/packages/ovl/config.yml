@@ -1,14 +1,13 @@
 title: Package with `override_limits` set
-
 memory_limit: 8192
 time_limit: 100
-
 override_limits:
   cpp:
     memory_limit: 16384
     time_limit: 10000
-
 sinol_expected_scores:
   ovl.cpp:
-    expected: {1: OK, 2: OK}
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 50, status: OK}
     points: 100

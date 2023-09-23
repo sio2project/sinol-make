@@ -61,18 +61,6 @@ def test_execution(create_package, time_tool):
     assert result.Status == Status.OK
 
 
-def test_calculate_points():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    command.scores = command.config["scores"]
-
-    assert command.calculate_points({1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK}) == 100
-    assert command.calculate_points({1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.WA}) == 75
-    assert command.calculate_points({1: Status.OK, 2: Status.OK, 3: Status.TL}) == 50
-    assert command.calculate_points({1: Status.OK}) == 25
-    assert command.calculate_points({1: Status.WA}) == 0
-
-
 def test_run_solutions(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
@@ -133,10 +121,12 @@ def test_validate_expected_scores_success():
     os.chdir(get_simple_package_path())
     command = get_command()
     command.scores = command.config["scores"]
-    command.tests = package_util.get_tests("abc", None)
+    command.tests = ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
+    command.groups = command.get_groups(command.tests)
+    command.possible_score = command.contest.get_possible_score(command.groups, command.scores)
 
     # Test with correct expected scores.
-    command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
+    command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None, print_expected_scores=True)
     results = {
         "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}, 4: {"status": "OK", "points": 25}},
     }
@@ -145,16 +135,16 @@ def test_validate_expected_scores_success():
     assert results.removed_solutions == set()
 
     # Test with incorrect result.
-    command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
+    command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None, print_expected_scores=True)
     results = {
         "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}, 4: {"status": "WA", "points": 0}},
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores != results.new_expected_scores
-    assert len(results.changes) == 1
+    assert len(results.changes) == 2
 
     # Test with removed solution.
-    command.args = argparse.Namespace(solutions=None, tests=None)
+    command.args = argparse.Namespace(solutions=None, tests=None, print_expected_scores=True)
     results = {
         "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}, 4: {"status": "OK", "points": 25}},
         "abc1.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}, 4: {"status": "WA", "points": 0}},
@@ -167,7 +157,8 @@ def test_validate_expected_scores_success():
 
     # Test with added solution and added group.
     command.config["scores"][5] = 0
-    command.args = argparse.Namespace(solutions=["prog/abc.cpp", "prog/abc5.cpp"], tests=None)
+    command.args = argparse.Namespace(solutions=["prog/abc.cpp", "prog/abc5.cpp"], tests=None,
+                                      print_expected_scores=True)
     results = {
         "abc.cpp": {1: {"status": "OK", "points": 20}, 2: {"status": "OK", "points": 20}, 3: {"status": "OK", "points": 20}, 4: {"status": "OK", "points": 20}, 5: {"status": "WA", "points": 0}},
         "abc5.cpp": {1: {"status": "OK", "points": 20}, 2: {"status": "OK", "points": 20}, 3: {"status": "OK", "points": 20}, 4: {"status": "OK", "points": 20}, 5: {"status": "WA", "points": 0}},
@@ -178,7 +169,7 @@ def test_validate_expected_scores_success():
     assert len(results.added_groups) == 1
 
     # Test with removed group.
-    command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None)
+    command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=None, print_expected_scores=True)
     results = {
         "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}, 3: {"status": "OK", "points": 25}},
     }
@@ -187,7 +178,8 @@ def test_validate_expected_scores_success():
     assert len(results.removed_groups) == 1
 
     # Test with correct expected scores and --tests flag.
-    command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=["in/abc1a.in", "in/abc2a.in"])
+    command.args = argparse.Namespace(solutions=["prog/abc.cpp"], tests=["in/abc1a.in", "in/abc2a.in"],
+                                      print_expected_scores=True)
     results = {
         "abc.cpp": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25}},
     }
@@ -218,6 +210,7 @@ def test_print_expected_scores_diff(capsys, create_package):
     package_path = create_package
     command = get_command(package_path)
     command.args = argparse.Namespace(apply_suggestions=False)
+    command.possible_score = 100
 
     # Test with correct expected scores.
     results = ValidationResult(
@@ -227,10 +220,12 @@ def test_print_expected_scores_diff(capsys, create_package):
         removed_groups=set(),
         changes=[],
         expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         },
         new_expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         }
     )
     command.print_expected_scores_diff(results)
@@ -245,10 +240,12 @@ def test_print_expected_scores_diff(capsys, create_package):
         removed_groups=set(),
         changes=[ResultChange("abc.cpp", 1, "OK", "WA")],
         expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         },
         new_expected_scores={
-            "abc.cpp": {1: "WA", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "WA", "points": 0}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         }
     )
     with pytest.raises(SystemExit) as e:
@@ -266,11 +263,14 @@ def test_print_expected_scores_diff(capsys, create_package):
         removed_groups=set(),
         changes=[],
         expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         },
         new_expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
-            "abc5.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
+            "abc5.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         }
     )
     with pytest.raises(SystemExit) as e:
@@ -288,11 +288,14 @@ def test_print_expected_scores_diff(capsys, create_package):
         removed_groups=set(),
         changes=[],
         expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
-            "abc5.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
+            "abc5.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         },
         new_expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         }
     )
     with pytest.raises(SystemExit) as e:
@@ -310,10 +313,13 @@ def test_print_expected_scores_diff(capsys, create_package):
         removed_groups=set(),
         changes=[],
         expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         },
         new_expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK", 5: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100},
+                        5: {"status": "OK", "points": 100}},
         }
     )
     with pytest.raises(SystemExit) as e:
@@ -331,10 +337,13 @@ def test_print_expected_scores_diff(capsys, create_package):
         removed_groups={5},
         changes=[],
         expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK", 5: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100},
+                        5: {"status": "OK", "points": 100}},
         },
         new_expected_scores={
-            "abc.cpp": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+            "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
+                        3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
         }
     )
     with pytest.raises(SystemExit) as e:
@@ -356,21 +365,25 @@ def test_print_expected_scores_diff(capsys, create_package):
         changes=[ResultChange("abc.cpp", 1, "OK", "WA")],
         expected_scores={
             "abc.cpp": {
-                "expected": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+                "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25},
+                             3: {"status": "OK", "points": 25}, 4: {"status": "OK", "points": 25}},
                 "points": 100
             },
             "abc4.cpp": {
-                "expected": {1: "OK", 2: "OK", 3: "OK", 4: "OK"},
+                "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25},
+                             3: {"status": "OK", "points": 25}, 4: {"status": "OK", "points": 25}},
                 "points": 100
             }
         },
         new_expected_scores={
             "abc.cpp": {
-                "expected": {1: "WA", 2: "OK", 3: "OK", 5: "OK"},
+                "expected": {1: {"status": "WA", "points": 0}, 2: {"status": "OK", "points": 25},
+                             3: {"status": "OK", "points": 25}, 5: {"status": "OK", "points": 0}},
                 "points": 50
             },
             "abc5.cpp": {
-                "expected": {1: "OK", 2: "OK", 3: "OK", 5: "OK"},
+                "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25},
+                             3: {"status": "OK", "points": 25}, 5: {"status": "OK", "points": 0}},
                 "points": 75
             }
         }
@@ -388,23 +401,28 @@ def test_print_expected_scores_diff(capsys, create_package):
         config = yaml.load(config_file, Loader=yaml.FullLoader)
     assert config["sinol_expected_scores"] == {
         "abc.cpp": {
-            "expected": {1: "WA", 2: "OK", 3: "OK", 5: "OK"},
+            "expected": {1: {"status": "WA", "points": 0}, 2: {"status": "OK", "points": 25},
+                         3: {"status": "OK", "points": 25}, 5: {"status": "OK", "points": 0}},
             "points": 50
         },
         "abc1.cpp": {
-            "expected": {1: "OK", 2: "OK", 3: "OK"},
+            "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25},
+                         3: {"status": "OK", "points": 25}},
             "points": 75
         },
         "abc2.cpp": {
-            "expected": {1: "OK", 2: "WA", 3: "WA"},
+            "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "WA", "points": 0},
+                         3: {"status": "WA", "points": 0}},
             "points": 25
         },
         "abc3.cpp": {
-            "expected": {1: "OK", 2: "WA", 3: "WA"},
+            "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "WA", "points": 0},
+                         3: {"status": "WA", "points": 0}},
             "points": 25
         },
         "abc5.cpp": {
-            "expected": {1: "OK", 2: "OK", 3: "OK", 5: "OK"},
+            "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25},
+                         3: {"status": "OK", "points": 25}, 5: {"status": "OK", "points": 0}},
             "points": 75
         }
     }
