@@ -13,10 +13,8 @@ title_pl: Przykładowe zadanie
 # (if number of groups doesn't divide 100, then the last groups will have the remaining points).
 # Group 0 always has zero points.
 scores:
-  1: 20
-  2: 30
-  3: 25
-  4: 25
+  1: 40
+  2: 60
 
 # Time limit for all tests is defined in `time_limit` key.
 # More precise time limit for each group or test can be defined in `time_limits` key.
@@ -43,18 +41,22 @@ override_limits:
 
 # Extra compilation arguments can be defined in `extra_compile_args` key.
 # Each language can have different extra arguments.
-extra_compilation_args:
-  cpp: 'abclib.cpp'
+
+# extra_compilation_args:
+#   cpp: 'abclib.cpp'
+
 # The arguments can also be in an array:
-extra_compilation_args:
-  cpp:
-    - 'abclib.cpp'
-    - 'abclib2.cpp'
+
+# extra_compilation_args:
+#   cpp:
+#     - 'abclib.cpp'
+#     - 'abclib2.cpp'
 
 # Additional files used in compilation can be defined in `extra_compilation_files` key.
 # They are copied to the directory where the source code is compiled.
 # All languages have the same additional files.
-extra_compilation_files: ['abclib.cpp', 'abclib.py']
+
+# extra_compilation_files: ['abclib.cpp', 'abclib.py']
 
 
 ### Keys used by sinol-make:

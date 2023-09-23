@@ -84,7 +84,7 @@ class Command(BaseCommand):
         :return: dictionary of TestResult objects
         """
         results = {}
-        sorted_tests = sorted(self.tests, key=lambda x: x[0])
+        sorted_tests = sorted(self.tests, key=lambda test: package_util.get_group(test, self.task_id))
         executions: List[InwerExecution] = []
         for test in sorted_tests:
             results[test] = TestResult(test, self.task_id)

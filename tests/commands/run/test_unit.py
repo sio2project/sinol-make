@@ -14,27 +14,10 @@ def test_get_output_file():
     assert command.get_output_file("in/abc1a.in") == "out/abc1a.out"
 
 
-def test_get_solutions():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-
-    solutions = command.get_solutions(None)
-    assert solutions == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abc3.cpp", "abc4.cpp"]
-    solutions = command.get_solutions(["prog/abc.cpp"])
-    assert solutions == ["abc.cpp"]
-    assert "abc1.cpp" not in solutions
-
-
-def test_get_executable_key():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.get_executable_key("abc1.cpp.e") == (0, 1)
-
-
 def test_compile_solutions(create_package):
     package_path = create_package
     command = get_command(package_path)
-    solutions = command.get_solutions(None)
+    solutions = package_util.get_solutions("abc", None)
     result = command.compile_solutions(solutions)
     assert result == [True for _ in solutions]
 
