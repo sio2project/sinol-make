@@ -30,22 +30,28 @@ def get_commands():
     return commands
 
 
-def check_if_package():
+def find_and_chdir_package():
     """
-    Function to check if current directory is a package
+    Checks if current directory or parent directory is a package directory.
+    If it is, it changes the current working directory to it and returns True.
+    If it isn't, it returns False.
     """
-
-    cwd = os.getcwd()
-    if os.path.exists(os.path.join(cwd, 'config.yml')):
+    if os.path.exists(os.path.join(os.getcwd(), 'config.yml')):
         return True
-    return False
+    elif os.path.exists(os.path.join(os.getcwd(), '..', 'config.yml')):
+        os.chdir('..')
+        return True
+    else:
+        return False
 
 
 def exit_if_not_package():
     """
-    Function that exits if current directory is not a package
+    Checks if current directory or parent directory is a package directory.
+    If it is, current working directory is changed to it.
+    If it isn't, it exits with an error.
     """
-    if not check_if_package():
+    if not find_and_chdir_package():
         exit_with_error('You are not in a package directory (couldn\'t find config.yml in current directory).')
 
 
@@ -292,7 +298,7 @@ def make_version_changes():
         # In version 1.5.9 we changed the format of sinol_expected_scores.
         # Now all groups have specified points and status.
 
-        if check_if_package():
+        if find_and_chdir_package():
             with open("config.yml", "r") as config_file:
                 config = yaml.load(config_file, Loader=yaml.FullLoader)
 

@@ -632,3 +632,17 @@ def test_extra_compilation_files_change(create_package, time_tool):
     test("liblib.cpp", "cpp", "//")
     test("liblib.h", "cpp", "//")
     test("liblib.py", "py", "#")
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+def test_cwd_in_prog(create_package):
+    """
+    Test if `sinol-make` works when cwd is in prog.
+    """
+    package_path = create_package
+    os.chdir("prog")
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run"])
+    command = Command()
+    command.run(args)
