@@ -102,7 +102,7 @@ def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
         info.save(file_path)
 
 
-def check_if_contest_type_changed(contest_type):
+def remove_results_if_contest_type_changed(contest_type):
     """
     Checks if contest type has changed and removes all cached test results if it has.
     :param contest_type: Contest type

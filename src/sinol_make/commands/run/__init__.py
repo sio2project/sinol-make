@@ -1147,7 +1147,7 @@ class Command(BaseCommand):
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or mp.cpu_count()
         cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
-        cache.check_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
+        cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:

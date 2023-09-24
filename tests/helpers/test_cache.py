@@ -99,10 +99,10 @@ def test_cache():
         cache_file.save("abc.cpp")
         cache_file.save("abc.py")
 
-        cache.check_if_contest_type_changed("default")
+        cache.remove_results_if_contest_type_changed("default")
         assert cache.get_cache_file("abc.py") == cache_file
         assert cache.get_cache_file("abc.cpp") == cache_file
 
-        cache.check_if_contest_type_changed("oi")
+        cache.remove_results_if_contest_type_changed("oi")
         assert cache.get_cache_file("abc.py").tests == {}
         assert cache.get_cache_file("abc.cpp").tests == {}
