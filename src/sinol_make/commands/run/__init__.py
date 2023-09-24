@@ -827,6 +827,7 @@ class Command(BaseCommand):
         added_groups = set()
         removed_groups = set()
         changes = []
+        unknown_change = False
 
         for type, field, change in list(expected_scores_diff):
             if type == "add":
@@ -877,6 +878,9 @@ class Command(BaseCommand):
                             old_result=change[0],
                             result=change[1]
                         ))
+                else:
+                    unknown_change = True
+
 
         return ValidationResult(
             added_solutions,
@@ -885,13 +889,18 @@ class Command(BaseCommand):
             removed_groups,
             changes,
             expected_scores,
-            new_expected_scores
+            new_expected_scores,
+            unknown_change,
         )
 
 
     def print_expected_scores_diff(self, validation_results: ValidationResult):
         diff = validation_results
         config_expected_scores = self.config.get("sinol_expected_scores", {})
+
+        if diff.unknown_change:
+            print(util.error("There was an unknown change in expected scores. "
+                             "You should apply the suggested changes to avoid errors."))
 
         def warn_if_not_empty(set, message):
             if len(set) > 0:
@@ -917,7 +926,7 @@ class Command(BaseCommand):
             elif isinstance(change, PointsChange):
                 print_points_change(change.solution, change.group, change.new_points, change.old_points)
 
-        if diff.expected_scores == diff.new_expected_scores:
+        if diff.expected_scores == diff.new_expected_scores and not diff.unknown_change:
             print(util.info("Expected scores are correct!"))
         else:
             def delete_group(solution, group):
@@ -1157,6 +1166,15 @@ class Command(BaseCommand):
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)
-        validation_results = self.validate_expected_scores(results)
+        try:
+            validation_results = self.validate_expected_scores(results)
+        except:
+            self.config = util.try_fix_config(self.config)
+            try:
+                validation_results = self.validate_expected_scores(results)
+            except:
+                util.exit_with_error("Validating expected scores failed. "
+                                     "This probably means that `sinol_expected_scores` is broken. "
+                                     "Delete it and run `sinol-make run --apply-suggestions` again.")
         self.print_expected_scores_diff(validation_results)
         self.exit()

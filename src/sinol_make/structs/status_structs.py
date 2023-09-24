@@ -67,6 +67,7 @@ class ValidationResult:
     changes: List[ResultChange]
     expected_scores: dict
     new_expected_scores: dict
+    unknown_change: bool
 
 
 @dataclass
