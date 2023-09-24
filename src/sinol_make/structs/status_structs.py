@@ -51,6 +51,12 @@ class ResultChange:
 
 
 @dataclass
+class TotalPointsChange:
+    solution: str
+    old_points: int
+    new_points: int
+
+@dataclass
 class PointsChange:
     solution: str
     group: int

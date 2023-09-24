@@ -17,7 +17,8 @@ from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
 from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
-from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult
+from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
+    TotalPointsChange
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
@@ -878,6 +879,13 @@ class Command(BaseCommand):
                             old_result=change[0],
                             result=change[1]
                         ))
+                elif field[1] == "points": # Points for at least one solution has changed
+                    solution = field[0]
+                    changes.append(TotalPointsChange(
+                        solution=solution,
+                        old_points=change[0],
+                        new_points=change[1]
+                    ))
                 else:
                     unknown_change = True
 
@@ -925,6 +933,9 @@ class Command(BaseCommand):
                     print_points_change(change.solution, change.group, change.result, change.old_result)
             elif isinstance(change, PointsChange):
                 print_points_change(change.solution, change.group, change.new_points, change.old_points)
+            elif isinstance(change, TotalPointsChange):
+                print(util.warning("Solution %s passed all groups with %d points while it should pass with %d points." %
+                                   (change.solution, change.new_points, change.old_points)))
 
         if diff.expected_scores == diff.new_expected_scores and not diff.unknown_change:
             print(util.info("Expected scores are correct!"))
