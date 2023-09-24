@@ -1,7 +1,7 @@
 from math import ceil
 from typing import List
 
-from sinol_make.commands.run.structs import ExecutionResult
+from sinol_make.structs.status_structs import ExecutionResult
 
 
 class DefaultContest:

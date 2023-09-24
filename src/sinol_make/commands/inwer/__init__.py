@@ -8,7 +8,7 @@ import multiprocessing as mp
 from typing import Dict, List
 
 from sinol_make import util
-from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult, TableData
+from sinol_make.structs.inwer_structs import TestResult, InwerExecution, VerificationResult, TableData
 from sinol_make.helpers import package_util, compile, printer, paths
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand

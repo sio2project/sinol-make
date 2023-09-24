@@ -1,8 +1,7 @@
 import argparse, re, yaml
 
 from sinol_make import util, oiejq
-from sinol_make.commands.run.structs import ResultChange, ValidationResult
-from sinol_make.structs.status_structs import Status
+from sinol_make.structs.status_structs import Status, ResultChange, ValidationResult
 from sinol_make.helpers import package_util
 from .util import *
 from ...util import *
@@ -63,6 +62,7 @@ def test_run_solutions(create_package, time_tool):
                                       hide_memory=False)
     create_ins_outs(package_path)
     command.tests = package_util.get_tests("abc", None)
+    command.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in command.tests}
     command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
     command.scores = command.config["scores"]
     command.possible_score = command.get_possible_score(command.groups)
