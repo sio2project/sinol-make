@@ -260,8 +260,6 @@ class Command(BaseCommand):
                             help=f'tool to measure time and memory usage (default: {default_timetool})')
         parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
-        parser.add_argument('-p', '--print-expected-scores', dest='print_expected_scores', action='store_true',
-                            help='print whole expected scores report')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
         add_compilation_arguments(parser)
@@ -731,10 +729,6 @@ class Command(BaseCommand):
                 return obj
         return _convert(dictionary)
 
-    def print_expected_scores(self, expected_scores):
-        yaml_dict = { "sinol_expected_scores": self.convert_status_to_string(expected_scores) }
-        print(yaml.dump(yaml_dict, default_flow_style=None))
-
     def get_whole_groups(self):
         """
         Returns a list of groups for which all tests were run.
@@ -832,14 +826,6 @@ class Command(BaseCommand):
                                                                                     self.possible_score)
                 if len(expected_scores[solution]["expected"]) == 0:
                     del expected_scores[solution]
-
-        if self.args.print_expected_scores:
-            if self.args.tests is not None:
-                print("Showing expected scores only for groups with all tests run.")
-            print(util.bold("Expected scores from config:"))
-            self.print_expected_scores(expected_scores)
-            print(util.bold("\nExpected scores based on results:"))
-            self.print_expected_scores(new_expected_scores)
 
         expected_scores_diff = dictdiffer.diff(expected_scores, new_expected_scores)
         added_solutions = set()
@@ -976,8 +962,7 @@ class Command(BaseCommand):
                 util.save_config(self.config)
                 print(util.info("Saved suggested expected scores description."))
             else:
-                util.exit_with_error("To see expected scores from config and results, run sinol-make with flag --print-expected-scores.\n"
-                                     "Use flag --apply-suggestions to apply suggestions.")
+                util.exit_with_error("Use flag --apply-suggestions to apply suggestions.")
 
 
     def set_constants(self):

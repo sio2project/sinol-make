@@ -89,34 +89,6 @@ def test_run_solutions(create_package, time_tool):
     }
 
 
-def test_print_expected_scores(capsys):
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    expected_scores = """sinol_expected_scores:
-  abc.cpp:
-    expected: {1: "OK", 2: "OK", 3: "OK", 4: "OK"}
-    points: 100
-  abc1.cpp:
-    expected: {1: "OK", 2: "OK", 3: "OK", 4: "WA"}
-    points: 75
-  abc2.cpp:
-    expected: {1: "OK", 2: "WA", 3: "WA", 4: "TL"}
-    points: 25
-  abc3.cpp:
-    expected: {1: "OK", 2: "WA", 3: "WA", 4: "ML"}
-    points: 25
-  abc4.cpp:
-    expected: {1: "OK", 2: "OK", 3: "WA", 4: "RE"}
-    points: 50
-
-"""
-
-    expected_scores_dict = yaml.load(expected_scores, Loader=yaml.FullLoader)
-    command.print_expected_scores(expected_scores_dict["sinol_expected_scores"])
-    out = capsys.readouterr().out
-    assert expected_scores.replace('"', '') in out
-
-
 def test_validate_expected_scores_success():
     os.chdir(get_simple_package_path())
     command = get_command()
