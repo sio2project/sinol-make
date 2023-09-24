@@ -96,7 +96,7 @@ def test_validate_expected_scores_success():
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores != results.new_expected_scores
-    assert len(results.changes) == 2
+    assert len(results.changes) == 3
 
     # Test with removed solution.
     command.args = argparse.Namespace(solutions=None, tests=None, print_expected_scores=True)

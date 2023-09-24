@@ -67,10 +67,7 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
     info.save(file_path)
 
     if is_checker:
-        for solution in os.listdir(paths.get_cache_path('md5sums')):
-            info = get_cache_file(solution)
-            info.tests = {}
-            info.save(solution)
+        remove_results_cache()
 
 
 def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
@@ -102,21 +99,21 @@ def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
         info.save(file_path)
 
 
+def remove_results_cache():
+    """
+    Removes all cached test results
+    """
+    for solution in os.listdir(paths.get_cache_path('md5sums')):
+        info = get_cache_file(solution)
+        info.tests = {}
+        info.save(solution)
+
+
 def remove_results_if_contest_type_changed(contest_type):
     """
     Checks if contest type has changed and removes all cached test results if it has.
     :param contest_type: Contest type
     """
-    try:
-        with open(paths.get_cache_path("contest_type"), 'r') as cache_file:
-            cache_contest_type = cache_file.read().strip()
-        if cache_contest_type != contest_type:
-            for solution in os.listdir(paths.get_cache_path('md5sums')):
-                info = get_cache_file(solution)
-                info.tests = {}
-                info.save(solution)
-    except FileNotFoundError:
-        pass
-    os.makedirs(paths.get_cache_path(), exist_ok=True)
-    with open(paths.get_cache_path("contest_type"), 'w') as cache_file:
-        cache_file.write(contest_type)
+    if package_util.check_if_contest_type_changed(contest_type):
+        remove_results_cache()
+    package_util.save_contest_type_to_cache(contest_type)
