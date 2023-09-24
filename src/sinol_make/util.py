@@ -302,6 +302,17 @@ def try_fix_config(config):
     :param config: config.yml file as a dict
     :return: config.yml file as a dict
     """
+    # The old format was:
+    # sinol_expected_scores:
+    #   solution1:
+    #     expected: {1: OK, 2: OK, ...}
+    #     points: 100
+    #
+    # We change it to:
+    # sinol_expected_scores:
+    #   solution1:
+    #     expected: {1: {status: OK, points: 100}, 2: {status: OK, points: 100}, ...}
+    #     points: 100
     try:
         new_expected_scores = {}
         expected_scores = config["sinol_expected_scores"]
