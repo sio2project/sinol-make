@@ -102,8 +102,6 @@ def test_apply_suggestions(create_package, time_tool):
 
     with open(config_path, "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
-    print("xddd")
-    print(config["sinol_expected_scores"])
     assert config["sinol_expected_scores"] == expected_scores
 
 
