@@ -298,7 +298,7 @@ def make_version_changes():
         # In version 1.5.9 we changed the format of sinol_expected_scores.
         # Now all groups have specified points and status.
 
-        if check_if_package():
+        if find_and_chdir_package():
             with open("config.yml", "r") as config_file:
                 config = yaml.load(config_file, Loader=yaml.FullLoader)
 
