@@ -17,7 +17,8 @@ from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
 from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
-from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult
+from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
+    TotalPointsChange
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
@@ -827,6 +828,7 @@ class Command(BaseCommand):
         added_groups = set()
         removed_groups = set()
         changes = []
+        unknown_change = False
 
         for type, field, change in list(expected_scores_diff):
             if type == "add":
@@ -877,6 +879,16 @@ class Command(BaseCommand):
                             old_result=change[0],
                             result=change[1]
                         ))
+                elif field[1] == "points": # Points for at least one solution has changed
+                    solution = field[0]
+                    changes.append(TotalPointsChange(
+                        solution=solution,
+                        old_points=change[0],
+                        new_points=change[1]
+                    ))
+                else:
+                    unknown_change = True
+
 
         return ValidationResult(
             added_solutions,
@@ -885,13 +897,18 @@ class Command(BaseCommand):
             removed_groups,
             changes,
             expected_scores,
-            new_expected_scores
+            new_expected_scores,
+            unknown_change,
         )
 
 
     def print_expected_scores_diff(self, validation_results: ValidationResult):
         diff = validation_results
         config_expected_scores = self.config.get("sinol_expected_scores", {})
+
+        if diff.unknown_change:
+            print(util.error("There was an unknown change in expected scores. "
+                             "You should apply the suggested changes to avoid errors."))
 
         def warn_if_not_empty(set, message):
             if len(set) > 0:
@@ -916,8 +933,11 @@ class Command(BaseCommand):
                     print_points_change(change.solution, change.group, change.result, change.old_result)
             elif isinstance(change, PointsChange):
                 print_points_change(change.solution, change.group, change.new_points, change.old_points)
+            elif isinstance(change, TotalPointsChange):
+                print(util.warning("Solution %s passed all groups with %d points while it should pass with %d points." %
+                                   (change.solution, change.new_points, change.old_points)))
 
-        if diff.expected_scores == diff.new_expected_scores:
+        if diff.expected_scores == diff.new_expected_scores and not diff.unknown_change:
             print(util.info("Expected scores are correct!"))
         else:
             def delete_group(solution, group):
@@ -935,7 +955,6 @@ class Command(BaseCommand):
                     self.possible_score
                 )
 
-
             if self.args.apply_suggestions:
                 for solution in diff.removed_solutions:
                     del config_expected_scores[solution]
@@ -950,7 +969,6 @@ class Command(BaseCommand):
                             set_group_result(solution, group, result)
                     else:
                         config_expected_scores[solution] = diff.new_expected_scores[solution]
-
 
                 self.config["sinol_expected_scores"] = self.convert_status_to_string(config_expected_scores)
                 util.save_config(self.config)
@@ -1129,6 +1147,7 @@ class Command(BaseCommand):
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or mp.cpu_count()
         cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
+        cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
@@ -1158,6 +1177,15 @@ class Command(BaseCommand):
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)
-        validation_results = self.validate_expected_scores(results)
+        try:
+            validation_results = self.validate_expected_scores(results)
+        except:
+            self.config = util.try_fix_config(self.config)
+            try:
+                validation_results = self.validate_expected_scores(results)
+            except:
+                util.exit_with_error("Validating expected scores failed. "
+                                     "This probably means that `sinol_expected_scores` is broken. "
+                                     "Delete it and run `sinol-make run --apply-suggestions` again.")
         self.print_expected_scores_diff(validation_results)
         self.exit()

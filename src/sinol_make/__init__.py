@@ -9,7 +9,7 @@ import os
 from sinol_make import util, oiejq
 
 
-__version__ = "1.5.9"
+__version__ = "1.5.10"
 
 
 def configure_parsers():
@@ -61,7 +61,6 @@ def main_exn():
                 except Exception as err:
                     util.exit_with_error('`oiejq` could not be installed.\n' + err)
 
-            util.make_version_changes()
             command.run(args)
             exit(0)
 

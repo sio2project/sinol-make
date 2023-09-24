@@ -294,3 +294,26 @@ def any_files_matching_pattern(task_id: str, pattern: str) -> bool:
     :return: True if any file in package matches given pattern.
     """
     return len(get_files_matching_pattern(task_id, pattern)) > 0
+
+
+def check_if_contest_type_changed(contest_type):
+    """
+    Checks if contest type in cache is different then contest type specified in config.yml.
+    :param contest_type: Contest type specified in config.yml.
+    :return: True if contest type in cache is different then contest type specified in config.yml.
+    """
+    if not os.path.isfile(paths.get_cache_path("contest_type")):
+        return False
+    with open(paths.get_cache_path("contest_type"), "r") as contest_type_file:
+        cached_contest_type = contest_type_file.read()
+    return cached_contest_type != contest_type
+
+
+def save_contest_type_to_cache(contest_type):
+    """
+    Saves contest type to cache.
+    :param contest_type: Contest type.
+    """
+    os.makedirs(paths.get_cache_path(), exist_ok=True)
+    with open(paths.get_cache_path("contest_type"), "w") as contest_type_file:
+        contest_type_file.write(contest_type)

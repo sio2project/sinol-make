@@ -94,3 +94,15 @@ def test_cache():
         assert os.path.exists(paths.get_cache_path("md5sums", "abc.py"))
         assert cache.get_cache_file("abc.py") == cache_file
         assert cache.get_cache_file("abc.cpp") == CacheFile()
+
+        # Test if after changing contest type all cached test results are removed
+        cache_file.save("abc.cpp")
+        cache_file.save("abc.py")
+
+        cache.remove_results_if_contest_type_changed("default")
+        assert cache.get_cache_file("abc.py") == cache_file
+        assert cache.get_cache_file("abc.cpp") == cache_file
+
+        cache.remove_results_if_contest_type_changed("oi")
+        assert cache.get_cache_file("abc.py").tests == {}
+        assert cache.get_cache_file("abc.cpp").tests == {}

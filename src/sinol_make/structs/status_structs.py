@@ -37,6 +37,10 @@ class Status(str, Enum):
         else:
             raise ValueError(f"Unknown status: '{status}'")
 
+    @staticmethod
+    def possible_statuses():
+        return [Status.PENDING, Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK]
+
 
 @dataclass
 class ResultChange:
@@ -45,6 +49,12 @@ class ResultChange:
     old_result: Status
     result: Status
 
+
+@dataclass
+class TotalPointsChange:
+    solution: str
+    old_points: int
+    new_points: int
 
 @dataclass
 class PointsChange:
@@ -63,6 +73,7 @@ class ValidationResult:
     changes: List[ResultChange]
     expected_scores: dict
     new_expected_scores: dict
+    unknown_change: bool
 
 
 @dataclass

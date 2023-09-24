@@ -96,7 +96,7 @@ def test_validate_expected_scores_success():
     }
     results = command.validate_expected_scores(results)
     assert results.expected_scores != results.new_expected_scores
-    assert len(results.changes) == 2
+    assert len(results.changes) == 3
 
     # Test with removed solution.
     command.args = argparse.Namespace(solutions=None, tests=None, print_expected_scores=True)
@@ -181,7 +181,8 @@ def test_print_expected_scores_diff(capsys, create_package):
         new_expected_scores={
             "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
                         3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
-        }
+        },
+        unknown_change=False,
     )
     command.print_expected_scores_diff(results)
     out = capsys.readouterr().out
@@ -201,7 +202,8 @@ def test_print_expected_scores_diff(capsys, create_package):
         new_expected_scores={
             "abc.cpp": {1: {"status": "WA", "points": 0}, 2: {"status": "OK", "points": 100},
                         3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
-        }
+        },
+        unknown_change=False,
     )
     with pytest.raises(SystemExit) as e:
         command.print_expected_scores_diff(results)
@@ -226,7 +228,8 @@ def test_print_expected_scores_diff(capsys, create_package):
                         3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
             "abc5.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
                         3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
-        }
+        },
+        unknown_change=False,
     )
     with pytest.raises(SystemExit) as e:
         command.print_expected_scores_diff(results)
@@ -251,7 +254,8 @@ def test_print_expected_scores_diff(capsys, create_package):
         new_expected_scores={
             "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
                         3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
-        }
+        },
+        unknown_change=False,
     )
     with pytest.raises(SystemExit) as e:
         command.print_expected_scores_diff(results)
@@ -275,7 +279,8 @@ def test_print_expected_scores_diff(capsys, create_package):
             "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
                         3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100},
                         5: {"status": "OK", "points": 100}},
-        }
+        },
+        unknown_change=False,
     )
     with pytest.raises(SystemExit) as e:
         command.print_expected_scores_diff(results)
@@ -299,7 +304,8 @@ def test_print_expected_scores_diff(capsys, create_package):
         new_expected_scores={
             "abc.cpp": {1: {"status": "OK", "points": 100}, 2: {"status": "OK", "points": 100},
                         3: {"status": "OK", "points": 100}, 4: {"status": "OK", "points": 100}},
-        }
+        },
+        unknown_change=False,
     )
     with pytest.raises(SystemExit) as e:
         command.print_expected_scores_diff(results)
@@ -341,7 +347,8 @@ def test_print_expected_scores_diff(capsys, create_package):
                              3: {"status": "OK", "points": 25}, 5: {"status": "OK", "points": 0}},
                 "points": 75
             }
-        }
+        },
+        unknown_change=False,
     )
     command.print_expected_scores_diff(results)
     out = capsys.readouterr().out
@@ -381,6 +388,38 @@ def test_print_expected_scores_diff(capsys, create_package):
             "points": 75
         }
     }
+
+    # Test with `unknown_changes = True`
+    command.args = argparse.Namespace(apply_suggestions=False)
+    results = ValidationResult(
+        added_solutions=set(),
+        removed_solutions=set(),
+        added_groups=set(),
+        removed_groups=set(),
+        changes=[],
+        expected_scores={
+            "abc.cpp": {
+                "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25},
+                             3: {"status": "OK", "points": 25}, 4: {"status": "OK", "points": 25}},
+                "points": 100
+            },
+        },
+        new_expected_scores={
+            "abc.cpp": {
+                "expected": {1: {"status": "OK", "points": 25}, 2: {"status": "OK", "points": 25},
+                             3: {"status": "OK", "points": 25}, 4: {"status": "OK", "points": 25}},
+                "points": 100
+            },
+        },
+        unknown_change=True,
+    )
+    with pytest.raises(SystemExit) as e:
+        command.print_expected_scores_diff(results)
+    out = capsys.readouterr().out
+    assert e.type == SystemExit
+    assert e.value.code == 1
+    assert "There was an unknown change in expected scores." in out
+
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)

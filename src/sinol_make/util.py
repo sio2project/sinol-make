@@ -10,6 +10,7 @@ from typing import Union
 
 import sinol_make
 from sinol_make.contest_types import get_contest_type
+from sinol_make.structs.status_structs import Status
 
 
 def get_commands():
@@ -87,7 +88,7 @@ def save_config(config):
         {
             "key": "sinol_expected_scores",
             "default_flow_style": None
-        }
+        },
     ]
 
     config = config.copy()
@@ -293,41 +294,56 @@ def get_file_md5(path):
         return hashlib.md5(f.read()).hexdigest()
 
 
-def make_version_changes():
-    if compare_versions(sinol_make.__version__, "1.5.8") == 1:
-        # In version 1.5.9 we changed the format of sinol_expected_scores.
-        # Now all groups have specified points and status.
+def try_fix_config(config):
+    """
+    Function to try to fix the config.yml file.
+    Tries to:
+    - reformat `sinol_expected_scores` field
+    :param config: config.yml file as a dict
+    :return: config.yml file as a dict
+    """
+    # The old format was:
+    # sinol_expected_scores:
+    #   solution1:
+    #     expected: {1: OK, 2: OK, ...}
+    #     points: 100
+    #
+    # We change it to:
+    # sinol_expected_scores:
+    #   solution1:
+    #     expected: {1: {status: OK, points: 100}, 2: {status: OK, points: 100}, ...}
+    #     points: 100
+    try:
+        new_expected_scores = {}
+        expected_scores = config["sinol_expected_scores"]
+        contest = get_contest_type()
+        groups = []
+        for solution, results in expected_scores.items():
+            for group in results["expected"].keys():
+                if group not in groups:
+                    groups.append(int(group))
 
-        if find_and_chdir_package():
-            with open("config.yml", "r") as config_file:
-                config = yaml.load(config_file, Loader=yaml.FullLoader)
-
-            try:
-                new_expected_scores = {}
-                expected_scores = config["sinol_expected_scores"]
-                contest = get_contest_type()
-                groups = []
-                for solution, results in expected_scores.items():
-                    for group in results["expected"].keys():
-                        if group not in groups:
-                            groups.append(int(group))
-
-                scores = contest.assign_scores(groups)
-                for solution, results in expected_scores.items():
-                    new_expected_scores[solution] = {"expected": {}, "points": results["points"]}
-                    for group, result in results["expected"].items():
-                        new_expected_scores[solution]["expected"][group] = {"status": result}
-                        if result == "OK":
-                            new_expected_scores[solution]["expected"][group]["points"] = scores[group]
-                        else:
-                            new_expected_scores[solution]["expected"][group]["points"] = 0
-                config["sinol_expected_scores"] = new_expected_scores
-                save_config(config)
-            except:
-                # If there is an error, we just delete the field.
-                if "sinol_expected_scores" in config:
-                    del config["sinol_expected_scores"]
-                    save_config(config)
+        scores = contest.assign_scores(groups)
+        for solution, results in expected_scores.items():
+            new_expected_scores[solution] = {"expected": {}, "points": results["points"]}
+            for group, result in results["expected"].items():
+                if result in Status.possible_statuses():
+                    new_expected_scores[solution]["expected"][group] = {"status": result}
+                    if result == "OK":
+                        new_expected_scores[solution]["expected"][group]["points"] = scores[group]
+                    else:
+                        new_expected_scores[solution]["expected"][group]["points"] = 0
+                else:
+                    # This means that the result is probably valid.
+                    new_expected_scores[solution]["expected"][group] = result
+        config["sinol_expected_scores"] = new_expected_scores
+        save_config(config)
+    except:
+        # If there is an error, we just delete the field.
+        if "sinol_expected_scores" in config:
+            del config["sinol_expected_scores"]
+            save_config(config)
+    return config
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)
