@@ -9,6 +9,7 @@ import resource
 from typing import Union
 
 import sinol_make
+from sinol_make.contest_types import get_contest_type
 
 
 def get_commands():
@@ -290,6 +291,43 @@ def is_linux():
 def get_file_md5(path):
     with open(path, "rb") as f:
         return hashlib.md5(f.read()).hexdigest()
+
+
+def make_version_changes():
+    if compare_versions(sinol_make.__version__, "1.5.8") == 1:
+        # In version 1.5.9 we changed the format of sinol_expected_scores.
+        # Now all groups have specified points and status.
+
+        if check_if_package():
+            with open("config.yml", "r") as config_file:
+                config = yaml.load(config_file, Loader=yaml.FullLoader)
+
+            try:
+                new_expected_scores = {}
+                expected_scores = config["sinol_expected_scores"]
+                contest = get_contest_type()
+                groups = []
+                for solution, results in expected_scores.items():
+                    for group in results["expected"].keys():
+                        if group not in groups:
+                            groups.append(int(group))
+
+                scores = contest.assign_scores(groups)
+                for solution, results in expected_scores.items():
+                    new_expected_scores[solution] = {"expected": {}, "points": results["points"]}
+                    for group, result in results["expected"].items():
+                        new_expected_scores[solution]["expected"][group] = {"status": result}
+                        if result == "OK":
+                            new_expected_scores[solution]["expected"][group]["points"] = scores[group]
+                        else:
+                            new_expected_scores[solution]["expected"][group]["points"] = 0
+                config["sinol_expected_scores"] = new_expected_scores
+                save_config(config)
+            except:
+                # If there is an error, we just delete the field.
+                if "sinol_expected_scores" in config:
+                    del config["sinol_expected_scores"]
+                    save_config(config)
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

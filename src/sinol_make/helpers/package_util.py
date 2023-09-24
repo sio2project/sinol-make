@@ -41,8 +41,65 @@ def get_group(test_path, task_id):
     return int("".join(filter(str.isdigit, extract_test_id(test_path, task_id))))
 
 
+def get_groups(tests, task_id):
+    return sorted(list(set([get_group(test, task_id) for test in tests])))
+
+
 def get_test_key(test, task_id):
     return get_group(test, task_id), test
+
+
+def get_solutions_re(task_id: str) -> re.Pattern:
+    """
+    Returns regex pattern matching all solutions for given task.
+    :param task_id: Task id.
+    """
+    return re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % task_id)
+
+
+def get_executable_key(executable, task_id):
+    name = get_file_name(executable)
+    task_id_len = len(task_id)
+    value = [0, 0]
+    if name[task_id_len] == 's':
+        value[0] = 1
+        suffix = name.split(".")[0][(task_id_len + 1):]
+    elif name[task_id_len] == 'b':
+        value[0] = 2
+        suffix = name.split(".")[0][(task_id_len + 1):]
+    else:
+        suffix = name.split(".")[0][task_id_len:]
+    if suffix != "":
+        i = 0
+        digits = ""
+        while i < len(suffix) and suffix[i].isdigit():
+            digits += suffix[i]
+            i += 1
+        if digits != "":
+            value[1] = int(digits)
+    return tuple(value)
+
+
+def get_files_matching(patterns: List[str], directory: str) -> List[str]:
+    """
+    Returns list of files matching given patterns.
+    If pattern is absolute path, it is returned as is.
+    If pattern is relative path, it is searched in current directory and in directory specified as argument.
+    :param patterns: List of patterns to match.
+    :param directory: Directory to search in.
+    :return: List of files matching given patterns.
+    """
+    files_matching = set()
+    for solution in patterns:
+        if os.path.isabs(solution):
+            files_matching.add(solution)
+        else:
+            # If solution already has `<directory>/` prefix:
+            files_matching.update(glob.glob(os.path.join(os.getcwd(), solution)))
+            # If solution does not have `<directory>/` prefix:
+            files_matching.update(glob.glob(os.path.join(os.getcwd(), directory, solution)))
+
+    return list(files_matching)
 
 
 def get_tests(task_id: str, arg_tests: Union[List[str], None] = None) -> List[str]:
@@ -57,11 +114,36 @@ def get_tests(task_id: str, arg_tests: Union[List[str], None] = None) -> List[st
                      if test[-3:] == ".in"]
         return sorted(all_tests, key=lambda test: get_test_key(test, task_id))
     else:
-        existing_tests = set()
-        for test in arg_tests:
-            if os.path.exists(test):
-                existing_tests.add(test)
-        return sorted(list(existing_tests), key=lambda test: get_test_key(test, task_id))
+        existing_tests = []
+        for test in get_files_matching(arg_tests, "in"):
+            if not os.path.isfile(test):
+                util.exit_with_error("Test %s does not exist" % test)
+            if os.path.splitext(test)[1] == ".in":
+                existing_tests.append(os.path.join("in", os.path.basename(test)))
+        return sorted(existing_tests, key=lambda test: get_test_key(test, task_id))
+
+
+def get_solutions(task_id: str, args_solutions: Union[List[str], None] = None) -> List[str]:
+    """
+    Returns list of solutions to run.
+    :param task_id: Task id.
+    :param args_solutions: Solutions specified in command line arguments. If None, all solutions are returned.
+    :return: List of solutions to run.
+    """
+    solutions_re = get_solutions_re(task_id)
+    if args_solutions is None:
+        solutions = [solution for solution in os.listdir("prog/")
+                     if solutions_re.match(solution)]
+        return sorted(solutions, key=lambda solution: get_executable_key(solution, task_id))
+    else:
+        solutions = []
+        for solution in get_files_matching(args_solutions, "prog"):
+            if not os.path.isfile(solution):
+                util.exit_with_error("Solution %s does not exist" % solution)
+            if solutions_re.match(os.path.basename(solution)) is not None:
+                solutions.append(os.path.basename(solution))
+
+        return sorted(solutions, key=lambda solution: get_executable_key(solution, task_id))
 
 
 def get_file_name(file_path):

@@ -5,15 +5,20 @@ scores:
   1: 50
   2: 50
 extra_compilation_files: [lsalib.cpp, lsalib.h, lsalib.py]
-extra_compilation_args:
-  cpp: lsalib.cpp
+extra_compilation_args: {cpp: lsalib.cpp}
 sinol_expected_scores:
   lsa.cpp:
-    expected: {1: OK, 2: OK}
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 50, status: OK}
     points: 100
   lsa.py:
-    expected: {1: OK, 2: OK}
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 50, status: OK}
     points: 100
   lsas1.cpp:
-    expected: {1: WA, 2: OK}
+    expected:
+      1: {points: 0, status: WA}
+      2: {points: 50, status: OK}
     points: 50

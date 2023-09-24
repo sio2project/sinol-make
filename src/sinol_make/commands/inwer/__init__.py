@@ -8,7 +8,7 @@ import multiprocessing as mp
 from typing import Dict, List
 
 from sinol_make import util
-from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult, TableData
+from sinol_make.structs.inwer_structs import TestResult, InwerExecution, VerificationResult, TableData
 from sinol_make.helpers import package_util, compile, printer, paths
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -84,7 +84,7 @@ class Command(BaseCommand):
         :return: dictionary of TestResult objects
         """
         results = {}
-        sorted_tests = sorted(self.tests, key=lambda x: x[0])
+        sorted_tests = sorted(self.tests, key=lambda test: package_util.get_group(test, self.task_id))
         executions: List[InwerExecution] = []
         for test in sorted_tests:
             results[test] = TestResult(test, self.task_id)

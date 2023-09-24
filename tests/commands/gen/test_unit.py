@@ -4,7 +4,8 @@ import pytest
 import shutil
 import glob
 
-from sinol_make.commands.gen import gen_util, OutputGenerationArguments
+from sinol_make.commands.gen import gen_util
+from sinol_make.structs.gen_structs import OutputGenerationArguments
 from sinol_make.helpers import package_util, compiler
 from tests import util
 from tests.fixtures import *

@@ -13,10 +13,8 @@ title_pl: Przykładowe zadanie
 # (if number of groups doesn't divide 100, then the last groups will have the remaining points).
 # Group 0 always has zero points.
 scores:
-  1: 20
-  2: 30
-  3: 25
-  4: 25
+  1: 40
+  2: 60
 
 # Time limit for all tests is defined in `time_limit` key.
 # More precise time limit for each group or test can be defined in `time_limits` key.
@@ -43,18 +41,22 @@ override_limits:
 
 # Extra compilation arguments can be defined in `extra_compile_args` key.
 # Each language can have different extra arguments.
-extra_compilation_args:
-  cpp: 'abclib.cpp'
+
+# extra_compilation_args:
+#   cpp: 'abclib.cpp'
+
 # The arguments can also be in an array:
-extra_compilation_args:
-  cpp:
-    - 'abclib.cpp'
-    - 'abclib2.cpp'
+
+# extra_compilation_args:
+#   cpp:
+#     - 'abclib.cpp'
+#     - 'abclib2.cpp'
 
 # Additional files used in compilation can be defined in `extra_compilation_files` key.
 # They are copied to the directory where the source code is compiled.
 # All languages have the same additional files.
-extra_compilation_files: ['abclib.cpp', 'abclib.py']
+
+# extra_compilation_files: ['abclib.cpp', 'abclib.py']
 
 
 ### Keys used by sinol-make:
@@ -71,9 +73,14 @@ sinol_task_id: abc
 # Possible values are:
 # - `default` - Points for a test can only be 100 or 0 (unless checker assigns points).
 #               Points for a group are calculated based of the lowest number of points for a test in this group.
+#               If scores are not defined in `scores` key, then all groups have the same number of points,
+#                summing up to 100.
 # - `oi` - Points for a test are unchanged if the execution time is less or equal to the time limit.
 #          Otherwise, number of points decreases linearly to one depending on the execution time.
 #          Points for a group are calculated same as in `default` mode.
+# - `icpc` - A test passes when the status is OK.
+#            A group passes when all tests in this group pass.
+#            A solution passes when all groups pass.
 sinol_contest_type: oi
 
 # sinol-make can check if the solutions run as expected when using `run` command.

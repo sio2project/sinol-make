@@ -36,6 +36,30 @@ def test_get_tests(create_package):
     tests = package_util.get_tests("abc", None)
     assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
 
+    with tempfile.TemporaryDirectory() as tmpdir:
+        def create_file(name):
+            with open(os.path.join(tmpdir, "in", name), "w") as f:
+                f.write("")
+
+        os.chdir(tmpdir)
+        os.mkdir("in")
+        create_file("abc0.in")
+        create_file("abc0a.in")
+        create_file("abc1ocen.in")
+        create_file("abc2ocen.in")
+        create_file("abc1a.in")
+        create_file("abc1b.in")
+        create_file("abc2a.in")
+
+        assert set(package_util.get_tests("abc", None)) == \
+               {"in/abc0.in", "in/abc0a.in", "in/abc1a.in", "in/abc1b.in", "in/abc1ocen.in", "in/abc2a.in", "in/abc2ocen.in"}
+        assert package_util.get_tests("abc", ["in/abc1a.in"]) == ["in/abc1a.in"]
+        assert package_util.get_tests("abc", ["in/abc??.in"]) == \
+               ["in/abc0a.in", "in/abc1a.in", "in/abc1b.in", "in/abc2a.in"]
+        assert package_util.get_tests("abc", ["abc1a.in"]) == ["in/abc1a.in"]
+        assert package_util.get_tests("abc", ["abc?ocen.in", "abc0.in"]) == ["in/abc0.in", "in/abc1ocen.in", "in/abc2ocen.in"]
+        assert package_util.get_tests("abc", [os.path.join(tmpdir, "in", "abc1a.in")]) == ["in/abc1a.in"]
+
 
 def test_extract_file_name():
     assert package_util.get_file_name("in/abc1a.in") == "abc1a.in"
@@ -203,3 +227,51 @@ def test_validate_files(create_package, capsys):
         package_util.validate_test_names(task_id)
     out = capsys.readouterr().out
     assert "def1a.out" in out
+
+
+def test_get_executable_key():
+    os.chdir(get_simple_package_path())
+    for task_id in ["abc", "long_task_id", "", "x"]:
+        assert package_util.get_executable_key(f"{task_id}1.cpp.e", task_id) == (0, 1)
+        assert package_util.get_executable_key(f"{task_id}2.cpp.e", task_id) == (0, 2)
+        assert package_util.get_executable_key(f"{task_id}s20.cpp.e", task_id) == (1, 20)
+        assert package_util.get_executable_key(f"{task_id}s21.cpp.e", task_id) == (1, 21)
+        assert package_util.get_executable_key(f"{task_id}b100.cpp.e", task_id) == (2, 100)
+        assert package_util.get_executable_key(f"{task_id}b101.cpp.e", task_id) == (2, 101)
+        assert package_util.get_executable_key(f"{task_id}x1000.cpp.e", task_id) == (0, 0)
+
+
+def test_get_solutions():
+    os.chdir(get_simple_package_path())
+
+    solutions = package_util.get_solutions("abc", None)
+    assert solutions == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abc3.cpp", "abc4.cpp"]
+    solutions = package_util.get_solutions("abc", ["prog/abc.cpp"])
+    assert solutions == ["abc.cpp"]
+    assert "abc1.cpp" not in solutions
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        def create_file(name):
+            with open(os.path.join(tmpdir, "prog", name), "w") as f:
+                f.write("")
+
+        os.chdir(tmpdir)
+        os.mkdir("prog")
+
+        create_file("abc.cpp")
+        create_file("abc1.cpp")
+        create_file("abc2.cpp")
+        create_file("abcs1.cpp")
+        create_file("abcs2.cpp")
+
+        assert package_util.get_solutions("abc", None) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert package_util.get_solutions("abc", ["prog/abc.cpp"]) == ["abc.cpp"]
+        assert package_util.get_solutions("abc", ["abc.cpp"]) == ["abc.cpp"]
+        assert package_util.get_solutions("abc", [os.path.join(tmpdir, "prog", "abc.cpp")]) == ["abc.cpp"]
+        assert package_util.get_solutions("abc", ["prog/abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
+        assert package_util.get_solutions("abc", ["abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
+        assert package_util.get_solutions("abc", ["prog/abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert package_util.get_solutions("abc", ["abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert package_util.get_solutions("abc", ["prog/abc.cpp", "abc1.cpp"]) == ["abc.cpp", "abc1.cpp"]
+        assert package_util.get_solutions("abc", ["prog/abc.cpp", "abc?.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp"]
+        assert package_util.get_solutions("abc", ["abc.cpp", "abc2.cpp", "abcs2.cpp"]) == ["abc.cpp", "abc2.cpp", "abcs2.cpp"]

@@ -2,6 +2,7 @@ import os
 import yaml
 
 from sinol_make.contest_types.default import DefaultContest
+from sinol_make.contest_types.icpc import ICPCContest
 from sinol_make.contest_types.oi import OIContest
 from sinol_make.interfaces.Errors import UnknownContestType
 
@@ -15,5 +16,7 @@ def get_contest_type():
         return DefaultContest()
     elif contest_type == "oi":
         return OIContest()
+    elif contest_type == "icpc":
+        return ICPCContest()
     else:
         raise UnknownContestType(f'Unknown contest type "{contest_type}"')

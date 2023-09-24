@@ -1,18 +1,17 @@
 title: Package with undocumented sinol-make options
 sinol_task_id: und
-
 sinol_undocumented_time_tool: time
 sinol_undocumented_test_limits: true
-
 memory_limit: 20480
 time_limit: 1000
 time_limits:
   1a: 5000
-
 sinol_expected_scores:
   und.cpp:
-    expected: {1: OK}
+    expected:
+      1: {points: 100, status: OK}
     points: 100
   und1.cpp:
-    expected: {1: OK}
+    expected:
+      1: {points: 100, status: OK}
     points: 100

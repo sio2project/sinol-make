@@ -11,13 +11,13 @@ from io import StringIO
 from typing import Dict
 
 from sinol_make import contest_types, oiejq
-from sinol_make.commands.run.structs import ExecutionResult, ResultChange, ValidationResult, ExecutionData, \
-    PointsChange, PrintData
+from sinol_make.structs.run_structs import ExecutionData, PrintData
+from sinol_make.structs.cache_structs import CacheTest, CacheFile
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
-from sinol_make.helpers import compile, compiler, package_util, printer, paths
-from sinol_make.structs.status_structs import Status
+from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
+from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
@@ -147,9 +147,11 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                         util.color_red(group_status)),
                           "%3s/%3s" % (points, scores[group]),
                           end=" | ")
-                program_scores[program] += points if group_status == Status.OK else 0
                 program_groups_scores[program][group] = {"status": group_status, "points": points}
             print()
+        for program in program_group:
+            program_scores[program] = contest.get_global_score(program_groups_scores[program], possible_score)
+
         print(8 * " ", end=" | ")
         for program in program_group:
             print(10 * " ", end=" | ")
@@ -258,9 +260,9 @@ class Command(BaseCommand):
                             help=f'tool to measure time and memory usage (default: {default_timetool})')
         parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
-        add_compilation_arguments(parser)
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
+        add_compilation_arguments(parser)
 
     def parse_time(self, time_str):
         if len(time_str) < 3: return -1
@@ -282,22 +284,6 @@ class Command(BaseCommand):
         return int("".join(filter(str.isdigit, package_util.extract_test_id(test_path, self.ID))))
 
 
-    def get_executable_key(self, executable):
-        name = package_util.get_file_name(executable)
-        value = [0, 0]
-        if name[3] == 's':
-            value[0] = 1
-            suffix = name.split(".")[0][4:]
-        elif name[3] == 'b':
-            value[0] = 2
-            suffix = name.split(".")[0][4:]
-        else:
-            suffix = name.split(".")[0][3:]
-        if suffix != "":
-            value[1] = int(suffix)
-        return tuple(value)
-
-
     def get_solution_from_exe(self, executable):
         file = os.path.splitext(executable)[0]
         for ext in self.SOURCE_EXTENSIONS:
@@ -305,24 +291,8 @@ class Command(BaseCommand):
                 return file + ext
         util.exit_with_error("Source file not found for executable %s" % executable)
 
-
-    def get_solutions(self, args_solutions):
-        if args_solutions is None:
-            solutions = [solution for solution in os.listdir("prog/")
-                         if self.SOLUTIONS_RE.match(solution)]
-            return sorted(solutions, key=self.get_executable_key)
-        else:
-            solutions = []
-            for solution in args_solutions:
-                if not os.path.isfile(solution):
-                    util.exit_with_error("Solution %s does not exist" % solution)
-                if self.SOLUTIONS_RE.match(os.path.basename(solution)) is not None:
-                    solutions.append(os.path.basename(solution))
-            return sorted(solutions, key=self.get_executable_key)
-
-
     def get_executables(self, args_solutions):
-        return [package_util.get_executable(solution) for solution in self.get_solutions(args_solutions)]
+        return [package_util.get_executable(solution) for solution in package_util.get_solutions(self.ID, args_solutions)]
 
 
     def get_possible_score(self, groups):
@@ -340,17 +310,17 @@ class Command(BaseCommand):
         return sorted(list(set([self.get_group(test) for test in tests])))
 
 
-    def compile_solutions(self, solutions):
+    def compile_solutions(self, solutions, is_checker=False):
         os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
         os.makedirs(paths.get_executables_path(), exist_ok=True)
         print("Compiling %d solutions..." % len(solutions))
-        args = [(solution, True) for solution in solutions]
+        args = [(solution, True, is_checker) for solution in solutions]
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.starmap(self.compile, args)
         return compilation_results
 
 
-    def compile(self, solution, use_extras = False):
+    def compile(self, solution, use_extras = False, is_checker = False):
         compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = paths.get_executables_path(package_util.get_executable(solution))
@@ -371,7 +341,7 @@ class Command(BaseCommand):
         try:
             with open(compile_log_file, "w") as compile_log:
                 compile.compile(source_file, output, self.compilers, compile_log, self.args.weak_compilation_flags,
-                                extra_compilation_args, extra_compilation_files)
+                                extra_compilation_args, extra_compilation_files, is_checker=is_checker)
             print(util.info("Compilation of file %s was successful."
                             % package_util.get_file_name(solution)))
             return True
@@ -431,7 +401,6 @@ class Command(BaseCommand):
             with open(output_file_path, "w") as output_file:
                 output_file.write("\n".join(output) + "\n")
             return self.check_output_checker(name, input_file, output_file_path, answer_file_path)
-
 
     def execute_oiejq(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
                       time_limit, memory_limit, hard_time_limit):
@@ -643,23 +612,35 @@ class Command(BaseCommand):
         """
 
         executions = []
+        all_cache_files: Dict[str, CacheFile] = {}
         all_results = collections.defaultdict(
             lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
+
         for (name, executable, result) in compiled_commands:
             lang = package_util.get_file_lang(name)
+            solution_cache = cache.get_cache_file(os.path.join(os.getcwd(), "prog", name))
+            all_cache_files[name] = solution_cache
+
             if result:
                 for test in self.tests:
-                    executions.append((name, executable, test,
-                                       package_util.get_time_limit(test, self.config, lang, self.ID, self.args),
-                                       package_util.get_memory_limit(test, self.config, lang, self.ID, self.args),
-                                       self.timetool_path))
-                    all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
+                    test_time_limit = package_util.get_time_limit(test, self.config, lang, self.ID, self.args)
+                    test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.ID, self.args)
+
+                    test_result: CacheTest = solution_cache.tests.get(self.test_md5sums[os.path.basename(test)], None)
+                    if test_result is not None and test_result.time_limit == test_time_limit and \
+                            test_result.memory_limit == test_memory_limit and \
+                            test_result.time_tool == self.timetool_name:
+                        all_results[name][self.get_group(test)][test] = test_result.result
+                    else:
+                        executions.append((name, executable, test, test_time_limit, test_memory_limit,
+                                           self.timetool_path))
+                        all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
                 for test in self.tests:
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.CE)
         print()
-        executions.sort(key = lambda x: (self.get_executable_key(x[1]), x[2]))
+        executions.sort(key = lambda x: (package_util.get_executable_key(x[1], self.ID), x[2]))
         program_groups_scores = collections.defaultdict(dict)
         print_data = PrintData(0)
 
@@ -683,6 +664,17 @@ class Command(BaseCommand):
                 result.Points = contest_points
                 all_results[name][self.get_group(test)][test] = result
                 print_data.i = i
+
+                # We store the result in dictionary to write it to cache files later.
+                lang = package_util.get_file_lang(name)
+                test_time_limit = package_util.get_time_limit(test, self.config, lang, self.ID, self.args)
+                test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.ID, self.args)
+                all_cache_files[name].tests[self.test_md5sums[os.path.basename(test)]] = CacheTest(
+                    time_limit=test_time_limit,
+                    memory_limit=test_memory_limit,
+                    time_tool=self.timetool_name,
+                    result=result
+                )
             pool.terminate()
         except KeyboardInterrupt:
             keyboard_interrupt = True
@@ -696,23 +688,14 @@ class Command(BaseCommand):
                                    names, executions, self.groups, self.scores, self.tests, self.possible_score,
                                    self.cpus, self.args.hide_memory, self.config, self.contest, self.args)[0]))
 
+        # Write cache files.
+        for solution, cache_data in all_cache_files.items():
+            cache_data.save(os.path.join(os.getcwd(), "prog", solution))
+
         if keyboard_interrupt:
             util.exit_with_error("Stopped due to keyboard interrupt.")
 
         return program_groups_scores, all_results
-
-
-    def calculate_points(self, results):
-        points = 0
-        for group, result in results.items():
-            if group != 0 and group not in self.scores:
-                util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
-            if isinstance(result, str):
-                if result == Status.OK:
-                    points += self.scores[group]
-            elif isinstance(result, dict):
-                points += result["points"]
-        return points
 
     def compile_and_run(self, solutions):
         compilation_results = self.compile_solutions(solutions)
@@ -739,10 +722,6 @@ class Command(BaseCommand):
             else:
                 return obj
         return _convert(dictionary)
-
-    def print_expected_scores(self, expected_scores):
-        yaml_dict = { "sinol_expected_scores": self.convert_status_to_string(expected_scores) }
-        print(yaml.dump(yaml_dict, default_flow_style=None))
 
     def get_whole_groups(self):
         """
@@ -776,33 +755,17 @@ class Command(BaseCommand):
                 if group not in self.scores:
                     util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
 
-        def convert_to_expected(results):
-            new_results = {}
-            for solution in results.keys():
-                new_results[solution] = {}
-                for group, result in results[solution].items():
-                    if result["status"] == Status.OK:
-                        if result["points"] == self.scores[group]:
-                            new_results[solution][group] = Status.OK
-                        else:
-                            new_results[solution][group] = result
-                    else:
-                        new_results[solution][group] = result["status"]
-            return new_results
-
-        results = convert_to_expected(results)
-
         if self.checker is None:
             for solution in results.keys():
                 new_expected_scores[solution] = {
                     "expected": results[solution],
-                    "points": self.calculate_points(results[solution])
+                    "points": self.contest.get_global_score(results[solution], self.possible_score)
                 }
         else:
             for solution in results.keys():
                 new_expected_scores[solution] = {
                     "expected": results[solution],
-                    "points": self.calculate_points(results[solution])
+                    "points": self.contest.get_global_score(results[solution], self.possible_score)
                 }
 
         config_expected_scores = self.config.get("sinol_expected_scores", {})
@@ -818,8 +781,7 @@ class Command(BaseCommand):
         used_groups = set()
         if self.args.tests == None and config_expected_scores: # If no groups were specified, use all groups from config
             for solution in config_expected_scores.keys():
-                for group in config_expected_scores[solution]["expected"]:
-                    used_groups.add(group)
+                used_groups.update(config_expected_scores[solution]["expected"].keys())
         else:
             used_groups = self.get_whole_groups()
 
@@ -854,16 +816,10 @@ class Command(BaseCommand):
                     if group in config_expected_scores[solution]["expected"]:
                         expected_scores[solution]["expected"][group] = config_expected_scores[solution]["expected"][group]
 
-                expected_scores[solution]["points"] = self.calculate_points(expected_scores[solution]["expected"])
+                expected_scores[solution]["points"] = self.contest.get_global_score(expected_scores[solution]["expected"],
+                                                                                    self.possible_score)
                 if len(expected_scores[solution]["expected"]) == 0:
                     del expected_scores[solution]
-
-        if self.args.tests is not None:
-            print("Showing expected scores only for groups with all tests run.")
-        print(util.bold("Expected scores from config:"))
-        self.print_expected_scores(expected_scores)
-        print(util.bold("\nExpected scores based on results:"))
-        self.print_expected_scores(new_expected_scores)
 
         expected_scores_diff = dictdiffer.diff(expected_scores, new_expected_scores)
         added_solutions = set()
@@ -967,11 +923,17 @@ class Command(BaseCommand):
             def delete_group(solution, group):
                 if group in config_expected_scores[solution]["expected"]:
                     del config_expected_scores[solution]["expected"][group]
-                    config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+                    config_expected_scores[solution]["points"] = self.contest.get_global_score(
+                        config_expected_scores[solution]["expected"],
+                        self.possible_score
+                    )
 
             def set_group_result(solution, group, result):
                 config_expected_scores[solution]["expected"][group] = result
-                config_expected_scores[solution]["points"] = self.calculate_points(config_expected_scores[solution]["expected"])
+                config_expected_scores[solution]["points"] = self.contest.get_global_score(
+                    config_expected_scores[solution]["expected"],
+                    self.possible_score
+                )
 
 
             if self.args.apply_suggestions:
@@ -1000,11 +962,11 @@ class Command(BaseCommand):
     def set_constants(self):
         self.ID = package_util.get_task_id()
         self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
-        self.SOLUTIONS_RE = re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % self.ID)
+        self.SOLUTIONS_RE = package_util.get_solutions_re(self.ID)
 
 
     def validate_arguments(self, args):
-        compilers = compiler.verify_compilers(args, self.get_solutions(None))
+        compilers = compiler.verify_compilers(args, package_util.get_solutions(self.ID, None))
 
         def use_oiejq():
             timetool_path = None
@@ -1061,33 +1023,7 @@ class Command(BaseCommand):
         self.scores = collections.defaultdict(int)
 
         if 'scores' not in self.config.keys():
-            print(util.warning('Scores are not defined in config.yml. Points will be assigned equally to all groups.'))
-            num_groups = len(self.groups)
-            self.scores = {}
-            if self.groups[0] == 0:
-                num_groups -= 1
-                self.scores[0] = 0
-
-            # This only happens when running only on group 0.
-            if num_groups == 0:
-                self.possible_score = 0
-                return
-
-            points_per_group = 100 // num_groups
-            for group in self.groups:
-                if group == 0:
-                    continue
-                self.scores[group] = points_per_group
-
-            if points_per_group * num_groups != 100:
-                self.scores[self.groups[-1]] += 100 - points_per_group * num_groups
-
-            print("Points will be assigned as follows:")
-            total_score = 0
-            for group in self.scores:
-                print("%2d: %3d" % (group, self.scores[group]))
-                total_score += self.scores[group]
-            print()
+            self.scores = self.contest.assign_scores(self.groups)
         else:
             total_score = 0
             for group in self.config["scores"]:
@@ -1098,7 +1034,7 @@ class Command(BaseCommand):
                 print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
                 print()
 
-        self.possible_score = self.get_possible_score(self.groups)
+        self.possible_score = self.contest.get_possible_score(self.groups, self.scores)
 
     def get_valid_input_files(self):
         """
@@ -1159,6 +1095,14 @@ class Command(BaseCommand):
         if error_msg != "":
             util.exit_with_error(error_msg)
 
+    def compile_checker(self):
+        checker_basename = os.path.basename(self.checker)
+        self.checker_executable = paths.get_executables_path(checker_basename + ".e")
+
+        checker_compilation = self.compile_solutions([self.checker], is_checker=True)
+        if not checker_compilation[0]:
+            util.exit_with_error('Checker compilation failed.')
+
     def run(self, args):
         util.exit_if_not_package()
 
@@ -1184,17 +1128,13 @@ class Command(BaseCommand):
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or mp.cpu_count()
+        cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
             print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
-            checker_basename = os.path.basename(self.checker)
-            self.checker_executable = paths.get_executables_path(checker_basename + ".e")
-
-            checker_compilation = self.compile_solutions([self.checker])
-            if not checker_compilation[0]:
-                util.exit_with_error('Checker compilation failed.')
+            self.compile_checker()
         else:
             self.checker = None
 
@@ -1202,10 +1142,11 @@ class Command(BaseCommand):
         self.has_lib = len(lib) != 0
 
         self.tests = package_util.get_tests(self.ID, self.args.tests)
+        self.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in self.tests}
         self.check_are_any_tests_to_run()
         self.set_scores()
         self.failed_compilations = []
-        solutions = self.get_solutions(self.args.solutions)
+        solutions = package_util.get_solutions(self.ID, self.args.solutions)
 
         util.change_stack_size_to_unlimited()
         for solution in solutions:
