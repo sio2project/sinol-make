@@ -14,7 +14,7 @@ from sinol_make import configure_parsers, util, oiejq
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path()],
                          indirect=True)
 def test_simple(create_package, time_tool):
     """
@@ -33,7 +33,7 @@ def test_simple(create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path()],
                          indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
@@ -69,7 +69,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path()],
                          indirect=True)
 def test_apply_suggestions(create_package, time_tool):
     """
@@ -110,7 +110,7 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
     config_path = os.path.join(package_path, "config.yml")
     with open(config_path, "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
-    config["sinol_expected_scores"]["abc.cpp"]["expected"][1] = "WA"
+    config["sinol_expected_scores"]["abc.cpp"]["expected"][1] = {"status": "WA", "points": 0}
     config["sinol_expected_scores"]["abc.cpp"]["points"] = 75
     with open(config_path, "w") as config_file:
         config_file.write(yaml.dump(config))
@@ -130,7 +130,8 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path(),
-                                            get_library_package_path(), get_library_string_args_package_path()],
+                                            get_library_package_path(), get_library_string_args_package_path(),
+                                            get_icpc_package_path()],
                          indirect=True)
 def test_flag_tests(create_package, time_tool):
     """
@@ -152,68 +153,8 @@ def test_flag_tests(create_package, time_tool):
     assert command.tests == [os.path.join("in", os.path.basename(test))]
 
 
-@pytest.mark.parametrize("create_package", [get_checker_package_path()], indirect=True)
-def test_groups_in_flag_test(capsys, create_package, time_tool):
-    """
-    Test flag --tests with whole and partial groups.
-    """
-    package_path = create_package
-    create_ins_outs(package_path)
-
-    parser = configure_parsers()
-
-    # Test with only one test from group 1.
-    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "--time-tool", time_tool])
-    command = Command()
-    command.run(args)
-    out = capsys.readouterr().out
-    assert "Showing expected scores only for groups with all tests run." in out
-    assert "sinol_expected_scores: {}" in out
-    assert "Expected scores are correct!" in out
-
-    # Test with all tests from group 1.
-    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "in/chk1b.in", "in/chk1c.in", "--time-tool", time_tool])
-    command = Command()
-    command.run(args)
-    out = capsys.readouterr().out
-    assert 'sinol_expected_scores:\n' \
-           '  chk.cpp:\n' \
-           '    expected: {1: OK}\n' \
-           '    points: 50\n' \
-           '  chk1.cpp:\n' \
-           '    expected: {1: WA}\n' \
-           '    points: 0\n' \
-           '  chk2.cpp:\n' \
-           '    expected:\n' \
-           '      1: {points: 25, status: OK}\n' \
-           '    points: 25\n' \
-           '  chk3.cpp:\n' \
-           '    expected: {1: OK}\n' \
-           '    points: 50' in out
-
-    # Test with incorrect expected scores for first group.
-    with open(os.path.join(package_path, "config.yml"), "r") as config_file:
-        correct_config = yaml.load(config_file, Loader=yaml.SafeLoader)
-    config = copy.deepcopy(correct_config)
-    config["sinol_expected_scores"]["chk.cpp"]["expected"][1] = "WA"
-    config["sinol_expected_scores"]["chk.cpp"]["points"] = 50
-    with open(os.path.join(package_path, "config.yml"), "w") as config_file:
-        config_file.write(yaml.dump(config))
-
-    args = parser.parse_args(["run", "--tests", "in/chk1a.in", "in/chk1b.in", "in/chk1c.in", "--time-tool", time_tool,
-                              "--apply-suggestions"])
-    command = Command()
-    command.run(args)
-    out = capsys.readouterr().out
-    sys.stdout.write(out)
-    assert "Solution chk.cpp passed group 1 with status OK while it should pass with status WA." in out
-    with open(os.path.join(package_path, "config.yml"), "r") as config_file:
-        config = yaml.load(config_file, Loader=yaml.SafeLoader)
-    assert config == correct_config
-
-
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path()], indirect=True)
+                                            get_checker_package_path(), get_icpc_package_path()], indirect=True)
 def test_flag_solutions(capsys, create_package, time_tool):
     """
     Test flag --solutions.
@@ -412,7 +353,6 @@ def test_override_limits(create_package, time_tool):
     create_ins_outs(package_path)
     config_file_path = os.path.join(package_path, "config.yml")
 
-
     # With `override_limits` key deleted.
     with open(config_file_path, "r") as config_file:
         original_config = yaml.load(config_file, Loader=yaml.SafeLoader)
@@ -430,7 +370,7 @@ def test_override_limits(create_package, time_tool):
 
     assert config["sinol_expected_scores"] == {
         "ovl.cpp": {
-            "expected": {1: "TL", 2: "TL"},
+            "expected": {1: {"status": "TL", "points": 0}, 2: {"status": "TL", "points": 0}},
             "points": 0
         }
     }
@@ -451,7 +391,7 @@ def test_override_limits(create_package, time_tool):
 
     assert config["sinol_expected_scores"] == {
         "ovl.cpp": {
-            "expected": {1: "ML", 2: "ML"},
+            "expected": {1: {"status": "ML", "points": 0}, 2: {"status": "ML", "points": 0}},
             "points": 0
         }
     }

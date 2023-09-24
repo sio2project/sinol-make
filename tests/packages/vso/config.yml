@@ -1,32 +1,38 @@
 title: Test package for veryfing correct status order
 memory_limit: 16000
 time_limit: 1000
-
 scores:
   1: 100
-
 sinol_expected_scores:
   vso.cpp:
+    expected:
+      1: {points: 100, status: OK}
     points: 100
-    expected: {1: "OK"}
   vso1.cpp:
+    expected:
+      1: {points: 0, status: WA}
     points: 0
-    expected: {1: "WA"}
   vso2.cpp:
+    expected:
+      1: {points: 0, status: RE}
     points: 0
-    expected: {1: "RE"}
   vso3.cpp:
+    expected:
+      1: {points: 0, status: ML}
     points: 0
-    expected: {1: "ML"}
   vso4.cpp:
+    expected:
+      1: {points: 0, status: TL}
     points: 0
-    expected: {1: "TL"}
   vso5.cpp:
+    expected:
+      1: {points: 0, status: RE}
     points: 0
-    expected: {1: "RE"}
   vso6.cpp:
+    expected:
+      1: {points: 0, status: ML}
     points: 0
-    expected: {1: "ML"}
   vso7.cpp:
+    expected:
+      1: {points: 0, status: TL}
     points: 0
-    expected: {1: "TL"}

@@ -61,6 +61,7 @@ def main_exn():
                 except Exception as err:
                     util.exit_with_error('`oiejq` could not be installed.\n' + err)
 
+            util.make_version_changes()
             command.run(args)
             exit(0)
 

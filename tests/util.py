@@ -115,6 +115,13 @@ def get_example_tests_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "example_tests")
 
 
+def get_icpc_package_path():
+    """
+    Get path to package with icpc contest type (/tests/packages/icpc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "icpc")
+
+
 def create_ins(package_path, task_id):
     """
     Create .in files for package.

@@ -41,6 +41,10 @@ def get_group(test_path, task_id):
     return int("".join(filter(str.isdigit, extract_test_id(test_path, task_id))))
 
 
+def get_groups(tests, task_id):
+    return sorted(list(set([get_group(test, task_id) for test in tests])))
+
+
 def get_test_key(test, task_id):
     return get_group(test, task_id), test
 
@@ -53,19 +57,26 @@ def get_solutions_re(task_id: str) -> re.Pattern:
     return re.compile(r"^%s[bs]?[0-9]*\.(cpp|cc|java|py|pas)$" % task_id)
 
 
-def get_executable_key(executable):
+def get_executable_key(executable, task_id):
     name = get_file_name(executable)
+    task_id_len = len(task_id)
     value = [0, 0]
-    if name[3] == 's':
+    if name[task_id_len] == 's':
         value[0] = 1
-        suffix = name.split(".")[0][4:]
-    elif name[3] == 'b':
+        suffix = name.split(".")[0][(task_id_len + 1):]
+    elif name[task_id_len] == 'b':
         value[0] = 2
-        suffix = name.split(".")[0][4:]
+        suffix = name.split(".")[0][(task_id_len + 1):]
     else:
-        suffix = name.split(".")[0][3:]
+        suffix = name.split(".")[0][task_id_len:]
     if suffix != "":
-        value[1] = int(suffix)
+        i = 0
+        digits = ""
+        while i < len(suffix) and suffix[i].isdigit():
+            digits += suffix[i]
+            i += 1
+        if digits != "":
+            value[1] = int(digits)
     return tuple(value)
 
 
@@ -123,7 +134,7 @@ def get_solutions(task_id: str, args_solutions: Union[List[str], None] = None) -
     if args_solutions is None:
         solutions = [solution for solution in os.listdir("prog/")
                      if solutions_re.match(solution)]
-        return sorted(solutions, key=get_executable_key)
+        return sorted(solutions, key=lambda solution: get_executable_key(solution, task_id))
     else:
         solutions = []
         for solution in get_files_matching(args_solutions, "prog"):
@@ -132,7 +143,7 @@ def get_solutions(task_id: str, args_solutions: Union[List[str], None] = None) -
             if solutions_re.match(os.path.basename(solution)) is not None:
                 solutions.append(os.path.basename(solution))
 
-        return sorted(solutions, key=get_executable_key)
+        return sorted(solutions, key=lambda solution: get_executable_key(solution, task_id))
 
 
 def get_file_name(file_path):

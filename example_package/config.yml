@@ -73,9 +73,14 @@ sinol_task_id: abc
 # Possible values are:
 # - `default` - Points for a test can only be 100 or 0 (unless checker assigns points).
 #               Points for a group are calculated based of the lowest number of points for a test in this group.
+#               If scores are not defined in `scores` key, then all groups have the same number of points,
+#                summing up to 100.
 # - `oi` - Points for a test are unchanged if the execution time is less or equal to the time limit.
 #          Otherwise, number of points decreases linearly to one depending on the execution time.
 #          Points for a group are calculated same as in `default` mode.
+# - `icpc` - A test passes when the status is OK.
+#            A group passes when all tests in this group pass.
+#            A solution passes when all groups pass.
 sinol_contest_type: oi
 
 # sinol-make can check if the solutions run as expected when using `run` command.
