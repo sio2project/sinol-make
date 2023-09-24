@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from sinol_make.commands.run.structs import ExecutionResult
+from sinol_make.structs.status_structs import ExecutionResult
 from sinol_make.contest_types import DefaultContest
 from sinol_make.structs.status_structs import Status
 

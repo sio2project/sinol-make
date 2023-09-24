@@ -231,7 +231,14 @@ def test_validate_files(create_package, capsys):
 
 def test_get_executable_key():
     os.chdir(get_simple_package_path())
-    assert package_util.get_executable_key("abc1.cpp.e") == (0, 1)
+    for task_id in ["abc", "long_task_id", "", "x"]:
+        assert package_util.get_executable_key(f"{task_id}1.cpp.e", task_id) == (0, 1)
+        assert package_util.get_executable_key(f"{task_id}2.cpp.e", task_id) == (0, 2)
+        assert package_util.get_executable_key(f"{task_id}s20.cpp.e", task_id) == (1, 20)
+        assert package_util.get_executable_key(f"{task_id}s21.cpp.e", task_id) == (1, 21)
+        assert package_util.get_executable_key(f"{task_id}b100.cpp.e", task_id) == (2, 100)
+        assert package_util.get_executable_key(f"{task_id}b101.cpp.e", task_id) == (2, 101)
+        assert package_util.get_executable_key(f"{task_id}x1000.cpp.e", task_id) == (0, 0)
 
 
 def test_get_solutions():

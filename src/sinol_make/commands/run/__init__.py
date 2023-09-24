@@ -640,7 +640,7 @@ class Command(BaseCommand):
                 for test in self.tests:
                     all_results[name][self.get_group(test)][test] = ExecutionResult(Status.CE)
         print()
-        executions.sort(key = lambda x: (package_util.get_executable_key(x[1]), x[2]))
+        executions.sort(key = lambda x: (package_util.get_executable_key(x[1], self.ID), x[2]))
         program_groups_scores = collections.defaultdict(dict)
         print_data = PrintData(0)
 
