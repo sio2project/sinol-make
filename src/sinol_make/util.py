@@ -10,6 +10,7 @@ from typing import Union
 
 import sinol_make
 from sinol_make.contest_types import get_contest_type
+from sinol_make.structs.status_structs import Status
 
 
 def get_commands():
@@ -87,10 +88,12 @@ def save_config(config):
         {
             "key": "sinol_expected_scores",
             "default_flow_style": None
-        }
+        },
+        "sinol_make_version",
     ]
 
     config = config.copy()
+    config["sinol_make_version"] = sinol_make.__version__
     with open("config.yml", "w") as config_file:
         for field in order:
             if isinstance(field, dict): # If the field is a dict, it means that it has a custom property (for example default_flow_style).
@@ -294,14 +297,13 @@ def get_file_md5(path):
 
 
 def make_version_changes():
-    if compare_versions(sinol_make.__version__, "1.5.8") == 1:
-        # In version 1.5.9 we changed the format of sinol_expected_scores.
-        # Now all groups have specified points and status.
-
-        if find_and_chdir_package():
-            with open("config.yml", "r") as config_file:
-                config = yaml.load(config_file, Loader=yaml.FullLoader)
-
+    if find_and_chdir_package():
+        with open("config.yml", "r") as config_file:
+            config = yaml.load(config_file, Loader=yaml.FullLoader)
+        if "sinol_make_version" not in config:
+            config["sinol_make_version"] = "1.5.9"
+        if compare_versions(config["sinol_make_version"], "1.5.10") == -1:
+            # If the version is less than 1.5.10, we change the format of `sinol_expected_scores` field.
             try:
                 new_expected_scores = {}
                 expected_scores = config["sinol_expected_scores"]
@@ -316,11 +318,15 @@ def make_version_changes():
                 for solution, results in expected_scores.items():
                     new_expected_scores[solution] = {"expected": {}, "points": results["points"]}
                     for group, result in results["expected"].items():
-                        new_expected_scores[solution]["expected"][group] = {"status": result}
-                        if result == "OK":
-                            new_expected_scores[solution]["expected"][group]["points"] = scores[group]
+                        if result in Status.possible_statuses():
+                            new_expected_scores[solution]["expected"][group] = {"status": result}
+                            if result == "OK":
+                                new_expected_scores[solution]["expected"][group]["points"] = scores[group]
+                            else:
+                                new_expected_scores[solution]["expected"][group]["points"] = 0
                         else:
-                            new_expected_scores[solution]["expected"][group]["points"] = 0
+                            # This means that the result is probably valid.
+                            new_expected_scores[solution]["expected"][group] = result
                 config["sinol_expected_scores"] = new_expected_scores
                 save_config(config)
             except:

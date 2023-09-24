@@ -22,12 +22,19 @@ def test_simple(create_package, time_tool):
     """
     package_path = create_package
     create_ins_outs(package_path)
-
     parser = configure_parsers()
+
+    with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    expected_scores = config["sinol_expected_scores"]
 
     args = parser.parse_args(["run", "--time-tool", time_tool])
     command = Command()
     command.run(args)
+
+    with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    assert config["sinol_expected_scores"] == expected_scores
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
@@ -95,6 +102,8 @@ def test_apply_suggestions(create_package, time_tool):
 
     with open(config_path, "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    print("xddd")
+    print(config["sinol_expected_scores"])
     assert config["sinol_expected_scores"] == expected_scores
 
 

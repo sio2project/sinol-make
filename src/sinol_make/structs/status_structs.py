@@ -37,6 +37,10 @@ class Status(str, Enum):
         else:
             raise ValueError(f"Unknown status: '{status}'")
 
+    @staticmethod
+    def possible_statuses():
+        return [Status.PENDING, Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK]
+
 
 @dataclass
 class ResultChange:
