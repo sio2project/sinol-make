@@ -935,7 +935,6 @@ class Command(BaseCommand):
                     self.possible_score
                 )
 
-
             if self.args.apply_suggestions:
                 for solution in diff.removed_solutions:
                     del config_expected_scores[solution]
@@ -950,7 +949,6 @@ class Command(BaseCommand):
                             set_group_result(solution, group, result)
                     else:
                         config_expected_scores[solution] = diff.new_expected_scores[solution]
-
 
                 self.config["sinol_expected_scores"] = self.convert_status_to_string(config_expected_scores)
                 util.save_config(self.config)
@@ -1129,6 +1127,7 @@ class Command(BaseCommand):
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or mp.cpu_count()
         cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
+        cache.check_if_contest_type_changed(self.config.get("contest_type", "default"))
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:

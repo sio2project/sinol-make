@@ -100,3 +100,23 @@ def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
 
         info.md5sum = md5sum
         info.save(file_path)
+
+
+def check_if_contest_type_changed(contest_type):
+    """
+    Checks if contest type has changed and removes all cached test results if it has.
+    :param contest_type: Contest type
+    """
+    try:
+        with open(paths.get_cache_path("contest_type"), 'r') as cache_file:
+            cache_contest_type = cache_file.read().strip()
+        if cache_contest_type != contest_type:
+            for solution in os.listdir(paths.get_cache_path('md5sums')):
+                info = get_cache_file(solution)
+                info.tests = {}
+                info.save(solution)
+    except FileNotFoundError:
+        pass
+    os.makedirs(paths.get_cache_path(), exist_ok=True)
+    with open(paths.get_cache_path("contest_type"), 'w') as cache_file:
+        cache_file.write(contest_type)
