@@ -644,6 +644,43 @@ def test_extra_compilation_files_change(create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+def test_contest_type_change(create_package, time_tool):
+    """
+    Test if after changing contest type, all cached test results are removed.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+
+    # First run to cache test results.
+    command.run(args)
+
+    # Change contest type.
+    config_path = os.path.join(os.getcwd(), "config.yml")
+    with open(config_path, "r") as f:
+        config = yaml.load(f, Loader=yaml.SafeLoader)
+    config["sinol_contest_type"] = "oi"
+    with open(config_path, "w") as f:
+        f.write(yaml.dump(config))
+
+    # Compile checker check if test results are removed.
+    command = Command()
+    # We remove tests, so that `run()` exits before creating new cached test results.
+    for test in glob.glob("in/*.in"):
+        os.unlink(test)
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+    task_id = package_util.get_task_id()
+    solutions = package_util.get_solutions(task_id, None)
+    for solution in solutions:
+        cache_file: CacheFile = cache.get_cache_file(solution)
+        assert cache_file.tests == {}
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
 def test_cwd_in_prog(create_package):
     """
     Test if `sinol-make` works when cwd is in prog.
