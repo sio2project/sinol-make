@@ -4,6 +4,8 @@ import time
 import pytest
 import copy
 
+from sinol_make.helpers import cache
+from sinol_make.structs.cache_structs import CacheFile
 from ...fixtures import *
 from .util import *
 from sinol_make import configure_parsers, util, oiejq
@@ -148,7 +150,7 @@ def test_flag_tests(create_package, time_tool):
     except SystemExit:
         pass
 
-    assert command.tests == [test]
+    assert command.tests == [os.path.join("in", os.path.basename(test))]
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
@@ -172,6 +174,33 @@ def test_flag_solutions(capsys, create_package, time_tool):
 
     assert os.path.basename(solutions[0]) in out
     assert os.path.basename(solutions[1]) not in out
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
+                                            get_checker_package_path()], indirect=True)
+def test_flag_solutions_multiple(capsys, create_package, time_tool):
+    """
+    Test flag --solutions with multiple solutions.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+
+    task_id = package_util.get_task_id()
+    solutions = [
+        os.path.basename(file)
+        for file in package_util.get_files_matching_pattern(task_id, f'{task_id}?.*')
+    ]
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--solutions", solutions[0], os.path.join("prog", solutions[1]),
+                              "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+
+    out = capsys.readouterr().out
+
+    assert os.path.basename(solutions[0]) in out
+    assert os.path.basename(solutions[1]) in out
+    assert os.path.basename(solutions[2]) not in out
 
 
 @pytest.mark.parametrize("create_package", [get_weak_compilation_flags_package_path()], indirect=True)
@@ -493,3 +522,113 @@ def test_flag_tests_not_existing_tests(create_package, time_tool, capsys):
     assert e.value.code == 1
     out = capsys.readouterr().out
     assert "There are no tests to run." in out
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
+                                            get_checker_package_path(), get_library_package_path(),
+                                            get_library_string_args_package_path(), get_limits_package_path(),
+                                            get_override_limits_package_path()], indirect=True)
+def test_results_caching(create_package, time_tool):
+    """
+    Test if test results are cached.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+
+    def run():
+        command = Command()
+        command.run(args)
+        return command
+
+    start_time = time.time()
+    run()
+    length = time.time() - start_time
+
+    start_time = time.time()
+    command = run()
+    end_time = time.time() - start_time
+    assert end_time - start_time < length / 2
+
+    task_id = package_util.get_task_id()
+    solutions = package_util.get_solutions(task_id, None)
+    for solution in solutions:
+        cache_file: CacheFile = cache.get_cache_file(solution)
+        for test in command.tests:
+            assert util.get_file_md5(test) in cache_file.tests
+            test_cache = cache_file.tests[util.get_file_md5(test)]
+            lang = package_util.get_file_lang(solution)
+            assert test_cache.time_limit == package_util.get_time_limit(test, command.config, lang, command.ID)
+            assert test_cache.memory_limit == package_util.get_memory_limit(test, command.config, lang, command.ID)
+        assert cache_file is not None
+        assert cache_file.tests != {}
+
+
+@pytest.mark.parametrize("create_package", [get_checker_package_path()], indirect=True)
+def test_results_caching_checker_changed(create_package, time_tool):
+    """
+    Test if after changing checker source code, all cached test results are removed.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+
+    # First run to cache test results.
+    command = Command()
+    command.run(args)
+
+    # Change checker source code.
+    checker_source = ""
+    with open(os.path.join(os.getcwd(), "prog", "chkchk.cpp"), "r") as f:
+        checker_source = f.read()
+    with open(os.path.join(os.getcwd(), "prog", "chkchk.cpp"), "w") as f:
+        f.write("// Changed checker source code.\n" + checker_source)
+
+    # Compile checker check if test results are removed.
+    command.compile_checker()
+    task_id = package_util.get_task_id()
+    solutions = package_util.get_solutions(task_id, None)
+    for solution in solutions:
+        cache_file: CacheFile = cache.get_cache_file(solution)
+        assert cache_file.tests == {}
+
+
+@pytest.mark.parametrize("create_package", [get_library_package_path()], indirect=True)
+def test_extra_compilation_files_change(create_package, time_tool):
+    """
+    Test if after changing extra compilation files, all cached test results are removed.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+
+    def change_file(file, comment_character):
+        with open(file, "r") as f:
+            source = f.read()
+        with open(file, "w") as f:
+            f.write(f"{comment_character} Changed source code.\n" + source)
+
+    def test(file_to_change, lang, comment_character):
+        # First run to cache test results.
+        command.run(args)
+
+        # Change file
+        change_file(os.path.join(os.getcwd(), "prog", file_to_change), comment_character)
+
+        cache.save_to_cache_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
+        task_id = package_util.get_task_id()
+        solutions = package_util.get_solutions(task_id, None)
+        for solution in solutions:
+            if package_util.get_file_lang(solution) == lang:
+                print(file_to_change, solution)
+                assert not os.path.exists(paths.get_cache_path("md5sums", solution))
+                info = cache.get_cache_file(solution)
+                assert info == CacheFile()
+
+    test("liblib.cpp", "cpp", "//")
+    test("liblib.h", "cpp", "//")
+    test("liblib.py", "py", "#")

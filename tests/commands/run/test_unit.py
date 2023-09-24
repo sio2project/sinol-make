@@ -1,8 +1,7 @@
 import argparse, re, yaml
 
 from sinol_make import util, oiejq
-from sinol_make.commands.run.structs import ResultChange, ValidationResult
-from sinol_make.structs.status_structs import Status
+from sinol_make.structs.status_structs import Status, ResultChange, ValidationResult
 from sinol_make.helpers import package_util
 from .util import *
 from ...util import *
@@ -15,27 +14,10 @@ def test_get_output_file():
     assert command.get_output_file("in/abc1a.in") == "out/abc1a.out"
 
 
-def test_get_solutions():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-
-    solutions = command.get_solutions(None)
-    assert solutions == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abc3.cpp", "abc4.cpp"]
-    solutions = command.get_solutions(["prog/abc.cpp"])
-    assert solutions == ["abc.cpp"]
-    assert "abc1.cpp" not in solutions
-
-
-def test_get_executable_key():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.get_executable_key("abc1.cpp.e") == (0, 1)
-
-
 def test_compile_solutions(create_package):
     package_path = create_package
     command = get_command(package_path)
-    solutions = command.get_solutions(None)
+    solutions = package_util.get_solutions("abc", None)
     result = command.compile_solutions(solutions)
     assert result == [True for _ in solutions]
 
@@ -68,6 +50,7 @@ def test_run_solutions(create_package, time_tool):
                                       hide_memory=False)
     create_ins_outs(package_path)
     command.tests = package_util.get_tests("abc", None)
+    command.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in command.tests}
     command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
     command.scores = command.config["scores"]
     command.possible_score = command.get_possible_score(command.groups)
