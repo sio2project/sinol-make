@@ -122,6 +122,13 @@ def get_icpc_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "icpc")
 
 
+def get_long_solution_names_package():
+    """
+    Get path to package with long solution names (/tests/packages/long_solution_names)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "long_solution_names")
+
+
 def create_ins(package_path, task_id):
     """
     Create .in files for package.
