@@ -92,7 +92,7 @@ class Command(BaseCommand):
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
 
-        table_data = TableData(results, 0)
+        table_data = TableData(results, 0, self.task_id)
         if has_terminal:
             run_event = threading.Event()
             run_event.set()
