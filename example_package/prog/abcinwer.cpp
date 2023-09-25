@@ -38,13 +38,13 @@ int main() {
     };
     string subtasks_s;
     for (auto [subtask_id, is_valid] : subtasks)
-        subtasks_s += is_valid ? to_string(subtask_id) : string("-");
+        subtasks_s += is_valid ? to_string(subtask_id) : string("_");
 
     map<string, bool> sample_tests = {
         {"0a", is_0a()},
         {"1ocen", is_1ocen()},
     };
-    string sample_test_s = "-";
+    string sample_test_s = "_";
     for (auto [name, is_valid] : sample_tests)
         if (is_valid)
             sample_test_s = name;
