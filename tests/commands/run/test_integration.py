@@ -14,7 +14,8 @@ from sinol_make import configure_parsers, util, oiejq
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path(),
+                                            get_long_solution_names_package()],
                          indirect=True)
 def test_simple(create_package, time_tool):
     """
@@ -40,7 +41,8 @@ def test_simple(create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path(),
+                                            get_long_solution_names_package()],
                          indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
@@ -69,6 +71,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 
     out = capsys.readouterr().out
     assert "Solutions were added:" in out
+    assert "There was an unknown change in expected scores." not in out
     solution = package_util.get_files_matching_pattern(command.ID, f"{command.ID}.*")[0]
     assert os.path.basename(solution) in out
 
@@ -76,9 +79,10 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path(),
+                                            get_long_solution_names_package()],
                          indirect=True)
-def test_apply_suggestions(create_package, time_tool):
+def test_apply_suggestions(create_package, time_tool, capsys):
     """
     Test with no sinol_expected_scores in config.yml.
     Verifies that suggestions are applied.
@@ -100,6 +104,8 @@ def test_apply_suggestions(create_package, time_tool):
     command = Command()
     command.run(args)
 
+    out = capsys.readouterr().out
+    assert "There was an unknown change in expected scores."
     with open(config_path, "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
     assert config["sinol_expected_scores"] == expected_scores
@@ -138,7 +144,7 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path(),
                                             get_library_package_path(), get_library_string_args_package_path(),
-                                            get_icpc_package_path()],
+                                            get_icpc_package_path(), get_long_solution_names_package()],
                          indirect=True)
 def test_flag_tests(create_package, time_tool):
     """
@@ -534,7 +540,8 @@ def test_flag_tests_not_existing_tests(create_package, time_tool, capsys):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path()], indirect=True)
+                                            get_override_limits_package_path(), get_long_solution_names_package()],
+                         indirect=True)
 def test_results_caching(create_package, time_tool):
     """
     Test if test results are cached.
