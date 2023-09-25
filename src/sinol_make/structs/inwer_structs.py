@@ -40,6 +40,9 @@ class TableData:
     # Number of executions finished
     i: int
 
+    # Task id
+    task_id: str
+
 @dataclass
 class InwerExecution:
     test_path: str
