@@ -61,8 +61,11 @@ def update_group_status(group_status, new_status):
 
 def print_view(term_width, term_height, task_id, program_groups_scores, all_results, print_data: PrintData, names, executions,
                groups, scores, tests, possible_score, cpus, hide_memory, config, contest, args):
-    width = term_width - 13  # First column has 6 characters, the " | " separator has 3 characters and 4 for margin
-    programs_in_row = width // 13  # Each program has 10 characters and the " | " separator has 3 characters
+    width = term_width - 11  # First column has 6 characters, the " | " separator has 3 characters and 2 for margin
+    # First column has 11 characters and each solution has 13 characters and the " | " separator has 3 characters
+    programs_in_row = width // 16
+    if programs_in_row == 0:
+        return ["Terminal window is too small to display the results."], None, None
 
     previous_stdout = sys.stdout
     output = StringIO()
@@ -94,20 +97,38 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
             print("-" * 8, end="-+-")
             for i in range(len(program_group)):
                 if i != len(program_group) - 1:
-                    print("-" * 10, end="-+-")
+                    print("-" * 13, end="-+-")
                 else:
-                    print("-" * 10, end="-+")
+                    print("-" * 13, end="-+")
             print()
 
         print_table_end()
 
         print(margin + "groups", end=" | ")
-        for program in program_group:
-            print("%10s" % program, end=" | ")
-        print()
+        next_row = {solution: solution for solution in program_group}
+        first = True
+        while next_row != {}:
+            if first:
+                first = False
+            else:
+                print(margin + " " * 6, end=" | ")
+
+            for solution in program_group:
+                if solution in next_row:
+                    to_print = next_row[solution]
+                    if len(to_print) > 13:
+                        print(to_print[:13], end=" | ")
+                        next_row[solution] = to_print[13:]
+                    else:
+                        print(to_print.ljust(13), end=" | ")
+                        del next_row[solution]
+                else:
+                    print(" " * 13, end=" | ")
+            print()
+
         print(8 * "-", end=" | ")
         for program in program_group:
-            print(10 * "-", end=" | ")
+            print(13 * "-", end=" | ")
         print()
         for group in groups:
             print(margin + "%6s" % group, end=" | ")
@@ -141,13 +162,14 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
 
                 points = contest.get_group_score(test_scores, scores[group])
                 if any([results[test].Status == Status.PENDING for test in results]):
-                    print(" " * 3 + ("?" * len(str(scores[group]))).rjust(3) +
+                    print(" " * 6 + ("?" * len(str(scores[group]))).rjust(3) +
                           f'/{str(scores[group]).rjust(3)}', end=' | ')
                 else:
-                    print("%3s" % util.bold(util.color_green(group_status)) if group_status == Status.OK else util.bold(
-                        util.color_red(group_status)),
-                          "%3s/%3s" % (points, scores[group]),
-                          end=" | ")
+                    if group_status == Status.OK:
+                        status_text = util.bold(util.color_green(group_status.ljust(6)))
+                    else:
+                        status_text = util.bold(util.color_red(group_status.ljust(6)))
+                    print(f"{status_text}{str(points).rjust(3)}/{str(scores[group]).rjust(3)}", end=' | ')
                 program_groups_scores[program][group] = {"status": group_status, "points": points}
             print()
         for program in program_group:
@@ -155,35 +177,35 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
 
         print(8 * " ", end=" | ")
         for program in program_group:
-            print(10 * " ", end=" | ")
+            print(13 * " ", end=" | ")
         print()
         print(margin + "points", end=" | ")
         for program in program_group:
-            print(util.bold("   %3s/%3s" % (program_scores[program], possible_score)), end=" | ")
+            print(util.bold("      %3s/%3s" % (program_scores[program], possible_score)), end=" | ")
         print()
         print(margin + "  time", end=" | ")
         for program in program_group:
             program_time = program_times[program]
-            print(util.bold(("%20s" % color_time(program_time[0], program_time[1]))
+            print(util.bold(("%23s" % color_time(program_time[0], program_time[1]))
                             if program_time[0] < 2 * program_time[1] and program_time[0] >= 0
-                            else "   " + 7 * '-'), end=" | ")
+                            else "      " + 7 * '-'), end=" | ")
         print()
         print(margin + "memory", end=" | ")
         for program in program_group:
             program_mem = program_memory[program]
-            print(util.bold(("%20s" % color_memory(program_mem[0], program_mem[1]))
+            print(util.bold(("%23s" % color_memory(program_mem[0], program_mem[1]))
                             if program_mem[0] < 2 * program_mem[1] and program_mem[0] >= 0
-                            else "   " + 7 * '-'), end=" | ")
+                            else "      " + 7 * '-'), end=" | ")
         print()
         print(8*" ", end=" | ")
         for program in program_group:
-            print(10*" ", end=" | ")
+            print(13*" ", end=" | ")
         print()
 
         def print_group_seperator():
             print(8 * "-", end=" | ")
             for program in program_group:
-                print(10 * "-", end=" | ")
+                print(13 * "-", end=" | ")
             print()
 
         print_group_seperator()
@@ -201,19 +223,19 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 lang = package_util.get_file_lang(program)
                 result = all_results[program][package_util.get_group(test, task_id)][test]
                 status = result.Status
-                if status == Status.PENDING: print(10 * ' ', end=" | ")
+                if status == Status.PENDING: print(13 * ' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
-                         ("%17s" % color_time(result.Time, package_util.get_time_limit(test, config, lang, task_id, args)))
-                         if result.Time is not None else 7*" ", end=" | ")
+                         ("%20s" % color_time(result.Time, package_util.get_time_limit(test, config, lang, task_id, args)))
+                         if result.Time is not None else 10*" ", end=" | ")
             print()
             if not hide_memory:
                 print(8*" ", end=" | ")
                 for program in program_group:
                     lang = package_util.get_file_lang(program)
                     result = all_results[program][package_util.get_group(test, task_id)][test]
-                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, task_id, args)))
-                          if result.Memory is not None else 10*" ", end=" | ")
+                    print(("%23s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, task_id, args)))
+                          if result.Memory is not None else 13*" ", end=" | ")
                 print()
 
         print_table_end()
