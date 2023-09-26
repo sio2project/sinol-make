@@ -64,6 +64,7 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
     info = get_cache_file(file_path)
     info.executable_path = exe_path
     info.md5sum = util.get_file_md5(file_path)
+    info.tests = {}
     info.save(file_path)
 
     if is_checker:
