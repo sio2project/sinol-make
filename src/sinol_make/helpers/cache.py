@@ -61,10 +61,9 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
     :param exe_path: Path to the compiled executable
     :param is_checker: Whether the compiled file is a checker. If True, all cached tests are removed.
     """
-    info = get_cache_file(file_path)
+    info = CacheFile()
     info.executable_path = exe_path
     info.md5sum = util.get_file_md5(file_path)
-    info.tests = {}
     info.save(file_path)
 
     if is_checker:
