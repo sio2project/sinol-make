@@ -10,7 +10,6 @@ from typing import Union
 
 import sinol_make
 from sinol_make.contest_types import get_contest_type
-from sinol_make.helpers import paths, cache
 from sinol_make.structs.status_structs import Status
 
 
@@ -55,7 +54,6 @@ def exit_if_not_package():
     """
     if not find_and_chdir_package():
         exit_with_error('You are not in a package directory (couldn\'t find config.yml in current directory).')
-    cache.check_can_access_cache()
 
 
 def save_config(config):
@@ -143,21 +141,16 @@ def check_for_updates(current_version) -> Union[str, None]:
     thread.start()
     version_file = data_dir.joinpath("version")
 
-    try:
+    if version_file.is_file():
         version = version_file.read_text()
-    except PermissionError:
         try:
-            with open(paths.get_cache_path("sinol_make_version"), "r") as f:
-                version = f.read()
-        except (FileNotFoundError, PermissionError):
+            if compare_versions(current_version, version) == -1:
+                return version
+            else:
+                return None
+        except ValueError:  # If the version file is corrupted, we just ignore it.
             return None
-
-    try:
-        if compare_versions(current_version, version) == -1:
-            return version
-        else:
-            return None
-    except ValueError:  # If the version file is corrupted, we just ignore it.
+    else:
         return None
 
 
@@ -180,16 +173,7 @@ def check_version():
     latest_version = data["info"]["version"]
 
     version_file = importlib.files("sinol_make").joinpath("data/version")
-    try:
-        version_file.write_text(latest_version)
-    except PermissionError:
-        if find_and_chdir_package():
-            try:
-                os.makedirs(paths.get_cache_path(), exist_ok=True)
-                with open(paths.get_cache_path("sinol_make_version"), "w") as f:
-                    f.write(latest_version)
-            except PermissionError:
-                pass
+    version_file.write_text(latest_version)
 
 
 def compare_versions(version_a, version_b):

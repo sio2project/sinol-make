@@ -117,17 +117,3 @@ def remove_results_if_contest_type_changed(contest_type):
     if package_util.check_if_contest_type_changed(contest_type):
         remove_results_cache()
     package_util.save_contest_type_to_cache(contest_type)
-
-
-def check_can_access_cache():
-    """
-    Checks if user can access cache.
-    """
-    try:
-        os.makedirs(paths.get_cache_path(), exist_ok=True)
-        with open(paths.get_cache_path("test"), "w") as f:
-            f.write("test")
-        os.unlink(paths.get_cache_path("test"))
-    except PermissionError:
-        util.exit_with_error("You don't have permission to access the `.cache/` directory. "
-                             "`sinol-make` needs to be able to write to this directory.")
