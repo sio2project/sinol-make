@@ -145,7 +145,7 @@ def check_for_updates(current_version) -> Union[str, None]:
 
     try:
         version = version_file.read_text()
-    except PermissionError:
+    except (PermissionError, FileNotFoundError):
         try:
             with open(paths.get_cache_path("sinol_make_version"), "r") as f:
                 version = f.read()
