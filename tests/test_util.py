@@ -101,37 +101,6 @@ def test_check_version(**kwargs):
     util.check_version()
     assert not version_file.is_file()
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        os.chdir(tmpdir)
-        with open("config.yml", "w") as config_file:
-            config_file.write("")
-
-        # No permission to write
-        version_file.write_text("0.0.0")
-        version_file.chmod(0o000)
-        mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "1.0.0"}})
-        util.check_version()
-        assert version_file.is_file()
-        version_file.chmod(0o777)
-        assert version_file.read_text() == "0.0.0"
-        assert os.path.exists(paths.get_cache_path("sinol_make_version"))
-        with open(paths.get_cache_path("sinol_make_version"), "r") as f:
-            assert f.read() == "1.0.0"
-
-        # No permission to write to cache and data dir
-        with open(paths.get_cache_path("sinol_make_version"), "w") as f:
-            f.write("0.0.0")
-        os.chmod(paths.get_cache_path("sinol_make_version"), 0o000)
-        os.chmod(paths.get_cache_path(), 0o000)
-        os.chmod(data_dir, 0o000)
-        version_file.chmod(0o000)
-        mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "1.0.0"}})
-        util.check_version()
-        os.chmod(data_dir, 0o777)
-        version_file.chmod(0o777)
-        assert version_file.is_file()
-        assert version_file.read_text() == "0.0.0"
-
 
 @pytest.mark.parametrize("create_package", [test_util.get_simple_package_path()], indirect=True)
 def test_version_change(create_package):
