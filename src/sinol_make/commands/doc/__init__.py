@@ -11,6 +11,7 @@ class Command(BaseCommand):
     """
     Class for `doc` command.
     """
+    LOG_PATTERNS = ['*~', '*.aux', '*.log', '*.dvi', '*.err', '*.inf']
 
     def get_name(self):
         return "doc"
@@ -32,6 +33,11 @@ class Command(BaseCommand):
         print(util.info(f'Compilation successful for file {os.path.basename(file_path)}.'))
         return True
 
+    def delete_logs(self):
+        for pattern in self.LOG_PATTERNS:
+            for file in glob.glob(os.path.join(os.getcwd(), 'doc', pattern)):
+                os.remove(file)
+
     def configure_subparser(self, subparser: argparse.ArgumentParser):
         parser = subparser.add_parser(
             self.get_name(),
@@ -39,6 +45,7 @@ class Command(BaseCommand):
             description='Compiles latex files to pdf. By default compiles all files in the `doc` directory.\n'
                         'You can also specify files to compile.')
         parser.add_argument('files', type=str, nargs='*', help='files to compile')
+        parser.add_argument('-l', '--logs', action='store_true', help="don't delete logs after compilation")
 
     def run(self, args: argparse.Namespace):
         util.exit_if_not_package()
@@ -68,4 +75,6 @@ class Command(BaseCommand):
                 print(util.error(f'Failed to compile {failed_file}'))
             util.exit_with_error('Compilation failed.')
         else:
+            if not args.logs:
+                self.delete_logs()
             print(util.info('Compilation was successful for all files.'))
