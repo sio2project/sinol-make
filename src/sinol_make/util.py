@@ -1,5 +1,6 @@
 import glob, importlib, os, sys, requests, yaml
 import platform
+import tarfile
 import tempfile
 import shutil
 import hashlib
@@ -360,6 +361,13 @@ def try_fix_config(config):
             del config["sinol_expected_scores"]
             save_config(config)
     return config
+
+
+def extract_tar(tar: tarfile.TarFile, destination: str):
+    if sys.version_info.major == 3 and sys.version_info.minor >= 12:
+        tar.extractall(destination, filter='tar')
+    else:
+        tar.extractall(destination)
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

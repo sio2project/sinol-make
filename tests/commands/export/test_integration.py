@@ -6,6 +6,7 @@ import tarfile
 import tempfile
 
 from sinol_make import configure_parsers
+from sinol_make import util as sinol_util
 from sinol_make.commands.doc import Command as DocCommand
 from tests import util
 from tests.fixtures import create_package
@@ -19,7 +20,7 @@ def _test_archive(package_path, out, tar):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         with tarfile.open(tar, "r") as tar:
-            tar.extractall(tmpdir)
+            sinol_util.extract_tar(tar, tmpdir)
 
         extracted = os.path.join(tmpdir, task_id)
         assert os.path.exists(extracted)
@@ -75,7 +76,7 @@ def test_doc_cleared(create_package):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         with tarfile.open(f'{package_util.get_task_id()}.tgz', "r") as tar:
-            tar.extractall(tmpdir)
+            sinol_util.extract_tar(tar, tmpdir)
 
         extracted = os.path.join(tmpdir, package_util.get_task_id())
         assert os.path.exists(extracted)
@@ -100,7 +101,7 @@ def test_correct_permissions(create_package, capsys):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         with tarfile.open(f'{task_id}.tgz', "r") as tar:
-            tar.extractall(tmpdir)
+            sinol_util.extract_tar(tar, tmpdir)
 
         shell_ingen = os.path.join(tmpdir, task_id, 'prog', f'{task_id}ingen.sh')
         assert os.path.exists(shell_ingen)
