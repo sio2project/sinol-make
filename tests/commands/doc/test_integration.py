@@ -1,7 +1,10 @@
+import os
+import glob
 import pytest
 
 from sinol_make import configure_parsers
 from sinol_make.commands.doc import Command
+from sinol_make.helpers import paths
 from tests.fixtures import create_package
 from tests import util
 
@@ -18,6 +21,9 @@ def test_simple(capsys, create_package):
     out = capsys.readouterr().out
     assert "Compilation was successful for all files." in out
 
+    for pattern in command.LOG_PATTERNS:
+        assert glob.glob(os.path.join(os.getcwd(), 'doc', pattern)) == []
+
 
 @pytest.mark.parametrize("create_package", [util.get_doc_package_path()], indirect=True)
 def test_argument(capsys, create_package):
@@ -30,3 +36,10 @@ def test_argument(capsys, create_package):
     command.run(args)
     out = capsys.readouterr().out
     assert "Compilation was successful for all files." in out
+
+    logs_exist = False
+    logs_dir = paths.get_cache_path('doc_logs')
+    for pattern in command.LOG_PATTERNS:
+        assert glob.glob(os.path.join(os.getcwd(), 'doc', pattern)) == []
+        logs_exist = logs_exist | (glob.glob(os.path.join(logs_dir, pattern)) != [])
+    assert logs_exist
