@@ -1,5 +1,6 @@
 import os
 import glob
+import stat
 import shutil
 import tarfile
 import argparse
@@ -62,6 +63,10 @@ class Command(BaseCommand):
                     shutil.copytree(file_path, os.path.join(target_dir, file))
                 else:
                     shutil.copy(file_path, target_dir)
+        shell_ingen = os.path.join(target_dir, 'prog', f'{self.task_id}ingen.sh')
+        if os.path.exists(shell_ingen):
+            st = os.stat(shell_ingen)
+            os.chmod(shell_ingen, st.st_mode | stat.S_IEXEC)
 
         print('Copying example tests...')
         for ext in ['in', 'out']:
