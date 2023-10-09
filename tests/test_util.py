@@ -11,6 +11,7 @@ import pytest
 import yaml
 
 from sinol_make import util, configure_parsers
+from sinol_make.helpers import paths
 from tests import util as test_util
 from tests.fixtures import create_package
 from tests.commands.run import util as run_util
@@ -79,6 +80,9 @@ def test_check_version(**kwargs):
     version_file = data_dir.joinpath("version")
     if not data_dir.is_dir():
         data_dir.mkdir()
+    data_dir.chmod(0o777)
+    if version_file.is_file():
+        version_file.unlink()
 
     # Test correct request
     mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "1.0.0"}})
