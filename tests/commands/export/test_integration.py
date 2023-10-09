@@ -1,4 +1,5 @@
 import yaml
+import stat
 import glob
 import pytest
 import tarfile
@@ -80,3 +81,28 @@ def test_doc_cleared(create_package):
         assert os.path.exists(extracted)
         for pattern in ['doc/*~', 'doc/*.aux', 'doc/*.log', 'doc/*.dvi', 'doc/*.err', 'doc/*.inf']:
             assert glob.glob(os.path.join(extracted, pattern)) == []
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path()], indirect=True)
+def test_correct_permissions(create_package, capsys):
+    """
+    Checks if shell ingen has correct permissions.
+    """
+    shell_ingen = os.path.join(os.getcwd(), 'prog', f'{package_util.get_task_id()}ingen.sh')
+    st = os.stat(shell_ingen)
+    os.chmod(shell_ingen, st.st_mode & ~stat.S_IEXEC)
+
+    parser = configure_parsers()
+    args = parser.parse_args(["export"])
+    command = Command()
+    command.run(args)
+    task_id = package_util.get_task_id()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{task_id}.tgz', "r") as tar:
+            tar.extractall(tmpdir)
+
+        shell_ingen = os.path.join(tmpdir, task_id, 'prog', f'{task_id}ingen.sh')
+        assert os.path.exists(shell_ingen)
+        st = os.stat(shell_ingen)
+        assert st.st_mode & stat.S_IEXEC
