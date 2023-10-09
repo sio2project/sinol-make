@@ -37,6 +37,7 @@ through Python's package manager pip, which usually is installed alongside Pytho
 ```
 pip3 install sinol-make
 ```
+`pip` installs `sinol-make` executable in `~/.local/bin/` directory, so make sure it's in your `PATH`. 
 
 As `oiejq` works only on Linux-based operating systems,
 *we do not recommend* using operating systems such as Windows or macOS.
