@@ -4,10 +4,10 @@
 using namespace std;
 using namespace std::chrono;
 
-int wait(int secs) {
+int wait(int milisecs) {
     auto start = high_resolution_clock::now();
     int i = 0;
-    while (duration_cast<seconds>(high_resolution_clock::now() - start).count() < secs)
+    while (duration_cast<milliseconds>(high_resolution_clock::now() - start).count() < milisecs)
         i++;
     return i;
 }
@@ -17,11 +17,11 @@ int main() {
     cin >> a >> b;
 
     if (a == 2 && b == 1) {
-        int i = wait(6);
+        int i = wait(6000);
         a += i - i;
     }
     else {
-        int i = wait(1);
+        int i = wait(1500);
         a += i - i;
     }
 
