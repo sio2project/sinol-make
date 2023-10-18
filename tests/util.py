@@ -122,11 +122,20 @@ def get_icpc_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "icpc")
 
 
+def get_large_output_package_path():
+    """
+    Get path to package with large output (/tests/packages/large_output)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "large_output")
+
 def create_ins(package_path, task_id):
     """
     Create .in files for package.
     """
-    ingen = package_util.get_files_matching_pattern(task_id, f'{task_id}ingen.*')[0]
+    all_ingens = package_util.get_files_matching_pattern(task_id, f'{task_id}ingen.*')
+    if len(all_ingens) == 0:
+        return
+    ingen = all_ingens[0]
     ingen_executable = paths.get_executables_path("ingen.e")
     os.makedirs(paths.get_executables_path(), exist_ok=True)
     assert compile.compile(ingen, ingen_executable)
