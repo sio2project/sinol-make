@@ -21,7 +21,7 @@ int main() {
         a += i - i;
     }
     else {
-        int i = wait(2);
+        int i = wait(1);
         a += i - i;
     }
 
