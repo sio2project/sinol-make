@@ -17,7 +17,7 @@ int main() {
     cin >> a >> b;
 
     if (a == 2 && b == 1) {
-        int i = wait(6000);
+        int i = wait(7000);
         a += i - i;
     }
     else {

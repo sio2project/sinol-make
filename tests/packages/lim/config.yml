@@ -4,7 +4,7 @@ memory_limits:
   2: 60000
 time_limit: 1000
 time_limits:
-  1: 3000
+  1: 5000
 scores:
   1: 50
   2: 50
