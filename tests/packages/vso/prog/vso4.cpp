@@ -8,17 +8,26 @@
 #include <bits/stdc++.h>
 
 using namespace std;
+using namespace std::chrono;
 
 int rnd() {
     return rand() % 100;
+}
+
+int wait(int secs) {
+    auto start = high_resolution_clock::now();
+    int i = 0;
+    while (duration_cast<seconds>(high_resolution_clock::now() - start).count() < secs)
+        i++;
+    return i;
 }
 
 int main() {
     int a, b;
     cin >> a >> b;
     if (a == 1 && b == 1) {
-        this_thread::sleep_for(chrono::seconds(3));
-        cout << a + b;
+        int i = wait(3);
+        cout << a + b + i - i;
     }
     else if (a == 1 && b == 2) {
         vector<int*> v;

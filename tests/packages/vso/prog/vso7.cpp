@@ -8,9 +8,18 @@
 #include <bits/stdc++.h>
 
 using namespace std;
+using namespace std::chrono;
 
 int rnd() {
     return rand() % 100;
+}
+
+int wait(int secs) {
+    auto start = high_resolution_clock::now();
+    int i = 0;
+    while (duration_cast<seconds>(high_resolution_clock::now() - start).count() < secs)
+        i++;
+    return i;
 }
 
 int main() {
@@ -23,8 +32,8 @@ int main() {
         cout << a + b;
     }
     else if (a == 1 && b == 3) {
-        this_thread::sleep_for(chrono::seconds(3));
-        cout << a + b;
+        int i = wait(3);
+        cout << a + b + i - i;
     }
     else if (a == 1 && b == 4) {
         int c = 0;

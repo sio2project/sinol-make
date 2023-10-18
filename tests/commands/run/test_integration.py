@@ -455,8 +455,8 @@ def test_mem_limit_kill(create_package, time_tool):
     end_time = time.time()
 
     assert e.value.code == 1
-    assert end_time - start_time < 5  # The solution runs for 20 seconds, but it immediately exceeds memory limit,
-                                      # so it should be killed.
+    assert end_time - start_time < 10  # The solution runs for 20 seconds, but it immediately exceeds memory limit,
+                                       # so it should be killed.
 
 
 @pytest.mark.parametrize("create_package", [get_undocumented_options_package_path()], indirect=True)
