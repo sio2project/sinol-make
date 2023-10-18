@@ -53,7 +53,7 @@ def colorize_status(status):
 
 
 def update_group_status(group_status, new_status):
-    order = [Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK]
+    order = [Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK, Status.PENDING]
     if order.index(new_status) < order.index(group_status):
         return new_status
     return group_status

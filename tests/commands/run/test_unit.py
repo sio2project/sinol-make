@@ -460,3 +460,12 @@ def test_get_valid_input_files(create_package):
     assert len(valid_inputs) == len(outputs) - 1
     assert "in/" + os.path.basename(outputs[0].replace(".out", ".in")) not in valid_inputs
     assert "in/" + os.path.basename(outputs[1].replace(".out", ".in")) in valid_inputs
+
+
+def test_update_group_status():
+    from sinol_make.commands.run import update_group_status
+    assert update_group_status(Status.OK, Status.WA) == Status.WA
+    assert update_group_status(Status.PENDING, Status.OK) == Status.OK
+    assert update_group_status(Status.PENDING, Status.WA) == Status.WA
+    assert update_group_status(Status.WA, Status.CE) == Status.CE
+    assert update_group_status(Status.CE, Status.WA) == Status.CE
