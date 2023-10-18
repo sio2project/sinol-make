@@ -14,7 +14,8 @@ from sinol_make import configure_parsers, util, oiejq
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path(),
+                                            get_large_output_package_path()],
                          indirect=True)
 def test_simple(create_package, time_tool):
     """
@@ -70,7 +71,8 @@ def test_wrong_solution(create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path(),
+                                            get_large_output_package_path()],
                          indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
@@ -106,7 +108,8 @@ def test_no_expected_scores(capsys, create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
                                             get_checker_package_path(), get_library_package_path(),
                                             get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path()],
+                                            get_override_limits_package_path(), get_icpc_package_path(),
+                                            get_large_output_package_path()],
                          indirect=True)
 def test_apply_suggestions(create_package, time_tool):
     """
