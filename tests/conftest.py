@@ -34,7 +34,7 @@ def pytest_addoption(parser):
     )
     parser.addoption("--no-precompile", action="store_true", help="if set, will not precompile all solutions")
     parser.addoption("--cpus", type=int, help="number of cpus to use, by default all available",
-                     default=mp.cpu_count())
+                     default=mp.cpu_count() - 1)
 
 
 def pytest_configure(config):

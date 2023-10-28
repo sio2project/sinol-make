@@ -252,7 +252,7 @@ class Command(BaseCommand):
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='tests to be run, for example in/abc{0,1}*')
         parser.add_argument('-c', '--cpus', type=int,
-                            help='number of cpus to use, you have %d avaliable' % mp.cpu_count())
+                            help=f'number of cpus to use (default: {mp.cpu_count() - 1}')
         parser.add_argument('--tl', type=float, help='time limit for all tests (in s)')
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
