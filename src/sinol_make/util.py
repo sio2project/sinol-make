@@ -5,7 +5,7 @@ import tempfile
 import shutil
 import hashlib
 import subprocess
-import threading
+import multiprocessing
 import resource
 from typing import Union
 
@@ -140,8 +140,9 @@ def check_for_updates(current_version) -> Union[str, None]:
         os.mkdir(data_dir)
 
     # We check for new version asynchronously, so that it doesn't slow down the program.
-    thread = threading.Thread(target=check_version)
-    thread.start()
+    # If the main process exits, the check_version process will also exit.
+    process = multiprocessing.Process(target=check_version, daemon=True)
+    process.start()
     version_file = data_dir.joinpath("version")
 
     try:
