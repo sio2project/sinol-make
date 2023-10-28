@@ -34,6 +34,8 @@ class Command(BaseCommand):
 
         parser.add_argument('ingen_path', type=str, nargs='?',
                             help='path to ingen source file, for example prog/abcingen.cpp')
+        parser.add_argument('-i', '--ins', action='store_true', help='generate input files only')
+        parser.add_argument('-o', '--outs', action='store_true', help='generate output files only')
         parser.add_argument('-c', '--cpus', type=int,
                             help=f'number of cpus to use to generate output files (default: {mp.cpu_count()} - all available)',
                             default=mp.cpu_count())
@@ -79,11 +81,15 @@ class Command(BaseCommand):
         outputs_to_generate = []
         for file in glob.glob(os.path.join(os.getcwd(), 'in', '*.in')):
             basename = os.path.basename(file)
+            output_basename = os.path.splitext(os.path.basename(basename))[0] + '.out'
+            output_path = os.path.join(os.getcwd(), 'out', output_basename)
             md5_sums[basename] = util.get_file_md5(file)
 
             if old_md5_sums is None or old_md5_sums.get(basename, '') != md5_sums[basename]:
-                output_basename = os.path.splitext(os.path.basename(basename))[0] + '.out'
-                outputs_to_generate.append(os.path.join(os.getcwd(), "out", output_basename))
+                outputs_to_generate.append(output_path)
+            elif not os.path.exists(output_path):
+                # If output file does not exist, generate it.
+                outputs_to_generate.append(output_path)
 
         return md5_sums, outputs_to_generate
 
@@ -91,26 +97,35 @@ class Command(BaseCommand):
         util.exit_if_not_package()
 
         self.args = args
+        self.ins = args.ins
+        self.outs = args.outs
+        # If no arguments are specified, generate both input and output files.
+        if not self.ins and not self.outs:
+            self.ins = True
+            self.outs = True
+
         self.task_id = package_util.get_task_id()
         package_util.validate_test_names(self.task_id)
-        self.ingen = gen_util.get_ingen(self.task_id, args.ingen_path)
-        print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
-
-        self.correct_solution = gen_util.get_correct_solution(self.task_id)
-        self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
-
         util.change_stack_size_to_unlimited()
-        if gen_util.run_ingen(self.ingen_exe):
-            print(util.info('Successfully generated input files.'))
-        else:
-            util.exit_with_error('Failed to generate input files.')
-        md5_sums, outputs_to_generate = self.calculate_md5_sums()
-        if len(outputs_to_generate) == 0:
-            print(util.info('All output files are up to date.'))
-        else:
-            self.correct_solution_exe = gen_util.compile_correct_solution(self.correct_solution, self.args,
-                                                                          self.args.weak_compilation_flags)
-            self.generate_outputs(outputs_to_generate)
+        if self.ins:
+            self.ingen = gen_util.get_ingen(self.task_id, args.ingen_path)
+            print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
+            self.ingen_exe = gen_util.compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
 
-        with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
-            yaml.dump(md5_sums, f)
+            if gen_util.run_ingen(self.ingen_exe):
+                print(util.info('Successfully generated input files.'))
+            else:
+                util.exit_with_error('Failed to generate input files.')
+
+        if self.outs:
+            self.correct_solution = gen_util.get_correct_solution(self.task_id)
+
+            md5_sums, outputs_to_generate = self.calculate_md5_sums()
+            if len(outputs_to_generate) == 0:
+                print(util.info('All output files are up to date.'))
+            else:
+                self.correct_solution_exe = gen_util.compile_correct_solution(self.correct_solution, self.args,
+                                                                              self.args.weak_compilation_flags)
+                self.generate_outputs(outputs_to_generate)
+                with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
+                    yaml.dump(md5_sums, f)
