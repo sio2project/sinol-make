@@ -6,14 +6,16 @@ import glob
 from sinol_make import configure_parsers
 from sinol_make.commands.gen import Command
 from sinol_make.commands.gen import gen_util
-from sinol_make.helpers import package_util
+from sinol_make.helpers import package_util, paths
 from tests.fixtures import *
 from tests import util
 
 
-def simple_run():
+def simple_run(arguments=None):
+    if arguments is None:
+        arguments = []
     parser = configure_parsers()
-    args = parser.parse_args(["gen"])
+    args = parser.parse_args(["gen"] + arguments)
     command = Command()
     command.run(args)
 
@@ -95,3 +97,58 @@ def test_shell_ingen_unchanged(create_package):
     edited_time = os.path.getmtime(shell_ingen_path)
     simple_run()
     assert edited_time == os.path.getmtime(shell_ingen_path)
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
+                         indirect=True)
+def test_ins_flag(create_package):
+    """
+    Test if `--ins` flag works.
+    """
+    simple_run(["--ins"])
+    ins = glob.glob(os.path.join(create_package, "in", "*.in"))
+    outs = glob.glob(os.path.join(create_package, "out", "*.out"))
+    assert len(ins) > 0
+    assert len(outs) == 0
+    assert os.path.exists(os.path.join(create_package, "in", ".md5sums"))
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
+                            indirect=True)
+def test_outs_flag(create_package):
+    """
+    Test if `--outs` flag works.
+    """
+    simple_run(['--ins'])
+    ins = glob.glob(os.path.join(create_package, "in", "*.in"))
+    outs = glob.glob(os.path.join(create_package, "out", "*.out"))
+    in1 = ins[0]
+    for file in ins[1:]:
+        os.unlink(file)
+    assert len(outs) == 0
+    def in_to_out(file):
+        return os.path.join(create_package, "out", os.path.basename(file).replace(".in", ".out"))
+
+    simple_run(["--outs"])
+    ins = glob.glob(os.path.join(create_package, "in", "*.in"))
+    outs = glob.glob(os.path.join(create_package, "out", "*.out"))
+    assert len(ins) == 1
+    assert os.path.exists(in_to_out(in1))
+    assert len(outs) == 1
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
+                         indirect=True)
+def test_missing_output_files(create_package):
+    """
+    Test if `ingen` command generates missing output files.
+    """
+    package_path = create_package
+    for args in [[], ["--outs"]]:
+        simple_run()
+        outs = glob.glob(os.path.join(package_path, "out", "*.out"))
+        os.unlink(outs[0])
+        assert not os.path.exists(outs[0])
+        simple_run(args)
+        assert os.path.exists(outs[0])
+        shutil.rmtree(paths.get_cache_path())
+        os.unlink(os.path.join(package_path, "in", ".md5sums"))
