@@ -1,4 +1,6 @@
 import glob, importlib, os, sys, requests, yaml
+import math
+import multiprocessing
 import platform
 import tarfile
 import tempfile
@@ -368,6 +370,16 @@ def extract_tar(tar: tarfile.TarFile, destination: str):
         tar.extractall(destination, filter='tar')
     else:
         tar.extractall(destination)
+
+
+def default_cpu_count():
+    """
+    Function to get default number of cpus to use for multiprocessing.
+    """
+    cpu_count = multiprocessing.cpu_count()
+    if cpu_count == 1:
+        return 1
+    return cpu_count - max(1, int(math.log2(cpu_count)) - 1)
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

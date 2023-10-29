@@ -36,8 +36,8 @@ class Command(BaseCommand):
                             help='path to ingen source file, for example prog/abcingen.cpp')
         parser.add_argument('-c', '--cpus', type=int,
                             help=f'number of cpus to use to generate output files '
-                                 f'(default: {mp.cpu_count() - 1})',
-                            default=mp.cpu_count())
+                                 f'(default: {util.default_cpu_count()})',
+                            default=util.default_cpu_count())
         parsers.add_compilation_arguments(parser)
 
     def generate_outputs(self, outputs_to_generate):

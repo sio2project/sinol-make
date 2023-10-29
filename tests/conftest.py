@@ -6,6 +6,7 @@ import os
 import pytest
 import multiprocessing as mp
 
+from sinol_make import util
 from sinol_make.helpers import compile, paths
 from sinol_make.interfaces.Errors import CompilationError
 
@@ -34,7 +35,7 @@ def pytest_addoption(parser):
     )
     parser.addoption("--no-precompile", action="store_true", help="if set, will not precompile all solutions")
     parser.addoption("--cpus", type=int, help="number of cpus to use, by default all available",
-                     default=mp.cpu_count() - 1)
+                     default=util.default_cpu_count())
 
 
 def pytest_configure(config):

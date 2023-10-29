@@ -252,7 +252,7 @@ class Command(BaseCommand):
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='tests to be run, for example in/abc{0,1}*')
         parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use (default: {mp.cpu_count() - 1}')
+                            help=f'number of cpus to use (default: {util.default_cpu_count()}')
         parser.add_argument('--tl', type=float, help='time limit for all tests (in s)')
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
@@ -1146,7 +1146,7 @@ class Command(BaseCommand):
 
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
-        self.cpus = args.cpus or mp.cpu_count()
+        self.cpus = args.cpus or util.default_cpu_count()
         cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
         cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
