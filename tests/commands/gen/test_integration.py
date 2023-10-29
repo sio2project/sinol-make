@@ -110,7 +110,7 @@ def test_ins_flag(create_package):
     outs = glob.glob(os.path.join(create_package, "out", "*.out"))
     assert len(ins) > 0
     assert len(outs) == 0
-    assert os.path.exists(os.path.join(create_package, "in", ".md5sums"))
+    assert not os.path.exists(os.path.join(create_package, "in", ".md5sums"))
 
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
                             indirect=True)
