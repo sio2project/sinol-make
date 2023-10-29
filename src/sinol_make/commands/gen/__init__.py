@@ -34,8 +34,8 @@ class Command(BaseCommand):
 
         parser.add_argument('ingen_path', type=str, nargs='?',
                             help='path to ingen source file, for example prog/abcingen.cpp')
-        parser.add_argument('-i', '--ins', action='store_true', help='generate input files only')
-        parser.add_argument('-o', '--outs', action='store_true', help='generate output files only')
+        parser.add_argument('-i', '--only-inputs', action='store_true', help='generate input files only')
+        parser.add_argument('-o', '--only-outputs', action='store_true', help='generate output files only')
         parser.add_argument('-c', '--cpus', type=int,
                             help=f'number of cpus to use to generate output files (default: {mp.cpu_count()} - all available)',
                             default=mp.cpu_count())
@@ -97,8 +97,8 @@ class Command(BaseCommand):
         util.exit_if_not_package()
 
         self.args = args
-        self.ins = args.ins
-        self.outs = args.outs
+        self.ins = args.only_inputs
+        self.outs = args.only_outputs
         # If no arguments are specified, generate both input and output files.
         if not self.ins and not self.outs:
             self.ins = True

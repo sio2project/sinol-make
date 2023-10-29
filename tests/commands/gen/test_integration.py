@@ -101,11 +101,11 @@ def test_shell_ingen_unchanged(create_package):
 
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
                          indirect=True)
-def test_ins_flag(create_package):
+def test_only_inputs_flag(create_package):
     """
-    Test if `--ins` flag works.
+    Test if `--only-inputs` flag works.
     """
-    simple_run(["--ins"])
+    simple_run(["--only-inputs"])
     ins = glob.glob(os.path.join(create_package, "in", "*.in"))
     outs = glob.glob(os.path.join(create_package, "out", "*.out"))
     assert len(ins) > 0
@@ -114,11 +114,11 @@ def test_ins_flag(create_package):
 
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
                             indirect=True)
-def test_outs_flag(create_package):
+def test_only_outputs_flag(create_package):
     """
-    Test if `--outs` flag works.
+    Test if `--only-outputs` flag works.
     """
-    simple_run(['--ins'])
+    simple_run(['--only-inputs'])
     ins = glob.glob(os.path.join(create_package, "in", "*.in"))
     outs = glob.glob(os.path.join(create_package, "out", "*.out"))
     in1 = ins[0]
@@ -128,7 +128,7 @@ def test_outs_flag(create_package):
     def in_to_out(file):
         return os.path.join(create_package, "out", os.path.basename(file).replace(".in", ".out"))
 
-    simple_run(["--outs"])
+    simple_run(["--only-outputs"])
     ins = glob.glob(os.path.join(create_package, "in", "*.in"))
     outs = glob.glob(os.path.join(create_package, "out", "*.out"))
     assert len(ins) == 1
@@ -143,7 +143,7 @@ def test_missing_output_files(create_package):
     Test if `ingen` command generates missing output files.
     """
     package_path = create_package
-    for args in [[], ["--outs"]]:
+    for args in [[], ["--only-outputs"]]:
         simple_run()
         outs = glob.glob(os.path.join(package_path, "out", "*.out"))
         os.unlink(outs[0])
