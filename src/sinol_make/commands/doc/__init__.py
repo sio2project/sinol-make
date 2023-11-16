@@ -4,6 +4,7 @@ import argparse
 import subprocess
 
 from sinol_make import util
+from sinol_make.helpers import paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
 
 
@@ -11,6 +12,7 @@ class Command(BaseCommand):
     """
     Class for `doc` command.
     """
+    LOG_PATTERNS = ['*~', '*.aux', '*.log', '*.dvi', '*.err', '*.inf']
 
     def get_name(self):
         return "doc"
@@ -31,6 +33,14 @@ class Command(BaseCommand):
             return False
         print(util.info(f'Compilation successful for file {os.path.basename(file_path)}.'))
         return True
+
+    def move_logs(self):
+        output_dir = paths.get_cache_path('doc_logs')
+        os.makedirs(output_dir, exist_ok=True)
+        for pattern in self.LOG_PATTERNS:
+            for file in glob.glob(os.path.join(os.getcwd(), 'doc', pattern)):
+                os.rename(file, os.path.join(output_dir, os.path.basename(file)))
+        print(util.info(f'Compilation log files can be found in {os.path.relpath(output_dir, os.getcwd())}'))
 
     def configure_subparser(self, subparser: argparse.ArgumentParser):
         parser = subparser.add_parser(
@@ -63,6 +73,7 @@ class Command(BaseCommand):
                 failed.append(file)
         os.chdir(original_cwd)
 
+        self.move_logs()
         if failed:
             for failed_file in failed:
                 print(util.error(f'Failed to compile {failed_file}'))

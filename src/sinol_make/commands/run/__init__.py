@@ -53,7 +53,7 @@ def colorize_status(status):
 
 
 def update_group_status(group_status, new_status):
-    order = [Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK]
+    order = [Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK, Status.PENDING]
     if order.index(new_status) < order.index(group_status):
         return new_status
     return group_status
@@ -274,7 +274,7 @@ class Command(BaseCommand):
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='tests to be run, for example in/abc{0,1}*')
         parser.add_argument('-c', '--cpus', type=int,
-                            help='number of cpus to use, you have %d avaliable' % mp.cpu_count())
+                            help=f'number of cpus to use (default: {util.default_cpu_count()}')
         parser.add_argument('--tl', type=float, help='time limit for all tests (in s)')
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
@@ -425,16 +425,18 @@ class Command(BaseCommand):
                 output_file.write("\n".join(output) + "\n")
             return self.check_output_checker(name, input_file, output_file_path, answer_file_path)
 
-    def execute_oiejq(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
+    def execute_oiejq(self, name, timetool_path, executable, result_file_path, input_file_path, output_file_path, answer_file_path,
                       time_limit, memory_limit, hard_time_limit):
+        command = f'"{timetool_path}" "{executable}"'
         env = os.environ.copy()
         env["MEM_LIMIT"] = f'{memory_limit}K'
         env["MEASURE_MEM"] = "1"
 
         timeout = False
-        with open(input_file_path, "r") as input_file:
-            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE, env=env, preexec_fn=os.setsid)
+        with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file, \
+                open(result_file_path, "w") as result_file:
+            process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=output_file,
+                                       stderr=result_file, env=env, preexec_fn=os.setsid)
 
             def sigint_handler(signum, frame):
                 try:
@@ -445,7 +447,7 @@ class Command(BaseCommand):
             signal.signal(signal.SIGINT, sigint_handler)
 
             try:
-                output, lines = process.communicate(timeout=hard_time_limit)
+                process.wait(timeout=time_limit)
             except subprocess.TimeoutExpired:
                 timeout = True
                 try:
@@ -454,11 +456,15 @@ class Command(BaseCommand):
                     pass
                 process.communicate()
 
+        with open(result_file_path, "r") as result_file:
+            lines = result_file.read()
+        with open(output_file_path, "r") as output_file:
+            output = output_file.read()
         result = ExecutionResult()
 
         if not timeout:
-            lines = lines.decode('utf-8').splitlines()
-            output = output.decode('utf-8').splitlines()
+            lines = lines.splitlines()
+            output = output.splitlines()
 
             for line in lines:
                 line = line.strip()
@@ -498,14 +504,20 @@ class Command(BaseCommand):
         return result
 
 
-    def execute_time(self, command, name, result_file_path, input_file_path, output_file_path, answer_file_path,
+    def execute_time(self, name, executable, result_file_path, input_file_path, output_file_path, answer_file_path,
                       time_limit, memory_limit, hard_time_limit):
+        if sys.platform == 'darwin':
+            time_name = 'gtime'
+        elif sys.platform == 'linux':
+            time_name = 'time'
+        elif sys.platform == 'win32' or sys.platform == 'cygwin':
+            raise Exception("Measuring time with GNU time on Windows is not supported.")
 
-        executable = package_util.get_executable(name)
+        command = [f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file_path, executable]
         timeout = False
         mem_limit_exceeded = False
-        with open(input_file_path, "r") as input_file:
-            process = subprocess.Popen(command, stdin=input_file, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
+            process = subprocess.Popen(command, stdin=input_file, stdout=output_file, stderr=subprocess.DEVNULL,
                                        preexec_fn=os.setsid)
 
             def sigint_handler(signum, frame):
@@ -542,12 +554,13 @@ class Command(BaseCommand):
                         pass
                     timeout = True
                     break
-            output, _ = process.communicate()
 
+        with open(output_file_path, "r") as output_file:
+            output = output_file.read()
         result = ExecutionResult()
         program_exit_code = None
         if not timeout:
-            output = output.decode("utf-8").splitlines()
+            output = output.splitlines()
             with open(result_file_path, "r") as result_file:
                 lines = result_file.readlines()
             if len(lines) == 3:
@@ -611,22 +624,10 @@ class Command(BaseCommand):
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
 
         if self.timetool_name == 'oiejq':
-            command = f'"{timetool_path}" "{executable}"'
-
-            return self.execute_oiejq(command, name, result_file, test, output_file, self.get_output_file(test),
+            return self.execute_oiejq(name, timetool_path, executable, result_file, test, output_file, self.get_output_file(test),
                                       time_limit, memory_limit, hard_time_limit_in_s)
         elif self.timetool_name == 'time':
-            if sys.platform == 'darwin':
-                timeout_name = 'gtimeout'
-                time_name = 'gtime'
-            elif sys.platform == 'linux':
-                timeout_name = 'timeout'
-                time_name = 'time'
-            elif sys.platform == 'win32' or sys.platform == 'cygwin':
-                raise Exception("Measuring time with GNU time on Windows is not supported.")
-
-            command = [f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file, executable]
-            return self.execute_time(command, name, result_file, test, output_file, self.get_output_file(test),
+            return self.execute_time(name, executable, result_file, test, output_file, self.get_output_file(test),
                                      time_limit, memory_limit, hard_time_limit_in_s)
 
     def run_solutions(self, compiled_commands, names, solutions):
@@ -1167,7 +1168,7 @@ class Command(BaseCommand):
 
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
-        self.cpus = args.cpus or mp.cpu_count()
+        self.cpus = args.cpus or util.default_cpu_count()
         cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
         cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
@@ -1201,11 +1202,11 @@ class Command(BaseCommand):
         self.check_errors(all_results)
         try:
             validation_results = self.validate_expected_scores(results)
-        except:
+        except Exception:
             self.config = util.try_fix_config(self.config)
             try:
                 validation_results = self.validate_expected_scores(results)
-            except:
+            except Exception:
                 util.exit_with_error("Validating expected scores failed. "
                                      "This probably means that `sinol_expected_scores` is broken. "
                                      "Delete it and run `sinol-make run --apply-suggestions` again.")

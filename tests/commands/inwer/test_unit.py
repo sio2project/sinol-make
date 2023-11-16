@@ -59,3 +59,14 @@ def test_asserting_inwer(create_package):
     print(res.output)
     print(assertion_re.match(res.output))
     assert assertion_re.match(res.output) is not None
+
+
+def test_tests_comparator():
+    for ti in ["abc", "long_task_id", ""]:
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in"], ti) == [f"{ti}1a.in", f"{ti}2a.in"]
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in"], ti) == \
+               [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in"]
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in"], ti) == \
+                [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in"]
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in", f"{ti}10b.in"], ti) == \
+                [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in", f"{ti}10b.in"]

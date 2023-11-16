@@ -1,15 +1,19 @@
 import glob, importlib, os, sys, requests, yaml
+import math
+import multiprocessing
 import platform
+import tarfile
 import tempfile
 import shutil
 import hashlib
 import subprocess
-import threading
+import multiprocessing
 import resource
 from typing import Union
 
 import sinol_make
 from sinol_make.contest_types import get_contest_type
+from sinol_make.helpers import paths, cache
 from sinol_make.structs.status_structs import Status
 
 
@@ -54,6 +58,7 @@ def exit_if_not_package():
     """
     if not find_and_chdir_package():
         exit_with_error('You are not in a package directory (couldn\'t find config.yml in current directory).')
+    cache.check_can_access_cache()
 
 
 def save_config(config):
@@ -137,20 +142,26 @@ def check_for_updates(current_version) -> Union[str, None]:
         os.mkdir(data_dir)
 
     # We check for new version asynchronously, so that it doesn't slow down the program.
-    thread = threading.Thread(target=check_version)
-    thread.start()
+    # If the main process exits, the check_version process will also exit.
+    process = multiprocessing.Process(target=check_version, daemon=True)
+    process.start()
     version_file = data_dir.joinpath("version")
 
-    if version_file.is_file():
+    try:
         version = version_file.read_text()
+    except (PermissionError, FileNotFoundError):
         try:
-            if compare_versions(current_version, version) == -1:
-                return version
-            else:
-                return None
-        except ValueError:  # If the version file is corrupted, we just ignore it.
+            with open(paths.get_cache_path("sinol_make_version"), "r") as f:
+                version = f.read()
+        except (FileNotFoundError, PermissionError):
             return None
-    else:
+
+    try:
+        if compare_versions(current_version, version) == -1:
+            return version
+        else:
+            return None
+    except ValueError:  # If the version file is corrupted, we just ignore it.
         return None
 
 
@@ -173,7 +184,16 @@ def check_version():
     latest_version = data["info"]["version"]
 
     version_file = importlib.files("sinol_make").joinpath("data/version")
-    version_file.write_text(latest_version)
+    try:
+        version_file.write_text(latest_version)
+    except PermissionError:
+        if find_and_chdir_package():
+            try:
+                os.makedirs(paths.get_cache_path(), exist_ok=True)
+                with open(paths.get_cache_path("sinol_make_version"), "w") as f:
+                    f.write(latest_version)
+            except PermissionError:
+                pass
 
 
 def compare_versions(version_a, version_b):
@@ -344,6 +364,23 @@ def try_fix_config(config):
             del config["sinol_expected_scores"]
             save_config(config)
     return config
+
+
+def extract_tar(tar: tarfile.TarFile, destination: str):
+    if sys.version_info.major == 3 and sys.version_info.minor >= 12:
+        tar.extractall(destination, filter='tar')
+    else:
+        tar.extractall(destination)
+
+
+def default_cpu_count():
+    """
+    Function to get default number of cpus to use for multiprocessing.
+    """
+    cpu_count = multiprocessing.cpu_count()
+    if cpu_count == 1:
+        return 1
+    return cpu_count - max(1, int(math.log2(cpu_count)) - 1)
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)
