@@ -156,6 +156,5 @@ def check_correct_solution(task_id: str):
     except FileNotFoundError:
         return
 
-    if has_file_changed(solution):
-        if os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
-            os.unlink(os.path.join(os.getcwd(), 'in', '.md5sums'))
+    if has_file_changed(solution) and os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
+        os.unlink(os.path.join(os.getcwd(), 'in', '.md5sums'))
