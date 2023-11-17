@@ -131,3 +131,31 @@ def check_can_access_cache():
     except PermissionError:
         util.exit_with_error("You don't have permission to access the `.cache/` directory. "
                              "`sinol-make` needs to be able to write to this directory.")
+
+
+def has_file_changed(file_path: str) -> bool:
+    """
+    Checks if file has changed since last compilation.
+    :param file_path: Path to the file
+    :return: True if file has changed, False otherwise
+    """
+    try:
+        info = get_cache_file(file_path)
+        return info.md5sum != util.get_file_md5(file_path)
+    except FileNotFoundError:
+        return True
+
+
+def check_correct_solution(task_id: str):
+    """
+    Checks if correct solution has changed. If it did, removes cache for input files.
+    :param task_id: Task id
+    """
+    try:
+        solution = package_util.get_correct_solution(task_id)
+    except FileNotFoundError:
+        return
+
+    if has_file_changed(solution):
+        if os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
+            os.unlink(os.path.join(os.getcwd(), 'in', '.md5sums'))
