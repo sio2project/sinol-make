@@ -4,9 +4,10 @@ import yaml
 import glob
 
 from sinol_make import configure_parsers
+from sinol_make import util as sm_util
 from sinol_make.commands.gen import Command
 from sinol_make.commands.gen import gen_util
-from sinol_make.helpers import package_util, paths
+from sinol_make.helpers import package_util, paths, cache
 from tests.fixtures import *
 from tests import util
 
@@ -47,6 +48,9 @@ def test_correct_inputs(capsys, create_package):
     """
     Test `ingen` command with all unchanged inputs.
     """
+    task_id = package_util.get_task_id()
+    correct_solution = package_util.get_correct_solution(task_id)
+    cache.save_compiled(correct_solution, "exe")
     simple_run()
     md5_sums = get_md5_sums(create_package)
 
@@ -63,6 +67,9 @@ def test_changed_inputs(capsys, create_package):
     """
     Test `ingen` command with changed inputs.
     """
+    task_id = package_util.get_task_id()
+    correct_solution = package_util.get_correct_solution(task_id)
+    cache.save_compiled(correct_solution, "exe")
     simple_run()
     md5_sums = get_md5_sums(create_package)
     correct_md5 = md5_sums.copy()
@@ -152,3 +159,29 @@ def test_missing_output_files(create_package):
         assert os.path.exists(outs[0])
         shutil.rmtree(paths.get_cache_path())
         os.unlink(os.path.join(package_path, "in", ".md5sums"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
+                         indirect=True)
+def test_correct_solution_changed(create_package):
+    """
+    Test if `.md5sums` is deleted when correct solution is changed.
+    """
+    package_path = create_package
+    task_id = package_util.get_task_id()
+    md5sums = os.path.join(package_path, "in", ".md5sums")
+    simple_run()
+    assert os.path.exists(md5sums)
+    outputs = {}
+    for output in glob.glob(os.path.join(package_path, "out", "*.out")):
+        outputs[os.path.basename(output)] = sm_util.get_file_md5(output)
+
+    solution = package_util.get_correct_solution(task_id)
+    with open(os.path.join(solution), "w") as f:
+        f.write("int main() {}")
+    cache.check_correct_solution(task_id)
+    assert not os.path.exists(md5sums)
+    simple_run()
+    assert os.path.exists(md5sums)
+    for output in glob.glob(os.path.join(package_path, "out", "*.out")):
+        assert outputs[os.path.basename(output)] != sm_util.get_file_md5(output)

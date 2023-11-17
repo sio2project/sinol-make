@@ -146,6 +146,18 @@ def get_solutions(task_id: str, args_solutions: Union[List[str], None] = None) -
         return sorted(solutions, key=lambda solution: get_executable_key(solution, task_id))
 
 
+def get_correct_solution(task_id: str) -> str:
+    """
+    Returns path to correct solution.
+    :param task_id: Task id.
+    :return: Path to correct solution.
+    """
+    correct_solution = get_solutions(task_id, [f'{task_id}.*'])
+    if len(correct_solution) == 0:
+        raise FileNotFoundError("Correct solution not found.")
+    return os.path.join(os.getcwd(), "prog", correct_solution[0])
+
+
 def get_file_name(file_path):
     return os.path.split(file_path)[1]
 
