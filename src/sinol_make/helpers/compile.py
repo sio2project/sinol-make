@@ -67,13 +67,13 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
                     extra_compilation_args + ['-o', output] + \
                     f'--std=c++20 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
         if use_fsanitize:
-            arguments += ['-fsanitize=address,undefined']
+            arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
     elif ext == '.c':
         arguments = [compilers.c_compiler_path or compiler.get_c_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
                     f'--std=gnu99 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
         if use_fsanitize:
-            arguments += ['-fsanitize=address,undefined']
+            arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             # TODO: Make this work on Windows
