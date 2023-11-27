@@ -185,3 +185,17 @@ def test_correct_solution_changed(create_package):
     assert os.path.exists(md5sums)
     for output in glob.glob(os.path.join(package_path, "out", "*.out")):
         assert outputs[os.path.basename(output)] != sm_util.get_file_md5(output)
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path()], indirect=True)
+def test_fsanitize(create_package):
+    """
+    Test if ingen is compiled with -fsanitize=address,undefined flags.
+    """
+    if sm_util.is_macos_arm():
+        pytest.skip("-fsanitize=address,undefined is not supported on Apple Silicon")
+    for ingen in ["prog/geningen3.cpp", "prog/geningen4.cpp"]:
+        with pytest.raises(SystemExit) as e:
+            simple_run(ingen)
+        assert e.type == SystemExit
+        assert e.value.code == 1
