@@ -309,6 +309,20 @@ def is_linux():
     return sys.platform == "linux" and not is_wsl()
 
 
+def is_macos():
+    """
+    Function to check if the program is running on macOS.
+    """
+    return sys.platform == "darwin"
+
+
+def is_macos_arm():
+    """
+    Function to check if the program is running on macOS on ARM.
+    """
+    return is_macos() and platform.machine().lower() == "arm64"
+
+
 def get_file_md5(path):
     with open(path, "rb") as f:
         return hashlib.md5(f.read()).hexdigest()
