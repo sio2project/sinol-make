@@ -196,6 +196,6 @@ def test_fsanitize(create_package):
         pytest.skip("-fsanitize=address,undefined is not supported on Apple Silicon")
     for ingen in ["prog/geningen3.cpp", "prog/geningen4.cpp"]:
         with pytest.raises(SystemExit) as e:
-            simple_run(ingen)
+            simple_run([ingen])
         assert e.type == SystemExit
         assert e.value.code == 1
