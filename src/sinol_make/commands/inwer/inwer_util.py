@@ -34,7 +34,8 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace, weak_compilation_fl
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
     compilers = compiler.verify_compilers(args, [inwer_path])
-    return compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers, weak_compilation_flags)
+    return compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers, weak_compilation_flags,
+                                use_fsanitize=True)
 
 
 def sort_tests(tests, task_id):

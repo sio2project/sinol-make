@@ -59,7 +59,7 @@ def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_fl
 
     compilers = compiler.verify_compilers(args, [ingen_path])
     ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers,
-                                                       weak_compilation_flags)
+                                                       weak_compilation_flags, use_fsanitize=True)
 
     if ingen_exe is None:
         compile.print_compile_log(compile_log_path)
