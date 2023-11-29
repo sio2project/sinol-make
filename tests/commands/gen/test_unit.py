@@ -4,7 +4,8 @@ import pytest
 import shutil
 import glob
 
-from sinol_make.commands.gen import gen_util, OutputGenerationArguments
+from sinol_make.commands.gen import gen_util
+from sinol_make.structs.gen_structs import OutputGenerationArguments
 from sinol_make.helpers import package_util, compiler
 from tests import util
 from tests.fixtures import *
@@ -20,9 +21,6 @@ def test_get_ingen():
         shutil.copytree(simple_package_path, os.path.join(tmpdir, 'simple'))
         os.chdir(os.path.join(tmpdir, 'simple'))
 
-        ingen_path = gen_util.get_ingen()
-        assert os.path.basename(ingen_path) == "abcingen.cpp"
-
         ingen_path = gen_util.get_ingen("abc")
         assert os.path.basename(ingen_path) == "abcingen.cpp"
 
@@ -36,9 +34,6 @@ def test_get_ingen():
 
         shutil.copytree(gen_package_path, os.path.join(tmpdir, 'gen'))
         os.chdir(os.path.join(tmpdir, 'gen'))
-
-        ingen_path = gen_util.get_ingen()
-        assert os.path.basename(ingen_path) == "geningen.sh"
 
         ingen_path = gen_util.get_ingen("gen")
         assert os.path.basename(ingen_path) == "geningen.sh"

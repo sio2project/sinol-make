@@ -14,10 +14,10 @@ class TestResult:
     valid: bool
     output: str
 
-    def __init__(self, test_path):
+    def __init__(self, test_path, task_id):
         self.test_path = test_path
         self.test_name = os.path.split(test_path)[-1]
-        self.test_group = str(package_util.get_group(self.test_path))
+        self.test_group = str(package_util.get_group(self.test_path, task_id))
 
         self.verified = False
         self.valid = False
@@ -39,6 +39,9 @@ class TableData:
 
     # Number of executions finished
     i: int
+
+    # Task id
+    task_id: str
 
 @dataclass
 class InwerExecution:

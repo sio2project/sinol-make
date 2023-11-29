@@ -5,10 +5,16 @@ import time
 import json
 import tempfile
 import requests
+import resource
 import requests_mock
 import pytest
+import yaml
 
-from sinol_make import util
+from sinol_make import util, configure_parsers
+from sinol_make.helpers import paths
+from tests import util as test_util
+from tests.fixtures import create_package
+from tests.commands.run import util as run_util
 
 
 def test_file_diff():
@@ -74,6 +80,9 @@ def test_check_version(**kwargs):
     version_file = data_dir.joinpath("version")
     if not data_dir.is_dir():
         data_dir.mkdir()
+    data_dir.chmod(0o777)
+    if version_file.is_file():
+        version_file.unlink()
 
     # Test correct request
     mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "1.0.0"}})
@@ -91,3 +100,16 @@ def test_check_version(**kwargs):
     mocker.get("https://pypi.python.org/pypi/sinol-make/json", exc=requests.exceptions.ConnectTimeout)
     util.check_version()
     assert not version_file.is_file()
+
+
+@pytest.mark.parametrize("create_package", [test_util.get_simple_package_path()], indirect=True)
+def test_version_change(create_package):
+    with open("config.yml", "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
+    old_expected_scores = config["sinol_expected_scores"]
+    config["sinol_expected_scores"] = {'abc.cpp': {'points': 100, 'expected': {1: 'OK', 2: 'OK', 3: 'OK', 4: 'OK'}},
+                                       'abc1.cpp': {'points': 75, 'expected': {1: 'OK', 2: 'OK', 3: 'OK', 4: 'WA'}},
+                                       'abc2.cpp': {'points': 25, 'expected': {1: 'OK', 2: 'WA', 3: 'WA', 4: 'TL'}},
+                                       'abc3.cpp': {'points': 25, 'expected': {1: 'OK', 2: 'WA', 3: 'WA', 4: 'ML'}},
+                                       'abc4.cpp': {'points': 50, 'expected': {1: 'OK', 2: 'OK', 3: 'WA', 4: 'RE'}}}
+    assert old_expected_scores == util.try_fix_config(config)["sinol_expected_scores"]

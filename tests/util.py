@@ -2,7 +2,7 @@ import os
 import glob
 import subprocess
 
-from sinol_make.helpers import compile, paths
+from sinol_make.helpers import compile, paths, package_util
 
 
 def get_simple_package_path():
@@ -73,11 +73,25 @@ def get_handwritten_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "hwr")
 
 
+def get_stack_size_package_path():
+    """
+    Get path to package for testing of changing stack size (/test/packages/stc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "stc")
+
+
 def get_override_limits_package_path():
     """
     Get path to package with `override_limits` present in config (/test/packages/ovl)
     """
     return os.path.join(os.path.dirname(__file__), "packages", "ovl")
+
+
+def get_doc_package_path():
+    """
+    Get path to package for testing `doc` command (/test/packages/doc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "doc")
 
 
 def get_long_name_package_path():
@@ -87,11 +101,48 @@ def get_long_name_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "long_package_name")
 
 
-def create_ins(package_path):
+def get_undocumented_options_package_path():
+    """
+    Get path to package with undocumented options in config.yml (/test/packages/undoc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "undocumented_options")
+
+
+def get_example_tests_package_path():
+    """
+    Get path to package with only example tests (/tests/packages/example_tests)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "example_tests")
+
+
+def get_icpc_package_path():
+    """
+    Get path to package with icpc contest type (/tests/packages/icpc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "icpc")
+
+
+def get_long_solution_names_package():
+    """
+    Get path to package with long solution names (/tests/packages/long_solution_names)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "long_solution_names")
+
+
+def get_large_output_package_path():
+    """
+    Get path to package with large output (/tests/packages/large_output)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "large_output")
+
+def create_ins(package_path, task_id):
     """
     Create .in files for package.
     """
-    ingen = glob.glob(os.path.join(package_path, "prog", "*ingen.*"))[0]
+    all_ingens = package_util.get_files_matching_pattern(task_id, f'{task_id}ingen.*')
+    if len(all_ingens) == 0:
+        return
+    ingen = all_ingens[0]
     ingen_executable = paths.get_executables_path("ingen.e")
     os.makedirs(paths.get_executables_path(), exist_ok=True)
     assert compile.compile(ingen, ingen_executable)
@@ -100,11 +151,11 @@ def create_ins(package_path):
     os.chdir(package_path)
 
 
-def create_outs(package_path):
+def create_outs(package_path, task_id):
     """
     Create .out files for package.
     """
-    solution = glob.glob(os.path.join(package_path, "prog", "???.*"))[0]
+    solution = package_util.get_files_matching_pattern(task_id, f'{task_id}.*')[0]
     solution_executable = paths.get_executables_path("solution.e")
     os.makedirs(paths.get_executables_path(), exist_ok=True)
     assert compile.compile(solution, solution_executable)
@@ -120,7 +171,9 @@ def create_ins_outs(package_path):
     """
     Create .in and .out files for package.
     """
-    create_ins(package_path)
-    has_lib = len(glob.glob(os.path.join(package_path, "prog", "???lib.*"))) > 0
+    os.chdir(package_path)
+    task_id = package_util.get_task_id()
+    create_ins(package_path, task_id)
+    has_lib = package_util.any_files_matching_pattern(task_id, f"{task_id}lib.*")
     if not has_lib:
-        create_outs(package_path)
+        create_outs(package_path, task_id)

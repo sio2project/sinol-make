@@ -37,6 +37,9 @@ through Python's package manager pip, which usually is installed alongside Pytho
 ```
 pip3 install sinol-make
 ```
+`pip` installs the `sinol-make` executable in `~/.local/bin/` directory,
+so make sure this directory is in your `PATH`.
+[Here's](https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7) how to add a directory to `PATH`.
 
 As `oiejq` works only on Linux-based operating systems,
 *we do not recommend* using operating systems such as Windows or macOS.
@@ -70,6 +73,7 @@ You can also specify your ingen source file which will be used. Run `sinol-make 
 - `sinol-make inwer` -- Verifies whether input files are correct using your "inwer.cpp" program. You can specify what inwer
 program to use, what tests to check and how many CPUs to use. Run `sinol-make inwer --help` to see available flags.
 - `sinol-make export` -- Creates archive ready to upload to sio2 or szkopul. Run `sinol-make export --help` to see all available flags.
+- `sinol-make doc` -- Compiles all LaTeX files in doc/ directory to PDF. Run `sinol-make doc --help` to see all available flags.
 
 ### Reporting bugs and contributing code
 

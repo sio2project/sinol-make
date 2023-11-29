@@ -1,5 +1,5 @@
 from sinol_make import contest_types
-from sinol_make.commands.run import ExecutionResult
+from sinol_make.structs.status_structs import ExecutionResult
 
 
 def test_get_test_score():

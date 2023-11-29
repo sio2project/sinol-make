@@ -5,10 +5,11 @@ import threading
 import argparse
 import os
 import multiprocessing as mp
+from functools import cmp_to_key
 from typing import Dict, List
 
 from sinol_make import util
-from sinol_make.commands.inwer.structs import TestResult, InwerExecution, VerificationResult, TableData
+from sinol_make.structs.inwer_structs import TestResult, InwerExecution, VerificationResult, TableData
 from sinol_make.helpers import package_util, compile, printer, paths
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -37,7 +38,7 @@ class Command(BaseCommand):
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='test to verify, for example in/abc{0,1}*')
         parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use (default: {mp.cpu_count()} -all available)')
+                            help=f'number of cpus to use (default: {util.default_cpu_count()})')
         add_compilation_arguments(parser)
 
     def compile_inwer(self, args: argparse.Namespace):
@@ -84,15 +85,15 @@ class Command(BaseCommand):
         :return: dictionary of TestResult objects
         """
         results = {}
-        sorted_tests = sorted(self.tests, key=lambda x: x[0])
+        sorted_tests = sorted(self.tests, key=lambda test: package_util.get_group(test, self.task_id))
         executions: List[InwerExecution] = []
         for test in sorted_tests:
-            results[test] = TestResult(test)
+            results[test] = TestResult(test, self.task_id)
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
 
-        table_data = TableData(results, 0)
+        table_data = TableData(results, 0, self.task_id)
         if has_terminal:
             run_event = threading.Event()
             run_event.set()
@@ -119,10 +120,74 @@ class Command(BaseCommand):
 
         return results
 
+    def verify_tests_order(self):
+        """
+        Verifies if tests are in correct order.
+        """
+        def get_id(test, func=str.isalpha):
+            basename = os.path.basename(os.path.splitext(test)[0])
+            return "".join(filter(func, basename[len(self.task_id):]))
+
+        ocen = sorted([test for test in self.tests if test.endswith('ocen.in')],
+                      key=lambda test: int("".join(filter(str.isdigit, get_id(test, str.isdigit)))))
+        tests = list(set(self.tests) - set(ocen))
+        last_id = None
+        last_test = None
+        for test in ocen:
+            basename = os.path.basename(os.path.splitext(test)[0])
+            test_id = int("".join(filter(str.isdigit, basename)))
+            if last_id is not None and test_id != last_id + 1:
+                util.exit_with_error(f'Test {os.path.basename(test)} is in wrong order. '
+                                     f'Last test was {os.path.basename(last_test)}.')
+            last_id = test_id
+            last_test = test
+
+        def is_next(last, curr):
+            i = len(last) - 1
+            while i >= 0:
+                if last[i] != 'z':
+                    last = last[:i] + chr(ord(last[i]) + 1) + last[i + 1:]
+                    break
+                else:
+                    last = last[:i] + 'a' + last[i + 1:]
+                    i -= 1
+                    if i < 0:
+                        last = 'a' + last
+            return last == curr
+
+        def compare_id(test1, test2):
+            id1 = get_id(test1)
+            id2 = get_id(test2)
+            if id1 == id2:
+                return 0
+            if len(id1) == len(id2):
+                if id1 < id2:
+                    return -1
+                return 1
+            elif len(id1) < len(id2):
+                return -1
+            return 1
+
+        groups = {}
+        for group in package_util.get_groups(self.tests, self.task_id):
+            groups[group] = sorted([test for test in tests if package_util.get_group(test, self.task_id) == group],
+                                   key=cmp_to_key(compare_id))
+        for group, group_tests in groups.items():
+            last_id = None
+            last_test = None
+            for test in group_tests:
+                test_id = get_id(test)
+                if last_id is not None and not is_next(last_id, test_id):
+                    util.exit_with_error(f'Test {os.path.basename(test)} is in wrong order. '
+                                         f'Last test was {os.path.basename(last_test)}.')
+                last_id = test_id
+                last_test = test
+
     def run(self, args: argparse.Namespace):
         util.exit_if_not_package()
 
         self.task_id = package_util.get_task_id()
+        package_util.validate_test_names(self.task_id)
         self.inwer = inwer_util.get_inwer_path(self.task_id, args.inwer_path)
         if self.inwer is None:
             if args.inwer_path is None:
@@ -132,14 +197,15 @@ class Command(BaseCommand):
         relative_path = os.path.relpath(self.inwer, os.getcwd())
         print(f'Verifying with inwer {util.bold(relative_path)}')
 
-        self.cpus = args.cpus or mp.cpu_count()
-        self.tests = package_util.get_tests(args.tests)
+        self.cpus = args.cpus or util.default_cpu_count()
+        self.tests = package_util.get_tests(self.task_id, args.tests)
 
         if len(self.tests) == 0:
             util.exit_with_error('No tests found.')
         else:
             print('Verifying tests: ' + util.bold(', '.join(self.tests)))
 
+        util.change_stack_size_to_unlimited()
         self.compile_inwer(args)
         results: Dict[str, TestResult] = self.verify_and_print_table()
         print('')
@@ -152,5 +218,7 @@ class Command(BaseCommand):
         if len(failed_tests) > 0:
             util.exit_with_error(f'Verification failed for tests: {", ".join(failed_tests)}')
         else:
+            print("Verifying tests order...")
+            self.verify_tests_order()
             print(util.info('Verification successful.'))
             exit(0)

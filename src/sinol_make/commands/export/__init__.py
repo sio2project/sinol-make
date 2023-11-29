@@ -1,5 +1,6 @@
 import os
 import glob
+import stat
 import shutil
 import tarfile
 import argparse
@@ -45,7 +46,7 @@ class Command(BaseCommand):
             util.exit_with_error('Failed to run ingen.')
 
         tests = glob.glob(os.path.join(working_dir, f'{self.task_id}*.in'))
-        return [package_util.extract_test_id(test) for test in tests]
+        return [package_util.extract_test_id(test, self.task_id) for test in tests]
 
     def copy_package_required_files(self, target_dir: str):
         """
@@ -62,6 +63,10 @@ class Command(BaseCommand):
                     shutil.copytree(file_path, os.path.join(target_dir, file))
                 else:
                     shutil.copy(file_path, target_dir)
+        shell_ingen = os.path.join(target_dir, 'prog', f'{self.task_id}ingen.sh')
+        if os.path.exists(shell_ingen):
+            st = os.stat(shell_ingen)
+            os.chmod(shell_ingen, st.st_mode | stat.S_IEXEC)
 
         print('Copying example tests...')
         for ext in ['in', 'out']:
@@ -74,7 +79,7 @@ class Command(BaseCommand):
         tests_to_copy = []
         for ext in ['in', 'out']:
             for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}*.{ext}')):
-                if package_util.extract_test_id(test) not in generated_tests:
+                if package_util.extract_test_id(test, self.task_id) not in generated_tests:
                     tests_to_copy.append(test)
 
         if len(tests_to_copy) > 0:
@@ -83,6 +88,16 @@ class Command(BaseCommand):
                 print(util.warning(f'Coping {os.path.basename(test)}...'))
                 shutil.copy(test, os.path.join(target_dir, os.path.splitext(os.path.basename(test))[1]))
 
+    def clear_files(self, target_dir: str):
+        """
+        Clears unnecessary files from target directory.
+        :param target_dir: Directory to clear files from.
+        """
+        files_to_remove = ['doc/*~', 'doc/*.aux', 'doc/*.log', 'doc/*.dvi', 'doc/*.err', 'doc/*.inf']
+        for pattern in files_to_remove:
+            for f in glob.glob(os.path.join(target_dir, pattern)):
+                os.remove(f)
+
     def create_makefile_in(self, target_dir: str, config: dict):
         """
         Creates required `makefile.in` file.
@@ -90,8 +105,8 @@ class Command(BaseCommand):
         :param config: Config dictionary.
         """
         with open(os.path.join(target_dir, 'makefile.in'), 'w') as f:
-            cxx_flags = '-std=c++17'
-            c_flags = '-std=c17'
+            cxx_flags = '-std=c++20'
+            c_flags = '-std=gnu99'
             def format_multiple_arguments(obj):
                 if isinstance(obj, str):
                     return obj
@@ -132,6 +147,7 @@ class Command(BaseCommand):
 
         self.args = args
         self.task_id = package_util.get_task_id()
+        package_util.validate_test_names(self.task_id)
 
         with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
             config = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -141,7 +157,9 @@ class Command(BaseCommand):
             shutil.rmtree(export_package_path)
         os.makedirs(export_package_path)
 
+        util.change_stack_size_to_unlimited()
         self.copy_package_required_files(export_package_path)
+        self.clear_files(export_package_path)
         self.create_makefile_in(export_package_path, config)
         archive = self.compress(export_package_path)
 

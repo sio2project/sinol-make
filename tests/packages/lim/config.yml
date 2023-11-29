@@ -1,27 +1,31 @@
 title: Package with `time_limits` and `memory_limits` set
-
 memory_limit: 15000
 memory_limits:
   2: 60000
-
 time_limit: 1000
 time_limits:
-  1: 3000
-
+  1: 5000
 scores:
   1: 50
   2: 50
-
 sinol_expected_scores:
   lim.cpp:
-    expected: {1: OK, 2: OK}
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 50, status: OK}
     points: 100
   lim2.cpp:
-    expected: {1: OK, 2: TL}
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 0, status: TL}
     points: 50
   lim3.cpp:
-    expected: {1: ML, 2: OK}
+    expected:
+      1: {points: 0, status: ML}
+      2: {points: 50, status: OK}
     points: 50
   lim4.cpp:
-    expected: {1: ML, 2: OK}
+    expected:
+      1: {points: 0, status: ML}
+      2: {points: 50, status: OK}
     points: 50

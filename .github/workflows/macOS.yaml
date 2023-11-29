@@ -7,7 +7,7 @@ jobs:
     runs-on: macos-latest
     strategy:
         matrix:
-            python-version: ["3.7.17", "3.11.4"]
+            python-version: ["3.7.17", "3.12.0"]
     name: pytest-macos-python-${{ matrix.python-version }}
     steps:
       - name: Checkout
@@ -25,10 +25,12 @@ jobs:
         run: |
           rm -f /usr/local/bin/2to3* /usr/local/bin/python3* /usr/local/bin/idle3* \
           /usr/local/bin/pydoc3* # Homebrew will fail if these exist
-          brew install gnu-time coreutils diffutils dpkg
+          brew install gnu-time coreutils diffutils dpkg ghostscript texlive
       - name: Install Python dependencies
         run: |
           python3 -m pip install .[tests]
       - name: Run pytest
+        env:
+          PYTEST_ADDOPTS: "--color=yes"
         run: |
           python3 -m pytest -v --time-tool time

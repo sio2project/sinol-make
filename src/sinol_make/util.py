@@ -1,12 +1,20 @@
 import glob, importlib, os, sys, requests, yaml
+import math
+import multiprocessing
 import platform
+import tarfile
 import tempfile
 import shutil
 import hashlib
-import threading
+import subprocess
+import multiprocessing
+import resource
 from typing import Union
 
 import sinol_make
+from sinol_make.contest_types import get_contest_type
+from sinol_make.helpers import paths, cache
+from sinol_make.structs.status_structs import Status
 
 
 def get_commands():
@@ -27,23 +35,30 @@ def get_commands():
     return commands
 
 
-def check_if_package():
+def find_and_chdir_package():
     """
-    Function to check if current directory is a package
+    Checks if current directory or parent directory is a package directory.
+    If it is, it changes the current working directory to it and returns True.
+    If it isn't, it returns False.
     """
-
-    cwd = os.getcwd()
-    if os.path.exists(os.path.join(cwd, 'config.yml')):
+    if os.path.exists(os.path.join(os.getcwd(), 'config.yml')):
         return True
-    return False
+    elif os.path.exists(os.path.join(os.getcwd(), '..', 'config.yml')):
+        os.chdir('..')
+        return True
+    else:
+        return False
 
 
 def exit_if_not_package():
     """
-    Function that exits if current directory is not a package
+    Checks if current directory or parent directory is a package directory.
+    If it is, current working directory is changed to it.
+    If it isn't, it exits with an error.
     """
-    if not check_if_package():
+    if not find_and_chdir_package():
         exit_with_error('You are not in a package directory (couldn\'t find config.yml in current directory).')
+    cache.check_can_access_cache()
 
 
 def save_config(config):
@@ -57,6 +72,10 @@ def save_config(config):
         "title",
         "title_pl",
         "title_en",
+        "sinol_task_id",
+        "sinol_contest_type",
+        "sinol_undocumented_time_tool",
+        "sinol_undocumented_test_limits",
         "memory_limit",
         "memory_limits",
         "time_limit",
@@ -74,7 +93,7 @@ def save_config(config):
         {
             "key": "sinol_expected_scores",
             "default_flow_style": None
-        }
+        },
     ]
 
     config = config.copy()
@@ -123,20 +142,26 @@ def check_for_updates(current_version) -> Union[str, None]:
         os.mkdir(data_dir)
 
     # We check for new version asynchronously, so that it doesn't slow down the program.
-    thread = threading.Thread(target=check_version)
-    thread.start()
+    # If the main process exits, the check_version process will also exit.
+    process = multiprocessing.Process(target=check_version, daemon=True)
+    process.start()
     version_file = data_dir.joinpath("version")
 
-    if version_file.is_file():
+    try:
         version = version_file.read_text()
+    except (PermissionError, FileNotFoundError):
         try:
-            if compare_versions(current_version, version) == -1:
-                return version
-            else:
-                return None
-        except ValueError:  # If the version file is corrupted, we just ignore it.
+            with open(paths.get_cache_path("sinol_make_version"), "r") as f:
+                version = f.read()
+        except (FileNotFoundError, PermissionError):
             return None
-    else:
+
+    try:
+        if compare_versions(current_version, version) == -1:
+            return version
+        else:
+            return None
+    except ValueError:  # If the version file is corrupted, we just ignore it.
         return None
 
 
@@ -159,7 +184,16 @@ def check_version():
     latest_version = data["info"]["version"]
 
     version_file = importlib.files("sinol_make").joinpath("data/version")
-    version_file.write_text(latest_version)
+    try:
+        version_file.write_text(latest_version)
+    except PermissionError:
+        if find_and_chdir_package():
+            try:
+                os.makedirs(paths.get_cache_path(), exist_ok=True)
+                with open(paths.get_cache_path("sinol_make_version"), "w") as f:
+                    f.write(latest_version)
+            except PermissionError:
+                pass
 
 
 def compare_versions(version_a, version_b):
@@ -249,6 +283,18 @@ def stringify_keys(d):
         return d
 
 
+def change_stack_size_to_unlimited():
+    """
+    Function to change the stack size to unlimited.
+    """
+    try:
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+    except (resource.error, ValueError):
+        # We can't run `ulimit -s unlimited` in the code, because since it failed, it probably requires root.
+        print(error(f'Failed to change stack size to unlimited. Please run `ulimit -s unlimited` '
+                    f'to make sure that solutions with large stack size will work.'))
+
+
 def is_wsl():
     """
     Function to check if the program is running on Windows Subsystem for Linux.
@@ -263,9 +309,92 @@ def is_linux():
     return sys.platform == "linux" and not is_wsl()
 
 
+def is_macos():
+    """
+    Function to check if the program is running on macOS.
+    """
+    return sys.platform == "darwin"
+
+
+def is_macos_arm():
+    """
+    Function to check if the program is running on macOS on ARM.
+    """
+    return is_macos() and platform.machine().lower() == "arm64"
+
+
 def get_file_md5(path):
     with open(path, "rb") as f:
         return hashlib.md5(f.read()).hexdigest()
+
+
+def try_fix_config(config):
+    """
+    Function to try to fix the config.yml file.
+    Tries to:
+    - reformat `sinol_expected_scores` field
+    :param config: config.yml file as a dict
+    :return: config.yml file as a dict
+    """
+    # The old format was:
+    # sinol_expected_scores:
+    #   solution1:
+    #     expected: {1: OK, 2: OK, ...}
+    #     points: 100
+    #
+    # We change it to:
+    # sinol_expected_scores:
+    #   solution1:
+    #     expected: {1: {status: OK, points: 100}, 2: {status: OK, points: 100}, ...}
+    #     points: 100
+    try:
+        new_expected_scores = {}
+        expected_scores = config["sinol_expected_scores"]
+        contest = get_contest_type()
+        groups = []
+        for solution, results in expected_scores.items():
+            for group in results["expected"].keys():
+                if group not in groups:
+                    groups.append(int(group))
+
+        scores = contest.assign_scores(groups)
+        for solution, results in expected_scores.items():
+            new_expected_scores[solution] = {"expected": {}, "points": results["points"]}
+            for group, result in results["expected"].items():
+                if result in Status.possible_statuses():
+                    new_expected_scores[solution]["expected"][group] = {"status": result}
+                    if result == "OK":
+                        new_expected_scores[solution]["expected"][group]["points"] = scores[group]
+                    else:
+                        new_expected_scores[solution]["expected"][group]["points"] = 0
+                else:
+                    # This means that the result is probably valid.
+                    new_expected_scores[solution]["expected"][group] = result
+        config["sinol_expected_scores"] = new_expected_scores
+        save_config(config)
+    except:
+        # If there is an error, we just delete the field.
+        if "sinol_expected_scores" in config:
+            del config["sinol_expected_scores"]
+            save_config(config)
+    return config
+
+
+def extract_tar(tar: tarfile.TarFile, destination: str):
+    if sys.version_info.major == 3 and sys.version_info.minor >= 12:
+        tar.extractall(destination, filter='tar')
+    else:
+        tar.extractall(destination)
+
+
+def default_cpu_count():
+    """
+    Function to get default number of cpus to use for multiprocessing.
+    """
+    cpu_count = multiprocessing.cpu_count()
+    if cpu_count == 1:
+        return 1
+    return cpu_count - max(1, int(math.log2(cpu_count)) - 1)
 
 
 def color_red(text): return "\033[91m{}\033[00m".format(text)

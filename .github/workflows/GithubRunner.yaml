@@ -5,7 +5,7 @@ jobs:
   pytest:
     strategy:
         matrix:
-            python-version: ["3.7.17", "3.11.4"]
+            python-version: ["3.7.17", "3.12.0"]
     name: pytest-github-runner-python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     steps:
@@ -19,5 +19,7 @@ jobs:
         run: |
           pip install .[tests]
       - name: Run pytest
+        env:
+          PYTEST_ADDOPTS: "--color=yes"
         run: |
           python -m pytest -v --github-runner

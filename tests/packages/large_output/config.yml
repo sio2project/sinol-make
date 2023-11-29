@@ -1,0 +1,13 @@
+title: Package with large outputs
+sinol_task_id: lou
+memory_limit: 16000
+time_limit: 2000
+sinol_expected_scores:
+  lou.cpp:
+    expected:
+      0: {points: 0, status: OK}
+    points: 0
+  lou1.cpp:
+    expected:
+      0: {points: 0, status: WA}
+    points: 0

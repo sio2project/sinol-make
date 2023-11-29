@@ -18,7 +18,7 @@ def get_inwer_path(task_id: str, path = None) -> Union[str, None]:
     Returns path to inwer executable for given task or None if no inwer was found.
     """
     if path is None:
-        inwers = glob.glob(os.path.join(os.getcwd(), 'prog', f'{task_id}inwer.*'))
+        inwers = package_util.get_files_matching_pattern(task_id, f'{task_id}inwer.*')
         if len(inwers) == 0:
             return None
         return inwers[0]
@@ -34,7 +34,14 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace, weak_compilation_fl
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
     compilers = compiler.verify_compilers(args, [inwer_path])
-    return compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers, weak_compilation_flags)
+    return compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers, weak_compilation_flags,
+                                use_fsanitize=True)
+
+
+def sort_tests(tests, task_id):
+    # First sort by group, then by test name.
+    tests.sort(key=lambda test: [package_util.get_group(test, task_id), test])
+    return tests
 
 
 def print_view(term_width, term_height, table_data: TableData):
@@ -48,12 +55,12 @@ def print_view(term_width, term_height, table_data: TableData):
 
     results = table_data.results
     column_lengths = [0, len('Group') + 1, len('Status') + 1, 0]
-    sorted_test_paths = []
+    tests = []
     for result in results.values():
         column_lengths[0] = max(column_lengths[0], len(result.test_name))
         column_lengths[1] = max(column_lengths[1], len(result.test_group))
-        sorted_test_paths.append(result.test_path)
-    sorted_test_paths.sort()
+        tests.append(result.test_path)
+    tests = sort_tests(tests, table_data.task_id)
 
     column_lengths[3] = max(10, term_width - column_lengths[0] - column_lengths[1] - column_lengths[2] - 9 - 3) # 9 is for " | " between columns, 3 for margin.
     margin = "  "
@@ -69,7 +76,7 @@ def print_view(term_width, term_height, table_data: TableData):
           " | " + "Output")
     print_line_separator()
 
-    for test_path in sorted_test_paths:
+    for test_path in tests:
         result = results[test_path]
         print(margin + result.test_name.ljust(column_lengths[0]) + " | ", end='')
         print(result.test_group.ljust(column_lengths[1] - 1) + " | ", end='')

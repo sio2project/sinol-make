@@ -36,7 +36,8 @@ def test_asserting_inwer(create_package):
     Test asserting inwer.
     """
     package_path = create_package
-    util.create_ins(package_path)
+    task_id = package_util.get_task_id()
+    util.create_ins(package_path, task_id)
     inwer_path = os.path.join(os.getcwd(), 'prog', 'werinwer3.cpp')
     args = argparse.Namespace(
         c_compiler_path=compiler.get_c_compiler_path(),
@@ -58,3 +59,47 @@ def test_asserting_inwer(create_package):
     print(res.output)
     print(assertion_re.match(res.output))
     assert assertion_re.match(res.output) is not None
+
+
+def test_tests_comparator():
+    for ti in ["abc", "long_task_id", ""]:
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in"], ti) == [f"{ti}1a.in", f"{ti}2a.in"]
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in"], ti) == \
+               [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in"]
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in"], ti) == \
+                [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in"]
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in", f"{ti}10b.in"], ti) == \
+                [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in", f"{ti}10b.in"]
+
+
+def test_verify_tests_order():
+    command = Command()
+    command.task_id = "abc"
+    command.tests = ["abc1ocen.in", "abc2ocen.in", "abc3ocen.in",
+                     "abc1a.in", "abc1b.in", "abc1c.in", "abc1d.in",
+                     "abc2z.in", "abc2aa.in", "abc2ab.in", "abc2ac.in"]
+    command.verify_tests_order()
+
+    command.tests.remove("abc2ocen.in")
+    with pytest.raises(SystemExit):
+        command.verify_tests_order()
+
+    command.tests.append("abc2ocen.in")
+    command.tests.remove("abc1c.in")
+    with pytest.raises(SystemExit):
+        command.verify_tests_order()
+
+    command.tests.append("abc1c.in")
+    command.tests.remove("abc2aa.in")
+    with pytest.raises(SystemExit):
+        command.verify_tests_order()
+
+    command.tests.append("abc2aa.in")
+    command.tests.remove("abc1ocen.in")
+    command.tests.remove("abc2ocen.in")
+    command.tests.remove("abc3ocen.in")
+    command.tests.append("abc9ocen.in")
+    command.tests.append("abc10ocen.in")
+    command.tests.append("abc11ocen.in")
+
+    command.verify_tests_order()

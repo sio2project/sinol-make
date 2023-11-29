@@ -1,19 +1,30 @@
 from typing import List
 import sys
 import glob
+import yaml
 import os
 import pytest
+import fnmatch
 import multiprocessing as mp
 
+from sinol_make import util
 from sinol_make.helpers import compile, paths
+from sinol_make.interfaces.Errors import CompilationError
 
 
 def _compile(args):
     package, file_path = args
     os.chdir(package)
     output = paths.get_executables_path(os.path.splitext(os.path.basename(file_path))[0] + ".e")
-    with open(paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log"), "w") as compile_log:
-        compile.compile(file_path, output, compile_log=compile_log)
+    compile_log_path = paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log")
+    basename = os.path.basename(file_path)
+    use_fsanitize = fnmatch.fnmatch(basename, "*ingen*") or fnmatch.fnmatch(basename, "*inwer*")
+    try:
+        with open(compile_log_path, "w") as compile_log:
+            compile.compile(file_path, output, compile_log=compile_log, use_fsanitize=use_fsanitize)
+    except CompilationError:
+        compile.print_compile_log(compile_log_path)
+        raise
 
 
 def pytest_addoption(parser):
@@ -27,15 +38,15 @@ def pytest_addoption(parser):
     )
     parser.addoption("--no-precompile", action="store_true", help="if set, will not precompile all solutions")
     parser.addoption("--cpus", type=int, help="number of cpus to use, by default all available",
-                     default=mp.cpu_count())
+                     default=util.default_cpu_count())
 
 
 def pytest_configure(config):
+    packages = glob.glob(os.path.join(os.path.dirname(__file__), "packages", "*"))
     if not config.getoption("--no-precompile"):
         print("Collecting solutions...")
 
         files_to_compile = []
-        packages = glob.glob(os.path.join(os.path.dirname(__file__), "packages", "*"))
         for package in packages:
             if os.path.exists(os.path.join(package, "no-precompile")):
                 print(f'Skipping precompilation for {package} due to no-precompile file')
@@ -55,6 +66,25 @@ def pytest_configure(config):
         print("\nPrecompilation finished")
     else:
         print("Skipping precompilation")
+
+    # We remove tests cache as it may interfere with testing.
+    for package in packages:
+        for md5sum_file in glob.glob(os.path.join(package, ".cache", "md5sums", "*")):
+            try:
+                with open(md5sum_file, "r") as f:
+                    data = yaml.load(f, Loader=yaml.FullLoader)
+
+                try:
+                    if "tests" in data and data["tests"] != {}:
+                        print(f"Removing tests cache for `{os.path.basename(md5sum_file)}`")
+                        data["tests"] = {}
+                        with open(md5sum_file, "w") as f:
+                            yaml.dump(data, f)
+                except TypeError:
+                    # Cache file is probably old/broken, we can delete it.
+                    os.unlink(md5sum_file)
+            except FileNotFoundError:
+                pass
 
 
 def pytest_generate_tests(metafunc):
