@@ -5,6 +5,7 @@ import threading
 import argparse
 import os
 import multiprocessing as mp
+from functools import cmp_to_key
 from typing import Dict, List
 
 from sinol_make import util
@@ -119,6 +120,69 @@ class Command(BaseCommand):
 
         return results
 
+    def verify_tests_order(self):
+        """
+        Verifies if tests are in correct order.
+        """
+        def get_id(test, func=str.isalpha):
+            basename = os.path.basename(os.path.splitext(test)[0])
+            return "".join(filter(func, basename[len(self.task_id):]))
+
+        ocen = sorted([test for test in self.tests if test.endswith('ocen.in')],
+                      key=lambda test: int("".join(filter(str.isdigit, get_id(test, str.isdigit)))))
+        tests = list(set(self.tests) - set(ocen))
+        last_id = None
+        last_test = None
+        for test in ocen:
+            basename = os.path.basename(os.path.splitext(test)[0])
+            test_id = int("".join(filter(str.isdigit, basename)))
+            if last_id is not None and test_id != last_id + 1:
+                util.exit_with_error(f'Test {os.path.basename(test)} is in wrong order. '
+                                     f'Last test was {os.path.basename(last_test)}.')
+            last_id = test_id
+            last_test = test
+
+        def is_next(last, curr):
+            i = len(last) - 1
+            while i >= 0:
+                if last[i] != 'z':
+                    last = last[:i] + chr(ord(last[i]) + 1) + last[i + 1:]
+                    break
+                else:
+                    last = last[:i] + 'a' + last[i + 1:]
+                    i -= 1
+                    if i < 0:
+                        last = 'a' + last
+            return last == curr
+
+        def compare_id(test1, test2):
+            id1 = get_id(test1)
+            id2 = get_id(test2)
+            if id1 == id2:
+                return 0
+            if len(id1) == len(id2):
+                if id1 < id2:
+                    return -1
+                return 1
+            elif len(id1) < len(id2):
+                return -1
+            return 1
+
+        groups = {}
+        for group in package_util.get_groups(self.tests, self.task_id):
+            groups[group] = sorted([test for test in tests if package_util.get_group(test, self.task_id) == group],
+                                   key=cmp_to_key(compare_id))
+        for group, group_tests in groups.items():
+            last_id = None
+            last_test = None
+            for test in group_tests:
+                test_id = get_id(test)
+                if last_id is not None and not is_next(last_id, test_id):
+                    util.exit_with_error(f'Test {os.path.basename(test)} is in wrong order. '
+                                         f'Last test was {os.path.basename(last_test)}.')
+                last_id = test_id
+                last_test = test
+
     def run(self, args: argparse.Namespace):
         util.exit_if_not_package()
 
@@ -154,5 +218,7 @@ class Command(BaseCommand):
         if len(failed_tests) > 0:
             util.exit_with_error(f'Verification failed for tests: {", ".join(failed_tests)}')
         else:
+            print("Verifying tests order...")
+            self.verify_tests_order()
             print(util.info('Verification successful.'))
             exit(0)
