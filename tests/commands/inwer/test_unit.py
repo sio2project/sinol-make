@@ -70,3 +70,36 @@ def test_tests_comparator():
                 [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in"]
         assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in", f"{ti}10b.in"], ti) == \
                 [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in", f"{ti}10b.in"]
+
+
+def test_verify_tests_order():
+    command = Command()
+    command.task_id = "abc"
+    command.tests = ["abc1ocen.in", "abc2ocen.in", "abc3ocen.in",
+                     "abc1a.in", "abc1b.in", "abc1c.in", "abc1d.in",
+                     "abc2z.in", "abc2aa.in", "abc2ab.in", "abc2ac.in"]
+    command.verify_tests_order()
+
+    command.tests.remove("abc2ocen.in")
+    with pytest.raises(SystemExit):
+        command.verify_tests_order()
+
+    command.tests.append("abc2ocen.in")
+    command.tests.remove("abc1c.in")
+    with pytest.raises(SystemExit):
+        command.verify_tests_order()
+
+    command.tests.append("abc1c.in")
+    command.tests.remove("abc2aa.in")
+    with pytest.raises(SystemExit):
+        command.verify_tests_order()
+
+    command.tests.append("abc2aa.in")
+    command.tests.remove("abc1ocen.in")
+    command.tests.remove("abc2ocen.in")
+    command.tests.remove("abc3ocen.in")
+    command.tests.append("abc9ocen.in")
+    command.tests.append("abc10ocen.in")
+    command.tests.append("abc11ocen.in")
+
+    command.verify_tests_order()
