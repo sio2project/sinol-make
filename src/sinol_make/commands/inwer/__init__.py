@@ -71,7 +71,6 @@ class Command(BaseCommand):
             process.wait()
         exit_code = process.returncode
         out, _ = process.communicate()
-        print(out)
 
         return VerificationResult(
             execution.test_path,
@@ -92,7 +91,6 @@ class Command(BaseCommand):
             executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
-        has_terminal = False
 
         table_data = TableData(results, 0)
         if has_terminal:
