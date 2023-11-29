@@ -39,17 +39,18 @@ def test_specified_inwer(capsys, create_package):
     task_id = package_util.get_task_id()
     util.create_ins(package_path, task_id)
     parser = configure_parsers()
-    args = parser.parse_args(["inwer", "prog/werinwer.cpp"])
-    command = Command()
+    for inwer_path in ["prog/werinwer.cpp", "prog/werinwer7.cpp"]:
+        args = parser.parse_args(["inwer", inwer_path])
+        command = Command()
 
-    with pytest.raises(SystemExit) as e:
-        command.run(args)
+        with pytest.raises(SystemExit) as e:
+            command.run(args)
 
-    assert e.type == SystemExit
-    assert e.value.code == 0
+        assert e.type == SystemExit
+        assert e.value.code == 0
 
-    out = capsys.readouterr().out
-    assert "Verification successful." in out
+        out = capsys.readouterr().out
+        assert "Verification successful." in out
 
     args = parser.parse_args(["inwer", "prog/werinwer2.cpp"])
     command = Command()

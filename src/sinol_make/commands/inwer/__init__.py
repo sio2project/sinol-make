@@ -56,7 +56,7 @@ class Command(BaseCommand):
         output_dir = paths.get_executables_path(execution.test_name)
         os.makedirs(output_dir, exist_ok=True)
 
-        command = [execution.inwer_exe_path]
+        command = [execution.inwer_exe_path, os.path.basename(execution.test_path)]
         with open(execution.test_path, 'r') as test:
             process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                        preexec_fn=os.setsid)
