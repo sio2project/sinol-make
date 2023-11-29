@@ -447,7 +447,7 @@ class Command(BaseCommand):
             signal.signal(signal.SIGINT, sigint_handler)
 
             try:
-                process.wait(timeout=time_limit)
+                process.wait(timeout=hard_time_limit)
             except subprocess.TimeoutExpired:
                 timeout = True
                 try:
