@@ -39,7 +39,7 @@ def test_specified_inwer(capsys, create_package):
     task_id = package_util.get_task_id()
     util.create_ins(package_path, task_id)
     parser = configure_parsers()
-    for inwer_path in ["prog/werinwer.cpp", "prog/werinwer5.cpp"]:
+    for inwer_path in ["prog/werinwer.cpp", "prog/werinwer7.cpp"]:
         args = parser.parse_args(["inwer", inwer_path])
         command = Command()
 
