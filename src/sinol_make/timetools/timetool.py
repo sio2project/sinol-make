@@ -21,6 +21,12 @@ class TimeTool:
         """
         raise NotImplementedError()
 
+    def get_install_name(self) -> str:
+        """
+        :return: Name of this timetool displayed while installing.
+        """
+        return self.get_name()
+
     def is_available(self) -> bool:
         """
         :return: True if this timetool is available.

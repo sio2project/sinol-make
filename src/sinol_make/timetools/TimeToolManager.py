@@ -25,7 +25,7 @@ class TimeToolManager:
         """
         res = []
         for timetool in self.get_possible_timetools():
-            if timetool.is_available():
+            if timetool.can_install():
                 res.append(timetool)
         return res
 
@@ -47,7 +47,7 @@ class TimeToolManager:
         """
         for timetool in self.get_possible_timetools():
             if timetool.can_install() and not timetool.is_latest_version():
-                print(f"Installing {timetool.get_name()}...")
+                print(f"Installing {timetool.get_install_name()}...")
                 timetool.install()
 
     def add_arg(self, parser: argparse.ArgumentParser):

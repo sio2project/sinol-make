@@ -48,6 +48,7 @@ def main_exn():
                     f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
                     f' You can update it by running `pip3 install sinol-make --upgrade`.'))
 
+            timetool_manager.update_all_timetools()
             command.run(args)
             exit(0)
 

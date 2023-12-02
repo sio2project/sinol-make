@@ -12,7 +12,7 @@ class Sio2jailCpuTimeTool(Sio2jailTimeTool):
         return "sio2jail"
 
     def can_install(self) -> bool:
-        return False
+        return util.is_linux()
 
     def is_available(self) -> bool:
         if not util.is_linux() or not self.is_latest_version():

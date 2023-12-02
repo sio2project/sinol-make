@@ -21,6 +21,9 @@ class Sio2jailTimeTool(TimeTool):
 
     _oiaug_codes = ['OK', 'RV', 'RE', 'TLE', 'MLE', 'OLE']
 
+    def get_install_name(self) -> str:
+        return "sio2jail"
+
     def get_path(self) -> str:
         return os.path.expanduser('~/.local/bin/sio2jail')
 
@@ -54,6 +57,7 @@ class Sio2jailTimeTool(TimeTool):
 
         with open(self.get_path(), 'wb') as f:
             f.write(request.content)
+        os.chmod(self.get_path(), 0o755)
 
     def _get_arguments(self, args, time_limit, memory_limit, result_file_path) -> List[str]:
         options = ['--mount-namespace', 'off']
