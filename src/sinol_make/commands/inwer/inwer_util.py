@@ -1,41 +1,9 @@
-import glob
-import os
 import sys
 from io import StringIO
-from typing import Union
-
-import argparse
 
 from sinol_make import util
-from sinol_make.commands.inwer import TestResult, TableData
-from sinol_make.helpers import compile, package_util
-from sinol_make.helpers import compiler
-from sinol_make.interfaces.Errors import CompilationError
-
-
-def get_inwer_path(task_id: str, path = None) -> Union[str, None]:
-    """
-    Returns path to inwer executable for given task or None if no inwer was found.
-    """
-    if path is None:
-        inwers = package_util.get_files_matching_pattern(task_id, f'{task_id}inwer.*')
-        if len(inwers) == 0:
-            return None
-        return inwers[0]
-    else:
-        inwer = os.path.join(os.getcwd(), path)
-        if os.path.exists(inwer):
-            return inwer
-        return None
-
-
-def compile_inwer(inwer_path: str, args: argparse.Namespace, weak_compilation_flags=False):
-    """
-    Compiles inwer and returns path to compiled executable and path to compile log.
-    """
-    compilers = compiler.verify_compilers(args, [inwer_path])
-    return compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers, weak_compilation_flags,
-                                use_fsanitize=True)
+from sinol_make.commands.inwer import TableData
+from sinol_make.helpers import package_util
 
 
 def sort_tests(tests, task_id):
@@ -48,7 +16,6 @@ def print_view(term_width, term_height, table_data: TableData):
     """
     Prints current results of test verification.
     """
-
     previous_stdout = sys.stdout
     new_stdout = StringIO()
     sys.stdout = new_stdout

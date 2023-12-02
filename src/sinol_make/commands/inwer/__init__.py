@@ -10,10 +10,11 @@ from typing import Dict, List
 
 from sinol_make import util
 from sinol_make.structs.inwer_structs import TestResult, InwerExecution, VerificationResult, TableData
-from sinol_make.helpers import package_util, compile, printer, paths
+from sinol_make.helpers import package_util, printer
 from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.inwer import inwer_util
+from sinol_make.tests.input import InputTest
 
 
 class Command(BaseCommand):
@@ -41,40 +42,17 @@ class Command(BaseCommand):
                             help=f'number of cpus to use (default: {util.default_cpu_count()})')
         add_compilation_arguments(parser)
 
-    def compile_inwer(self, args: argparse.Namespace):
-        self.inwer_executable, compile_log_path = inwer_util.compile_inwer(self.inwer, args, args.weak_compilation_flags)
-        if self.inwer_executable is None:
-            util.exit_with_error('Compilation failed.', lambda: compile.print_compile_log(compile_log_path))
-        else:
-            print(util.info('Compilation successful.'))
-
     @staticmethod
     def verify_test(execution: InwerExecution) -> VerificationResult:
         """
         Verifies a test and returns the result of inwer on this test.
         """
-        output_dir = paths.get_executables_path(execution.test_name)
-        os.makedirs(output_dir, exist_ok=True)
-
-        command = [execution.inwer_exe_path, os.path.basename(execution.test_path)]
-        with open(execution.test_path, 'r') as test:
-            process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       preexec_fn=os.setsid)
-
-            def sigint_handler(signum, frame):
-                try:
-                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                except ProcessLookupError:
-                    pass
-                sys.exit(1)
-            signal.signal(signal.SIGINT, sigint_handler)
-
-            process.wait()
-        exit_code = process.returncode
-        out, _ = process.communicate()
+        with execution.test.open('r') as test:
+            exit_code, out, _ = execution.inwer.run(execution.test, stdin=test, stdout=subprocess.PIPE,
+                                                    stderr=subprocess.STDOUT, return_out=True)
 
         return VerificationResult(
-            execution.test_path,
+            execution.test.basename,
             exit_code == 0,
             out.decode('utf-8')
         )
@@ -85,11 +63,10 @@ class Command(BaseCommand):
         :return: dictionary of TestResult objects
         """
         results = {}
-        sorted_tests = sorted(self.tests, key=lambda test: package_util.get_group(test, self.task_id))
         executions: List[InwerExecution] = []
-        for test in sorted_tests:
-            results[test] = TestResult(test, self.task_id)
-            executions.append(InwerExecution(test, results[test].test_name, self.inwer_executable))
+        for test in self.tests:
+            results[test.basename] = TestResult(test.basename, self.task_id)
+            executions.append(InwerExecution(test, self.inwer))
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
 
@@ -124,21 +101,20 @@ class Command(BaseCommand):
         """
         Verifies if tests are in correct order.
         """
-        def get_id(test, func=str.isalpha):
-            basename = os.path.basename(os.path.splitext(test)[0])
+        def get_id(test: InputTest, func=str.isalpha):
+            basename = os.path.splitext(test.basename)[0]
             return "".join(filter(func, basename[len(self.task_id):]))
 
-        ocen = sorted([test for test in self.tests if test.endswith('ocen.in')],
+        ocen = sorted([test for test in self.tests if test.basename.endswith('ocen.in')],
                       key=lambda test: int("".join(filter(str.isdigit, get_id(test, str.isdigit)))))
         tests = list(set(self.tests) - set(ocen))
         last_id = None
         last_test = None
         for test in ocen:
-            basename = os.path.basename(os.path.splitext(test)[0])
-            test_id = int("".join(filter(str.isdigit, basename)))
+            test_id = int("".join(filter(str.isdigit, test.basename)))
             if last_id is not None and test_id != last_id + 1:
-                util.exit_with_error(f'Test {os.path.basename(test)} is in wrong order. '
-                                     f'Last test was {os.path.basename(last_test)}.')
+                util.exit_with_error(f'Test {test.basename} is in wrong order. '
+                                     f'Last test was {last_test.basename}.')
             last_id = test_id
             last_test = test
 
@@ -169,46 +145,49 @@ class Command(BaseCommand):
             return 1
 
         groups = {}
-        for group in package_util.get_groups(self.tests, self.task_id):
-            groups[group] = sorted([test for test in tests if package_util.get_group(test, self.task_id) == group],
-                                   key=cmp_to_key(compare_id))
+        for group in list(set([test.group for test in tests])):
+            groups[group] = sorted([test for test in tests if test.group == group], key=cmp_to_key(compare_id))
+
         for group, group_tests in groups.items():
             last_id = None
             last_test = None
             for test in group_tests:
                 test_id = get_id(test)
                 if last_id is not None and not is_next(last_id, test_id):
-                    util.exit_with_error(f'Test {os.path.basename(test)} is in wrong order. '
-                                         f'Last test was {os.path.basename(last_test)}.')
+                    util.exit_with_error(f'Test {test.basename} is in wrong order. '
+                                         f'Last test was {last_test.basename}.')
                 last_id = test_id
                 last_test = test
 
     def run(self, args: argparse.Namespace):
-        util.exit_if_not_package()
+        super().run(args)
 
-        self.task_id = package_util.get_task_id()
         package_util.validate_test_names(self.task_id)
-        self.inwer = inwer_util.get_inwer_path(self.task_id, args.inwer_path)
-        if self.inwer is None:
+        try:
+            self.inwer = self.get_inwer(args.inwer_path)
+        except FileNotFoundError:
             if args.inwer_path is None:
                 util.exit_with_error('No inwer found in `prog/` directory.')
             else:
                 util.exit_with_error(f'Inwer "{args.inwer_path}" not found.')
-        relative_path = os.path.relpath(self.inwer, os.getcwd())
-        print(f'Verifying with inwer {util.bold(relative_path)}')
+        print(f'Verifying with inwer {util.bold(self.inwer.basename)}')
 
         self.cpus = args.cpus or util.default_cpu_count()
-        self.tests = package_util.get_tests(self.task_id, args.tests)
+        self.tests = InputTest.get_all(self.task_id, arg_tests=args.tests)
 
         if len(self.tests) == 0:
             util.exit_with_error('No tests found.')
         else:
-            print('Verifying tests: ' + util.bold(', '.join(self.tests)))
+            print('Verifying tests: ' + util.bold(", ".join([test.basename for test in self.tests])))
 
         util.change_stack_size_to_unlimited()
-        self.compile_inwer(args)
+        exe, compile_log_path = self.inwer.compile()
+        if exe is None:
+            util.exit_with_error('Compilation failed.',
+                                 lambda: self.compiler_manager.print_compile_log(compile_log_path))
+        else:
+            print(util.info('Compilation successful.'))
         results: Dict[str, TestResult] = self.verify_and_print_table()
-        print('')
 
         failed_tests = []
         for result in results.values():
