@@ -3,16 +3,18 @@
 import argcomplete
 import traceback
 import argparse
-import sys
-import os
 
-from sinol_make import util, oiejq
+from sinol_make import util
 
 
-__version__ = "1.5.16"
+__version__ = "1.6.0"
+
+from sinol_make.executor import Executor
+
+from sinol_make.timetools.TimeToolManager import TimeToolManager
 
 
-def configure_parsers():
+def configure_parsers(commands):
     parser = argparse.ArgumentParser(
         prog='sinol-make',
         description='Tool for creating and testing sio2 tasks',
@@ -24,9 +26,6 @@ def configure_parsers():
         dest='command',
     )
     subparsers.required = False
-
-    commands = util.get_commands()
-
     for command in commands:
         command.configure_subparser(subparsers)
 
@@ -35,9 +34,11 @@ def configure_parsers():
 
 
 def main_exn():
-    parser = configure_parsers()
+    timetool_manager = TimeToolManager()
+    executor = Executor(timetool_manager)
+    commands = util.get_commands(timetool_manager, executor)
+    parser = configure_parsers(commands)
     args = parser.parse_args()
-    commands = util.get_commands()
 
     for command in commands:
         if command.get_name() == args.command:
@@ -46,20 +47,6 @@ def main_exn():
                 print(util.warning(
                     f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
                     f' You can update it by running `pip3 install sinol-make --upgrade`.'))
-
-            if util.is_linux() and not oiejq.check_oiejq():
-                print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
-
-                try:
-                    if oiejq.install_oiejq():
-                        print(util.info('`oiejq` was successfully installed.'))
-                    else:
-                        util.exit_with_error('`oiejq` could not be installed.\n'
-                                             'You can download it from https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz'
-                                             ', unpack it to `~/.local/bin/` and rename oiejq.sh to oiejq.\n'
-                                             'You can also use --oiejq-path to specify path to your oiejq.')
-                except Exception as err:
-                    util.exit_with_error('`oiejq` could not be installed.\n' + err)
 
             command.run(args)
             exit(0)

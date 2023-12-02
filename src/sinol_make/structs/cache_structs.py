@@ -1,11 +1,9 @@
 import os
+import yaml
 from dataclasses import dataclass
 from typing import Dict
 
-import yaml
-
 from sinol_make.helpers import paths
-
 from sinol_make.structs.status_structs import ExecutionResult
 
 
