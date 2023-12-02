@@ -10,8 +10,6 @@ jobs:
     name: pytest-ubuntu-python-${{ matrix.python-version }}
     container:
       image: ubuntu:latest
-      volumes:
-        - /home/actions/oiejq:/github/home/.local/bin
       env:
         DEB_PYTHON_INSTALL_LAYOUT: deb
         DEBIAN_FRONTEND: noninteractive
@@ -24,7 +22,7 @@ jobs:
       - name: Prepare system
         run: |
           apt update
-          apt install -y sqlite3 sqlite3-doc build-essential dpkg texlive-latex-extra ghostscript
+          apt install -y sqlite3 sqlite3-doc build-essential dpkg texlive-latex-extra ghostscript wget
           sysctl kernel.perf_event_paranoid=-1
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -33,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install .[tests]
-          apt install -y time
+          wget -O ~/.local/bin/ https://github.com/sio2project/sio2jail/releases/download/v1.4.4/sio2jail
       - name: Run pytest
         env:
           PYTEST_ADDOPTS: "--color=yes"
