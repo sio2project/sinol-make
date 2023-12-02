@@ -1,63 +1,61 @@
-import argparse, re, yaml
+import argparse
+import re
+import yaml
+import glob
 
-from sinol_make import util, oiejq
+from sinol_make import util
+from sinol_make.structs.run_structs import RunExecution
 from sinol_make.structs.status_structs import Status, ResultChange, ValidationResult
-from sinol_make.helpers import package_util
-from .util import *
-from ...util import *
-from ...fixtures import *
-
-
-def test_get_output_file():
-    os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.get_output_file("in/abc1a.in") == "out/abc1a.out"
+from sinol_make.helpers import package_util, paths
+from sinol_make.tests.input import InputTest
+from sinol_make.tests.output import OutputTest
+from tests.commands.run.util import *
+from tests import util
+from tests.fixtures import *
 
 
 def test_compile_solutions(create_package):
     package_path = create_package
     command = get_command(package_path)
-    solutions = package_util.get_solutions("abc", None)
+    solutions = command.get_all_solutions()
     result = command.compile_solutions(solutions)
-    assert result == [True for _ in solutions]
+    assert all(result)
 
 
 def test_execution(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
-    command.args.time_tool = time_tool
-    command.timetool_name = time_tool
-    solution = "abc.cpp"
-    executable = package_util.get_executable(solution)
+    command.timetool_manager.set_timetool(argparse.Namespace(time_tool=time_tool))
+    solution = command.get_correct_solution()
     result = command.compile_solutions([solution])
     assert result == [True]
 
-    create_ins_outs(package_path)
-    test = package_util.get_tests("abc", None)[0]
-
-    with open(os.path.join(package_path, "config.yml"), "r") as config_file:
-        config = yaml.load(config_file, Loader=yaml.FullLoader)
-
-    os.makedirs(paths.get_executions_path(solution), exist_ok=True)
-    result = command.run_solution((solution, paths.get_executables_path(executable), test, config['time_limit'], config['memory_limit'], oiejq.get_oiejq_path()))
+    util.create_ins_outs(package_path)
+    task_id = package_util.get_task_id(package_path)
+    test = InputTest.get_all(task_id)[0]
+    os.makedirs(paths.get_executions_path(solution.basename), exist_ok=True)
+    data = RunExecution(
+        solution=solution,
+        test=test,
+        time_limit=command.config["time_limit"],
+        memory_limit=command.config["memory_limit"],
+    )
+    result = command.run_solution(data)
     assert result.Status == Status.OK
+    assert result.Points == 100
 
 
 def test_run_solutions(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
-    command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool, weak_compilation_flags=False,
-                                      hide_memory=False)
-    create_ins_outs(package_path)
-    command.tests = package_util.get_tests("abc", None)
-    command.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in command.tests}
-    command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
+    util.create_ins_outs(package_path)
+    task_id = package_util.get_task_id(package_path)
+    command.tests = InputTest.get_all(task_id)
+    command.test_md5sums = {test.basename: test.md5 for test in command.tests}
+    command.groups = command.get_groups(command.tests)
     command.scores = command.config["scores"]
     command.possible_score = command.get_possible_score(command.groups)
-    command.memory_limit = command.config["memory_limit"]
-    command.time_limit = command.config["time_limit"]
-    command.timetool_path = oiejq.get_oiejq_path()
-    command.timetool_name = time_tool
+    command.timetool_manager.set_timetool(argparse.Namespace(time_tool=time_tool))
     def flatten_results(results):
         new_results = {}
         for solution in results.keys():
@@ -65,8 +63,12 @@ def test_run_solutions(create_package, time_tool):
                                          for group, group_result in results[solution].items())
         return new_results
 
-    assert flatten_results(command.compile_and_run(["abc.cpp"])[0]) == {"abc.cpp": {1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK}}
-    assert flatten_results(command.compile_and_run(["abc.cpp", "abc4.cpp"])[0]) == {
+    sol1 = command.get_correct_solution()
+    sol2 = command.get_solution("prog/abc4.cpp")
+    assert flatten_results(command.compile_and_run([sol1])[0]) == {
+        "abc.cpp": {1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK}
+    }
+    assert flatten_results(command.compile_and_run([sol1, sol2])[0]) == {
         "abc.cpp": {1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK},
         "abc4.cpp": {1: Status.OK, 2: Status.OK, 3: "WA", 4: "RE"}
     }
@@ -76,7 +78,10 @@ def test_validate_expected_scores_success():
     os.chdir(get_simple_package_path())
     command = get_command()
     command.scores = command.config["scores"]
-    command.tests = ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
+    tests = ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
+    command.tests = []
+    for test in tests:
+        command.tests.append(InputTest(command.task_id, test, exists=False))
     command.groups = command.get_groups(command.tests)
     command.possible_score = command.contest.get_possible_score(command.groups, command.scores)
 
@@ -421,7 +426,6 @@ def test_print_expected_scores_diff(capsys, create_package):
     assert "There was an unknown change in expected scores." in out
 
 
-
 @pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
 def test_set_scores(create_package):
     """
@@ -429,8 +433,10 @@ def test_set_scores(create_package):
     """
     package_path = create_package
     command = get_command(package_path)
-    command.tests = ["in/abc0a.in", "in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in",
-                     "in/abc5a.in", "in/abc6a.in"]
+    tests = ["in/abc0a.in", "in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in",
+             "in/abc5a.in", "in/abc6a.in"]
+    command.tests = [InputTest(command.task_id, test, exists=False) for test in tests]
+    command.groups = command.get_groups(command.tests)
     del command.config["scores"]
     command.set_scores()
     assert command.scores == {
@@ -444,26 +450,29 @@ def test_set_scores(create_package):
     }
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path(), util.get_verify_status_package_path()],
+                         indirect=True)
 def test_get_valid_input_files(create_package):
     """
     Test get_valid_input_files function.
     """
     package_path = create_package
     command = get_command(package_path)
-    create_ins_outs(package_path)
-    command.tests = package_util.get_tests(command.ID, None)
+    util.create_ins_outs(package_path)
+    command.tests = InputTest.get_all(command.task_id)
 
     outputs = glob.glob(os.path.join(package_path, "out", "*.out"))
-    os.unlink(outputs[0])
+    out0 = OutputTest(command.task_id, outputs[0])
+    out1 = OutputTest(command.task_id, outputs[1])
+    out0.remove()
     valid_inputs = command.get_valid_input_files()
     assert len(valid_inputs) == len(outputs) - 1
-    assert "in/" + os.path.basename(outputs[0].replace(".out", ".in")) not in valid_inputs
-    assert "in/" + os.path.basename(outputs[1].replace(".out", ".in")) in valid_inputs
+    assert command.get_corresponding_test(out0) not in valid_inputs
+    assert command.get_corresponding_test(out1) in valid_inputs
 
 
 def test_update_group_status():
-    from sinol_make.commands.run import update_group_status
+    from sinol_make.commands.run.run_util import update_group_status
     assert update_group_status(Status.OK, Status.WA) == Status.WA
     assert update_group_status(Status.PENDING, Status.OK) == Status.OK
     assert update_group_status(Status.PENDING, Status.WA) == Status.WA
