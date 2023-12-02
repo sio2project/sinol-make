@@ -5,10 +5,9 @@ import pytest
 import tarfile
 import tempfile
 
-from sinol_make import configure_parsers
 from sinol_make import util as sinol_util
 from sinol_make.commands.doc import Command as DocCommand
-from tests import util
+from sinol_make.commands.export import Command
 from tests.fixtures import create_package
 from .util import *
 
@@ -42,6 +41,10 @@ def _test_archive(package_path, out, tar):
             assert glob.glob(os.path.join(extracted, "out", "*")) == []
 
 
+def run(arguments=None):
+    util.run(Command, arguments)
+
+
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path(), util.get_library_package_path(),
                                             util.get_library_string_args_package_path(),
                                             util.get_shell_ingen_pack_path(), util.get_handwritten_package_path()],
@@ -51,10 +54,7 @@ def test_simple(create_package, capsys):
     Test exporting to archive.
     """
     package_path = create_package
-    parser = configure_parsers()
-    args = parser.parse_args(["export"])
-    command = Command()
-    command.run(args)
+    run(["export"])
 
     task_id = package_util.get_task_id()
     out = capsys.readouterr().out
@@ -66,13 +66,8 @@ def test_doc_cleared(create_package):
     """
     Test if files in `doc` directory are cleared.
     """
-    parser = configure_parsers()
-    args = parser.parse_args(["doc"])
-    command = DocCommand()
-    command.run(args)
-    args = parser.parse_args(["export"])
-    command = Command()
-    command.run(args)
+    util.run(DocCommand, ["doc"])
+    run(["export"])
 
     with tempfile.TemporaryDirectory() as tmpdir:
         with tarfile.open(f'{package_util.get_task_id()}.tgz', "r") as tar:
@@ -93,10 +88,7 @@ def test_correct_permissions(create_package, capsys):
     st = os.stat(shell_ingen)
     os.chmod(shell_ingen, st.st_mode & ~stat.S_IEXEC)
 
-    parser = configure_parsers()
-    args = parser.parse_args(["export"])
-    command = Command()
-    command.run(args)
+    run(["export"])
     task_id = package_util.get_task_id()
 
     with tempfile.TemporaryDirectory() as tmpdir:

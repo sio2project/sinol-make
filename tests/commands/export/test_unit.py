@@ -2,7 +2,6 @@ import yaml
 import shutil
 import tempfile
 
-from tests import util
 from .util import *
 
 
@@ -60,7 +59,6 @@ def test_create_makefile_in():
     """
     Test function create_makefile_in.
     """
-
     def _create_package(path):
         os.chdir(path)
         with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
