@@ -2,7 +2,65 @@ import os
 import glob
 import subprocess
 
-from sinol_make.helpers import compile, paths, package_util
+from sinol_make.compilers.CompilersManager import CompilerManager
+from sinol_make.programs.ingen import Ingen
+from sinol_make.programs.solution import Solution
+from sinol_make.tests.input import InputTest
+from sinol_make.tests.output import OutputTest
+from sinol_make.timetools.TimeToolManager import TimeToolManager
+from sinol_make.executor import Executor
+from sinol_make import util, configure_parsers
+from sinol_make.helpers import paths, package_util
+
+
+def run(cls, arguments=None):
+    if arguments is None:
+        arguments = []
+    if isinstance(arguments, str):
+        arguments = arguments.split()
+    parser = get_parser()
+    args = parser.parse_args(arguments)
+    command = get_command(cls)
+    command.run(args)
+    return command
+
+
+def get_parser():
+    timetool_manager = TimeToolManager()
+    executor = Executor(timetool_manager)
+    commands = util.get_commands(timetool_manager, executor)
+    return configure_parsers(commands)
+
+
+def get_command(cls):
+    timetool_manager = TimeToolManager()
+    executor = Executor(timetool_manager)
+    return cls(timetool_manager, executor)
+
+
+def get_doc_command():
+    from sinol_make.commands.doc import Command
+    return get_command(Command)
+
+
+def get_export_command():
+    from sinol_make.commands.export import Command
+    return get_command(Command)
+
+
+def get_gen_command():
+    from sinol_make.commands.gen import Command
+    return get_command(Command)
+
+
+def get_inwer_command():
+    from sinol_make.commands.inwer import Command
+    return get_command(Command)
+
+
+def get_run_command():
+    from sinol_make.commands.run import Command
+    return get_command(Command)
 
 
 def get_simple_package_path():
@@ -135,45 +193,60 @@ def get_large_output_package_path():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "large_output")
 
-def create_ins(package_path, task_id):
+
+def _create_ins(package_path, task_id, timetool_manager, executor, compiler_manager):
     """
     Create .in files for package.
     """
-    all_ingens = package_util.get_files_matching_pattern(task_id, f'{task_id}ingen.*')
-    if len(all_ingens) == 0:
+    try:
+        ingen = Ingen(executor, compiler_manager, task_id)
+    except FileNotFoundError:
         return
-    ingen = all_ingens[0]
-    ingen_executable = paths.get_executables_path("ingen.e")
-    os.makedirs(paths.get_executables_path(), exist_ok=True)
-    assert compile.compile(ingen, ingen_executable)
-    os.chdir(os.path.join(package_path, "in"))
-    os.system("../.cache/executables/ingen.e")
+    exe, _ = ingen.compile()
+    assert exe is not None
+    ingen.run()
     os.chdir(package_path)
 
 
-def create_outs(package_path, task_id):
+def create_ins(package_path, task_id):
+    timetool_manager = TimeToolManager()
+    executor = Executor(timetool_manager)
+    compiler_manager = CompilerManager(None)
+    os.chdir(package_path)
+    _create_ins(package_path, task_id, timetool_manager, executor, compiler_manager)
+
+
+def _create_outs(package_path, task_id, timetool_manager, executor, compiler_manager):
     """
     Create .out files for package.
     """
-    solution = package_util.get_files_matching_pattern(task_id, f'{task_id}.*')[0]
-    solution_executable = paths.get_executables_path("solution.e")
-    os.makedirs(paths.get_executables_path(), exist_ok=True)
-    assert compile.compile(solution, solution_executable)
-    os.chdir(os.path.join(package_path, "in"))
-    for file in glob.glob("*.in"):
-        with open(file, "r") as in_file, open(os.path.join("../out", file.replace(".in", ".out")), "w") as out_file:
-            subprocess.Popen([os.path.join(package_path, ".cache", "executables", "solution.e")],
-                             stdin=in_file, stdout=out_file).wait()
+    solution = Solution(executor, compiler_manager, task_id)
+    exe, _ = solution.compile()
+    assert exe is not None
+    for test in InputTest.get_all(task_id):
+        output_test = OutputTest(task_id, os.path.splitext(test.basename)[0] + ".out", exists=False)
+        with test.open("r") as in_file, output_test.open("w") as out_file:
+            solution.run(stdin=in_file, stdout=out_file)
+
+
+def create_outs(package_path, task_id):
+    timetool_manager = TimeToolManager()
+    executor = Executor(timetool_manager)
+    compiler_manager = CompilerManager(None)
     os.chdir(package_path)
+    _create_outs(package_path, task_id, timetool_manager, executor, compiler_manager)
 
 
 def create_ins_outs(package_path):
     """
     Create .in and .out files for package.
     """
+    timetool_manager = TimeToolManager()
+    executor = Executor(timetool_manager)
+    compiler_manager = CompilerManager(None)
     os.chdir(package_path)
     task_id = package_util.get_task_id()
-    create_ins(package_path, task_id)
+    _create_ins(package_path, task_id, timetool_manager, executor, compiler_manager)
     has_lib = package_util.any_files_matching_pattern(task_id, f"{task_id}lib.*")
     if not has_lib:
-        create_outs(package_path, task_id)
+        _create_outs(package_path, task_id, timetool_manager, executor, compiler_manager)
