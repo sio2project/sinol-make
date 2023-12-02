@@ -14,7 +14,7 @@ function generate() {
 
 cache=$(dirname "$0")/../.cache
 mkdir -p "$cache"
-g++ gen_helper.cpp -o "$cache"/gen
+g++ $(dirname "$0")/gen_helper.cpp -o "$cache"/gen
 
 cpu_num=$(nproc)
 

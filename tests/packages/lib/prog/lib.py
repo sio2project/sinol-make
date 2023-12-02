@@ -3,6 +3,7 @@ from liblib import *
 
 def main():
     a, b = 0, 100
+    init()
 
     while a <= b:
         mid = (a + b) // 2
