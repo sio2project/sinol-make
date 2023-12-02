@@ -31,6 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install .[tests]
+          mkdir -p ~/.local/bin
           wget -O ~/.local/bin/ https://github.com/sio2project/sio2jail/releases/download/v1.4.4/sio2jail
       - name: Run pytest
         env:
