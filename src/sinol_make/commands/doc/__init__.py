@@ -51,7 +51,7 @@ class Command(BaseCommand):
         parser.add_argument('files', type=str, nargs='*', help='files to compile')
 
     def run(self, args: argparse.Namespace):
-        util.exit_if_not_package()
+        super().run(args)
 
         if args.files == []:
             self.files = glob.glob(os.path.join(os.getcwd(), 'doc', '*.tex'))
