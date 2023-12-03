@@ -24,7 +24,7 @@ class Checker(Program):
         return "checker"
 
     def _regex_match(self) -> re.Pattern:
-        return re.compile(r'%schk*\.(cpp|cc|java|py|pas)' % self.task_id)
+        return re.compile(r'%schk\.(cpp|cc|java|py|pas)' % self.task_id)
 
     def get_dir(self) -> str:
         return "prog"

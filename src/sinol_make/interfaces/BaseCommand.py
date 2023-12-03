@@ -121,7 +121,6 @@ class BaseCommand:
                     util.exit_with_error(f'File {file} does not exist or is not a solution.')
         return sorted(res, key=package_util.get_executable_key)
 
-
     def get_correct_solution(self) -> Solution:
         """
         Get correct solution.
