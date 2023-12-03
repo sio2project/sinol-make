@@ -1,6 +1,5 @@
 import os
-import glob
-import subprocess
+import shutil
 
 from sinol_make.compilers.CompilersManager import CompilerManager
 from sinol_make.programs.ingen import Ingen
@@ -250,3 +249,30 @@ def create_ins_outs(package_path):
     has_lib = package_util.any_files_matching_pattern(task_id, f"{task_id}lib.*")
     if not has_lib:
         _create_outs(package_path, task_id, timetool_manager, executor, compiler_manager)
+
+
+def create_files(path, *files):
+    os.makedirs(path, exist_ok=True)
+    for file in files:
+        with open(os.path.join(path, file), 'w') as f:
+            f.write('')
+
+
+def create_prog_files(*files):
+    create_files(os.path.join(os.getcwd(), "prog"), *files)
+
+
+def create_in_files(*files):
+    create_files(os.path.join(os.getcwd(), "in"), *files)
+
+
+def create_out_files(*files):
+    create_files(os.path.join(os.getcwd(), "out"), *files)
+
+
+def clear_cwd():
+    for file in os.listdir(os.getcwd()):
+        if os.path.isfile(file):
+            os.remove(file)
+        else:
+            shutil.rmtree(file)

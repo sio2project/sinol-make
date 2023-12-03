@@ -1,9 +1,7 @@
 import os
-import shutil
 import tempfile
 
 from sinol_make import TimeToolManager, Executor
-from sinol_make.helpers import package_util
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.programs.checker import Checker
 from sinol_make.programs.ingen import Ingen
@@ -12,8 +10,7 @@ from sinol_make.programs.solution import Solution
 from sinol_make.tests.input import InputTest
 from sinol_make.tests.output import OutputTest
 
-from tests import util
-from tests.fixtures import create_package
+from tests.util import create_prog_files, create_in_files, create_out_files, clear_cwd
 
 
 def get_command():
@@ -21,33 +18,6 @@ def get_command():
     executor = Executor(timetool_manager)
     command = BaseCommand(timetool_manager, executor)
     return command
-
-
-def create_files(path, *files):
-    os.makedirs(path, exist_ok=True)
-    for file in files:
-        with open(os.path.join(path, file), 'w') as f:
-            f.write('')
-
-
-def create_prog_files(*files):
-    create_files(os.path.join(os.getcwd(), "prog"), *files)
-
-
-def create_in_files(*files):
-    create_files(os.path.join(os.getcwd(), "in"), *files)
-
-
-def create_out_files(*files):
-    create_files(os.path.join(os.getcwd(), "out"), *files)
-
-
-def clear_cwd():
-    for file in os.listdir(os.getcwd()):
-        if os.path.isfile(file):
-            os.remove(file)
-        else:
-            shutil.rmtree(file)
 
 
 def get_tester(cls, func, tests, pass_argument = True):
