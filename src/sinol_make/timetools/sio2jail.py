@@ -84,8 +84,17 @@ class Sio2jailTimeTool(TimeTool):
 
     def _parse_result_file(self, result_file_path: str) -> TimeToolResult:
         with open(result_file_path, "r") as f:
-            status_line = f.readline().strip().split()
-            result_string = f.readline().strip()
+            lines = f.readlines()
+
+        if len(lines) < 2:
+            return TimeToolResult(
+                status=Status.RE,
+                time=0,
+                memory=0,
+                error=f"Invalid result from sio2jail: {lines}"
+            )
+        status_line = lines[0].strip().split()
+        result_string = lines[1].strip()
 
         result_code = int(status_line[1])
         time_used = int(status_line[2])
