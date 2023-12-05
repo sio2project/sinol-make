@@ -9,6 +9,7 @@ class Status(str, Enum):
     TL = "TL"
     ML = "ML"
     RE = "RE"
+    RV = "RV"
     WA = "WA"
     OK = "OK"
 
@@ -22,14 +23,16 @@ class Status(str, Enum):
     def from_str(status):
         if status == "CE":
             return Status.CE
-        elif status == "TL":
+        elif status == "TL" or status == "TLE":
             return Status.TL
-        elif status == "ML":
+        elif status == "ML" or status == "MLE":
             return Status.ML
         elif status == "RE":
             return Status.RE
         elif status == "WA":
             return Status.WA
+        elif status == "RV":
+            return Status.RV
         elif status == "OK":
             return Status.OK
         elif status == "  ":
@@ -55,6 +58,7 @@ class TotalPointsChange:
     solution: str
     old_points: int
     new_points: int
+
 
 @dataclass
 class PointsChange:
@@ -89,13 +93,17 @@ class ExecutionResult:
     Points: int
     # Error message
     Error: str
+    # Whether to exit with error if ``Error`` is set
+    ExitOnError: bool = True
 
-    def __init__(self, status=None, Time=None, Memory=None, Points=0, Error=None):
+    def __init__(self, status=None, Time=None, Memory=None, Points=0, Error=None, ExitOnError=True):
         self.Status = status
         self.Time = Time
         self.Memory = Memory
         self.Points = Points
         self.Error = Error
+        self.ExitOnError = ExitOnError
+
 
     @staticmethod
     def from_dict(dict):
@@ -104,7 +112,8 @@ class ExecutionResult:
             Time=dict.get("Time", None),
             Memory=dict.get("Memory", None),
             Points=dict.get("Points", 0),
-            Error=dict.get("Error", None)
+            Error=dict.get("Error", None),
+            ExitOnError=dict.get("ExitOnError", True)
         )
 
     def to_dict(self):
@@ -113,5 +122,6 @@ class ExecutionResult:
             "Time": self.Time,
             "Memory": self.Memory,
             "Points": self.Points,
-            "Error": self.Error
+            "Error": self.Error,
+            "ExitOnError": self.ExitOnError
         }

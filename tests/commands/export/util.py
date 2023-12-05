@@ -1,25 +1,19 @@
 import os
 import argparse
 
-from sinol_make.helpers import compiler
-from sinol_make.commands.export import Command
+from tests import util
 from sinol_make.helpers import package_util
 
 
 def get_command():
-    command = Command()
-    command.task_id = package_util.get_task_id()
-    command.args = argparse.Namespace(
-        weak_compilation_flags=False,
-        c_compiler_path=compiler.get_c_compiler_path(),
-        cpp_compiler_path=compiler.get_cpp_compiler_path(),
-        python_interpreter_path=compiler.get_python_interpreter_path(),
-        java_compiler_path=compiler.get_java_compiler_path(),
-    )
+    command = util.get_export_command()
+    command.base_run(None)
     command.export_dir = os.path.join(os.getcwd(), "export")
     if not os.path.exists(command.export_dir):
         os.mkdir(command.export_dir)
-
+    command.args = argparse.Namespace(
+        weak_compilation_flags=False,
+    )
     return command
 
 
@@ -54,7 +48,7 @@ def assert_makefile_in(lines, task_id, config):
     assert _get_value_from_key("MEMLIMIT", "=") == str(config["memory_limit"])
 
     cxx_flags = '-std=c++20'
-    c_flags = '-std=gnu99'
+    c_flags = '-std=c17'
     def format_multiple_arguments(obj):
         if isinstance(obj, str):
             return obj

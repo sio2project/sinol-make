@@ -1,23 +1,23 @@
-import glob, importlib, os, sys, requests, yaml
+import glob
+import importlib
+import os
+import sys
+import requests
+import yaml
 import math
-import multiprocessing
 import platform
 import tarfile
-import tempfile
-import shutil
 import hashlib
-import subprocess
 import multiprocessing
 import resource
 from typing import Union
 
-import sinol_make
 from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
 from sinol_make.structs.status_structs import Status
 
 
-def get_commands():
+def get_commands(timetool_manager, executor):
     """
     Function to get an array of all available commands.
     """
@@ -30,7 +30,7 @@ def get_commands():
     commands = []
     for path in commands_path:
         temp = importlib.import_module('sinol_make.commands.' + os.path.basename(path), 'Command')
-        commands.append(temp.Command())
+        commands.append(temp.Command(timetool_manager, executor))
 
     return commands
 
@@ -99,15 +99,16 @@ def save_config(config):
     config = config.copy()
     with open("config.yml", "w") as config_file:
         for field in order:
-            if isinstance(field, dict): # If the field is a dict, it means that it has a custom property (for example default_flow_style).
+            if isinstance(field, dict):  # If the field is a dict, it means that it has a custom property (for example default_flow_style).
                 if field["key"] in config:
-                    yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
+                    yaml.dump({field["key"]: config[field["key"]]}, config_file,
+                              default_flow_style=field["default_flow_style"])
                     # The considered fields are deleted, thus `config` at the end will contain only custom fields written by the user.
                     del config[field["key"]]
-            else: # When the field is a string, it doesn't have any custom properties, so it's just a dict key.
+            else:  # When the field is a string, it doesn't have any custom properties, so it's just a dict key.
                 if field in config:
                     yaml.dump({field: config[field]}, config_file)
-                    del config[field] # Same reason for deleting as above.
+                    del config[field]  # Same reason for deleting as above.
 
         if config != {}:
             print(warning("Found unknown fields in config.yml: " + ", ".join([str(x) for x in config])))
@@ -256,21 +257,6 @@ def get_terminal_size():
     return has_terminal, terminal_width, terminal_height
 
 
-def get_templates_dir():
-    """
-    Function to get the path to the templates' directory.
-    :return: path to the templates directory
-    """
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), "templates"))
-
-
-def fix_line_endings(file):
-    with open(file, "rb") as f:
-        content = f.read()
-    with open(file, "wb") as f:
-        f.write(content.replace(b"\r\n", b"\n"))
-
-
 def stringify_keys(d):
     """
     Function to stringify all keys in a dict.
@@ -397,21 +383,39 @@ def default_cpu_count():
     return cpu_count - max(1, int(math.log2(cpu_count)) - 1)
 
 
-def color_red(text): return "\033[91m{}\033[00m".format(text)
-def color_green(text): return "\033[92m{}\033[00m".format(text)
-def color_yellow(text): return "\033[93m{}\033[00m".format(text)
-def color_gray(text): return "\033[90m{}\033[00m".format(text)
-def bold(text): return "\033[01m{}\033[00m".format(text)
+def color_red(text):
+    return "\033[91m{}\033[00m".format(text)
+
+
+def color_green(text):
+    return "\033[92m{}\033[00m".format(text)
+
+
+def color_yellow(text):
+    return "\033[93m{}\033[00m".format(text)
+
+
+def color_gray(text):
+    return "\033[90m{}\033[00m".format(text)
+
+
+def bold(text):
+    return "\033[01m{}\033[00m".format(text)
+
 
 def info(text):
     return bold(color_green(text))
+
+
 def warning(text):
     return bold(color_yellow(text))
+
+
 def error(text):
     return bold(color_red(text))
 
 
-def exit_with_error(text, func=None):
+def exit_with_error(text, func = None):
     print(error(text))
     try:
         func()

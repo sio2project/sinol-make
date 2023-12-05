@@ -1,5 +1,9 @@
-import pytest, tempfile, os, shutil
-from .util import get_simple_package_path
+import pytest
+import tempfile
+import os
+import shutil
+
+from tests.util import get_simple_package_path
 
 
 @pytest.fixture

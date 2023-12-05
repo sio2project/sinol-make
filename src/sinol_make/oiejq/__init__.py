@@ -96,7 +96,7 @@ def check_perf_counters_enabled():
         return
 
     oiejq = get_oiejq_path()
-    test_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'perf_test.py')
+    test_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../timetools/perf_test.py')
     python_executable = sys.executable
 
     # subprocess.Pipe is not used, because than the code would hang on process.communicate()

@@ -3,6 +3,7 @@ import yaml
 from typing import Union
 
 from sinol_make import util
+from sinol_make.programs.solution import Solution
 from sinol_make.structs.cache_structs import CacheFile
 from sinol_make.helpers import paths, package_util
 
@@ -53,7 +54,7 @@ def check_compiled(file_path: str) -> Union[str, None]:
         return None
 
 
-def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
+def save_compiled(file_path: str, exe_path: str):
     """
     Save the compiled executable path to cache in `.cache/md5sums/<basename of file_path>`,
     which contains the md5sum of the file and the path to the executable.
@@ -66,9 +67,6 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
     info.md5sum = util.get_file_md5(file_path)
     info.save(file_path)
 
-    if is_checker:
-        remove_results_cache()
-
 
 def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
     """
@@ -77,14 +75,14 @@ def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
     :param extra_compilation_files: List of extra compilation files
     :param task_id: Task id
     """
-    solutions_re = package_util.get_solutions_re(task_id)
+    solutions_re = Solution.static_regex_matches(task_id)[-1]
     for file in extra_compilation_files:
         file_path = os.path.join(os.getcwd(), "prog", file)
         if not os.path.exists(file_path):
             continue
         md5sum = util.get_file_md5(file_path)
         lang = package_util.get_file_lang(file)
-        if lang == 'h':
+        if lang == 'h' or lang == 'hpp':
             lang = 'cpp'
         info = get_cache_file(file_path)
 
@@ -93,6 +91,7 @@ def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
                 # Remove only files in the same language and matching the solution regex
                 if package_util.get_file_lang(solution) == lang and \
                         solutions_re.match(solution) is not None:
+                    print(solution)
                     os.unlink(paths.get_cache_path('md5sums', solution))
 
         info.md5sum = md5sum
@@ -152,7 +151,7 @@ def check_correct_solution(task_id: str):
     :param task_id: Task id
     """
     try:
-        solution = package_util.get_correct_solution(task_id)
+        solution = Solution.get_correct_solution_file(task_id)
     except FileNotFoundError:
         return
 

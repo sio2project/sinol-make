@@ -8,30 +8,31 @@ import fnmatch
 import multiprocessing as mp
 
 from sinol_make import util
-from sinol_make.helpers import compile, paths
+from sinol_make.compilers.CompilersManager import CompilerManager
+from sinol_make.helpers import paths, package_util
 from sinol_make.interfaces.Errors import CompilationError
+from sinol_make.programs.checker import Checker
+from sinol_make.programs.ingen import Ingen
+from sinol_make.programs.inwer import Inwer
+from sinol_make.programs.solution import Solution
+from sinol_make.timetools.TimeToolManager import TimeToolManager
+from sinol_make.executor import Executor
 
 
 def _compile(args):
-    package, file_path = args
+    package, program = args
     os.chdir(package)
-    output = paths.get_executables_path(os.path.splitext(os.path.basename(file_path))[0] + ".e")
-    compile_log_path = paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log")
-    basename = os.path.basename(file_path)
-    use_fsanitize = fnmatch.fnmatch(basename, "*ingen*") or fnmatch.fnmatch(basename, "*inwer*")
-    try:
-        with open(compile_log_path, "w") as compile_log:
-            compile.compile(file_path, output, compile_log=compile_log, use_fsanitize=use_fsanitize)
-    except CompilationError:
-        compile.print_compile_log(compile_log_path)
-        raise
+    exe, compile_log = program.compile()
+    if exe is None:
+        CompilerManager.print_compile_log(compile_log)
+        raise CompilationError(f"Compilation failed for {program.basename}")
 
 
 def pytest_addoption(parser):
     parser.addoption("--github-runner", action="store_true", help="if set, will run tests specified for GitHub runner")
     parser.addoption(
         '--time-tool',
-        choices=['oiejq', 'time'],
+        choices=['sio2jail', 'time'],
         action='append',
         default=[],
         help='Time tool to use. Default: oiejq'
@@ -46,6 +47,10 @@ def pytest_configure(config):
     if not config.getoption("--no-precompile"):
         print("Collecting solutions...")
 
+        timetool_manager = TimeToolManager()
+        executor = Executor(timetool_manager)
+        compiler_manager = CompilerManager(None)
+
         files_to_compile = []
         for package in packages:
             if os.path.exists(os.path.join(package, "no-precompile")):
@@ -55,9 +60,17 @@ def pytest_configure(config):
             for d in ["compilation", "executables"]:
                 os.makedirs(os.path.join(package, ".cache", d), exist_ok=True)
 
+            cwd = os.getcwd()
+            os.chdir(package)
+            task_id = package_util.get_task_id(False)
             for program in glob.glob(os.path.join(package, "prog", "*")):
-                if os.path.isfile(program) and os.path.splitext(program)[1] in [".c", ".cpp", ".py", ".java"]:
-                    files_to_compile.append((package, program))
+                for cls in [Solution, Ingen, Inwer, Checker]:
+                    try:
+                        prog = cls(executor, compiler_manager, task_id, program)
+                        files_to_compile.append((package, prog))
+                    except FileNotFoundError:
+                        pass
+            os.chdir(cwd)
 
         print("Precompiling solutions...")
         with mp.Pool(config.getoption("--cpus")) as pool:
@@ -92,8 +105,8 @@ def pytest_generate_tests(metafunc):
         time_tools = []
         if metafunc.config.getoption("time_tool") != []:
             time_tools = metafunc.config.getoption("time_tool")
-        elif sys.platform == "linux":
-            time_tools = ["oiejq", "time"]
+        elif util.is_linux():
+            time_tools = ["sio2jail", "time"]
         else:
             time_tools = ["time"]
         metafunc.parametrize("time_tool", time_tools)

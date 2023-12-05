@@ -1,7 +1,8 @@
 import os
 import tempfile
 
-from sinol_make.helpers import compile, paths
+from sinol_make.compilers.CompilersManager import CompilerManager
+from sinol_make.helpers import paths
 from sinol_make.helpers import cache
 from sinol_make.structs.cache_structs import CacheFile, CacheTest
 from sinol_make.structs.status_structs import ExecutionResult, Status
@@ -11,26 +12,28 @@ def test_compilation_caching():
     with tempfile.TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
         program = os.path.join(tmpdir, 'program.cpp')
+        exe = os.path.join(tmpdir, 'program')
         open(program, 'w').write('int main() { return 0; }')
+        compiler_manager = CompilerManager(None)
 
         assert cache.check_compiled(program) is None
 
-        assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
+        assert compiler_manager.compile(program, exe)[0] is not None
         exe_path = cache.check_compiled(program)
         assert exe_path is not None
 
-        assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
+        assert compiler_manager.compile(program, exe)[0] is not None
         exe_path2 = cache.check_compiled(program)
         assert exe_path2 == exe_path
 
         open(program, 'w').write('int main() { return 1; }')
         assert cache.check_compiled(program) is None
-        assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
+        assert compiler_manager.compile(program, exe)[0] is not None
         assert cache.check_compiled(program) is not None
 
         open(program, 'w').write('int main() { return 0; }')
         assert cache.check_compiled(program) is None
-        assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
+        assert compiler_manager.compile(program, exe)[0] is not None
         assert cache.check_compiled(program) is not None
 
 
@@ -72,7 +75,8 @@ def test_cache():
             f.write("int main() { return 0; }")
         cache_file.save("abc.cpp")
         assert cache.get_cache_file("abc.cpp") == cache_file
-        cache.save_compiled("abc.cpp", "abc.e", is_checker=True)
+        cache.save_compiled("abc.cpp", "abc.e")
+        cache.remove_results_cache()
         assert cache.get_cache_file("abc.cpp").tests == {}
 
         # Test that cache is cleared when extra compilation files change

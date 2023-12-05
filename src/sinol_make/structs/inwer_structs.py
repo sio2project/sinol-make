@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Dict
 
 from sinol_make.helpers import package_util
+from sinol_make.programs.inwer import Inwer
+from sinol_make.tests.input import InputTest
 
 
 @dataclass
@@ -45,9 +47,8 @@ class TableData:
 
 @dataclass
 class InwerExecution:
-    test_path: str
-    test_name: str
-    inwer_exe_path: str
+    test: InputTest
+    inwer: Inwer
 
 @dataclass
 class VerificationResult:

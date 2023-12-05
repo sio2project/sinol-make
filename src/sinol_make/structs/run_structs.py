@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 
+from sinol_make.programs.solution import Solution
+from sinol_make.tests.input import InputTest
+
 
 @dataclass
 class ExecutionData:
@@ -25,5 +28,12 @@ class PrintData:
     """
     Represents data for printing results of execution.
     """
-
     i: int
+
+
+@dataclass
+class RunExecution:
+    solution: Solution
+    test: InputTest
+    time_limit: float
+    memory_limit: float
