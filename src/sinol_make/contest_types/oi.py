@@ -16,6 +16,6 @@ class OIContest(DefaultContest):
         if result.Status != 'OK':
             return 0
         elif result.Time <= time_limit / 2.0:
-            return 100
+            return result.Points
         else:
             return 1 + int((result.Points - 1) * ((time_limit - result.Time) / (time_limit / 2.0)))
