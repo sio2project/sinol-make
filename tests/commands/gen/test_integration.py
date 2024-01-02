@@ -6,18 +6,27 @@ import glob
 from sinol_make import configure_parsers
 from sinol_make import util as sm_util
 from sinol_make.commands.gen import Command
+from sinol_make.commands.ingen import Command as IngenCommand
+from sinol_make.commands.outgen import Command as OutgenCommand
 from sinol_make.commands.gen import gen_util
 from sinol_make.helpers import package_util, paths, cache
 from tests.fixtures import *
 from tests import util
 
 
-def simple_run(arguments=None):
+def simple_run(arguments=None, command="gen"):
     if arguments is None:
         arguments = []
     parser = configure_parsers()
-    args = parser.parse_args(["gen"] + arguments)
-    command = Command()
+    args = parser.parse_args([command] + arguments)
+    if command == "gen":
+        command = Command()
+    elif command == "ingen":
+        command = IngenCommand()
+    elif command == "outgen":
+        command = OutgenCommand()
+    else:
+        raise ValueError("Invalid command")
     command.run(args)
 
 
@@ -119,6 +128,21 @@ def test_only_inputs_flag(create_package):
     assert len(outs) == 0
     assert not os.path.exists(os.path.join(create_package, "in", ".md5sums"))
 
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
+                         indirect=True)
+def test_ingen(create_package):
+    """
+    Test if `ingen` command works.
+    """
+    simple_run(None, "ingen")
+    ins = glob.glob(os.path.join(create_package, "in", "*.in"))
+    outs = glob.glob(os.path.join(create_package, "out", "*.out"))
+    assert len(ins) > 0
+    assert len(outs) == 0
+    assert not os.path.exists(os.path.join(create_package, "in", ".md5sums"))
+
+
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
                             indirect=True)
 def test_only_outputs_flag(create_package):
@@ -136,6 +160,30 @@ def test_only_outputs_flag(create_package):
         return os.path.join(create_package, "out", os.path.basename(file).replace(".in", ".out"))
 
     simple_run(["--only-outputs"])
+    ins = glob.glob(os.path.join(create_package, "in", "*.in"))
+    outs = glob.glob(os.path.join(create_package, "out", "*.out"))
+    assert len(ins) == 1
+    assert os.path.exists(in_to_out(in1))
+    assert len(outs) == 1
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
+                         indirect=True)
+def test_outgen(create_package):
+    """
+    Test if `outgen` command works.
+    """
+    simple_run(None, "ingen")
+    ins = glob.glob(os.path.join(create_package, "in", "*.in"))
+    outs = glob.glob(os.path.join(create_package, "out", "*.out"))
+    in1 = ins[0]
+    for file in ins[1:]:
+        os.unlink(file)
+    assert len(outs) == 0
+    def in_to_out(file):
+        return os.path.join(create_package, "out", os.path.basename(file).replace(".in", ".out"))
+
+    simple_run(None, "outgen")
     ins = glob.glob(os.path.join(create_package, "in", "*.in"))
     outs = glob.glob(os.path.join(create_package, "out", "*.out"))
     assert len(ins) == 1
