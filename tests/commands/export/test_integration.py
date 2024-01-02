@@ -107,3 +107,23 @@ def test_correct_permissions(create_package, capsys):
         assert os.path.exists(shell_ingen)
         st = os.stat(shell_ingen)
         assert st.st_mode & stat.S_IEXEC
+
+
+@pytest.mark.parametrize("create_package", [util.get_handwritten_package_path()], indirect=True)
+def test_handwritten_tests(create_package):
+    """
+    Test if handwritten tests are correctly copied.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["export"])
+    command = Command()
+    command.run(args)
+    task_id = package_util.get_task_id()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{task_id}.tgz', "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+
+        extracted = os.path.join(tmpdir, task_id)
+        for file in ["in/hwr0.in", "in/hwr0a.in", "out/hwr0.out", "out/hwr0a.out"]:
+            assert os.path.exists(os.path.join(extracted, file))
