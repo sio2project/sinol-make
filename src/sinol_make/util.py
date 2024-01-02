@@ -287,6 +287,8 @@ def change_stack_size_to_unlimited():
     """
     Function to change the stack size to unlimited.
     """
+    if is_macos():
+        return
     try:
         resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
     except (resource.error, ValueError):
