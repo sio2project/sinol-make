@@ -29,7 +29,7 @@ def test_large_failed_output(create_package):
     """
     with open(os.path.join(create_package, "prog", "geningen2.cpp"), "r") as f:
         code = f.read()
-    code.replace("<<", "<");
+    code = code.replace("<<", "<")
     with open(os.path.join(create_package, "prog", "geningen2.cpp"), "w") as f:
         f.write(code)
 
