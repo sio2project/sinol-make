@@ -7,8 +7,8 @@ import argparse
 import yaml
 
 from sinol_make import util
+from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_ingen, ingen_exists
 from sinol_make.helpers import package_util, parsers, paths
-from sinol_make.commands.gen import gen_util
 from sinol_make.interfaces.BaseCommand import BaseCommand
 
 
@@ -32,7 +32,7 @@ class Command(BaseCommand):
         Returns list of generated tests.
         Executes ingen to check what tests are generated.
         """
-        if not gen_util.ingen_exists(self.task_id):
+        if not ingen_exists(self.task_id):
             return []
 
         working_dir = paths.get_cache_path('export', 'tests')
@@ -40,9 +40,9 @@ class Command(BaseCommand):
             shutil.rmtree(working_dir)
         os.makedirs(working_dir)
 
-        ingen_path = gen_util.get_ingen(self.task_id)
-        ingen_exe = gen_util.compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
-        if not gen_util.run_ingen(ingen_exe, working_dir):
+        ingen_path = get_ingen(self.task_id)
+        ingen_exe = compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
+        if not run_ingen(ingen_exe, working_dir):
             util.exit_with_error('Failed to run ingen.')
 
         tests = glob.glob(os.path.join(working_dir, f'{self.task_id}*.in'))

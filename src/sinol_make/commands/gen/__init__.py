@@ -3,7 +3,6 @@ import argparse
 from sinol_make import util
 from sinol_make.commands.ingen import Command as IngenCommand
 from sinol_make.commands.outgen import Command as OutgenCommand
-from sinol_make.commands.gen import gen_util
 from sinol_make.helpers import parsers
 from sinol_make.interfaces.BaseCommand import BaseCommand
 
