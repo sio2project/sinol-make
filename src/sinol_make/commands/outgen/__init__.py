@@ -6,7 +6,7 @@ import yaml
 import multiprocessing as mp
 
 from sinol_make import util
-from sinol_make.commands.gen import gen_util
+from sinol_make.commands.outgen.outgen_util import get_correct_solution, compile_correct_solution, generate_output
 from sinol_make.structs.gen_structs import OutputGenerationArguments
 from sinol_make.helpers import parsers, package_util, cache
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
         with mp.Pool(self.args.cpus) as pool:
             results = []
-            for i, result in enumerate(pool.imap(gen_util.generate_output, arguments)):
+            for i, result in enumerate(pool.imap(generate_output, arguments)):
                 results.append(result)
                 if result:
                     print(util.info(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}'))
@@ -93,14 +93,14 @@ class Command(BaseCommand):
         package_util.validate_test_names(self.task_id)
         util.change_stack_size_to_unlimited()
         cache.check_correct_solution(self.task_id)
-        self.correct_solution = gen_util.get_correct_solution(self.task_id)
+        self.correct_solution = get_correct_solution(self.task_id)
 
         md5_sums, outputs_to_generate = self.calculate_md5_sums()
         if len(outputs_to_generate) == 0:
             print(util.info('All output files are up to date.'))
         else:
-            self.correct_solution_exe = gen_util.compile_correct_solution(self.correct_solution, self.args,
-                                                                          self.args.weak_compilation_flags)
+            self.correct_solution_exe = compile_correct_solution(self.correct_solution, self.args,
+                                                                 self.args.weak_compilation_flags)
             self.generate_outputs(outputs_to_generate)
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
                 yaml.dump(md5_sums, f)

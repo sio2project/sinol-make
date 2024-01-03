@@ -7,8 +7,8 @@ from sinol_make import configure_parsers
 from sinol_make import util as sm_util
 from sinol_make.commands.gen import Command
 from sinol_make.commands.ingen import Command as IngenCommand
+from sinol_make.commands.ingen.ingen_util import get_ingen
 from sinol_make.commands.outgen import Command as OutgenCommand
-from sinol_make.commands.gen import gen_util
 from sinol_make.helpers import package_util, paths, cache
 from tests.fixtures import *
 from tests import util
@@ -108,7 +108,7 @@ def test_shell_ingen_unchanged(create_package):
     """
     package_path = create_package
     task_id = package_util.get_task_id()
-    shell_ingen_path = gen_util.get_ingen(task_id)
+    shell_ingen_path = get_ingen(task_id)
     assert os.path.splitext(shell_ingen_path)[1] == ".sh"
     edited_time = os.path.getmtime(shell_ingen_path)
     simple_run()
