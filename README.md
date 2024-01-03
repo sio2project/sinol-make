@@ -71,11 +71,12 @@ cpu cores. You can check if you have them [like this](https://stackoverflow.com/
 Run `sinol-make run --help` to see available flags.
 - `sinol-make gen` -- Generate input files using ingen program (for example prog/abcingen.cpp for abc task). 
 Whenever the new input differs from the previous one, the model solution will be used to generate the new output file.
+You can also specify your ingen source file which will be used.
 Run `sinol-make gen --help` to see available flags.
 - `sinol-make ingen` -- Generate input files using ingen program (for example prog/abcingen.cpp for abc task).
+You can also specify your ingen source file which will be used.
 Run `sinol-make ingen --help` to see available flags.
 - `sinol-make outgen` -- Generate output files using the model solutions. Run `sinol-make outgen --help` to see available flags.
-You can also specify your ingen source file which will be used. Run `sinol-make gen --help` to see available flags.
 - `sinol-make inwer` -- Verifies whether input files are correct using your "inwer.cpp" program. You can specify what inwer
 program to use, what tests to check and how many CPUs to use. Run `sinol-make inwer --help` to see available flags.
 - `sinol-make export` -- Creates archive ready to upload to sio2 or szkopul. Run `sinol-make export --help` to see all available flags.
