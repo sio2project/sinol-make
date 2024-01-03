@@ -65,7 +65,9 @@ The availabe commands (see `sinol-make --help`) are:
 
 - `sinol-make run` -- Runs selected solutions (by default all solutions) on selected tests (by default all tests) with a given number
 of CPUs. Measures the solutions' time with oiejq, unless specified otherwise. After running the solutions, it
-compares the solutions' scores with the ones saved in config.yml.
+compares the solutions' scores with the ones saved in config.yml. If you're using oiejq, make sure you are not running on efficiency
+cpu cores. You can check if you have them [like this](https://stackoverflow.com/a/71282744). To run on normal cpu cores, use
+`taskset -c 8-15 sinol-make ...`, assuming that cpu cores 8-15 are not efficiency cores.
 Run `sinol-make run --help` to see available flags.
 - `sinol-make gen` -- Generate input files using ingen program (for example prog/abcingen.cpp for abc task). 
 Whenever the new input differs from the previous one, the model solution will be used to generate the new output file.
