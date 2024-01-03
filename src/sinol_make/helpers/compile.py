@@ -53,9 +53,9 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     for file in extra_compilation_files:
         shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
 
-    gcc_compilation_flags = '-Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
+    gcc_compilation_flags = ' -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
     if weak_compilation_flags:
-        gcc_compilation_flags = '-w'  # Disable all warnings
+        gcc_compilation_flags = ''  # Disable all warnings
 
     if compilers is None:
         compilers = Compilers()
@@ -65,13 +65,13 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     if ext == '.cpp':
         arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
-                    f'--std=c++20 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
+                    f'--std=c++20 -O3 -lm{gcc_compilation_flags} -fdiagnostics-color'.split(' ')
         if use_fsanitize:
             arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
     elif ext == '.c':
         arguments = [compilers.c_compiler_path or compiler.get_c_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
-                    f'--std=gnu99 -O3 -lm {gcc_compilation_flags} -fdiagnostics-color'.split(' ')
+                    f'--std=gnu99 -O3 -lm{gcc_compilation_flags} -fdiagnostics-color'.split(' ')
         if use_fsanitize:
             arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
     elif ext == '.py':
