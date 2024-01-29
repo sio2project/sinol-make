@@ -103,3 +103,11 @@ def test_verify_tests_order():
     command.tests.append("abc11ocen.in")
 
     command.verify_tests_order()
+
+    command.tests = ["abc0.in", "abc0a.in", "abc0b.in",
+                     "abc1.in", "abc1a.in", "abc1b.in"]
+    command.verify_tests_order()
+
+    command.tests.remove("abc0a.in")
+    with pytest.raises(SystemExit):
+        command.verify_tests_order()
