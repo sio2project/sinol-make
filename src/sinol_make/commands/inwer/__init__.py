@@ -143,6 +143,10 @@ class Command(BaseCommand):
             last_test = test
 
         def is_next(last, curr):
+            if last == "" and curr != "a":
+                return False
+            elif last == "":
+                return True
             i = len(last) - 1
             while i >= 0:
                 if last[i] != 'z':
