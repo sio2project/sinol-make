@@ -35,17 +35,22 @@ class Command(BaseCommand):
         if not ingen_exists(self.task_id):
             return []
 
-        working_dir = paths.get_cache_path('export', 'tests')
-        if os.path.exists(working_dir):
-            shutil.rmtree(working_dir)
-        os.makedirs(working_dir)
+        temp_package = paths.get_cache_path('export', 'tests')
+        if os.path.exists(temp_package):
+            shutil.rmtree(temp_package)
+        os.makedirs(temp_package)
+        in_dir = os.path.join(temp_package, 'in')
+        prog_dir = os.path.join(temp_package, 'prog')
+        os.makedirs(in_dir)
+        shutil.copytree(os.path.join(os.getcwd(), 'prog'), prog_dir)
 
         ingen_path = get_ingen(self.task_id)
+        ingen_path = os.path.join(prog_dir, os.path.basename(ingen_path))
         ingen_exe = compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
-        if not run_ingen(ingen_exe, working_dir):
+        if not run_ingen(ingen_exe, in_dir):
             util.exit_with_error('Failed to run ingen.')
 
-        tests = glob.glob(os.path.join(working_dir, f'{self.task_id}*.in'))
+        tests = glob.glob(os.path.join(in_dir, f'{self.task_id}*.in'))
         return [package_util.extract_test_id(test, self.task_id) for test in tests]
 
     def copy_package_required_files(self, target_dir: str):
