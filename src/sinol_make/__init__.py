@@ -9,7 +9,7 @@ import os
 from sinol_make import util, oiejq
 
 
-__version__ = "1.5.19"
+__version__ = "1.5.21"
 
 
 def configure_parsers():
