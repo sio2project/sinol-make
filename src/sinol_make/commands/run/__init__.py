@@ -53,7 +53,7 @@ def colorize_status(status):
 
 
 def update_group_status(group_status, new_status):
-    order = [Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK, Status.PENDING]
+    order = [Status.RV, Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK, Status.PENDING]
     if order.index(new_status) < order.index(group_status):
         return new_status
     return group_status
@@ -485,6 +485,9 @@ class Command(BaseCommand):
             result.Status = Status.ML
         elif getattr(result, "Status") is None:
             result.Status = Status.RE
+        elif result.Status == "RV":
+            result.Status = Status.RV
+            result.Error = "Lines:\n" + "\n".join(lines) + "\n\nOutput:\n" + "\n".join(output)
         elif result.Status == "OK":  # Here OK is a string, because it is set while parsing oiejq's output.
             if result.Time > time_limit:
                 result.Status = Status.TL
@@ -1132,7 +1135,8 @@ class Command(BaseCommand):
             for group in results[solution]:
                 for test in results[solution][group]:
                     if results[solution][group][test].Error is not None:
-                        error_msg += f'Solution {solution} had an error on test {test}: {results[solution][group][test].Error}\n'
+                        error_msg += (f'Solution {solution} had an error ({results[solution][group][test].Status})'
+                                      f' on test {test}: {results[solution][group][test].Error}\n')
         if error_msg != "":
             util.exit_with_error(error_msg)
 

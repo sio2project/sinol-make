@@ -5,6 +5,7 @@ from typing import List
 
 class Status(str, Enum):
     PENDING = "  "
+    RV = "RV"
     CE = "CE"
     TL = "TL"
     ML = "ML"
@@ -20,7 +21,9 @@ class Status(str, Enum):
 
     @staticmethod
     def from_str(status):
-        if status == "CE":
+        if status == "RV":
+            return Status.RV
+        elif status == "CE":
             return Status.CE
         elif status == "TL":
             return Status.TL
@@ -39,7 +42,7 @@ class Status(str, Enum):
 
     @staticmethod
     def possible_statuses():
-        return [Status.PENDING, Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK]
+        return [Status.PENDING, Status.RV, Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK]
 
 
 @dataclass
