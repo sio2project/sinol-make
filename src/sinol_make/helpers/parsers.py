@@ -23,3 +23,7 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
                         help='Java compiler to use (default: javac)')
     parser.add_argument('-W', '--weak-compilation-flags', dest='weak_compilation_flags', action='store_true',
                         help='disable all warning flags during C and C++ compilation')
+
+
+def add_verbose_argument(parser: argparse.ArgumentParser):
+    parser.add_argument('-v', '--verbose', action='store_true', help='verbose output (for debugging)')

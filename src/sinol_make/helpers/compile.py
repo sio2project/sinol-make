@@ -8,7 +8,7 @@ import yaml
 
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
-from sinol_make.helpers import paths
+from sinol_make.helpers import paths, verbose
 from sinol_make.helpers.cache import check_compiled, save_compiled
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
@@ -91,6 +91,7 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     else:
         raise CompilationError('Unknown file extension: ' + ext)
 
+    verbose.debug(f'Compiling {program} with arguments: {arguments}')
     process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = process.communicate()
     if compile_log is not None:

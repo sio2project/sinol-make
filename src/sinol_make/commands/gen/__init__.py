@@ -3,7 +3,7 @@ import argparse
 from sinol_make import util
 from sinol_make.commands.ingen import Command as IngenCommand
 from sinol_make.commands.outgen import Command as OutgenCommand
-from sinol_make.helpers import parsers
+from sinol_make.helpers import parsers, verbose
 from sinol_make.interfaces.BaseCommand import BaseCommand
 
 
@@ -36,9 +36,11 @@ class Command(BaseCommand):
                                  f'(default: {util.default_cpu_count()})',
                             default=util.default_cpu_count())
         parsers.add_compilation_arguments(parser)
+        parsers.add_verbose_argument(parser)
 
     def run(self, args: argparse.Namespace):
         util.exit_if_not_package()
+        verbose.set_verbose(args.verbose)
 
         self.args = args
         self.ins = args.only_inputs
