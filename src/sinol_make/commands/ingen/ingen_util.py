@@ -82,6 +82,7 @@ def run_ingen(ingen_exe, working_dir=None):
         st = os.stat(ingen_exe)
         os.chmod(ingen_exe, st.st_mode | stat.S_IEXEC)
 
+    print(util.bold(' Ingen output '.center(util.get_terminal_size()[1], '=')))
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                cwd=working_dir, shell=is_shell)
     while process.poll() is None:
@@ -89,5 +90,6 @@ def run_ingen(ingen_exe, working_dir=None):
 
     print(process.stdout.read().decode('utf-8'), end='')
     exit_code = process.returncode
+    print(util.bold(' End of ingen output '.center(util.get_terminal_size()[1], '=')))
 
     return exit_code == 0
