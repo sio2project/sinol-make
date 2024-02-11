@@ -3,6 +3,7 @@ import glob
 import stat
 import shutil
 import tarfile
+import tempfile
 import argparse
 import yaml
 
@@ -10,6 +11,7 @@ from sinol_make import util
 from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_ingen, ingen_exists
 from sinol_make.helpers import package_util, parsers, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
+from sinol_make.commands.outgen import Command as OutgenCommand, compile_correct_solution, get_correct_solution
 
 
 class Command(BaseCommand):
@@ -25,7 +27,53 @@ class Command(BaseCommand):
             self.get_name(),
             help='Create archive for oioioi upload',
             description='Creates archive in the current directory ready to upload to sio2 or szkopul.')
+        parser.add_argument('-c', '--cpus', type=int,
+                            help=f'number of cpus to use to generate output files '
+                                 f'(default: {util.default_cpu_count()})',
+                            default=util.default_cpu_count())
         parsers.add_compilation_arguments(parser)
+
+    def generate_input_tests(self):
+        print('Generating tests...')
+        temp_package = paths.get_cache_path('export', 'tests')
+        if os.path.exists(temp_package):
+            shutil.rmtree(temp_package)
+        os.makedirs(temp_package)
+        in_dir = os.path.join(temp_package, 'in')
+        os.makedirs(in_dir)
+        out_dir = os.path.join(temp_package, 'out')
+        os.makedirs(out_dir)
+        prog_dir = os.path.join(temp_package, 'prog')
+        if os.path.exists(os.path.join(os.getcwd(), 'prog')):
+            shutil.copytree(os.path.join(os.getcwd(), 'prog'), prog_dir)
+
+        if ingen_exists(self.task_id):
+            ingen_path = get_ingen(self.task_id)
+            ingen_path = os.path.join(prog_dir, os.path.basename(ingen_path))
+            ingen_exe = compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
+            if not run_ingen(ingen_exe, in_dir):
+                util.exit_with_error('Failed to run ingen.')
+
+    def generate_output_files(self):
+        tests = paths.get_cache_path('export', 'tests')
+        in_dir = os.path.join(tests, 'in')
+        os.makedirs(in_dir, exist_ok=True)
+        out_dir = os.path.join(tests, 'out')
+        os.makedirs(out_dir, exist_ok=True)
+
+        # Only example output tests are required for export.
+        ocen_tests = glob.glob(os.path.join(in_dir, f'{self.task_id}0*.in')) + \
+                     glob.glob(os.path.join(in_dir, f'{self.task_id}*ocen.in'))
+        outputs = []
+        for test in ocen_tests:
+            outputs.append(os.path.join(out_dir, os.path.basename(test).replace('.in', '.out')))
+        if len(outputs) > 0:
+            outgen = OutgenCommand()
+            correct_solution_exe = compile_correct_solution(get_correct_solution(self.task_id), self.args,
+                                                            self.args.weak_compilation_flags)
+            outgen.args = self.args
+            outgen.correct_solution_exe = correct_solution_exe
+            outgen.generate_outputs(outputs)
 
     def get_generated_tests(self):
         """
@@ -35,23 +83,34 @@ class Command(BaseCommand):
         if not ingen_exists(self.task_id):
             return []
 
-        temp_package = paths.get_cache_path('export', 'tests')
-        if os.path.exists(temp_package):
-            shutil.rmtree(temp_package)
-        os.makedirs(temp_package)
-        in_dir = os.path.join(temp_package, 'in')
-        prog_dir = os.path.join(temp_package, 'prog')
-        os.makedirs(in_dir)
-        shutil.copytree(os.path.join(os.getcwd(), 'prog'), prog_dir)
-
-        ingen_path = get_ingen(self.task_id)
-        ingen_path = os.path.join(prog_dir, os.path.basename(ingen_path))
-        ingen_exe = compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
-        if not run_ingen(ingen_exe, in_dir):
-            util.exit_with_error('Failed to run ingen.')
-
+        in_dir = paths.get_cache_path('export', 'tests', 'in')
         tests = glob.glob(os.path.join(in_dir, f'{self.task_id}*.in'))
         return [package_util.extract_test_id(test, self.task_id) for test in tests]
+
+    def create_ocen(self, target_dir: str):
+        """
+        Creates ocen archive for sio2.
+        :param target_dir: Path to exported package.
+        """
+        attachments_dir = os.path.join(target_dir, 'attachments')
+        if not os.path.exists(attachments_dir):
+            os.makedirs(attachments_dir)
+        tests_dir = paths.get_cache_path('export', 'tests')
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ocen_dir = os.path.join(tmpdir, self.task_id)
+            os.makedirs(ocen_dir)
+            in_dir = os.path.join(ocen_dir, 'in')
+            os.makedirs(in_dir)
+            out_dir = os.path.join(ocen_dir, 'out')
+            os.makedirs(out_dir)
+            for ext in ['in', 'out']:
+                for test in glob.glob(os.path.join(tests_dir, ext, f'{self.task_id}0*.{ext}')) + \
+                            glob.glob(os.path.join(tests_dir, ext, f'{self.task_id}*ocen.{ext}')):
+                    shutil.copy(test, os.path.join(ocen_dir, ext, os.path.basename(test)))
+
+            with tarfile.open(os.path.join(attachments_dir, f'{self.task_id}ocen.tgz'), "w:gz") as tar:
+                tar.add(ocen_dir, arcname=os.path.basename(ocen_dir))
 
     def copy_package_required_files(self, target_dir: str):
         """
@@ -79,7 +138,6 @@ class Command(BaseCommand):
             for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}0*.{ext}')):
                 shutil.copy(test, os.path.join(target_dir, ext))
 
-        print('Generating tests...')
         generated_tests = self.get_generated_tests()
         tests_to_copy = []
         for ext in ['in', 'out']:
@@ -87,11 +145,17 @@ class Command(BaseCommand):
                 if package_util.extract_test_id(test, self.task_id) not in generated_tests:
                     tests_to_copy.append((ext, test))
 
+        cache_test_dir = paths.get_cache_path('export', 'tests')
         if len(tests_to_copy) > 0:
             print(util.warning(f'Found {len(tests_to_copy)} tests that are not generated by ingen.'))
             for test in tests_to_copy:
                 print(util.warning(f'Copying {os.path.basename(test[1])}...'))
                 shutil.copy(test[1], os.path.join(target_dir, test[0], os.path.basename(test[1])))
+                shutil.copy(test[1], os.path.join(cache_test_dir, test[0], os.path.basename(test[1])))
+
+        self.generate_output_files()
+        print('Generating ocen archive...')
+        self.create_ocen(target_dir)
 
     def clear_files(self, target_dir: str):
         """
@@ -112,6 +176,7 @@ class Command(BaseCommand):
         with open(os.path.join(target_dir, 'makefile.in'), 'w') as f:
             cxx_flags = '-std=c++20'
             c_flags = '-std=gnu99'
+
             def format_multiple_arguments(obj):
                 if isinstance(obj, str):
                     return obj
@@ -163,6 +228,7 @@ class Command(BaseCommand):
         os.makedirs(export_package_path)
 
         util.change_stack_size_to_unlimited()
+        self.generate_input_tests()
         self.copy_package_required_files(export_package_path)
         self.clear_files(export_package_path)
         self.create_makefile_in(export_package_path, config)

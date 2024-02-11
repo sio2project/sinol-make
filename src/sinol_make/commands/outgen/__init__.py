@@ -38,7 +38,8 @@ class Command(BaseCommand):
         arguments = []
         for output in outputs_to_generate:
             output_basename = os.path.basename(output)
-            input = os.path.join(os.getcwd(), 'in', os.path.splitext(output_basename)[0] + '.in')
+            in_dir = os.path.join("/", *(os.path.abspath(output).split(os.sep)[:-2]), 'in')
+            input = os.path.join(in_dir, os.path.splitext(output_basename)[0] + '.in')
             arguments.append(OutputGenerationArguments(self.correct_solution_exe, input, output))
 
         with mp.Pool(self.args.cpus) as pool:
@@ -55,11 +56,14 @@ class Command(BaseCommand):
             else:
                 print(util.info('Successfully generated all output files.'))
 
-    def calculate_md5_sums(self):
+    def calculate_md5_sums(self, tests=None):
         """
         Calculates md5 sums for each test.
         :return: Tuple (dictionary of md5 sums, list of outputs tests that need to be generated)
         """
+        if tests is None:
+            tests = glob.glob(os.path.join(os.getcwd(), 'in', '*.in'))
+
         old_md5_sums = None
         try:
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'r') as f:
@@ -71,7 +75,7 @@ class Command(BaseCommand):
 
         md5_sums = {}
         outputs_to_generate = []
-        for file in glob.glob(os.path.join(os.getcwd(), 'in', '*.in')):
+        for file in tests:
             basename = os.path.basename(file)
             output_basename = os.path.splitext(os.path.basename(basename))[0] + '.out'
             output_path = os.path.join(os.getcwd(), 'out', output_basename)
