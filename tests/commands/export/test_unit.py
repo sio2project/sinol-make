@@ -12,6 +12,10 @@ def _create_package(tmpdir, path):
     os.chdir(package_path)
     command = get_command()
     util.create_ins_outs(package_path)
+    command.args = argparse.Namespace(cpus=1, weak_compilation_flags=False,
+                                      cpp_compiler_path=compiler.get_cpp_compiler_path(),
+                                      c_compiler_path=None, python_interpreter_path=None,
+                                      java_compiler_path=None)
     return command
 
 
@@ -21,9 +25,11 @@ def test_get_generated_tests():
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         command = _create_package(tmpdir, util.get_handwritten_package_path())
+        command.generate_input_tests()
         assert set(command.get_generated_tests()) == {"1a", "2a"}
 
         command = _create_package(tmpdir, util.get_simple_package_path())
+        command.generate_input_tests()
         assert set(command.get_generated_tests()) == {"1a", "2a", "3a", "4a"}
 
 
@@ -36,6 +42,7 @@ def test_copy_package_required_files():
         res_dir = os.path.join(tmpdir, "res")
         os.mkdir(res_dir)
         command = _create_package(tmpdir, util.get_handwritten_package_path())
+        command.generate_input_tests()
         command.copy_package_required_files(res_dir)
 
         assert_configs_equal(os.getcwd(), res_dir)
@@ -47,6 +54,7 @@ def test_copy_package_required_files():
         shutil.rmtree(res_dir)
         os.mkdir(res_dir)
         command = _create_package(tmpdir, util.get_simple_package_path())
+        command.generate_input_tests()
         command.copy_package_required_files(res_dir)
 
         assert_configs_equal(os.getcwd(), res_dir)
