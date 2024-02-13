@@ -302,9 +302,7 @@ class Command(BaseCommand):
 
 
     def get_group(self, test_path):
-        if package_util.extract_test_id(test_path, self.ID).endswith("ocen"):
-            return 0
-        return int("".join(filter(str.isdigit, package_util.extract_test_id(test_path, self.ID))))
+        return package_util.get_group(test_path, self.ID)
 
 
     def get_solution_from_exe(self, executable):
