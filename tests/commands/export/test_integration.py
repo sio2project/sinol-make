@@ -3,6 +3,7 @@ import stat
 import glob
 import pytest
 import tarfile
+import zipfile
 import tempfile
 
 from sinol_make import configure_parsers
@@ -153,12 +154,12 @@ def test_ocen_archive(create_package):
             tests = [os.path.basename(f) for f in glob.glob(os.path.join(package_path, ext, f'*.{ext}'))]
             assert set(tests) == set(in_handwritten if ext == "in" else out_handwritten)
 
-        ocen_tar = os.path.join(package_path, "attachments", f"{task_id}ocen.tgz")
-        assert os.path.exists(ocen_tar)
+        ocen_archive = os.path.join(package_path, "attachments", f"{task_id}ocen.zip")
+        assert os.path.exists(ocen_archive)
         ocen_dir = os.path.join(package_path, "ocen_dir")
 
-        with tarfile.open(ocen_tar, "r") as tar:
-            sinol_util.extract_tar(tar, ocen_dir)
+        with zipfile.ZipFile(ocen_archive, "r") as zip:
+            zip.extractall(ocen_dir)
 
         for ext in ["in", "out"]:
             tests = [os.path.basename(f) for f in glob.glob(os.path.join(ocen_dir, task_id, ext, f'*.{ext}'))]
