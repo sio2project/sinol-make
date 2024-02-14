@@ -148,8 +148,11 @@ def print_compile_log(compile_log_path: str):
     Print the first 500 lines of compilation log
     :param compile_log_path: path to the compilation log
     """
+    lines_to_print = 500
 
     with open(compile_log_path, 'r') as compile_log:
         lines = compile_log.readlines()
-        for line in lines[:500]:
+        for line in lines[:lines_to_print]:
             print(line, end='')
+        if len(lines) > lines_to_print:
+            print(util.error(f"Compilation log too long. Whole log file at: {compile_log_path}"))
