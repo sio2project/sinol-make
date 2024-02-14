@@ -34,6 +34,14 @@ class Command(BaseCommand):
         print(util.info(f'Compilation successful for file {os.path.basename(file_path)}.'))
         return True
 
+    def make_file(self, file_path):
+        """
+        Compile the file two times to get the references right.
+        """
+        if not self.compile_file(file_path):
+            return False
+        return self.compile_file(file_path)
+
     def move_logs(self):
         output_dir = paths.get_cache_path('doc_logs')
         os.makedirs(output_dir, exist_ok=True)
@@ -69,7 +77,7 @@ class Command(BaseCommand):
         original_cwd = os.getcwd()
         failed = []
         for file in self.files:
-            if not self.compile_file(file):
+            if not self.make_file(file):
                 failed.append(file)
         os.chdir(original_cwd)
 
