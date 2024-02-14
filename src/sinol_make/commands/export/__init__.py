@@ -109,8 +109,7 @@ class Command(BaseCommand):
                             glob.glob(os.path.join(tests_dir, ext, f'{self.task_id}*ocen.{ext}')):
                     shutil.copy(test, os.path.join(ocen_dir, ext, os.path.basename(test)))
 
-            with tarfile.open(os.path.join(attachments_dir, f'{self.task_id}ocen.tgz'), "w:gz") as tar:
-                tar.add(ocen_dir, arcname=os.path.basename(ocen_dir))
+            shutil.make_archive(os.path.join(attachments_dir, f'{self.task_id}ocen'), 'zip', tmpdir)
 
     def copy_package_required_files(self, target_dir: str):
         """
