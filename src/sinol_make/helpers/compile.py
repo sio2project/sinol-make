@@ -9,7 +9,7 @@ import yaml
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
 from sinol_make.helpers import paths
-from sinol_make.helpers.cache import check_compiled, save_compiled
+from sinol_make.helpers.cache import check_compiled, save_compiled, package_util
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
@@ -120,8 +120,7 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
     os.makedirs(paths.get_executables_path(), exist_ok=True)
     os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
 
-    with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
-        config = yaml.load(config_file, Loader=yaml.FullLoader)
+    config = package_util.get_config()
 
     extra_compilation_files = [os.path.join(os.getcwd(), "prog", file)
                                for file in config.get("extra_compilation_files", [])]
