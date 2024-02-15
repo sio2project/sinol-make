@@ -91,7 +91,6 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
     else:
         raise CompilationError('Unknown file extension: ' + ext)
 
-    verbose.debug(f'Compiling {program} with arguments: {arguments}')
     process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = process.communicate()
     if compile_log is not None:

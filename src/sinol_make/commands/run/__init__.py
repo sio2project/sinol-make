@@ -7,21 +7,25 @@ import threading
 import time
 import psutil
 import glob
+import logging
 from io import StringIO
 from typing import Dict
 
 from sinol_make import contest_types, oiejq
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
-from sinol_make.helpers.parsers import add_compilation_arguments
+from sinol_make.helpers.parsers import add_compilation_arguments, add_verbose_argument
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
-from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
+from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache, verbose
 from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
     TotalPointsChange
 import sinol_make.util as util
 import yaml, os, collections, sys, re, math, dictdiffer
 import multiprocessing as mp
+
+
+logger = logging.getLogger(__name__)
 
 
 def color_memory(memory, limit):
@@ -286,6 +290,7 @@ class Command(BaseCommand):
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
         add_compilation_arguments(parser)
+        add_verbose_argument(parser)
 
     def parse_time(self, time_str):
         if len(time_str) < 3: return -1
@@ -336,17 +341,26 @@ class Command(BaseCommand):
     def compile_solutions(self, solutions, is_checker=False):
         os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
         os.makedirs(paths.get_executables_path(), exist_ok=True)
+        logger.debug(f"Compiling solutions: {solutions}...")
         print("Compiling %d solutions..." % len(solutions))
         args = [(solution, True, is_checker) for solution in solutions]
+        logger.debug(f"Compilation arguments: {args}")
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.starmap(self.compile, args)
         return compilation_results
 
 
     def compile(self, solution, use_extras = False, is_checker = False):
+        curr_proc = mp.current_process()
+        os.makedirs(paths.get_cache_path('logs', 'compilation'), exist_ok=True)
+        logging.basicConfig(level=logging.DEBUG, filename=paths.get_cache_path('logs', 'compilation', f'{curr_proc.name}.log'),
+                            filemode='a', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        logging.debug(f"Compiling {solution} in process {curr_proc.name}...")
         compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = paths.get_executables_path(package_util.get_executable(solution))
+
+        logging.debug(f"Source file: {source_file}, output: {output}")
 
         extra_compilation_args = []
         extra_compilation_files = []
@@ -361,6 +375,7 @@ class Command(BaseCommand):
             for file in self.config.get("extra_compilation_files", []):
                 extra_compilation_files.append(os.path.join(os.getcwd(), "prog", file))
 
+        logging.debug(f"Extra compilation args: {extra_compilation_args}, extra compilation files: {extra_compilation_files}")
         try:
             with open(compile_log_file, "w") as compile_log:
                 compile.compile(source_file, output, self.compilers, compile_log, self.args.weak_compilation_flags,
@@ -431,12 +446,17 @@ class Command(BaseCommand):
         env = os.environ.copy()
         env["MEM_LIMIT"] = f'{memory_limit}K'
         env["MEASURE_MEM"] = "1"
+        logging.debug(f"Executing command: {command}")
+        logging.debug(f"Env: {env}")
+        out = subprocess.run("ps aux", shell=True, capture_output=True, text=True)
+        logging.debug("ps aux: " + out.stdout)
 
         timeout = False
         with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file, \
                 open(result_file_path, "w") as result_file:
             process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=output_file,
                                        stderr=result_file, env=env, preexec_fn=os.setsid)
+            logging.debug(f"Process PID: {process.pid}")
 
             def sigint_handler(signum, frame):
                 try:
@@ -445,12 +465,16 @@ class Command(BaseCommand):
                     pass
                 sys.exit(1)
             signal.signal(signal.SIGINT, sigint_handler)
+            logging.debug(f"Signal handler set")
 
             try:
+                logging.debug("Waiting for process to finish...")
                 process.wait(timeout=hard_time_limit)
             except subprocess.TimeoutExpired:
                 timeout = True
+                logging.debug("Process timed out")
                 try:
+                    logging.debug(f"Killing. os.getpgid(process.pid): {os.getpgid(process.pid)}")
                     os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                 except ProcessLookupError:
                     pass
@@ -461,6 +485,7 @@ class Command(BaseCommand):
         with open(output_file_path, "r") as output_file:
             output = output_file.read()
         result = ExecutionResult()
+        logging.debug(f"oiejq output: {lines}")
 
         if not timeout:
             lines = lines.splitlines()
@@ -476,6 +501,7 @@ class Command(BaseCommand):
                         result.Memory = self.parse_memory(value)
                     else:
                         setattr(result, key, value)
+            logging.debug(f"Result after parsing oiejq output: {result}")
 
         if timeout:
             result.Status = Status.TL
@@ -493,6 +519,7 @@ class Command(BaseCommand):
             else:
                 try:
                     correct, result.Points = self.check_output(name, input_file_path, output_file_path, output, answer_file_path)
+                    logging.debug(f"correct: {correct}, result.Points: {result.Points}")
                     if not correct:
                         result.Status = Status.WA
                 except CheckerOutputException as e:
@@ -501,6 +528,7 @@ class Command(BaseCommand):
         else:
             result.Status = result.Status[:2]
 
+        logging.debug(f"Returning result: {result}")
         return result
 
 
@@ -512,13 +540,18 @@ class Command(BaseCommand):
             time_name = 'time'
         elif sys.platform == 'win32' or sys.platform == 'cygwin':
             raise Exception("Measuring time with GNU time on Windows is not supported.")
+        logging.debug(f"Executing {executable} with time command: {time_name}")
+        out = subprocess.run("ps aux", shell=True, capture_output=True, text=True)
+        logging.debug("ps aux: " + out.stdout)
 
         command = [f'{time_name}', '-f', '%U\\n%M\\n%x', '-o', result_file_path, executable]
+        logging.debug(f"Command: {command}")
         timeout = False
         mem_limit_exceeded = False
         with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
             process = subprocess.Popen(command, stdin=input_file, stdout=output_file, stderr=subprocess.DEVNULL,
                                        preexec_fn=os.setsid)
+            logging.debug(f"Process PID: {process.pid}")
 
             def sigint_handler(signum, frame):
                 try:
@@ -527,6 +560,7 @@ class Command(BaseCommand):
                     pass
                 sys.exit(1)
             signal.signal(signal.SIGINT, sigint_handler)
+            logging.debug(f"Signal handler set")
 
             start_time = time.time()
             while process.poll() is None:
@@ -538,6 +572,7 @@ class Command(BaseCommand):
                             executable_process = child
                             break
                     if executable_process is not None and executable_process.memory_info().rss > memory_limit * 1024:
+                        logging.debug(f"Memory limit exceeded: {executable_process.memory_info().rss} > {memory_limit * 1024}")
                         try:
                             os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                         except ProcessLookupError:
@@ -548,6 +583,7 @@ class Command(BaseCommand):
                     pass
 
                 if time.time() - start_time > hard_time_limit:
+                    logging.debug(f"Hard time limit exceeded: {time.time() - start_time} > {hard_time_limit}")
                     try:
                         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                     except ProcessLookupError:
@@ -563,6 +599,7 @@ class Command(BaseCommand):
             output = output.splitlines()
             with open(result_file_path, "r") as result_file:
                 lines = result_file.readlines()
+            logging.debug(f"time output: {lines}")
             if len(lines) == 3:
                 """
                 If programs runs successfully, the output looks like this:
@@ -609,6 +646,7 @@ class Command(BaseCommand):
                 result.Status = Status.CE
                 result.Error = e.message
 
+        logging.debug(f"Returning result: {result}")
         return result
 
 
@@ -616,12 +654,18 @@ class Command(BaseCommand):
         """
         Run an execution and return the result as ExecutionResult object.
         """
+        logging.basicConfig(level=logging.DEBUG, filemode='a', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                            filename=paths.get_cache_path('logs', 'execution', f'{mp.current_process().name}.log'))
+        logging.debug("=" * 80)
 
         (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
+        logging.debug(f"Running solution: {name}, {executable}, {test}, {time_limit}, {memory_limit}, {timetool_path}")
         file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test, self.ID))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
+        logging.debug(f"output_file: {output_file}, result_file: {result_file}, hard time limit: {hard_time_limit_in_s}")
+        logging.debug(f"timetool: {self.timetool_name}")
 
         if self.timetool_name == 'oiejq':
             return self.execute_oiejq(name, timetool_path, executable, result_file, test, output_file, self.get_output_file(test),
@@ -667,8 +711,11 @@ class Command(BaseCommand):
         executions.sort(key = lambda x: (package_util.get_executable_key(x[1], self.ID), x[2]))
         program_groups_scores = collections.defaultdict(dict)
         print_data = PrintData(0)
+        logger.debug(f"Executions: {executions}")
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
+        logger.debug(f"Has terminal: {has_terminal}, terminal width: {terminal_width}, terminal height: {terminal_height}")
+        os.makedirs(paths.get_cache_path('logs', 'execution'), exist_ok=True)
 
         if has_terminal:
             run_event = threading.Event()
@@ -684,7 +731,9 @@ class Command(BaseCommand):
         try:
             for i, result in enumerate(pool.imap(self.run_solution, executions)):
                 (name, executable, test, time_limit, memory_limit) = executions[i][:5]
+                logger.debug(f"Got result: {name}, {executable}, {test}, {time_limit}, {memory_limit}")
                 contest_points = self.contest.get_test_score(result, time_limit, memory_limit)
+                logger.debug(f"Contest points: {contest_points}")
                 result.Points = contest_points
                 all_results[name][self.get_group(test)][test] = result
                 print_data.i = i
@@ -719,6 +768,8 @@ class Command(BaseCommand):
         if keyboard_interrupt:
             util.exit_with_error("Stopped due to keyboard interrupt.")
 
+        logger.debug(f"Program groups scores: {program_groups_scores}")
+        logger.debug(f"All results: {all_results}")
         return program_groups_scores, all_results
 
     def compile_and_run(self, solutions):
@@ -728,6 +779,7 @@ class Command(BaseCommand):
                 self.failed_compilations.append(solutions[i])
         os.makedirs(paths.get_executions_path(), exist_ok=True)
         executables = [paths.get_executables_path(package_util.get_executable(solution)) for solution in solutions]
+        logger.debug(f"Executables: {executables}")
         compiled_commands = zip(solutions, executables, compilation_results)
         names = solutions
         return self.run_solutions(compiled_commands, names, solutions)
@@ -1004,10 +1056,12 @@ class Command(BaseCommand):
         self.ID = package_util.get_task_id()
         self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
         self.SOLUTIONS_RE = package_util.get_solutions_re(self.ID)
+        logging.debug(f"Task id: {self.ID}")
 
 
     def validate_arguments(self, args):
         compilers = compiler.verify_compilers(args, package_util.get_solutions(self.ID, None))
+        logger.debug(f"Compilers: {compilers}")
 
         def use_oiejq():
             timetool_path = None
@@ -1036,6 +1090,7 @@ class Command(BaseCommand):
 
         timetool_path, timetool_name = None, None
         use_default_timetool = use_oiejq if util.is_linux() else use_time
+        logger.debug(f"Default timetool: {use_default_timetool}")
 
         if args.time_tool is None and self.config.get('sinol_undocumented_time_tool', '') != '':
             if self.config.get('sinol_undocumented_time_tool', '') == 'oiejq':
@@ -1052,6 +1107,7 @@ class Command(BaseCommand):
             timetool_path, timetool_name = use_time()
         else:
             util.exit_with_error('Invalid time tool specified.')
+        logger.debug(f"Timetool path: {timetool_path}, timetool name: {timetool_name}")
         return compilers, timetool_path, timetool_name
 
     def exit(self):
@@ -1147,6 +1203,8 @@ class Command(BaseCommand):
     def run(self, args):
         util.exit_if_not_package()
 
+        verbose.set_verbose(args.verbose)
+        logger.debug(f"Running in {os.getcwd()}")
         self.set_constants()
         package_util.validate_test_names(self.ID)
         self.args = args
@@ -1155,11 +1213,13 @@ class Command(BaseCommand):
                 self.config = yaml.load(config, Loader=yaml.FullLoader)
             except AttributeError:
                 self.config = yaml.load(config)
+        logging.debug(f"Config: {self.config}")
 
         try:
             self.contest = contest_types.get_contest_type()
         except UnknownContestType as e:
             util.exit_with_error(str(e))
+        logging.debug(f"Contest type: {self.contest}")
 
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')
@@ -1169,26 +1229,32 @@ class Command(BaseCommand):
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or util.default_cpu_count()
+        logger.debug(F"Using {self.cpus} CPUs")
         cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
         cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
+            logger.debug(f"Checker found: {os.path.basename(checker[0])}")
             print(util.info("Checker found: %s" % os.path.basename(checker[0])))
             self.checker = checker[0]
             self.compile_checker()
         else:
+            logger.debug("No checker found.")
             self.checker = None
 
         lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0
+        logger.debug(f"Lib files: {lib}")
 
         self.tests = package_util.get_tests(self.ID, self.args.tests)
+        logger.debug(f"Tests: {self.tests}")
         self.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in self.tests}
         self.check_are_any_tests_to_run()
         self.set_scores()
         self.failed_compilations = []
         solutions = package_util.get_solutions(self.ID, self.args.solutions)
+        logger.debug(f"Solutions: {solutions}")
 
         util.change_stack_size_to_unlimited()
         for solution in solutions:

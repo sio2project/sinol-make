@@ -3,8 +3,7 @@
 import argcomplete
 import traceback
 import argparse
-import sys
-import os
+import logging
 
 from sinol_make import util, oiejq
 
@@ -76,5 +75,6 @@ def main():
         exit(err.code)
     except:
         print(traceback.format_exc())
+        logging.debug(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'
                              'If that is a bug, please report it or submit a bugfix: https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')

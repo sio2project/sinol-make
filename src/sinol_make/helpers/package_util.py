@@ -2,12 +2,16 @@ import os
 import re
 import yaml
 import glob
+import logging
 import fnmatch
 from enum import Enum
 from typing import List, Union, Dict, Any
 
 from sinol_make import util
 from sinol_make.helpers import paths
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_task_id() -> str:
@@ -266,11 +270,13 @@ def validate_test_names(task_id):
 
     in_test_re = re.compile(r'^(%s(([0-9]+)([a-z]?[a-z0-9]*))).in$' % (re.escape(task_id)))
     invalid_in_tests = get_invalid_files(os.path.join("in", "*.in"), in_test_re)
+    logger.debug(f'Invalid input tests: {invalid_in_tests}')
     if len(invalid_in_tests) > 0:
         util.exit_with_error(f'Input tests with invalid names: {", ".join(invalid_in_tests)}.')
 
     out_test_re = re.compile(r'^(%s(([0-9]+)([a-z]?[a-z0-9]*))).out$' % (re.escape(task_id)))
     invalid_out_tests = get_invalid_files(os.path.join("out", "*.out"), out_test_re)
+    logger.debug(f'Invalid output tests: {invalid_out_tests}')
     if len(invalid_out_tests) > 0:
         util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')
 
