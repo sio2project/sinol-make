@@ -42,7 +42,7 @@ def extract_test_id(test_path, task_id):
 def get_group(test_path, task_id):
     if extract_test_id(test_path, task_id).endswith("ocen"):
         return 0
-    return int("".join(filter(str.isdigit, extract_test_id(test_path, task_id))))
+    return int("".join(re.search(r'\d+',extract_test_id(test_path, task_id)).group()))
 
 
 def get_groups(tests, task_id):

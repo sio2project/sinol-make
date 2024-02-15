@@ -3,6 +3,7 @@ import stat
 import glob
 import pytest
 import tarfile
+import zipfile
 import tempfile
 
 from sinol_make import configure_parsers
@@ -127,3 +128,39 @@ def test_handwritten_tests(create_package):
         extracted = os.path.join(tmpdir, task_id)
         for file in ["in/hwr0.in", "in/hwr0a.in", "out/hwr0.out", "out/hwr0a.out"]:
             assert os.path.exists(os.path.join(extracted, file))
+
+
+@pytest.mark.parametrize("create_package", [util.get_ocen_package_path()], indirect=True)
+def test_ocen_archive(create_package):
+    """
+    Test creation of ocen archive.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["export"])
+    command = Command()
+    command.run(args)
+    task_id = package_util.get_task_id()
+    in_handwritten = ["ocen0.in", "ocen0a.in", "ocen1a.in", "ocen1ocen.in"]
+    out_handwritten = ["ocen0.out"]
+    ocen_tests = ["ocen0", "ocen0a", "ocen0b", "ocen1ocen", "ocen2ocen"]
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        package_path = os.path.join(tmpdir, task_id)
+        os.mkdir(package_path)
+        with tarfile.open(f'{task_id}.tgz', "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+
+        for ext in ["in", "out"]:
+            tests = [os.path.basename(f) for f in glob.glob(os.path.join(package_path, ext, f'*.{ext}'))]
+            assert set(tests) == set(in_handwritten if ext == "in" else out_handwritten)
+
+        ocen_archive = os.path.join(package_path, "attachments", f"{task_id}ocen.zip")
+        assert os.path.exists(ocen_archive)
+        ocen_dir = os.path.join(package_path, "ocen_dir")
+
+        with zipfile.ZipFile(ocen_archive, "r") as zip:
+            zip.extractall(ocen_dir)
+
+        for ext in ["in", "out"]:
+            tests = [os.path.basename(f) for f in glob.glob(os.path.join(ocen_dir, task_id, ext, f'*.{ext}'))]
+            assert set(tests) == set([f'{test}.{ext}' for test in ocen_tests])

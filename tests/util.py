@@ -135,6 +135,14 @@ def get_large_output_package_path():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "large_output")
 
+
+def get_ocen_package_path():
+    """
+    Get path to package for testing ocen archive creation (/tests/packages/ocen)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "ocen")
+
+
 def create_ins(package_path, task_id):
     """
     Create .in files for package.

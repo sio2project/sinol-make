@@ -8,7 +8,7 @@ import logging
 from sinol_make import util, oiejq
 
 
-__version__ = "1.5.22"
+__version__ = "1.5.25"
 
 
 def configure_parsers():
