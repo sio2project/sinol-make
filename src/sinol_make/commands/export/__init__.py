@@ -12,6 +12,7 @@ from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_i
 from sinol_make.helpers import package_util, parsers, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.outgen import Command as OutgenCommand, compile_correct_solution, get_correct_solution
+from sinol_make.commands.doc import Command as DocCommand
 
 
 class Command(BaseCommand):
@@ -31,6 +32,8 @@ class Command(BaseCommand):
                             help=f'number of cpus to use to generate output files '
                                  f'(default: {util.default_cpu_count()})',
                             default=util.default_cpu_count())
+        parser.add_argument('--no-statement', dest='no_statement', action='store_true',
+                            help='allow export without statement')
         parsers.add_compilation_arguments(parser)
 
     def generate_input_tests(self):
@@ -110,6 +113,15 @@ class Command(BaseCommand):
                     shutil.copy(test, os.path.join(ocen_dir, ext, os.path.basename(test)))
 
             shutil.make_archive(os.path.join(attachments_dir, f'{self.task_id}ocen'), 'zip', tmpdir)
+
+    def compile_statement(self):
+        command = DocCommand()
+        doc_args = argparse.Namespace()
+        doc_args.files = [f'./doc/{self.task_id}zad.tex']
+        command.run(doc_args)
+        if not os.path.isfile(f'./doc/{self.task_id}zad.pdf') and not self.args.no_statement:
+            util.exit_with_error('There is no pdf statements. If this intentional, export with flag "--no-statement". '
+                                 'Otherwise create pdf before continuing.')
 
     def copy_package_required_files(self, target_dir: str):
         """
@@ -228,6 +240,7 @@ class Command(BaseCommand):
 
         util.change_stack_size_to_unlimited()
         self.generate_input_tests()
+        self.compile_statement()
         self.copy_package_required_files(export_package_path)
         self.clear_files(export_package_path)
         self.create_makefile_in(export_package_path, config)
