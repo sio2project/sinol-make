@@ -53,7 +53,7 @@ def test_simple(create_package, capsys):
     """
     package_path = create_package
     parser = configure_parsers()
-    args = parser.parse_args(["export"])
+    args = parser.parse_args(["export", "--no-statement"])
     command = Command()
     command.run(args)
 
@@ -95,7 +95,7 @@ def test_correct_permissions(create_package, capsys):
     os.chmod(shell_ingen, st.st_mode & ~stat.S_IEXEC)
 
     parser = configure_parsers()
-    args = parser.parse_args(["export"])
+    args = parser.parse_args(["export", "--no-statement"])
     command = Command()
     command.run(args)
     task_id = package_util.get_task_id()
@@ -116,7 +116,7 @@ def test_handwritten_tests(create_package):
     Test if handwritten tests are correctly copied.
     """
     parser = configure_parsers()
-    args = parser.parse_args(["export"])
+    args = parser.parse_args(["export", "--no-statement"])
     command = Command()
     command.run(args)
     task_id = package_util.get_task_id()
@@ -136,7 +136,7 @@ def test_ocen_archive(create_package):
     Test creation of ocen archive.
     """
     parser = configure_parsers()
-    args = parser.parse_args(["export"])
+    args = parser.parse_args(["export", "--no-statement"])
     command = Command()
     command.run(args)
     task_id = package_util.get_task_id()
