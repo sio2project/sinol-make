@@ -717,7 +717,7 @@ def test_contest_type_change(create_package, time_tool):
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
-def test_cwd_in_prog(create_package):
+def test_cwd_in_prog(create_package, time_tool):
     """
     Test if `sinol-make` works when cwd is in prog.
     """
@@ -725,6 +725,6 @@ def test_cwd_in_prog(create_package):
     os.chdir("prog")
     create_ins_outs(package_path)
     parser = configure_parsers()
-    args = parser.parse_args(["run"])
+    args = parser.parse_args(["run", "--time-tool", time_tool])
     command = Command()
     command.run(args)

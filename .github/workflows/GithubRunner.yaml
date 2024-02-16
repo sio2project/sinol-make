@@ -18,8 +18,15 @@ jobs:
       - name: Install dependencies
         run: |
           pip install .[tests]
-      - name: Run pytest
+          sudo apt install texlive-latex-recommended -y
+          sudo apt install ghostscript -y
+      - name: Run github runner pytest
         env:
           PYTEST_ADDOPTS: "--color=yes"
         run: |
           python -m pytest -v --github-runner
+      - name: Run pytest
+        env:
+          PYTEST_ADDOPTS: "--color=yes"
+        run: |
+          python -m pytest -v --time-tool time
