@@ -230,8 +230,7 @@ class Command(BaseCommand):
         self.task_id = package_util.get_task_id()
         package_util.validate_test_names(self.task_id)
 
-        with open(os.path.join(os.getcwd(), 'config.yml'), 'r') as config_file:
-            config = yaml.load(config_file, Loader=yaml.FullLoader)
+        config = package_util.get_config()
 
         export_package_path = paths.get_cache_path('export', self.task_id)
         if os.path.exists(export_package_path):

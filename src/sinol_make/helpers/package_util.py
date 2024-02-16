@@ -11,8 +11,7 @@ from sinol_make.helpers import paths
 
 
 def get_task_id() -> str:
-    with open(os.path.join(os.getcwd(), "config.yml")) as config_file:
-        config = yaml.load(config_file, Loader=yaml.FullLoader)
+    config = get_config()
     if "sinol_task_id" in config:
         return config["sinol_task_id"]
     else:
@@ -38,7 +37,7 @@ def extract_test_id(test_path, task_id):
 def get_group(test_path, task_id):
     if extract_test_id(test_path, task_id).endswith("ocen"):
         return 0
-    return int("".join(re.search(r'\d+',extract_test_id(test_path, task_id)).group()))
+    return int("".join(re.search(r'\d+', extract_test_id(test_path, task_id)).group()))
 
 
 def get_groups(tests, task_id):
@@ -49,12 +48,23 @@ def get_test_key(test, task_id):
     return get_group(test, task_id), test
 
 
+def get_config():
+    try:
+        with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
+            return yaml.load(config_file, Loader=yaml.FullLoader)
+    except FileNotFoundError:
+        # Potentially redundant with util:exit_if_not_package
+        util.exit_with_error("You are not in a package directory (couldn't find config.yml in current directory).")
+    except yaml.YAMLError as e:
+        util.exit_with_error("config.yml is not a valid YAML. Fix it before continuing:\n" + str(e))
+
+
 def get_solutions_re(task_id: str) -> re.Pattern:
     """
     Returns regex pattern matching all solutions for given task.
     :param task_id: Task id.
     """
-    return re.compile(r"^%s[bs]?[0-9]*(_.*)?\.(cpp|cc|java|py|pas)$" % task_id)
+    return re.compile(r"^%s[bs]?[0-9]*(_.*)?\.(c|cpp|cc|py)$" % task_id)
 
 
 def get_executable_key(executable, task_id):
@@ -202,7 +212,8 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
             if allow_test_limit:
                 return dict[plural_limit_name][test_id]
             else:
-                util.exit_with_error(f'{os.path.basename(test_path)}: Specifying limit for a single test is not allowed in sinol-make.')
+                util.exit_with_error(
+                    f'{os.path.basename(test_path)}: Specifying limit for a single test is not allowed in sinol-make.')
         elif test_group in dict[plural_limit_name]:
             return dict[plural_limit_name][test_group]
     if limit_name in dict:
@@ -226,9 +237,11 @@ def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], l
             return global_limit
         else:
             if limit_type == LimitTypes.TIME_LIMIT:
-                util.exit_with_error(f'Time limit was not defined for test {os.path.basename(test_path)} in config.yml.')
+                util.exit_with_error(
+                    f'Time limit was not defined for test {os.path.basename(test_path)} in config.yml.')
             elif limit_type == LimitTypes.MEMORY_LIMIT:
-                util.exit_with_error(f'Memory limit was not defined for test {os.path.basename(test_path)} in config.yml.')
+                util.exit_with_error(
+                    f'Memory limit was not defined for test {os.path.basename(test_path)} in config.yml.')
 
 
 def get_time_limit(test_path, config, lang, task_id, args=None):
@@ -257,6 +270,7 @@ def validate_test_names(task_id):
     """
     Checks if all files in the package have valid names.
     """
+
     def get_invalid_files(path, pattern):
         invalid_files = []
         for file in glob.glob(os.path.join(os.getcwd(), path)):
