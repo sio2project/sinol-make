@@ -85,6 +85,37 @@ def test_doc_cleared(create_package):
             assert glob.glob(os.path.join(extracted, pattern)) == []
 
 
+@pytest.mark.parametrize("create_package", [util.get_doc_package_path()], indirect=True)
+def test_doc_created(create_package):
+    """
+    Test if statement is compiled on export.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["export"])
+    command = Command()
+    command.run(args)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{package_util.get_task_id()}.tgz', "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+
+        extracted = os.path.join(tmpdir, package_util.get_task_id())
+        assert os.path.exists(extracted)
+        assert glob.glob(os.path.join(extracted, f'doc/{package_util.get_task_id()}zad.pdf')) != []
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
+def test_no_doc_on_export(create_package):
+    """
+    Test if program exits with error when there is no pdf on export.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["export"])
+    command = Command()
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path()], indirect=True)
 def test_correct_permissions(create_package, capsys):
     """
