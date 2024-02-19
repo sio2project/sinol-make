@@ -429,6 +429,7 @@ class Command(BaseCommand):
         env = os.environ.copy()
         env["MEM_LIMIT"] = f'{memory_limit}K'
         env["MEASURE_MEM"] = "1"
+        env["UNDER_OIEJQ"] = "1"
 
         timeout = False
         with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file, \
