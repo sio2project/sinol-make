@@ -1,6 +1,6 @@
 name: pytest-ubuntu
 run-name: Run pytest on Ubuntu
-on: [push]
+on: [push, pull_request]
 jobs:
   pytest:
     runs-on: self-hosted
