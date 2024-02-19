@@ -34,7 +34,7 @@ def pytest_addoption(parser):
         choices=['oiejq', 'time'],
         action='append',
         default=[],
-        help='Time tool to use. Default: oiejq'
+        help='Time tool to use. Default: if linux - both, otherwise time'
     )
     parser.addoption("--no-precompile", action="store_true", help="if set, will not precompile all solutions")
     parser.addoption("--cpus", type=int, help="number of cpus to use, by default all available",
@@ -92,7 +92,7 @@ def pytest_generate_tests(metafunc):
         time_tools = []
         if metafunc.config.getoption("time_tool") != []:
             time_tools = metafunc.config.getoption("time_tool")
-        elif sys.platform == "linux":
+        elif util.is_linux():
             time_tools = ["oiejq", "time"]
         else:
             time_tools = ["time"]

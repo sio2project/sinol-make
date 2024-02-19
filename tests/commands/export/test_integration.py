@@ -53,7 +53,7 @@ def test_simple(create_package, capsys):
     """
     package_path = create_package
     parser = configure_parsers()
-    args = parser.parse_args(["export"])
+    args = parser.parse_args(["export", "--no-statement"])
     command = Command()
     command.run(args)
 
@@ -85,6 +85,37 @@ def test_doc_cleared(create_package):
             assert glob.glob(os.path.join(extracted, pattern)) == []
 
 
+@pytest.mark.parametrize("create_package", [util.get_doc_package_path()], indirect=True)
+def test_doc_created(create_package):
+    """
+    Test if statement is compiled on export.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["export"])
+    command = Command()
+    command.run(args)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{package_util.get_task_id()}.tgz', "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+
+        extracted = os.path.join(tmpdir, package_util.get_task_id())
+        assert os.path.exists(extracted)
+        assert glob.glob(os.path.join(extracted, f'doc/{package_util.get_task_id()}zad.pdf')) != []
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
+def test_no_doc_on_export(create_package):
+    """
+    Test if program exits with error when there is no pdf on export.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["export"])
+    command = Command()
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path()], indirect=True)
 def test_correct_permissions(create_package, capsys):
     """
@@ -95,7 +126,7 @@ def test_correct_permissions(create_package, capsys):
     os.chmod(shell_ingen, st.st_mode & ~stat.S_IEXEC)
 
     parser = configure_parsers()
-    args = parser.parse_args(["export"])
+    args = parser.parse_args(["export", "--no-statement"])
     command = Command()
     command.run(args)
     task_id = package_util.get_task_id()
@@ -116,7 +147,7 @@ def test_handwritten_tests(create_package):
     Test if handwritten tests are correctly copied.
     """
     parser = configure_parsers()
-    args = parser.parse_args(["export"])
+    args = parser.parse_args(["export", "--no-statement"])
     command = Command()
     command.run(args)
     task_id = package_util.get_task_id()
@@ -136,7 +167,7 @@ def test_ocen_archive(create_package):
     Test creation of ocen archive.
     """
     parser = configure_parsers()
-    args = parser.parse_args(["export"])
+    args = parser.parse_args(["export", "--no-statement"])
     command = Command()
     command.run(args)
     task_id = package_util.get_task_id()
