@@ -247,3 +247,48 @@ def test_fsanitize(create_package):
             simple_run([ingen])
         assert e.type == SystemExit
         assert e.value.code == 1
+
+
+@pytest.mark.parametrize("create_package", [util.get_bad_tests_package_path()], indirect=True)
+def test_bad_tests(create_package, capsys):
+    """
+    Test if validation of test contents works.
+    """
+
+    # Gen should fail
+    with pytest.raises(SystemExit) as e:
+        simple_run()
+    assert e.type == SystemExit
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "Trailing whitespace in bad0.in:1" in out
+
+    # Generate tests without validation
+    simple_run(["--no-validate"], command="ingen")
+
+    # (program, should fail, error message)
+    tests = [
+        ("bad.cpp", False, ""),
+        ("bad1.cpp", True, "Trailing whitespace in bad0.out:1"),
+        ("bad2.cpp", True, "Leading whitespace in bad0.out:1"),
+        ("bad3.cpp", True, "Tokens not separated by one space in bad0.out:1"),
+        ("bad4.cpp", True, "No newline at the end of bad0.out"),
+        ("bad5.cpp", True, "Exactly one empty line expected in bad0.out"),
+    ]
+
+    for program, should_fail, error_message in tests:
+        if program != "bad.cpp":
+            shutil.copyfile(os.path.join(create_package, "prog", program), os.path.join(create_package, "prog", "bad.cpp"))
+        if not should_fail:
+            simple_run(command="outgen")
+        else:
+            with pytest.raises(SystemExit) as e:
+                simple_run(command="outgen")
+            assert e.type == SystemExit
+            assert e.value.code == 1
+            out = capsys.readouterr().out
+            assert error_message in out
+
+        for file in glob.glob(os.path.join(create_package, "out", "*.out")):
+            os.unlink(file)
+        os.unlink(os.path.join(create_package, "in", ".md5sums"))

@@ -113,3 +113,38 @@ def test_generate_output(create_package):
     run_ingen(ingen_exe)
     assert generate_output(OutputGenerationArguments(correct_sol_exe, "in/abc1a.in", "out/abc1a.out"))
     assert os.path.exists(os.path.join(package_path, "out", "abc1a.out"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_bad_tests_package_path()], indirect=True)
+def test_validate_tests(create_package, capsys):
+    """
+    Test validating test contents.
+    """
+    package_path = create_package
+    task_id = package_util.get_task_id()
+    ingen_path = get_ingen(task_id)
+    args = compiler.get_default_compilers()
+    ingen_exe = compile_ingen(ingen_path, args)
+    run_ingen(ingen_exe)
+
+    with open("in/bad6.in", "w") as f:
+        f.write("1\n\n2 \n")
+
+    # (Test, error message)
+    tests = [
+        ("bad0.in", "Trailing whitespace in bad0.in:1"),
+        ("bad1.in", "Leading whitespace in bad1.in:1"),
+        ("bad2.in", "Tokens not separated by one space in bad2.in:1"),
+        ("bad3.in", "Exactly one empty line expected in bad3.in"),
+        ("bad4.in", "Trailing whitespace in bad4.in:2"),
+        ("bad5.in", "No newline at the end of bad5.in"),
+        ("bad6.in", "Trailing whitespace in bad6.in:3"),
+    ]
+
+    for test, error in tests:
+        with pytest.raises(SystemExit) as e:
+            package_util.validate_test(os.path.join(package_path, "in", test))
+        assert e.type == SystemExit
+        assert e.value.code == 1
+        captured = capsys.readouterr()
+        assert error in captured.out, f"Expected error not found in output: {captured.out}"
