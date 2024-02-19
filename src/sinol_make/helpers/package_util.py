@@ -353,11 +353,14 @@ def validate_test(test_path: str):
     """
     basename = os.path.basename(test_path)
     num_empty = 0
-    with open(test_path, 'r', encoding='utf-8') as file:
+    with open(test_path, 'br') as file:
         lines = file.readlines()
         for i, line in enumerate(lines):
+            line = line.decode('utf-8')
             if len(line) > 0 and line[0] == ' ':
                 util.exit_with_error(f'Leading whitespace in {basename}:{i + 1}')
+            if len(line) > 0 and (line[-2:] == '\r\n' or line[-2:] == '\n\r' or line[-1] == '\r'):
+                util.exit_with_error(f'Carriage return at the end of {basename}:{i + 1}')
             if len(line) > 0 and line[-1] != '\n':
                 util.exit_with_error(f'No newline at the end of {basename}')
             if line == '\n' or line == '':

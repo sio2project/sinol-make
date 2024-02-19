@@ -129,6 +129,8 @@ def test_validate_tests(create_package, capsys):
 
     with open("in/bad6.in", "w") as f:
         f.write("1\n\n2 \n")
+    with open("in/bad7.in", "w") as f:
+        f.write("1 1\r\n")
 
     # (Test, error message)
     tests = [
@@ -139,6 +141,7 @@ def test_validate_tests(create_package, capsys):
         ("bad4.in", "Trailing whitespace in bad4.in:2"),
         ("bad5.in", "No newline at the end of bad5.in"),
         ("bad6.in", "Trailing whitespace in bad6.in:3"),
+        ("bad7.in", "Carriage return at the end of bad7.in:1"),
     ]
 
     for test, error in tests:
