@@ -14,6 +14,7 @@ out/*.out
 
 # LaTeX
 *.pdf
+!doc/abczad.pdf
 *.ps
 !doc/logo.*
 
@@ -74,3 +75,9 @@ __pycache__/
 # C extensions
 *.so
 *.o
+
+# Latex log files
+doc/abczad.err
+doc/abczad.fdb_latexmk
+doc/abczad.inf
+doc/abczad.synctex.gz

@@ -1,0 +1,98 @@
+\documentclass[zad]{talentTex}
+\title{Na ile części podzielić?}
+\id{abc}
+\iomode{stdin} % stdin / interactive
+\Time{10,5} % Nie dodawać "s"
+\Memory{256} % Nie dodawać "MB"
+% Poniższe pola uzupełnia kierownik konkursu.
+\konkurs{SKN 2022/23}
+\day{Dzień 1}
+\group{A} % Sama literka
+
+%%%%%%%%%%%%%%%%%%
+% Przydatne komendy:
+% \pagebreak % zacznij nową stronę 
+% $text$ % pozwala na pisanie wyrażeń matematycznych
+% Dokumentacja:
+%   https://www.overleaf.com/learn
+
+%%%%%%%%%%%%%%%%%%
+% Komendy talentowe
+% \start{}  % Początek i koniec treści zadania
+% \finish{} % Cała treść powinna być między tymi znacznikami
+% \tSection{text} % Nagłówek w stylu talentu
+% \tNoSkipSection{text} % Jak wyżej, tylko bez odstępu między akapitami
+% \tSmallSection{text} % Mały nagłówek w stylu talentu
+% \tc{text} % Styl używany do oznaczania zmiennych
+% \makecompactexample{id}   % 2 style dodawania testów "zad0{id}" z paczki
+% \makestandardexample{id}
+%     % Przy kompilacji testy są automatycznie czytane z folderów ./in i ./out
+% \ocen{text} % Lista wszystkich testów ocen
+% \testOcen{text}{text2} % Pojedyńczy test ocen z opisem
+% \ocenTable{text} % Tabela z podzadaniami
+% \ocenRow{text} % Pojedyńczy wiersz tabeli: kolejne komórki powinne być rodzielone znakiem &
+% \ocenElement{text} % Jeśli chcesz mieć 2 linie w pojedyńczej komórce tabeli
+
+\start{}
+
+Lorem ipsum dolor ssist amdet, consectetur adipiscing elit.
+Donec rhoncus torstor vitae lorem luctus maximus.
+Donec bibendum, dui eget diganissim viverra, lectus leo scelerisque metus, ut sagittis ligula nisl ut purus.
+Etiam imperdiet luctus leo, et molestie diam congue auctor. Sed sapien eros, imperdiet in fermentum $\tc{a}$, faucibus ut ex cośtam. 
+% pusta linijka, by zacząć akapit od wcięcia
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Donec rhoncus tortor vitae lorem luctus maximus.
+
+\tSection{Wejście}
+
+W pierwszym i jedynym wierszu wejścia znajduje się jedna liczba $\tc{n}$, ($1\leq \tc{n}\leq 1\ 000\ 000$)
+
+\tSection{Wyjście}
+
+Lorem ipsum dolor ssist amdet, consectetur adipiscing elit.
+Donec rhoncus torstor vitae lorem luctus maximus.
+Donec bibendum, dui eget diganissim viverra, lectus leo scelerisque metus, ut sagittis ligula nisl ut purus.
+
+W pierwszym i jedynym wierszu wyjścia powinna znajdować się jedna liczba $\tc{z}$, wynik zadania.
+
+\tSection{Przykład}
+
+\makecompactexample{a}  % abc0.in -> \makecompactexample{}
+                        % abc0a.in -> \makecompactexample{a}
+                        % abc0b.in -> \makecompactexample{b}
+
+\tNoSkipSection{Wyjaśnienie przykładów}{0pt}
+
+\tSmallSection{Przykład 1}
+
+Lorem ipsum dolor ssist amdet, consectetur adipiscing elit.
+Lorem ipsum dolor ssist amdet, consectetur adipiscing elit.
+Donec rhoncus torstor vitae lorem luctus maximus.
+Donec bibendum, dui eget diganissim viverra, lectus leo scelerisque metus, ut sagittis ligula nisl ut purus.
+
+\tSmallSection{Przykład 2}
+
+Lorem ipsum dolor ssist amdet, consectetur adipiscing elit.
+Lorem ipsum dolor ssist amdet, consectetur adipiscing elit.
+
+
+\tSection{Testy ocen:}
+\ocen{
+  \testOcen{1ocen}{$\tc{n} = 69$, Założenie}
+  \testOcen{2ocen}{$\tc{n} = 420$, założenie 2}
+}
+
+\tSection{Ocenianie}
+
+Zestaw testów dzieli się na następujące podzadania.
+Testy do każdego podzadania składają się z jednej lub większej liczby osobnych grup testów.
+
+% Alternatywnie \customOcenTable{|c|c|c|}{\tc{Nr} & \tc{Ograniczenia} & \tc{Punkty}}{reszta tabeli}
+
+\ocenTable{
+  \ocenRow{1 & \ocenElement{$\tc{n} \leq 1000$  Dwie\\ Linie} & 30}
+  \ocenRow{2 & $\tc{n} \leq 1\,000\,000$ & 70}
+}
+
+\finish{}
