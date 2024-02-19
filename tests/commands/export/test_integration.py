@@ -195,3 +195,20 @@ def test_ocen_archive(create_package):
         for ext in ["in", "out"]:
             tests = [os.path.basename(f) for f in glob.glob(os.path.join(ocen_dir, task_id, ext, f'*.{ext}'))]
             assert set(tests) == set([f'{test}.{ext}' for test in ocen_tests])
+
+
+@pytest.mark.parametrize("create_package", [util.get_icpc_package_path()], indirect=True)
+def test_no_ocen(create_package):
+    """
+    Test if ocen archive is not created for contests other than OI.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["export", "--no-statement"])
+    command = Command()
+    command.run(args)
+    task_id = package_util.get_task_id()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{task_id}.tgz', "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+        assert not os.path.exists(os.path.join(tmpdir, task_id, "attachments", f"{task_id}ocen.zip"))
