@@ -6,6 +6,7 @@ time_limit: 1000
 sinol_expected_scores:
   acm.cpp:
     expected:
+      0: {points: 1, status: OK}
       1: {points: 1, status: OK}
       2: {points: 1, status: OK}
       3: {points: 1, status: OK}
@@ -13,6 +14,7 @@ sinol_expected_scores:
     points: 1
   acm1.cpp:
     expected:
+      0: {points: 1, status: OK}
       1: {points: 1, status: OK}
       2: {points: 1, status: OK}
       3: {points: 1, status: OK}
@@ -20,6 +22,7 @@ sinol_expected_scores:
     points: 0
   acm2.cpp:
     expected:
+      0: {points: 0, status: WA}
       1: {points: 1, status: OK}
       2: {points: 0, status: WA}
       3: {points: 0, status: WA}
@@ -27,6 +30,7 @@ sinol_expected_scores:
     points: 0
   acm3.cpp:
     expected:
+      0: {points: 0, status: WA}
       1: {points: 1, status: OK}
       2: {points: 0, status: WA}
       3: {points: 0, status: WA}

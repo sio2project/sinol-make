@@ -7,7 +7,7 @@ import tempfile
 import argparse
 import yaml
 
-from sinol_make import util
+from sinol_make import util, contest_types
 from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_ingen, ingen_exists
 from sinol_make.helpers import package_util, parsers, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -165,8 +165,9 @@ class Command(BaseCommand):
                 shutil.copy(test[1], os.path.join(cache_test_dir, test[0], os.path.basename(test[1])))
 
         self.generate_output_files()
-        print('Generating ocen archive...')
-        self.create_ocen(target_dir)
+        if isinstance(contest_types.get_contest_type(), contest_types.OIContest):
+            print('Generating ocen archive...')
+            self.create_ocen(target_dir)
 
     def clear_files(self, target_dir: str):
         """
