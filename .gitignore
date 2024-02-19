@@ -11,5 +11,7 @@ __pycache__
 src/sinol_make/data
 
 # pytest-cov
-.coverage
+.coverage*
 coverage.xml
+
+/.tox/
