@@ -25,8 +25,3 @@ jobs:
           PYTEST_ADDOPTS: "--color=yes"
         run: |
           python -m pytest -v --github-runner
-      - name: Run pytest
-        env:
-          PYTEST_ADDOPTS: "--color=yes"
-        run: |
-          python -m pytest -v --time-tool time
