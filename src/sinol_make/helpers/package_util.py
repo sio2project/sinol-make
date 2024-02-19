@@ -343,3 +343,36 @@ def save_contest_type_to_cache(contest_type):
     os.makedirs(paths.get_cache_path(), exist_ok=True)
     with open(paths.get_cache_path("contest_type"), "w") as contest_type_file:
         contest_type_file.write(contest_type)
+
+
+def validate_test(test_path: str):
+    """
+    Check if test doesn't contain leading/trailing whitespaces,
+    has only one space between tokens and ends with newline.
+    Exits with error if any of the conditions is not met.
+    """
+    basename = os.path.basename(test_path)
+    num_empty = 0
+    with open(test_path, 'br') as file:
+        lines = file.readlines()
+        for i, line in enumerate(lines):
+            line = line.decode('utf-8')
+            if len(line) > 0 and line[0] == ' ':
+                util.exit_with_error(f'Leading whitespace in {basename}:{i + 1}')
+            if len(line) > 0 and (line[-2:] == '\r\n' or line[-2:] == '\n\r' or line[-1] == '\r'):
+                util.exit_with_error(f'Carriage return at the end of {basename}:{i + 1}')
+            if len(line) > 0 and line[-1] != '\n':
+                util.exit_with_error(f'No newline at the end of {basename}')
+            if line == '\n' or line == '':
+                num_empty += 1
+                continue
+            elif i == len(lines) - 1:
+                num_empty = 0
+            if line[-2] == ' ':
+                util.exit_with_error(f'Trailing whitespace in {basename}:{i + 1}')
+            for j in range(len(line) - 1):
+                if line[j] == ' ' and line[j + 1] == ' ':
+                    util.exit_with_error(f'Tokens not separated by one space in {basename}:{i + 1}')
+
+        if num_empty != 0:
+            util.exit_with_error(f'Exactly one empty line expected in {basename}')

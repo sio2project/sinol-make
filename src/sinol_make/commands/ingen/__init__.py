@@ -1,4 +1,5 @@
 import argparse
+import glob
 import os
 
 from sinol_make import util
@@ -27,6 +28,8 @@ class Command(BaseCommand):
 
         parser.add_argument('ingen_path', type=str, nargs='?',
                             help='path to ingen source file, for example prog/abcingen.cpp')
+        parser.add_argument('-n', '--no-validate', default=False, action='store_true',
+                            help='do not validate test contents')
         parsers.add_compilation_arguments(parser)
 
     def run(self, args: argparse.Namespace):
@@ -45,3 +48,10 @@ class Command(BaseCommand):
             print(util.info('Successfully generated input files.'))
         else:
             util.exit_with_error('Failed to generate input files.')
+
+        if not self.args.no_validate:
+            print(util.info('Validating input test contents.'))
+            tests = sorted(glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in")))
+            for test in tests:
+                package_util.validate_test(test)
+            print(util.info('Input test contents are valid!'))
