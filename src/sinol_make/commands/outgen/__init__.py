@@ -92,7 +92,7 @@ class Command(BaseCommand):
         return md5_sums, outputs_to_generate
 
     def run(self, args: argparse.Namespace):
-        util.exit_if_not_package()
+        args = util.init_package_command(args)
 
         self.args = args
         self.task_id = package_util.get_task_id()
