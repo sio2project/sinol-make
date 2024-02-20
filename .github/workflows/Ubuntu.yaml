@@ -24,7 +24,7 @@ jobs:
       - name: Prepare system
         run: |
           apt update
-          apt install -y sqlite3 sqlite3-doc build-essential dpkg texlive-latex-extra ghostscript
+          apt install -y sqlite3 sqlite3-doc build-essential dpkg texlive-latex-extra ghostscript git
           sysctl kernel.perf_event_paranoid=-1
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
