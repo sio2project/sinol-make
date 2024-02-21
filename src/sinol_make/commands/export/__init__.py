@@ -34,6 +34,8 @@ class Command(BaseCommand):
                             default=util.default_cpu_count())
         parser.add_argument('--no-statement', dest='no_statement', action='store_true',
                             help='allow export without statement')
+        parser.add_argument('--export-ocen', dest='export_ocen', action='store_true',
+                            help='Create ocen archive')
         parsers.add_compilation_arguments(parser)
 
     def generate_input_tests(self):
@@ -165,7 +167,7 @@ class Command(BaseCommand):
                 shutil.copy(test[1], os.path.join(cache_test_dir, test[0], os.path.basename(test[1])))
 
         self.generate_output_files()
-        if isinstance(contest_types.get_contest_type(), contest_types.OIContest):
+        if self.args.export_ocen:
             print('Generating ocen archive...')
             self.create_ocen(target_dir)
 
@@ -225,7 +227,7 @@ class Command(BaseCommand):
         return archive
 
     def run(self, args: argparse.Namespace):
-        util.exit_if_not_package()
+        args = util.init_package_command(args)
 
         self.args = args
         self.task_id = package_util.get_task_id()

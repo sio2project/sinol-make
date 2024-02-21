@@ -50,6 +50,15 @@ def find_and_chdir_package():
         return False
 
 
+def init_package_command(args):
+    """
+    Updates arguments with contest specific overrides for commands
+    that require being in package directory
+    """
+    exit_if_not_package()
+    return get_contest_type().argument_overrides(args)
+
+
 def exit_if_not_package():
     """
     Checks if current directory or parent directory is a package directory.

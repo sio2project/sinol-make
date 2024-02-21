@@ -40,7 +40,7 @@ class Command(BaseCommand):
         parsers.add_compilation_arguments(parser)
 
     def run(self, args: argparse.Namespace):
-        util.exit_if_not_package()
+        args = util.init_package_command(args)
 
         self.args = args
         self.ins = args.only_inputs

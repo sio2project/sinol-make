@@ -1,3 +1,5 @@
+import argparse
+
 from sinol_make.structs.status_structs import ExecutionResult
 from sinol_make.contest_types.default import DefaultContest
 
@@ -6,6 +8,13 @@ class OIContest(DefaultContest):
     """
     Contest type for Polish Olympiad in Informatics.
     """
+
+    def argument_overrides(self, args: argparse.Namespace) -> argparse.Namespace:
+        """
+        Add arguments for features required by OI contest
+        """
+        args.export_ocen = True
+        return args
 
     def get_test_score(self, result: ExecutionResult, time_limit, memory_limit):
         """
