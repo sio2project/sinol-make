@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import subprocess
 import tempfile
 
@@ -44,7 +45,7 @@ class Command(BaseCommand):
                 dest_filename = file
                 if file[:3] == 'abc':
                     dest_filename = self.task_id + file[3:]
-                os.replace(os.path.join(root, file), os.path.join(mapping[root], dest_filename))
+                shutil.move(os.path.join(root, file), os.path.join(mapping[root], dest_filename))
 
     def update_config(self):
         with open(os.path.join(os.getcwd(), 'config.yml')) as config:
