@@ -55,9 +55,6 @@ class Command(BaseCommand):
             config.write(config_data)
 
     def run(self, args: argparse.Namespace):
-        if len(args.task_id) != 3:
-            util.exit_with_error("Invalid task id. Task id should be 3 characters long.")
-
         self.task_id = args.task_id
         destination = os.path.join(os.getcwd(), args.task_id)
         if os.path.isdir(destination) or os.path.isfile(destination):
