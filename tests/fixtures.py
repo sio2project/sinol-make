@@ -22,3 +22,17 @@ def create_package(request):
     yield package_path
 
     tmpdir.cleanup()
+
+
+@pytest.fixture
+def temp_workdir():
+    """
+    Fixture to change the current working directory to the temporary directory.
+    """
+    tmpdir = tempfile.TemporaryDirectory()
+    print(tmpdir)
+    os.chdir(tmpdir.name)
+    
+    yield tmpdir.name
+    
+    tmpdir.cleanup()
