@@ -19,17 +19,18 @@ class Command(BaseCommand):
         parser = subparser.add_parser(
             self.get_name(),
             help='Create package from the template',
-            description='Create package from predefined template. You have specify new task shortcut (like: '
-                        'sinol-make init abc )'
+            description='Create package from predefined template with given id.'
         )
         parser.add_argument('task_id', type=str, help='Id of the task to create')
 
-    @staticmethod
-    def download_template():
+    def download_template(self):
         repo = 'https://github.com/sio2project/sinol-make.git'
         package_dir = 'sinol-make/example_package'
-        tmp_dir = tempfile.mkdtemp()
-        subprocess.run(['git', 'clone', repo], cwd=tmp_dir, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self.used_tmpdir = tempfile.TemporaryDirectory()
+        tmp_dir = self.used_tmpdir.name
+        ret = subprocess.run(['git', 'clone', '-q', '--depth', '1', repo], cwd=tmp_dir)
+        if ret.returncode != 0:
+            util.exit_with_error("Could not access repository. Please try again.")
         return os.path.join(tmp_dir, package_dir)
 
     def move_folder(self):
@@ -70,6 +71,8 @@ class Command(BaseCommand):
 
         self.move_folder()
         self.update_config()
+        
+        self.used_tmpdir.cleanup()
 
         print(util.info(f'Successfully created task "{self.task_id}"'))
 
