@@ -71,7 +71,10 @@ class Command(BaseCommand):
             description='Compiles latex files to pdf. By default compiles all files in the `doc` directory.\n'
                         'You can also specify files to compile.')
         parser.add_argument('--latex-compiler', dest='latex_compiler', choices=['auto', 'pdflatex', 'latex_dvi'],
-                            help='Compiler used to compile documents (default: auto)', default='auto')
+                            help='Compiler used to compile documents. Available options:\n'
+                                 ' auto - uses the compiler based on the image types (default option).\n'
+                                 ' pdflatex - uses pdflatex. Works with .png and .jpg images.\n'
+                                 ' latex_dvi - uses latex and dvipdf. Works with .ps and .eps images.', default='auto')
         parser.add_argument('files', type=str, nargs='*', help='files to compile')
 
     def run(self, args: argparse.Namespace):
