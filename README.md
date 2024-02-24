@@ -1,20 +1,20 @@
-# <img src="https://avatars.githubusercontent.com/u/2264918?s=200&v=4" height=60em> sinol-make
+# ![Logo](https://avatars.githubusercontent.com/u/2264918?s=60&v=4) sinol-make
 
 `sinol-make` is a CLI tool for creating and verifying problem packages
 for [sio2](https://github.com/sio2project/oioioi)
 with features such as:
+
 - measuring time and memory in the same deterministic way as sio2,
 - running the solutions in parallel,
 - keeping a git-friendly report of solutions' scores,
 - catching mistakes in the problem packages as early as possible,
 - and more.
 
-# Contents
+## Contents
 
 - [Why?](#why)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Configuarion](#configuration)
 - [Reporting bugs and contributing code](#reporting-bugs-and-contributing-code)
 
 ### Why?
@@ -34,9 +34,10 @@ solutions' runtime, called `oiejq`.
 It's possible to directly install [sinol-make](https://pypi.org/project/sinol-make/)
 through Python's package manager pip, which usually is installed alongside Python:
 
-```
+```bash
 pip3 install sinol-make
 ```
+
 `pip` installs the `sinol-make` executable in `~/.local/bin/` directory,
 so make sure this directory is in your `PATH`.
 [Here's](https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7) how to add a directory to `PATH`.
@@ -46,11 +47,12 @@ As `oiejq` works only on Linux-based operating systems,
 Nevertheless `sinol-make` supports those operating systems,
 though there are additional installation steps required to use
 other tools for measuring time (which are non-deterministic and produce reports different from sio2):
+
 - Debian-based systems (Ubuntu, usually Windows WSL): `apt install time`
 - Arch-based systems: `pacman -S time`
 - macOS: `brew install gnu-time coreutils`
 
-### Autocompletion (optional)
+#### Autocompletion (optional)
 
 If you would like to have autocompletion for `sinol-make` commands,
 run the following command and refresh the shell (e.g. by opening a new terminal):
@@ -81,6 +83,7 @@ Run `sinol-make ingen --help` to see available flags.
 program to use, what tests to check and how many CPUs to use. Run `sinol-make inwer --help` to see available flags.
 - `sinol-make export` -- Creates archive ready to upload to sio2 or szkopul. Run `sinol-make export --help` to see all available flags.
 - `sinol-make doc` -- Compiles all LaTeX files in doc/ directory to PDF. Run `sinol-make doc --help` to see all available flags.
+- `sinol-make init [id]` -- Creates package from template [on github](https://github.com/sio2project/sinol-make/tree/main/example_package) and sets task id to provided `[id]`. Requires an internet connection to run.
 
 ### Reporting bugs and contributing code
 
