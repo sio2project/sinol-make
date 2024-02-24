@@ -3,7 +3,10 @@
 using namespace std;
 
 int main() {
-	ofstream f("acm1a.in");
+	ofstream f("acm0.in");
+	f << "0 0\n";
+	f.close();
+	f.open("acm1a.in");
 	f << "1 3\n";
 	f.close();
 	f.open("acm2a.in");

@@ -113,3 +113,23 @@ def test_version_change(create_package):
                                        'abc3.cpp': {'points': 25, 'expected': {1: 'OK', 2: 'WA', 3: 'WA', 4: 'ML'}},
                                        'abc4.cpp': {'points': 50, 'expected': {1: 'OK', 2: 'OK', 3: 'WA', 4: 'RE'}}}
     assert old_expected_scores == util.try_fix_config(config)["sinol_expected_scores"]
+
+
+def test_saving_config_with_unicode(create_package):
+    config_path = os.path.join(create_package, "config.yml")
+    polish_title = "Zadanie ęĘóÓąĄśŚżŻźŹćĆńŃ"
+    polish_title_yaml = "title: " + polish_title
+
+    def read_config_lines():
+        with open(config_path, "r") as config_file:
+            return config_file.read().split('\n')
+
+    config_text = '\n'.join([polish_title_yaml] + read_config_lines()[1:])
+    with open(config_path, "w") as config_file:
+        config_file.write(config_text)
+
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
+    assert config['title'] == polish_title
+    util.save_config(config)
+    assert read_config_lines()[0] == polish_title_yaml

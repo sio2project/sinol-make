@@ -1,3 +1,4 @@
+import argparse
 from math import ceil
 from typing import List, Dict
 
@@ -14,6 +15,12 @@ class DefaultContest:
     Scores for groups are assigned equally.
     Max possible score is sum of group scores.
     """
+
+    def argument_overrides(self, args: argparse.Namespace) -> argparse.Namespace:
+        """
+        Add contest specific arguments
+        """
+        return args
 
     def assign_scores(self, groups: List[int]) -> Dict[int, int]:
         """

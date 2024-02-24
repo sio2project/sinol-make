@@ -188,7 +188,7 @@ class Command(BaseCommand):
                 last_test = test
 
     def run(self, args: argparse.Namespace):
-        util.exit_if_not_package()
+        args = util.init_package_command(args)
 
         self.task_id = package_util.get_task_id()
         package_util.validate_test_names(self.task_id)

@@ -143,6 +143,13 @@ def get_ocen_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "ocen")
 
 
+def get_bad_tests_package_path():
+    """
+    Get path to package with bad tests (/tests/packages/bad_tests)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "bad_tests")
+
+
 def create_ins(package_path, task_id):
     """
     Create .in files for package.

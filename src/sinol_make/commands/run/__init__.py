@@ -1144,7 +1144,7 @@ class Command(BaseCommand):
             util.exit_with_error('Checker compilation failed.')
 
     def run(self, args):
-        util.exit_if_not_package()
+        args = util.init_package_command(args)
 
         self.set_constants()
         package_util.validate_test_names(self.ID)

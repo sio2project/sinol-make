@@ -35,10 +35,12 @@ class Command(BaseCommand):
                             help=f'number of cpus to use to generate output files '
                                  f'(default: {util.default_cpu_count()})',
                             default=util.default_cpu_count())
+        parser.add_argument('-n', '--no-validate', default=False, action='store_true',
+                            help='do not validate test contents')
         parsers.add_compilation_arguments(parser)
 
     def run(self, args: argparse.Namespace):
-        util.exit_if_not_package()
+        args = util.init_package_command(args)
 
         self.args = args
         self.ins = args.only_inputs

@@ -50,6 +50,15 @@ def find_and_chdir_package():
         return False
 
 
+def init_package_command(args):
+    """
+    Updates arguments with contest specific overrides for commands
+    that require being in package directory
+    """
+    exit_if_not_package()
+    return get_contest_type().argument_overrides(args)
+
+
 def exit_if_not_package():
     """
     Checks if current directory or parent directory is a package directory.
@@ -101,18 +110,18 @@ def save_config(config):
         for field in order:
             if isinstance(field, dict): # If the field is a dict, it means that it has a custom property (for example default_flow_style).
                 if field["key"] in config:
-                    yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"])
+                    yaml.dump({field["key"]: config[field["key"]]}, config_file, default_flow_style=field["default_flow_style"], allow_unicode=True)
                     # The considered fields are deleted, thus `config` at the end will contain only custom fields written by the user.
                     del config[field["key"]]
             else: # When the field is a string, it doesn't have any custom properties, so it's just a dict key.
                 if field in config:
-                    yaml.dump({field: config[field]}, config_file)
+                    yaml.dump({field: config[field]}, config_file, allow_unicode=True)
                     del config[field] # Same reason for deleting as above.
 
         if config != {}:
             print(warning("Found unknown fields in config.yml: " + ", ".join([str(x) for x in config])))
             # All remaining non-considered fields are appended to the end of the file.
-            yaml.dump(config, config_file)
+            yaml.dump(config, config_file, allow_unicode=True)
 
 
 def import_importlib_resources():

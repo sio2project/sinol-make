@@ -1,4 +1,5 @@
 title: Package for testing ocen archive creation
 sinol_task_id: ocen
+sinol_contest_type: oi
 time_limit: 1000
 memory_limit: 10240

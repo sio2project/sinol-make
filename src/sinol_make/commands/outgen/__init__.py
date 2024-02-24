@@ -31,6 +31,8 @@ class Command(BaseCommand):
                             help=f'number of cpus to use to generate output files '
                                  f'(default: {util.default_cpu_count()})',
                             default=util.default_cpu_count())
+        parser.add_argument('-n', '--no-validate', default=False, action='store_true',
+                            help='do not validate test contents')
         parsers.add_compilation_arguments(parser)
 
     def generate_outputs(self, outputs_to_generate):
@@ -90,7 +92,7 @@ class Command(BaseCommand):
         return md5_sums, outputs_to_generate
 
     def run(self, args: argparse.Namespace):
-        util.exit_if_not_package()
+        args = util.init_package_command(args)
 
         self.args = args
         self.task_id = package_util.get_task_id()
@@ -108,3 +110,9 @@ class Command(BaseCommand):
             self.generate_outputs(outputs_to_generate)
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
                 yaml.dump(md5_sums, f)
+
+        if not self.args.no_validate:
+            print(util.info('Validating output test contents.'))
+            for test in sorted(outputs_to_generate):
+                package_util.validate_test(test)
+            print(util.info('Output test contents are valid!'))

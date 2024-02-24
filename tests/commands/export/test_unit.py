@@ -15,7 +15,7 @@ def _create_package(tmpdir, path):
     command.args = argparse.Namespace(cpus=1, weak_compilation_flags=False,
                                       cpp_compiler_path=compiler.get_cpp_compiler_path(),
                                       c_compiler_path=None, python_interpreter_path=None,
-                                      java_compiler_path=None)
+                                      java_compiler_path=None, export_ocen=False)
     return command
 
 
