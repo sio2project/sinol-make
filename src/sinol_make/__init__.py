@@ -32,6 +32,21 @@ def configure_parsers():
     return parser
 
 
+def check_oiejq():
+    if util.is_linux() and not oiejq.check_oiejq():
+        print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
+        try:
+            if oiejq.install_oiejq():
+                print(util.info('`oiejq` was successfully installed.'))
+            else:
+                util.exit_with_error('`oiejq` could not be installed.\n'
+                                     'You can download it from https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz, '
+                                     'unpack it to `~/.local/bin/` and rename oiejq.sh to oiejq.\n'
+                                     'You can also use --oiejq-path to specify path to your oiejq.')
+        except Exception as err:
+            util.exit_with_error('`oiejq` could not be installed.\n' + err)
+
+
 def main_exn():
     parser = configure_parsers()
     args = parser.parse_args()
@@ -39,28 +54,7 @@ def main_exn():
 
     for command in commands:
         if command.get_name() == args.command:
-            new_version = util.check_for_updates(__version__)
-            if new_version is not None:
-                print(util.warning(
-                    f'New version of sinol-make is available (your version: {__version__}, available version: '
-                    f'{new_version}).\n You can update it by running `pip3 install sinol-make --upgrade`.'))
-                sleep(2)
-
-            if util.is_linux() and not oiejq.check_oiejq():
-                print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
-
-                try:
-                    if oiejq.install_oiejq():
-                        print(util.info('`oiejq` was successfully installed.'))
-                    else:
-                        util.exit_with_error('`oiejq` could not be installed.\n'
-                                             'You can download it from '
-                                             'https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz'
-                                             ', unpack it to `~/.local/bin/` and rename oiejq.sh to oiejq.\n'
-                                             'You can also use --oiejq-path to specify path to your oiejq.')
-                except Exception as err:
-                    util.exit_with_error('`oiejq` could not be installed.\n' + err)
-
+            check_oiejq()
             command.run(args)
             exit(0)
 
@@ -68,7 +62,9 @@ def main_exn():
 
 
 def main():
+    new_version = None
     try:
+        new_version = util.check_for_updates(__version__)
         main_exn()
     except argparse.ArgumentError as err:
         util.exit_with_error(err)
@@ -79,3 +75,8 @@ def main():
         util.exit_with_error('An error occurred while running the command.\n'
                              'If that is a bug, please report it or submit a bugfix: '
                              'https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
+    finally:
+        if new_version is not None:
+            print(util.warning(
+                f'New version of sinol-make is available (your version: {__version__}, available version: '
+                f'{new_version}).\nYou can update it by running `pip3 install sinol-make --upgrade`.'))
