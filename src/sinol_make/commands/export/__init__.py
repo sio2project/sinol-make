@@ -55,7 +55,7 @@ class Command(BaseCommand):
         if ingen_exists(self.task_id):
             ingen_path = get_ingen(self.task_id)
             ingen_path = os.path.join(prog_dir, os.path.basename(ingen_path))
-            ingen_exe = compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
+            ingen_exe = compile_ingen(ingen_path, self.args, self.args.compile_mode)
             if not run_ingen(ingen_exe, in_dir):
                 util.exit_with_error('Failed to run ingen.')
 
@@ -75,7 +75,7 @@ class Command(BaseCommand):
         if len(outputs) > 0:
             outgen = OutgenCommand()
             correct_solution_exe = compile_correct_solution(get_correct_solution(self.task_id), self.args,
-                                                            self.args.weak_compilation_flags)
+                                                            self.args.compile_mode)
             outgen.args = self.args
             outgen.correct_solution_exe = correct_solution_exe
             outgen.generate_outputs(outputs)

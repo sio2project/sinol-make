@@ -12,7 +12,7 @@ def _create_package(tmpdir, path):
     os.chdir(package_path)
     command = get_command()
     util.create_ins_outs(package_path)
-    command.args = argparse.Namespace(cpus=1, weak_compilation_flags=False,
+    command.args = argparse.Namespace(cpus=1, compile_mode='default',
                                       cpp_compiler_path=compiler.get_cpp_compiler_path(),
                                       c_compiler_path=None, python_interpreter_path=None,
                                       java_compiler_path=None, export_ocen=False)

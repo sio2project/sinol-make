@@ -47,7 +47,7 @@ def get_ingen(task_id, ingen_path=None):
     return correct_ingen
 
 
-def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_flags=False):
+def compile_ingen(ingen_path: str, args: argparse.Namespace, compilation_flags='default'):
     """
     Compiles ingen and returns path to compiled executable.
     If ingen_path is shell script, then it will be returned.
@@ -57,7 +57,7 @@ def compile_ingen(ingen_path: str, args: argparse.Namespace, weak_compilation_fl
 
     compilers = compiler.verify_compilers(args, [ingen_path])
     ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path), compilers,
-                                                       weak_compilation_flags, use_fsanitize=True)
+                                                       compilation_flags, use_fsanitize=True)
 
     if ingen_exe is None:
         compile.print_compile_log(compile_log_path)

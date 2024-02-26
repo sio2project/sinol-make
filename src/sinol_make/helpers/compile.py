@@ -14,15 +14,15 @@ from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
 
-def compile(program, output, compilers: Compilers = None, compile_log = None, weak_compilation_flags = False,
-            extra_compilation_args = None, extra_compilation_files = None, is_checker = False, use_fsanitize = False):
+def compile(program, output, compilers: Compilers = None, compile_log=None, compilation_flags='default',
+            extra_compilation_args=None, extra_compilation_files=None, is_checker=False, use_fsanitize=False):
     """
     Compile a program.
     :param program: Path to the program to compile
     :param output: Path to the output file
     :param compilers: Compilers object
     :param compile_log: File to write the compilation log to
-    :param weak_compilation_flags: If True, disable all warnings
+    :param compilation_flags: Set of compilation flags to use
     :param extra_compilation_args: Extra compilation arguments
     :param extra_compilation_files: Extra compilation files
     :param is_checker: Set to True if compiling a checker. This will remove all cached test results.
@@ -54,8 +54,10 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
 
     gcc_compilation_flags = ' -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
-    if weak_compilation_flags:
+    if compilation_flags == 'weak':
         gcc_compilation_flags = ''  # Disable all warnings
+    elif compilation_flags == 'oioioi':
+        gcc_compilation_flags = ' -Wall -Wno-unused-result -Werror'
 
     if compilers is None:
         compilers = Compilers()
@@ -66,13 +68,13 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
                     f'--std=c++20 -O3 -lm{gcc_compilation_flags} -fdiagnostics-color'.split(' ')
-        if use_fsanitize and not weak_compilation_flags:
+        if use_fsanitize and compilation_flags != 'weak':
             arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
     elif ext == '.c':
         arguments = [compilers.c_compiler_path or compiler.get_c_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
                     f'--std=gnu99 -O3 -lm{gcc_compilation_flags} -fdiagnostics-color'.split(' ')
-        if use_fsanitize and not weak_compilation_flags:
+        if use_fsanitize and compilation_flags != 'weak':
             arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
@@ -106,14 +108,14 @@ def compile(program, output, compilers: Compilers = None, compile_log = None, we
         return True
 
 
-def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilation_flags = False, use_fsanitize = False) \
+def compile_file(file_path: str, name: str, compilers: Compilers, compilation_flags='default', use_fsanitize=False) \
         -> Tuple[Union[str, None], str]:
     """
     Compile a file
     :param file_path: Path to the file to compile
     :param name: Name of the executable
     :param compilers: Compilers object
-    :param weak_compilation_flags: Use weaker compilation flags
+    :param compilation_flags: Set of compilation flags to use
     :param use_fsanitize: Whether to use fsanitize when compiling C/C++ programs. Sanitizes address and undefined behavior.
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
@@ -134,7 +136,7 @@ def compile_file(file_path: str, name: str, compilers: Compilers, weak_compilati
     compile_log_path = paths.get_compilation_log_path(os.path.splitext(name)[0] + '.compile_log')
     with open(compile_log_path, 'w') as compile_log:
         try:
-            if compile(file_path, output, compilers, compile_log, weak_compilation_flags, extra_compilation_args,
+            if compile(file_path, output, compilers, compile_log, compilation_flags, extra_compilation_args,
                        extra_compilation_files, use_fsanitize=use_fsanitize):
                 return output, compile_log_path
         except CompilationError:
