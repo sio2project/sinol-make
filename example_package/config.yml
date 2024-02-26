@@ -29,16 +29,6 @@ scores:
 # extra_compilation_files: ['abclib.cpp', 'abclib.h']
 
 
-### Memory
-
-# More precise memory limits can be defined in `memory_limits` key.
-# Same as with time limits, the more precise memory limit has higher priority.
-
-# memory_limits:
-#   3: 131072
-#   4: 131072
-
-
 ### Time
 
 # More precise time limit for each group or test can be defined in `time_limits` key.
@@ -49,9 +39,27 @@ scores:
 #   5: 7000
 
 
+### Memory
+
+# More precise memory limits can be defined in `memory_limits` key.
+# Same as with time limits, the more precise memory limit has higher priority.
+
+# memory_limits:
+#   3: 131072
+#   4: 131072
+
+
 ### Title
 
-# Title can be different for different languages.
 # If there are Polish characters, they should be written for better readability.
+# Title can be different for different languages.
 # title_pl: Przykładowe zadanie
 # title_en: Example task package
+
+
+### Scores
+
+# Number of points for each group can be defined in `scores` key.
+# If this key is not specified, then all groups have the same number of points.
+# (if number of groups doesn't divide 100, then the last groups will have the remaining points).
+# Group 0 always has zero points.
