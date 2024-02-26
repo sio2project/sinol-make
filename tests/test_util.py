@@ -85,19 +85,19 @@ def test_check_version(**kwargs):
         version_file.unlink()
 
     # Test correct request
-    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "1.0.0"}})
+    mocker.get("https://pypi.python.org/pypi/st-make/json", json={"info": {"version": "1.0.0"}})
     util.check_version()
     assert version_file.is_file()
     assert version_file.read_text() == "1.0.0"
     version_file.unlink()
 
     # Test wrong request
-    mocker.get("https://pypi.python.org/pypi/sinol-make/json", status_code=404)
+    mocker.get("https://pypi.python.org/pypi/st-make/json", status_code=404)
     util.check_version()
     assert not version_file.is_file()
 
     # Time out
-    mocker.get("https://pypi.python.org/pypi/sinol-make/json", exc=requests.exceptions.ConnectTimeout)
+    mocker.get("https://pypi.python.org/pypi/st-make/json", exc=requests.exceptions.ConnectTimeout)
     util.check_version()
     assert not version_file.is_file()
 

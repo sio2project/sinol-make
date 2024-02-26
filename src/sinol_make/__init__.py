@@ -9,18 +9,18 @@ import os
 from sinol_make import util, oiejq
 
 
-__version__ = "1.5.26"
+__version__ = "0.0.1"
 
 
 def configure_parsers():
     parser = argparse.ArgumentParser(
-        prog='sinol-make',
+        prog='st-make',
         description='Tool for creating and testing sio2 tasks',
     )
     parser.add_argument("-v", "--version", action="version", version="%(prog)s " + __version__)
     subparsers = parser.add_subparsers(
         title='command',
-        description='sinol-make commands',
+        description='st-make commands',
         dest='command',
     )
     subparsers.required = False
@@ -44,8 +44,8 @@ def main_exn():
             new_version = util.check_for_updates(__version__)
             if new_version is not None:
                 print(util.warning(
-                    f'New version of sinol-make is available (your version: {__version__}, available version: {new_version}).\n'
-                    f' You can update it by running `pip3 install sinol-make --upgrade`.'))
+                    f'New version of st-make is available (your version: {__version__}, available version: {new_version}).\n'
+                    f' You can update it by running `pip3 install st-make --upgrade`.'))
 
             if util.is_linux() and not oiejq.check_oiejq():
                 print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
@@ -77,4 +77,5 @@ def main():
     except:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'
-                             'If that is a bug, please report it or submit a bugfix: https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
+                             'If that is a bug, please report it or submit a bugfix: '
+                             'https://github.com/Stowarzyszenie-Talent/st-make/#reporting-bugs-and-contributing-code')

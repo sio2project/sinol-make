@@ -213,7 +213,7 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
                 return dict[plural_limit_name][test_id]
             else:
                 util.exit_with_error(
-                    f'{os.path.basename(test_path)}: Specifying limit for a single test is not allowed in sinol-make.')
+                    f'{os.path.basename(test_path)}: Specifying limit for a single test is not allowed in st-make.')
         elif test_group in dict[plural_limit_name]:
             return dict[plural_limit_name][test_group]
     if limit_name in dict:

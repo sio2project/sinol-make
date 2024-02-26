@@ -59,15 +59,15 @@ override_limits:
 # extra_compilation_files: ['abclib.cpp', 'abclib.py']
 
 
-### Keys used by sinol-make:
+### Keys used by st-make:
 
 # This key represents the short name (consisting of 3 letters) of the task.
 # The names of files in `prog/`, `doc/`, `in/` and `out/` directories have to start with this task id.
-# This key is only used by `sinol-make`: running `sinol-make export` creates
+# This key is only used by `st-make`: running `st-make export` creates
 # an archive with the proper name, which sio2 uses as the task id.
 sinol_task_id: abc
 
-# sinol-make can behave differently depending on the value of `sinol_contest_type` key.
+# st-make can behave differently depending on the value of `sinol_contest_type` key.
 # Mainly, it affects how points are calculated.
 # If the key is not specified, then `default` is used.
 # Possible values are:
@@ -83,8 +83,8 @@ sinol_task_id: abc
 #            A solution passes when all groups pass.
 sinol_contest_type: oi
 
-# sinol-make can check if the solutions run as expected when using `run` command.
+# st-make can check if the solutions run as expected when using `run` command.
 # Key `sinol_expected_scores` defines expected scores for each solution on each tests.
 # There should be no reason to change this key manually.
-# It is automatically generated and managed by sinol-make.
+# It is automatically generated and managed by st-make.
 sinol_expected_scores: {}

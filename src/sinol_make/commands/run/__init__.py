@@ -1013,9 +1013,9 @@ class Command(BaseCommand):
             if not util.is_linux():
                 util.exit_with_error('As `oiejq` works only on Linux-based operating systems,\n'
                                      'we do not recommend using operating systems such as Windows or macOS.\n'
-                                     'Nevertheless, you can still run sinol-make by specifying\n'
+                                     'Nevertheless, you can still run st-make by specifying\n'
                                      'another way of measuring time through the `--time-tool` flag.\n'
-                                     'See `sinol-make run --help` for more information about the flag.\n'
+                                     'See `st-make run --help` for more information about the flag.\n'
                                      'See https://github.com/sio2project/sinol-make#why for more information about `oiejq`.\n')
 
             oiejq.check_perf_counters_enabled()
@@ -1203,6 +1203,6 @@ class Command(BaseCommand):
             except Exception:
                 util.exit_with_error("Validating expected scores failed. "
                                      "This probably means that `sinol_expected_scores` is broken. "
-                                     "Delete it and run `sinol-make run --apply-suggestions` again.")
+                                     "Delete it and run `st-make run --apply-suggestions` again.")
         self.print_expected_scores_diff(validation_results)
         self.exit()

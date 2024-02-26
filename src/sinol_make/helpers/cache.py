@@ -130,7 +130,7 @@ def check_can_access_cache():
         os.unlink(paths.get_cache_path("test"))
     except PermissionError:
         util.exit_with_error("You don't have permission to access the `.cache/` directory. "
-                             "`sinol-make` needs to be able to write to this directory.")
+                             "`st-make` needs to be able to write to this directory.")
 
 
 def has_file_changed(file_path: str) -> bool:

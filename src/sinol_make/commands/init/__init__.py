@@ -25,8 +25,8 @@ class Command(BaseCommand):
         parser.add_argument('task_id', type=str, help='Id of the task to create')
 
     def download_template(self):
-        repo = 'https://github.com/sio2project/sinol-make.git'
-        package_dir = 'sinol-make/example_package'
+        repo = 'https://github.com/Stowarzyszenie-Talent/st-make.git'
+        package_dir = 'st-make/example_package'
         self.used_tmpdir = tempfile.TemporaryDirectory()
         tmp_dir = self.used_tmpdir.name
         ret = subprocess.run(['git', 'clone', '-q', '--depth', '1', repo], cwd=tmp_dir)

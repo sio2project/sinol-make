@@ -444,7 +444,7 @@ def test_override_limits(create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_stack_size_package_path()], indirect=True)
 def test_mem_limit_kill(create_package, time_tool):
     """
-    Test if `sinol-make` kills solution if it runs with memory limit exceeded.
+    Test if `st-make` kills solution if it runs with memory limit exceeded.
     """
     package_path = create_package
     command = get_command()
@@ -516,13 +516,13 @@ def test_undocumented_test_limits_option(create_package, capsys):
 
     assert e.value.code == 1
     out = capsys.readouterr().out
-    assert "und1a.in: Specifying limit for a single test is not allowed in sinol-make." in out
+    assert "und1a.in: Specifying limit for a single test is not allowed in st-make." in out
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_example_tests_package_path()], indirect=True)
 def test_no_tests(create_package, time_tool, capsys):
     """
-    Test if `sinol-make` doesn't crash when there are no tests to run.
+    Test if `st-make` doesn't crash when there are no tests to run.
     """
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", time_tool])
@@ -538,7 +538,7 @@ def test_no_tests(create_package, time_tool, capsys):
 @pytest.mark.parametrize("create_package", [get_example_tests_package_path()], indirect=True)
 def test_only_example_tests(create_package, time_tool, capsys):
     """
-    Test if `sinol-make` works only on example tests
+    Test if `st-make` works only on example tests
     """
     package_path = create_package
     create_ins_outs(package_path)
@@ -719,7 +719,7 @@ def test_contest_type_change(create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
 def test_cwd_in_prog(create_package, time_tool):
     """
-    Test if `sinol-make` works when cwd is in prog.
+    Test if `st-make` works when cwd is in prog.
     """
     package_path = create_package
     os.chdir("prog")
