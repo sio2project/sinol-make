@@ -1,22 +1,21 @@
-# <img src="https://avatars.githubusercontent.com/u/93839068?s=200&v=4" height=60em> st-make
+# ![Logo](https://avatars.githubusercontent.com/u/93839068?s=60&v=4) sinol-make
 
-`st-make` is a CLI tool for creating and verifying problem packages
+`sinol-make` is a CLI tool for creating and verifying problem packages
 for [sio2](https://github.com/sio2project/oioioi)
 with features such as:
+
 - measuring time and memory in the same deterministic way as sio2,
 - running the solutions in parallel,
 - keeping a git-friendly report of solutions' scores,
 - catching mistakes in the problem packages as early as possible,
 - and more.
 
+## Contents
 This tool is a fork of [sinol-make](https://github.com/sio2project/sinol-make), with features specific to [Talent](https://talent.edu.pl/) contests.
-
-# Contents
 
 - [Why?](#why)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Configuarion](#configuration)
 - [Reporting bugs and contributing code](#reporting-bugs-and-contributing-code)
 
 ### Why?
@@ -36,9 +35,10 @@ solutions' runtime, called `oiejq`.
 It's possible to directly install [st-make](https://pypi.org/project/st-make/)
 through Python's package manager pip, which usually is installed alongside Python:
 
-```
+```bash
 pip3 install st-make
 ```
+
 `pip` installs the `st-make` executable in `~/.local/bin/` directory,
 so make sure this directory is in your `PATH`.
 [Here's](https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7) how to add a directory to `PATH`.
@@ -48,11 +48,12 @@ As `oiejq` works only on Linux-based operating systems,
 Nevertheless `st-make` supports those operating systems,
 though there are additional installation steps required to use
 other tools for measuring time (which are non-deterministic and produce reports different from sio2):
+
 - Debian-based systems (Ubuntu, usually Windows WSL): `apt install time`
 - Arch-based systems: `pacman -S time`
 - macOS: `brew install gnu-time coreutils`
 
-### Autocompletion (optional)
+#### Autocompletion (optional)
 
 If you would like to have autocompletion for `st-make` commands,
 run the following command and refresh the shell (e.g. by opening a new terminal):
@@ -81,8 +82,9 @@ Run `st-make ingen --help` to see available flags.
 - `st-make outgen` -- Generate output files using the model solutions. Run `st-make outgen --help` to see available flags.
 - `st-make inwer` -- Verifies whether input files are correct using your "inwer.cpp" program. You can specify what inwer
 program to use, what tests to check and how many CPUs to use. Run `st-make inwer --help` to see available flags.
-- `st-make export` -- Creates archive ready to upload to sio2 or szkopul. Run `st-make export --help` to see all available flags.
+- `st-make export` -- Creates archive ready to upload to wyzwania or oboz. Run `st-make export --help` to see all available flags.
 - `st-make doc` -- Compiles all LaTeX files in doc/ directory to PDF. Run `st-make doc --help` to see all available flags.
+- `st-make init [id]` -- Creates package from template [on github](https://github.com/Stowarzyszenie-Talent/st-make/tree/main/example_package) and sets task id to provided `[id]`. Requires an internet connection to run.
 
 ### Reporting bugs and contributing code
 

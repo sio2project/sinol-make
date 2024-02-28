@@ -94,6 +94,13 @@ def get_doc_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "doc")
 
 
+def get_ps_doc_package_path():
+    """
+    Get path to package for testing `doc` command (version with ps images) (/test/packages/ps_doc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "ps_doc")
+
+
 def get_long_name_package_path():
     """
     Get path to package with long name (/test/packages/long_package_name)
