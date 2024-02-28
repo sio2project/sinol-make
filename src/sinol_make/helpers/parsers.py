@@ -23,7 +23,7 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--java-compiler-path', dest='java_compiler_path', type=str,
                         default=compiler.get_java_compiler_path(), help='Java compiler to use (default: javac)')
     parser.add_argument('--compile-mode', dest='compile_mode', choices=['default', 'oioioi', 'weak'],
-                        help='Flag groups used to compile C/C++ files. Available options:\n'
+                        help='Warning flag groups used to compile C/C++ files. Available options:\n'
                              ' default - uses default flags: \n'
                              '    (-Wshadow -Wconversion -Wno-unused-result -Wfloat-equal) + oioioi flags\n'
                              ' oioioi - uses the same flags as oioioi:\n'

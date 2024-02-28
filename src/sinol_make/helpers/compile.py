@@ -118,7 +118,7 @@ def compile_file(file_path: str, name: str, compilers: Compilers, compilation_fl
     :param file_path: Path to the file to compile
     :param name: Name of the executable
     :param compilers: Compilers object
-    :param compilation_flags: Set of compilation flags to use
+    :param compilation_flags: Group of compilation flags to use
     :param use_fsanitize: Whether to use fsanitize when compiling C/C++ programs. Sanitizes address and undefined behavior.
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
