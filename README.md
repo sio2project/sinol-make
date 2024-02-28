@@ -1,6 +1,6 @@
-# ![Logo](https://avatars.githubusercontent.com/u/93839068?s=60&v=4) sinol-make
+# ![Logo](https://avatars.githubusercontent.com/u/93839068?s=60&v=4) st-make
 
-`sinol-make` is a CLI tool for creating and verifying problem packages
+`st-make` is a CLI tool for creating and verifying problem packages
 for [sio2](https://github.com/sio2project/oioioi)
 with features such as:
 
@@ -10,8 +10,9 @@ with features such as:
 - catching mistakes in the problem packages as early as possible,
 - and more.
 
-## Contents
 This tool is a fork of [sinol-make](https://github.com/sio2project/sinol-make), with features specific to [Talent](https://talent.edu.pl/) contests.
+
+## Contents
 
 - [Why?](#why)
 - [Installation](#installation)
@@ -82,7 +83,7 @@ Run `st-make ingen --help` to see available flags.
 - `st-make outgen` -- Generate output files using the model solutions. Run `st-make outgen --help` to see available flags.
 - `st-make inwer` -- Verifies whether input files are correct using your "inwer.cpp" program. You can specify what inwer
 program to use, what tests to check and how many CPUs to use. Run `st-make inwer --help` to see available flags.
-- `st-make export` -- Creates archive ready to upload to wyzwania or oboz. Run `st-make export --help` to see all available flags.
+- `st-make export` -- Creates archive ready to upload to Wyzwania, Talent-camp and other sio2 instances. Run `st-make export --help` to see all available flags.
 - `st-make doc` -- Compiles all LaTeX files in doc/ directory to PDF. Run `st-make doc --help` to see all available flags.
 - `st-make init [id]` -- Creates package from template [on github](https://github.com/Stowarzyszenie-Talent/st-make/tree/main/example_package) and sets task id to provided `[id]`. Requires an internet connection to run.
 
