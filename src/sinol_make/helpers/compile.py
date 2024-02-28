@@ -4,7 +4,6 @@ import sys
 import shutil
 import stat
 import subprocess
-import yaml
 
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
@@ -22,7 +21,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     :param output: Path to the output file
     :param compilers: Compilers object
     :param compile_log: File to write the compilation log to
-    :param compilation_flags: Set of compilation flags to use
+    :param compilation_flags: Group of compilation flags to use
     :param extra_compilation_args: Extra compilation arguments
     :param extra_compilation_files: Extra compilation files
     :param is_checker: Set to True if compiling a checker. This will remove all cached test results.
@@ -53,17 +52,20 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     for file in extra_compilation_files:
         shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
 
-    gcc_compilation_flags = ' -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
+    gcc_compilation_flags = ''
     if compilation_flags == 'weak':
         gcc_compilation_flags = ''  # Disable all warnings
     elif compilation_flags == 'oioioi':
-        gcc_compilation_flags = ' -Wall -Wno-unused-result -Werror'
+        gcc_compilation_flags = ' -Wall -Wno-unused-result -Werror'  # Same flags as oioioi
+    elif compilation_flags == 'default':
+        gcc_compilation_flags = ' -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
+    else:
+        util.exit_with_error(f'Unknown compilation flags group: {compilation_flags}')
 
     if compilers is None:
         compilers = Compilers()
 
     ext = os.path.splitext(program)[1]
-    arguments = []
     if ext == '.cpp':
         arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
@@ -79,6 +81,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             # TODO: Make this work on Windows
+            print(util.error('Python is not supported on Windows'))
             pass
         else:
             with open(output, 'w') as output_file, open(program, 'r') as program_file:

@@ -1,10 +1,11 @@
-title: Package for testing --compile-mode weak
+title: Package for testing --compile-mode oioioi flag
 memory_limit: 16000
 time_limit: 1000
+sinol_task_id: oif
 scores:
   1: 100
 sinol_expected_scores:
-  wcf.cpp:
+  oif.cpp:
     expected:
       1: {points: 100, status: OK}
     points: 100

@@ -28,4 +28,4 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
                              '    (-Wshadow -Wconversion -Wno-unused-result -Wfloat-equal) + oioioi flags\n'
                              ' oioioi - uses the same flags as oioioi:\n'
                              '    (-Wall -Wno-unused-result -Werror)'
-                             ' weak - disable all warning flags during C and C++ compilation', default='auto')
+                             ' weak - disable all warning flags during C and C++ compilation', default='default')
