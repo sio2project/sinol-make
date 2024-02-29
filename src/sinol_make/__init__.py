@@ -1,7 +1,6 @@
 # PYTHON_ARGCOMPLETE_OK
 import argparse
 import traceback
-from time import sleep
 
 import argcomplete
 
