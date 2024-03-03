@@ -38,7 +38,7 @@
 \newif\ifetapdefed \etapdefedfalse  % czy podano etap
 \newif\ifkonkursdefed \konkursdefedfalse  % czy podano konkurs
 \newif\ifdaydefed \daydefedfalse  % czy podano dzien
-\newif\ifgroupdefed \groupdefedfalse  % czy podano dzien
+\newif\ifgroupdefed \groupdefedfalse  % czy podano group
 \newif\ifMemorydefed \Memorydefedfalse  % czy podano dostępną pamięć
 \newif\iftimedefed \timedefedfalse % czy podano czas działania
 \newif\ifCountrydefed \Countrydefedfalse % Czy zdefiniowano kraj
@@ -113,7 +113,7 @@
 }
 
 
-\definecolor{talentBlue}{RGB}{0, 57, 117} % logo
+\definecolor{talentBlue}{RGB}{0, 56, 117} % logo
 % \definecolor{talentBlue}{RGB}{31, 101, 157} % środek
 % \definecolor{talentBlue}{RGB}{31, 129, 189} % Jasny (SZU)
 % \definecolor{talentBlue}{RGB}{31, 73, 125} % Ciemny
@@ -601,7 +601,7 @@
 }
 
 \newcommand{\testOcen}[2]{
-  \item[] \textbf{\color{talentBlue}#1:\ }#2
+  \item[] \textbf{\color{talentBlue}#1:\ }   #2
 }
 
 \newcommand{\ocenTable}[1]{
@@ -609,7 +609,7 @@
 }
 
 \newcommand{\customOcenTable}[3]{
-  \begin{center}
+  \begin{center} % center / flushleft
     \begin{tabular}{#1}
     \hline
     #2 \\
@@ -669,53 +669,44 @@
     %
     %% Konkurs pokazuje się tylko gdy jest niepusty
     \ifkonkursdefed
-      \ifx\sinolKonkurs\@tempempty\ 
-      \else
-        \sinolKonkursText
-        \sinolKonkurs.\ 
+      \ifx\sinolKonkurs\@tempempty
+      \else\sinolKonkursText\sinolKonkurs.\
       \fi
     \else\?{brak konkursu}\erroutput{brak konkursu}\fi
     %
     %% Dzień pokazuje się tylko gdy jest niepusty
     \ifdaydefed
-      \ifx\sinolDay\@tempempty.
-      \else
-        \sinolDayText 
-        \sinolDay.
+      \ifx\sinolDay\@tempempty
+      \else\sinolDayText\sinolDay.\
       \fi
     \else\?{brak dnia}\erroutput{brak dnia}\fi
     %
     % Grupa
     \ifgroupdefed
       \ifx\sinolGroup\@tempempty
-      \else
-        \sinolGroupText:\
-        \sinolGroup.
+      \else\sinolGroupText:\,\sinolGroup.\
       \fi
-    \else?{brak grupy}\erroutput{brak grupy}\fi
+    \else\?{brak grupy}\erroutput{brak grupy}\fi
     %
     % Dostępna pamięć -- pokazuje sie tylko gdy
     % nie jest pusta i jest zdefiniowana
     \ifMemorydefed
       \ifx\sinolMemory\@tempempty
-      \else
-        \sinolMemoryText:\
-        \sinolMemory\,MB. 
+      \else\sinolMemoryText:\,\sinolMemory\,MB.\
       \fi
     \else\?{brak limitu pamięci}\erroutput{brak limitu pamięci}\fi
     % 
     %% Limit czasu -- pokazuje się tylko gdy nie jest pusty i jest zdefiniowany.
     \iftimedefed
       \ifx\sinolTime\@tempempty
-      \else
-        \sinolTimeText:\
-        \sinolTime.
+      \else\sinolTimeText:\,\sinolTime.\
       \fi
     \else\?{brak limitu czasu}\erroutput{brak limitu pamięci}\fi
     \hbox to 0pt {\vbox to 0pt {\begin{itemize} \item[] \end{itemize}\vss}}
     % Powyzsza linijka to smutny hak, ktory wymusza, zeby itemize'y
     % generowaly prawidlowe odstepy. Nie wiem dlaczego to dziala, nie wiem dlaczego
     % bez tego nie dziala. Have fun.
+    % Imo raczej można usunąć.
     \hfill
     \end{minipage}
     }
