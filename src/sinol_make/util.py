@@ -3,15 +3,11 @@ import math
 import multiprocessing
 import platform
 import tarfile
-import tempfile
-import shutil
 import hashlib
-import subprocess
 import multiprocessing
 import resource
 from typing import Union
 
-import sinol_make
 from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
 from sinol_make.structs.status_structs import Status
@@ -56,7 +52,9 @@ def init_package_command(args):
     that require being in package directory
     """
     exit_if_not_package()
-    return get_contest_type().argument_overrides(args)
+    contest = get_contest_type()
+    contest.verify_config()
+    return contest.argument_overrides(args)
 
 
 def exit_if_not_package():

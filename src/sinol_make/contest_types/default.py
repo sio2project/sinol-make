@@ -100,6 +100,12 @@ class DefaultContest:
         :return: Global score
         """
         return sum(group["points"] for group in groups_scores.values())
+    
+    def verify_config(self):
+        """
+        Used for verifing contest specific config.yml settings
+        """
+        pass
 
     def additional_export_job(self):
         """
