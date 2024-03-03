@@ -6,8 +6,106 @@ using namespace std;
 
 oi::Random rng;
 
+struct TestGenerator {
+public:
+    string tag;
+    int group;
+    int id;
+
+    TestGenerator(int _group = 0) {
+        tag = [](string path) {
+            auto end = path.rfind("ingen.");
+            oi_assert(end != string::npos);
+            auto beg = path.rfind('/', end);
+            if (beg == string::npos) {
+                beg = 0;
+            } else {
+                ++beg;
+            }
+            return path.substr(beg, end - beg);
+        }(__FILE__);
+        group = _group;
+        id = 0;
+        open_file();
+    }
+    
+    ~TestGenerator() {
+        close_file();
+    }
+    
+    void advance_group() noexcept {
+        close_file();
+        ++group;
+        id = 0;
+        open_file();
+    }
+    
+    void advance_id() noexcept {
+        close_file();
+        ++id;
+        open_file();
+    }
+    
+    TestGenerator operator++(int) noexcept {
+        TestGenerator res = *this;
+        advance_id();
+        return res;
+    }
+
+private:
+    string get_name() {
+        string res = "";
+        if (group == -1) {
+            return tag + to_string(id+1) + "ocen.in";
+        }
+        unsigned tmp_id = id;
+        for (;;) {
+            res += static_cast<char>('a' + tmp_id % ('z' - 'a' + 1));
+            if (tmp_id <= 'z' - 'a') {
+                break;
+            }
+            tmp_id = tmp_id / ('z' - 'a' + 1) - 1;
+        }
+        std::reverse(res.begin(), res.end());
+        return tag + to_string(group) + res + ".in";
+    }
+
+    void open_file() {
+        // Flush the buffers before reopening the next test.
+        cout << flush;
+        fflush(stdout);
+        auto test_filename = get_name();
+        oi_assert(freopen(test_filename.c_str(), "w", stdout), "failed to generate test ", test_filename);
+        //std::cerr << "Generating " << test_filename << "...\n";
+        rng = oi::Random{static_cast<uint_fast64_t>(hash<string_view>{}(test_filename))};
+    }
+
+    void close_file() {
+        // Flush the buffers before finishing.
+        cout << flush;
+        fflush(stdout);
+        auto test_filename = get_name();
+        std::cerr << "Generated " << test_filename << "\n";
+    }
+};
+
+struct TestData {
+    double n, m;
+
+    void print() {
+        cout << n << ' ' << m << '\n';
+    }
+};
+
 void gen_0() {
     cout << "2 3\n";
+}
+
+void gen_0_alternative() {
+    TestData t;
+    t.n = 2;
+    t.m = 3;
+    t.print();
 }
 
 void gen_1ocen() {
@@ -17,50 +115,41 @@ void gen_1ocen() {
     }
 }
 
-void gen_proper_test(pair<int, int> rn) {
-    // `rng` also works with double.
-    double a = rng(-1e6, 1e6);
-    double b = rng(-1e6, 1e6);
-    cout << min(a, b) << ' ' << max(a, b) << '\n';
+void gen_test(pair<int, int> rn) {
+    int a = rng(rn.first, rn.second);
+    int b = rng(rn.first, rn.second);
+    TestData t;
+    t.n = min(a, b);
+    t.m = max(a, b);
+    t.print();
 }
 
-struct Test {
-    unsigned group;
-    unsigned id;
-
-    operator string();
-    Test operator++(int) noexcept;
-    void advance_group() noexcept;
-};
-
-template<class Func, class... Args>
-void gen_test(string test_name, uint_fast64_t seed, Func&& func, Args&&... args);
-
-// If there's no need to set a specific seed, this function will reseed the `rng`
-// with a deterministic hash of the `test_name` string.
-template<class Func, class... Args>
-void gen_test_reseed(string test_name, Func&& func, Args&&... args);
-
 void gen_all_tests() {
-    gen_test_reseed("0", gen_0);
-    gen_test_reseed("1ocen", gen_1ocen);
+    TestGenerator current_test_name(-1); // Grupa ocen.
+    gen_1ocen();
 
-    Test current_test{.group = 1, .id = 0};
-    gen_test_reseed(current_test++, gen_proper_test, pair{1, 100});
-    gen_test_reseed(current_test++, gen_proper_test, pair{100, 100});
+    current_test_name.advance_group(); // Grupa 0.
+    gen_0();
 
-    current_test.advance_group();
-    gen_test_reseed(current_test++, gen_proper_test, pair{101, 1'000});
-    gen_test_reseed(current_test++, gen_proper_test, pair{1'000, 1'000});
+    current_test_name.advance_group(); // Grupa 1.
+    gen_test({1, 100});
+    current_test_name++;
+    gen_test({100, 100});
 
-    current_test.advance_group();
+    current_test_name.advance_group(); // Grupa 2.
+    gen_test({101, 1'000});
+    current_test_name++;
+    gen_test({1'000, 1'000});
+
+    current_test_name.advance_group(); // Grupa 3.
     for (int i = 0; i < 5; ++i) {
-        gen_test_reseed(current_test++, gen_proper_test, pair{1, 1'000});
+        gen_test({1, 1'000});
+        if (i < 4) current_test_name++;
     }
 }
 
 void gen_stresstest() {
-    // Optionally, print a random test
+    // Optionally, print a small random test.
     return;
 }
 
@@ -71,70 +160,8 @@ int main(int argc, char* argv[]) {
         gen_stresstest();
         return 0;
     }
-    oi_assert(argc == 1, "Run prog/*ingen.sh to stresstest and create proper tests.");
+    oi_assert(argc == 1, "Run prog/*ingen.sh to stresstest and create proper tests");
+    std::cerr << "Generating all tests ...\n";
     gen_all_tests();
     return 0;
-}
-
-///////////////////// `Test` and `gen_test_reseed` implementation /////////////////////
-
-const string& get_task_id() {
-    static auto task_id = [](string path) {
-        auto end = path.rfind("ingen.");
-        oi_assert(end != string::npos);
-        auto beg = path.rfind('/', end);
-        if (beg == string::npos) {
-            beg = 0;
-        } else {
-            ++beg;
-        }
-        return path.substr(beg, end - beg);
-    }(__FILE__);
-    return task_id;
-}
-
-template<class Func, class... Args>
-void gen_test(string test_name, uint_fast64_t seed, Func&& func, Args&&... args) {
-    // Flush the buffers before reopening the next test.
-    cout << flush;
-    fflush(stdout);
-    auto test_filename = get_task_id() + test_name + ".in";
-    oi_assert(freopen(test_filename.c_str(), "w", stdout), "failed to save test ", test_filename);
-    std::cerr << "Generating " << test_filename << "...\n";
-    rng = oi::Random{seed};
-    func(std::forward<decltype(args)>(args)...);
-    // Flush the buffers before giving up control to the caller.
-    cout << flush;
-    fflush(stdout);
-}
-
-template<class Func, class... Args>
-void gen_test_reseed(string test_name, Func&& func, Args&&... args) {
-    // The new seed is created from the test name.
-    uint_fast64_t seed = static_cast<uint_fast64_t>(hash<string_view>{}(test_name));
-    gen_test(test_name, seed, func, args...);
-}
-
-Test::operator string() {
-    string res = "";
-    for (;;) {
-        res += static_cast<char>('a' + id % ('z' - 'a' + 1));
-        if (id <= 'z' - 'a') {
-            break;
-        }
-        id = id / ('z' - 'a' + 1) - 1;
-    }
-    std::reverse(res.begin(), res.end());
-    return to_string(group) + res;
-}
-
-Test Test::operator++(int) noexcept {
-    Test res = *this;
-    ++id;
-    return res;
-}
-
-void Test::advance_group() noexcept {
-    ++group;
-    id = 0;
 }
