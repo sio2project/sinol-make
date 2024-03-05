@@ -53,11 +53,12 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
         shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
 
     gcc_compilation_flags = ''
-    if compilation_flags == 'weak':
+    if compilation_flags == 'weak' or compilation_flags == 'w':
+        compilation_flags = 'weak'
         gcc_compilation_flags = ''  # Disable all warnings
-    elif compilation_flags == 'oioioi':
+    elif compilation_flags == 'oioioi' or compilation_flags == 'o':
         gcc_compilation_flags = ' -Wall -Wno-unused-result -Werror'  # Same flags as oioioi
-    elif compilation_flags == 'default':
+    elif compilation_flags == 'default' or compilation_flags == 'd':
         gcc_compilation_flags = ' -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
     else:
         util.exit_with_error(f'Unknown compilation flags group: {compilation_flags}')
