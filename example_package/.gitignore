@@ -81,3 +81,6 @@ doc/abczad.err
 doc/abczad.fdb_latexmk
 doc/abczad.inf
 doc/abczad.synctex.gz
+
+# Mac OS
+.DS_Store

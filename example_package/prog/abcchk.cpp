@@ -1,16 +1,15 @@
 #include "oi.h"
 
+const int MIN_N = 1;
+const int MAX_N = 10'000;
+
 [[noreturn]] void checker(
     [[maybe_unused]] oi::Scanner& tin,
     [[maybe_unused]] oi::Scanner& tout,
     oi::Scanner& user
 ) {
     // This is an example checker with partial scores.
-    // Remove/change the code as needed.
-    double a, b;
-    tin >> oi::Num{a, -1e6, 1e6} >> ' ' >> oi::Num{b, -1e6, 1e6} >> oi::nl;
-    int n;
-    tin >> oi::Num{n, 1, 1'000} >> oi::nl;
+    // Remove or change the code as needed.
 
     // First line ok -> 20 points
     // Second line ok -> 80 points
@@ -18,10 +17,15 @@
     int max_score = 100;
     string verdict_comment;
 
+    double a, b;
+    tin >> oi::Num{a, -1e6, 1e6} >> ' ' >> oi::Num{b, -1e6, 1e6} >> oi::nl;
+    // `oi::Num{a, x, y}` reads "a", where "a" is in the range <x,y>
+    int n;
+    tin >> oi::Num{n, MIN_N, MAX_N} >> oi::nl;
+
     double sum;
     user >> oi::Num{sum, -2e6, 2e6} >> oi::nl;
     // `oi::nl` in mode `oi::Scanner::Mode::UserOutput` ignores whitespaces before the newline.
-    
     if (fabs((a + b) - sum) > 1e-6) {
         // If you want to fail the whole test, you could use `oi::checker_verdict.wrong()`
         // Here we want to check the output parts separately.
@@ -39,7 +43,7 @@
         int x;
         user >> oi::Num{x, i, i};
         if (i == n) {
-            user >> oi::nl;
+            user >> oi::nl; // `oi::nl` in mode `oi::Scanner::Mode::UserOutput` ignores whitespaces before the newline.
         } else {
             user >> ' ';
         }

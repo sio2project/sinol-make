@@ -25,8 +25,8 @@
 % \tNoSkipSection{text} % Jak wyżej, tylko bez odstępu między akapitem wyżej
 % \tSmallSection{text} % Mały nagłówek w stylu talentu
 % \tc{text} % Styl używany do oznaczania zmiennych
-% \makecompactexample{id}   % 2 style dodawania testów "zad0{id}" z paczki
-% \makestandardexample{id}  % obok siebie i pod sobą
+% \makecompactexample{id}   % 2 style dodawania automatycznie testów "zad0{id}" z paczki
+% \makestandardexample{id}  % compact - obok siebie,  standard - pod sobą
 %     % Przy kompilacji testy są automatycznie czytane z folderów ./in i ./out
 % \ocen{text} % Lista wszystkich testów ocen
 % \testOcen{text}{text2} % Pojedyńczy test ocen z opisem
@@ -47,7 +47,7 @@ Donec rhoncus tortor vitae lorem luctus maximus.
 
 \tSection{Wejście}
 
-W pierwszym wierszu wejścia znajduje się jedna liczba $\tc{n}$ ($1\leq \tc{n}\leq 1\ 000\ 000$), oznaczająca parametr z~wejścia.
+W pierwszym wierszu standardowego wejścia znajduje się jedna liczba $\tc{n}$ ($1\leq \tc{n}\leq 1\ 000\ 000$), oznaczająca parametr z~wejścia.
 
 \tSection{Wyjście}
 
@@ -59,8 +59,8 @@ W pierwszym wierszu wyjścia powinna znajdować się jedna liczba $\tc{z}$, wyni
 
 \tSection{Przykład}
 
-\makecompactexample{a}  % abc0.in -> {}, abc0x.in -> {x}
-\makecompactexample{b}
+\makecompactexample{}  % abc0.in -> {}, abc0x.in -> {x}
+\makecompactexample{a}  % testy muszą być wygenerowane więc użyj st-make ingen outgen
 
 \tNoSkipSection{Wyjaśnienie przykładów}{0pt}
 
@@ -91,8 +91,9 @@ Testy do każdego podzadania składają się z jednej lub większej liczby osobn
 % Alternatywnie \customOcenTable{|c|c|c|}{\tc{Nr} & \tc{Ograniczenia} & \tc{Punkty}}{reszta tabeli & & }
 
 \ocenTable{
-  \ocenRow{1 & \ocenElement{$\tc{n} \leq 1000$  Dwie\\ Linie} & 30}
-  \ocenRow{2 & $\tc{n} \leq 1\,000\,000$ & 70}
+  \ocenRow{1 & $\tc{n} \leq 100$ & 30}
+  \ocenRow{2 & \ocenElement{$\tc{n} \leq 1000$  Dwie\\ Linie} & 50}
+  \ocenRow{3 & Bez ograniczeń & 20}
 }
 
 \finish{}
