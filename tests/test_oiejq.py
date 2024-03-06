@@ -11,12 +11,23 @@ def test_install_oiejq():
     if sys.platform != 'linux':
         return
 
-    shutil.rmtree(os.path.expanduser('~/.local/bin/'), ignore_errors=True)
+    try:
+        os.remove(os.path.expanduser('~/.local/bin/oiejq'))
+        os.remove(os.path.expanduser('~/.local/bin/sio2jail'))
+    except IsADirectoryError:
+        shutil.rmtree(os.path.expanduser('~/.local/bin/oiejq'), ignore_errors=True)    
+    except FileNotFoundError:
+        pass
     assert not oiejq.check_oiejq()
     assert oiejq.install_oiejq()
     assert oiejq.get_oiejq_path() == os.path.expanduser('~/.local/bin/oiejq')
 
-    shutil.rmtree(os.path.expanduser('~/.local/bin/'), ignore_errors=True)
+    try:
+        os.remove(os.path.expanduser('~/.local/bin/oiejq'))
+        os.remove(os.path.expanduser('~/.local/bin/sio2jail'))
+    except FileNotFoundError:
+        pass
+    
     assert not oiejq.check_oiejq()
     os.makedirs(os.path.expanduser('~/.local/bin/oiejq'))
     with pytest.raises(SystemExit):
@@ -28,7 +39,14 @@ def test_check_oiejq():
     if sys.platform != 'linux':
         return
 
-    shutil.rmtree(os.path.expanduser('~/.local/bin/'), ignore_errors=True)
+    try:
+        os.remove(os.path.expanduser('~/.local/bin/oiejq'))
+        os.remove(os.path.expanduser('~/.local/bin/sio2jail'))
+    except IsADirectoryError:
+        shutil.rmtree(os.path.expanduser('~/.local/bin/oiejq'), ignore_errors=True)    
+    except FileNotFoundError:
+        pass
+
     assert not oiejq.check_oiejq()
     os.makedirs(os.path.expanduser('~/.local/bin/oiejq'), exist_ok=True)
     assert not oiejq.check_oiejq()
