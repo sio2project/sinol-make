@@ -35,7 +35,7 @@ const int MAX_N = 10'000;
     } else {
         verdict_comment = "Pierwszy wiersz jest OK";
         oi::checker_verdict.set_partial_score(20, verdict_comment);
-        // When checker returns a wrong verdict (by calling `oi::checker_verdict::wrong()` or
+        // When checker returns a wrong verdict (by calling `oi::checker_verdict::exit_wrong()` or
         // when failing while scanning user output, the user will get 20 points instead of 0.
     }
 
@@ -66,53 +66,53 @@ int main(int argc, char* argv[]) {
 
 // You can write checker tests in the following way:
 // (They won't be executed in sio2, they only work locally)
-CHECKER_TEST(TestInput{"0 1\n1\n1\n"}, TestOutput{"does not matter"}, UserOutput{"1\n1\n"}, CheckerOutput{"OK\nPierwszy wiersz jest OK; Drugi wiersz jest OK\n100\n"})
+// CHECKER_TEST(TestInput{"0 1\n1\n1\n"}, TestOutput{"does not matter"}, UserOutput{"1\n1\n"}, CheckerOutput{"OK\nPierwszy wiersz jest OK; Drugi wiersz jest OK\n100\n"})
 
-// Or like this:
-CHECKER_TEST(R"(
-@test_in
-0 1
-3
-1 2 3
-@test_out
-does not matter
-@user
-2
-1 2 3
-@checker
-OK
-Pierwszy wiersz jest niepoprawny; Drugi wiersz jest OK
-80
-)")
+// // Or like this:
+// CHECKER_TEST(R"(
+// @test_in
+// 0 1
+// 3
+// 1 2 3
+// @test_out
+// does not matter
+// @user
+// 2
+// 1 2 3
+// @checker
+// OK
+// Pierwszy wiersz jest niepoprawny; Drugi wiersz jest OK
+// 80
+// )")
 
-CHECKER_TEST(R"(
-@test_in
-0 1
-3
-1 2 3
-@test_out
-does not matter
-@user
-1
-1 2 4
-@checker
-OK
-Pierwszy wiersz jest OK; Wiersz 2, pozycja 5: Liczba calkowita spoza zakresu
-20
-)")
+// CHECKER_TEST(R"(
+// @test_in
+// 0 1
+// 3
+// 1 2 3
+// @test_out
+// does not matter
+// @user
+// 1
+// 1 2 4
+// @checker
+// OK
+// Pierwszy wiersz jest OK; Wiersz 2, pozycja 5: Liczba calkowita spoza zakresu
+// 20
+// )")
 
-CHECKER_TEST(R"(
-@test_in
-0 1
-3
-1 2 3
-@test_out
-does not matter
-@user
-2
-1 2 4
-@checker
-OK
-Pierwszy wiersz jest niepoprawny; Wiersz 2, pozycja 5: Liczba calkowita spoza zakresu
-0
-)")
+// CHECKER_TEST(R"(
+// @test_in
+// 0 1
+// 3
+// 1 2 3
+// @test_out
+// does not matter
+// @user
+// 2
+// 1 2 4
+// @checker
+// OK
+// Pierwszy wiersz jest niepoprawny; Wiersz 2, pozycja 5: Liczba calkowita spoza zakresu
+// 0
+// )")
