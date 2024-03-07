@@ -52,6 +52,15 @@ def colorize_status(status):
     return util.error(status)
 
 
+def colorize_points(points, min_points, max_points):
+    if points == max_points:
+        return util.color_green(str(points))
+    elif points == min_points:
+        return util.color_red(str(points))
+    else:
+        return util.color_yellow(str(points))
+
+
 def update_group_status(group_status, new_status):
     order = [Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK, Status.PENDING]
     if order.index(new_status) < order.index(group_status):
@@ -234,8 +243,13 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 for program in program_group:
                     lang = package_util.get_file_lang(program)
                     result = all_results[program][package_util.get_group(test, task_id)][test]
-                    print(("%23s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, task_id, args)))
-                          if result.Memory is not None else 13*" ", end=" | ")
+                    if result.Points:
+                        print(colorize_points(result.Points, contest.min_score_per_test(),
+                                              contest.max_score_per_test()).ljust(13), end="")
+                    else:
+                        print(3*" ", end="")
+                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, task_id, args)))
+                          if result.Memory is not None else 10*" ", end=" | ")
                 print()
 
         print_table_end()

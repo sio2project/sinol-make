@@ -29,3 +29,9 @@ class ICPCContest(DefaultContest):
 
     def get_global_score(self, groups_scores: Dict[int, Dict], global_max_score):
         return min(group["points"] for group in groups_scores.values())
+
+    def min_score_per_test(self):
+        return 0
+
+    def max_score_per_test(self):
+        return 1
