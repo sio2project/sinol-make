@@ -46,7 +46,7 @@ def test_execution(create_package, time_tool):
 def test_run_solutions(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
-    command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool, weak_compilation_flags=False,
+    command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool, compile_mode='default',
                                       hide_memory=False)
     create_ins_outs(package_path)
     command.tests = package_util.get_tests("abc", None)

@@ -106,7 +106,7 @@ class Command(BaseCommand):
             print(util.info('All output files are up to date.'))
         else:
             self.correct_solution_exe = compile_correct_solution(self.correct_solution, self.args,
-                                                                 self.args.weak_compilation_flags)
+                                                                 self.args.compile_mode)
             self.generate_outputs(outputs_to_generate)
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
                 yaml.dump(md5_sums, f)

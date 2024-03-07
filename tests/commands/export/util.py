@@ -10,7 +10,7 @@ def get_command():
     command = Command()
     command.task_id = package_util.get_task_id()
     command.args = argparse.Namespace(
-        weak_compilation_flags=False,
+        compile_mode='default',
         c_compiler_path=compiler.get_c_compiler_path(),
         cpp_compiler_path=compiler.get_cpp_compiler_path(),
         python_interpreter_path=compiler.get_python_interpreter_path(),

@@ -250,9 +250,8 @@ def test_flag_solutions_multiple(capsys, create_package, time_tool):
 @pytest.mark.parametrize("create_package", [get_weak_compilation_flags_package_path()], indirect=True)
 def test_weak_compilation_flags(create_package):
     """
-    Test flag --weak-compilation-flags.
+    Test flag --compile-mode weak flag.
     """
-    package_path = create_package
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", "time"])
     command = Command()
@@ -263,7 +262,27 @@ def test_weak_compilation_flags(create_package):
     assert e.type == SystemExit
     assert e.value.code == 1
 
-    args = parser.parse_args(["run", "--weak-compilation-flags", "--time-tool", "time"])
+    args = parser.parse_args(["run", "--compile-mode", "weak", "--time-tool", "time"])
+    command = Command()
+    command.run(args)
+
+    
+@pytest.mark.parametrize("create_package", [get_oioioi_compilation_flags_package_path()], indirect=True)
+def test_oioioi_compilation_flags(create_package):
+    """
+    Test flag --compile-mode oioioi flag.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", "time"])
+    command = Command()
+
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+
+    assert e.type == SystemExit
+    assert e.value.code == 1
+
+    args = parser.parse_args(["run", "--compile-mode", "oioioi", "--time-tool", "time"])
     command = Command()
     command.run(args)
 

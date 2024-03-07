@@ -42,7 +42,7 @@ class Command(BaseCommand):
         util.change_stack_size_to_unlimited()
         self.ingen = get_ingen(self.task_id, args.ingen_path)
         print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
-        self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.weak_compilation_flags)
+        self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode)
 
         if run_ingen(self.ingen_exe):
             print(util.info('Successfully generated input files.'))

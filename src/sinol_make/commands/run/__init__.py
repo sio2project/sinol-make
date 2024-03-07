@@ -361,7 +361,7 @@ class Command(BaseCommand):
 
         try:
             with open(compile_log_file, "w") as compile_log:
-                compile.compile(source_file, output, self.compilers, compile_log, self.args.weak_compilation_flags,
+                compile.compile(source_file, output, self.compilers, compile_log, self.args.compile_mode,
                                 extra_compilation_args, extra_compilation_files, is_checker=is_checker)
             print(util.info("Compilation of file %s was successful."
                             % package_util.get_file_name(solution)))

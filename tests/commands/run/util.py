@@ -36,6 +36,6 @@ def get_command(path = None):
 
 def set_default_args(command):
     command.args = argparse.Namespace(
-        weak_compilation_flags=False,
+        compile_mode='default',
         print_expected_scores=True,
     )

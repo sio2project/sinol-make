@@ -45,6 +45,13 @@ def get_weak_compilation_flags_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "wcf")
 
 
+def get_oioioi_compilation_flags_package_path():
+    """
+    Get path to package for testing oioioi compilation flags (/test/packages/oioioi_flags)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "oioioi_flags")
+
+
 def get_inwer_package_path():
     """
     Get path to package for inwer command (/test/packages/wer)
