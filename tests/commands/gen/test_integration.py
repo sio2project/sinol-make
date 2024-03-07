@@ -299,10 +299,10 @@ def test_dangling_input_files(create_package):
     """
     Test if dangling input files are removed.
     """
-    simple_run(["prog/geningen4.cpp"], command="ingen")
+    simple_run(["prog/geningen5.cpp"], command="ingen")
     for f in ["gen1.in", "gen2.in"]:
         assert os.path.exists(os.path.join(create_package, "in", f))
 
-    simple_run(["prog/geningen5.cpp"], command="ingen")
+    simple_run(["prog/geningen6.cpp"], command="ingen")
     assert not os.path.exists(os.path.join(create_package, "in", "gen1.in"))
     assert os.path.exists(os.path.join(create_package, "in", "gen2.in"))
