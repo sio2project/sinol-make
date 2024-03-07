@@ -7,8 +7,11 @@ memory_limit: 262144 # kB
 time_limit: 1000 # milliseconds
 
 scores:
-  1: 40
-  2: 60
+  1: 20
+  2: 40
+  3: 20
+  4: 10
+  5: 10
 
 
 # For more options see: https://github.com/sio2project/sinol-make/blob/main/example_package/config.yml
