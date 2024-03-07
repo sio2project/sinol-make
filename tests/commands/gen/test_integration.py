@@ -292,3 +292,17 @@ def test_bad_tests(create_package, capsys):
         for file in glob.glob(os.path.join(create_package, "out", "*.out")):
             os.unlink(file)
         os.unlink(os.path.join(create_package, "in", ".md5sums"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path()], indirect=True)
+def test_dangling_input_files(create_package):
+    """
+    Test if dangling input files are removed.
+    """
+    simple_run(["prog/geningen4.cpp"], command="ingen")
+    for f in ["gen1.in", "gen2.in"]:
+        assert os.path.exists(os.path.join(create_package, "in", f))
+
+    simple_run(["prog/geningen5.cpp"], command="ingen")
+    assert not os.path.exists(os.path.join(create_package, "in", "gen1.in"))
+    assert os.path.exists(os.path.join(create_package, "in", "gen2.in"))
