@@ -6,7 +6,7 @@ import argcomplete
 
 from sinol_make import util, oiejq
 
-__version__ = "1.5.26"
+__version__ = "1.5.27"
 
 
 def configure_parsers():
