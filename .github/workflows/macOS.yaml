@@ -1,6 +1,6 @@
 name: pytest-macos
 run-name: Run pytest on macOS
-on: [push, pull_request]
+on: push
 
 jobs:
   pytest:

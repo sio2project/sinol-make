@@ -1,6 +1,6 @@
 name: pytest-arch
 run-name: Run pytest on Arch Linux
-on: [push, pull_request]
+on: push
 jobs:
   pytest:
     runs-on: self-hosted
