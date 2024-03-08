@@ -100,7 +100,7 @@ class DefaultContest:
         :return: Global score
         """
         return sum(group["points"] for group in groups_scores.values())
-    
+
     def verify_config(self):
         """
         Used for verifing contest specific config.yml settings
@@ -114,3 +114,15 @@ class DefaultContest:
         :return: If not None, returned value will be used as name of the archive
         """
         return None
+
+    def min_score_per_test(self):
+        """
+        Returns minimum score for single test
+        """
+        return 0
+
+    def max_score_per_test(self):
+        """
+        Returns maximum score for single test
+        """
+        return 100
