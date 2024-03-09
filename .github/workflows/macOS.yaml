@@ -35,4 +35,5 @@ jobs:
         env:
           PYTEST_ADDOPTS: "--color=yes"
         run: |
+          source .venv/bin/activate
           pytest -v --time-tool time
