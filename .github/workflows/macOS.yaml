@@ -25,10 +25,12 @@ jobs:
         run: |
           rm -f /usr/local/bin/2to3* /usr/local/bin/python3* /usr/local/bin/idle3* \
           /usr/local/bin/pydoc3* # Homebrew will fail if these exist
-          brew install gnu-time coreutils diffutils dpkg ghostscript texlive
+          brew install gnu-time coreutils diffutils dpkg ghostscript texlive virtualenv
       - name: Install Python dependencies
         run: |
-          python3 -m pip install .[tests]
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install .[tests]
       - name: Run pytest
         env:
           PYTEST_ADDOPTS: "--color=yes"
