@@ -266,7 +266,7 @@ def test_weak_compilation_flags(create_package):
     command = Command()
     command.run(args)
 
-    
+
 @pytest.mark.parametrize("create_package", [get_oioioi_compilation_flags_package_path()], indirect=True)
 def test_oioioi_compilation_flags(create_package):
     """
@@ -747,3 +747,38 @@ def test_cwd_in_prog(create_package, time_tool):
     args = parser.parse_args(["run", "--time-tool", time_tool])
     command = Command()
     command.run(args)
+
+
+@pytest.mark.parametrize("create_package", [get_checker_package_path()], indirect=True)
+def test_ghost_checker(create_package):
+    """
+    Test if after removing a checker, the cached test results are removed.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run"])
+    command = Command()
+
+    # First run to cache test results.
+    command.run(args)
+
+    # Remove checker.
+    os.unlink(os.path.join(os.getcwd(), "prog", "chkchk.cpp"))
+    shutil.copytree(paths.get_cache_path(), os.path.join(os.getcwd(), ".cache-copy"))
+
+    command = Command()
+    command.check_had_checker(False)
+
+    for solution in os.listdir(paths.get_cache_path("md5sums")):
+        cache_file: CacheFile = cache.get_cache_file(solution)
+        assert cache_file.tests == {}
+
+    shutil.rmtree(paths.get_cache_path())
+    shutil.move(os.path.join(os.getcwd(), ".cache-copy"), paths.get_cache_path())
+
+    # Run should fail, because outputs won't be checked with checker, so expected scores will be incorrect.
+    command = Command()
+    with pytest.raises(SystemExit) as e:
+        command.run(args)
+    assert e.value.code == 1
