@@ -1157,6 +1157,25 @@ class Command(BaseCommand):
         if not checker_compilation[0]:
             util.exit_with_error('Checker compilation failed.')
 
+    def check_had_checker(self, has_checker):
+        """
+        Checks if there was a checker and if it is now removed (or the other way around) and if so, removes tests cache.
+        In theory, removing cache after adding a checker is redundant, because during its compilation, the cache is
+        removed.
+        """
+        had_checker = os.path.exists(paths.get_cache_path("checker"))
+        if (had_checker and not has_checker) or (not had_checker and has_checker):
+            cache.remove_results_cache()
+        if has_checker:
+            with open(paths.get_cache_path("checker"), "w") as f:
+                f.write("")
+        else:
+            try:
+                os.remove(paths.get_cache_path("checker"))
+            except FileNotFoundError:
+                pass
+
+
     def run(self, args):
         args = util.init_package_command(args)
 
@@ -1187,6 +1206,7 @@ class Command(BaseCommand):
             self.compile_checker()
         else:
             self.checker = None
+        self.check_had_checker(self.checker is not None)
 
         lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0
