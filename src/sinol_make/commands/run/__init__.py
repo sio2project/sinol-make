@@ -52,6 +52,15 @@ def colorize_status(status):
     return util.error(status)
 
 
+def colorize_points(points, min_points, max_points):
+    if points == max_points:
+        return util.color_green(str(points))
+    elif points == min_points:
+        return util.color_red(str(points))
+    else:
+        return util.color_yellow(str(points))
+
+
 def update_group_status(group_status, new_status):
     order = [Status.CE, Status.TL, Status.ML, Status.RE, Status.WA, Status.OK, Status.PENDING]
     if order.index(new_status) < order.index(group_status):
@@ -234,8 +243,13 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 for program in program_group:
                     lang = package_util.get_file_lang(program)
                     result = all_results[program][package_util.get_group(test, task_id)][test]
-                    print(("%23s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, task_id, args)))
-                          if result.Memory is not None else 13*" ", end=" | ")
+                    if result.Points:
+                        print(colorize_points(result.Points, contest.min_score_per_test(),
+                                              contest.max_score_per_test()).ljust(13), end="")
+                    else:
+                        print(3*" ", end="")
+                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, task_id, args)))
+                          if result.Memory is not None else 10*" ", end=" | ")
                 print()
 
         print_table_end()
@@ -361,7 +375,7 @@ class Command(BaseCommand):
 
         try:
             with open(compile_log_file, "w") as compile_log:
-                compile.compile(source_file, output, self.compilers, compile_log, self.args.weak_compilation_flags,
+                compile.compile(source_file, output, self.compilers, compile_log, self.args.compile_mode,
                                 extra_compilation_args, extra_compilation_files, is_checker=is_checker)
             print(util.info("Compilation of file %s was successful."
                             % package_util.get_file_name(solution)))
@@ -1143,6 +1157,25 @@ class Command(BaseCommand):
         if not checker_compilation[0]:
             util.exit_with_error('Checker compilation failed.')
 
+    def check_had_checker(self, has_checker):
+        """
+        Checks if there was a checker and if it is now removed (or the other way around) and if so, removes tests cache.
+        In theory, removing cache after adding a checker is redundant, because during its compilation, the cache is
+        removed.
+        """
+        had_checker = os.path.exists(paths.get_cache_path("checker"))
+        if (had_checker and not has_checker) or (not had_checker and has_checker):
+            cache.remove_results_cache()
+        if has_checker:
+            with open(paths.get_cache_path("checker"), "w") as f:
+                f.write("")
+        else:
+            try:
+                os.remove(paths.get_cache_path("checker"))
+            except FileNotFoundError:
+                pass
+
+
     def run(self, args):
         args = util.init_package_command(args)
 
@@ -1173,6 +1206,7 @@ class Command(BaseCommand):
             self.compile_checker()
         else:
             self.checker = None
+        self.check_had_checker(self.checker is not None)
 
         lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0

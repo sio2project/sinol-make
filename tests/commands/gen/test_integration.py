@@ -9,6 +9,7 @@ from sinol_make.commands.gen import Command
 from sinol_make.commands.ingen import Command as IngenCommand
 from sinol_make.commands.ingen.ingen_util import get_ingen
 from sinol_make.commands.outgen import Command as OutgenCommand
+from sinol_make.commands.run import Command as RunCommand
 from sinol_make.helpers import package_util, paths, cache
 from tests.fixtures import *
 from tests import util
@@ -292,3 +293,47 @@ def test_bad_tests(create_package, capsys):
         for file in glob.glob(os.path.join(create_package, "out", "*.out")):
             os.unlink(file)
         os.unlink(os.path.join(create_package, "in", ".md5sums"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path()], indirect=True)
+def test_dangling_input_files(create_package):
+    """
+    Test if dangling input files are removed.
+    """
+    simple_run(["prog/geningen5.cpp"], command="ingen")
+    for f in ["gen1.in", "gen2.in"]:
+        assert os.path.exists(os.path.join(create_package, "in", f))
+
+    simple_run(["prog/geningen6.cpp"], command="ingen")
+    assert not os.path.exists(os.path.join(create_package, "in", "gen1.in"))
+    assert os.path.exists(os.path.join(create_package, "in", "gen2.in"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
+def test_outgen_cache_cleaning(create_package, capsys):
+    """
+    Test if cache is cleaned after running outgen.
+    """
+    simple_run(command="gen")
+    parser = configure_parsers()
+    args = parser.parse_args(["run"])
+    RunCommand().run(args)
+
+    with open(os.path.join(create_package, "prog", "abcingen.cpp"), "r") as f:
+        code = f.read().replace("1 3", "1 4")
+    with open(os.path.join(create_package, "prog", "abcingen.cpp"), "w") as f:
+        f.write(code)
+
+    simple_run(command="ingen")
+
+    # Run should fail, because input file was changed, but output file was not regenerated.
+    with pytest.raises(SystemExit) as e:
+        RunCommand().run(args)
+    assert e.type == SystemExit
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "Solution abc.cpp passed group 1 with status WA while it should pass with status OK." in out
+
+    simple_run(command="outgen")
+    # Run should pass, because output file was regenerated and cache for this test was cleaned.
+    RunCommand().run(args)

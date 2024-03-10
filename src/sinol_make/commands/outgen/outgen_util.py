@@ -21,13 +21,13 @@ def get_correct_solution(task_id):
     return correct_solution[0]
 
 
-def compile_correct_solution(solution_path: str, args: argparse.Namespace, weak_compilation_flags=False):
+def compile_correct_solution(solution_path: str, args: argparse.Namespace, compilation_flags='default'):
     """
     Compiles correct solution and returns path to compiled executable.
     """
     compilers = compiler.verify_compilers(args, [solution_path])
     correct_solution_exe, compile_log_path = compile.compile_file(solution_path, package_util.get_executable(solution_path), compilers,
-                                weak_compilation_flags)
+                                                                  compilation_flags)
     if correct_solution_exe is None:
         util.exit_with_error('Failed compilation of correct solution.',
                                   lambda: compile.print_compile_log(compile_log_path))

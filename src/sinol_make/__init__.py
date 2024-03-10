@@ -1,8 +1,7 @@
 # PYTHON_ARGCOMPLETE_OK
+import sys
 import argparse
 import traceback
-from time import sleep
-
 import argcomplete
 
 from sinol_make import util, oiejq
@@ -44,21 +43,37 @@ def check_oiejq():
                                      'unpack it to `~/.local/bin/` and rename oiejq.sh to oiejq.\n'
                                      'You can also use --oiejq-path to specify path to your oiejq.')
         except Exception as err:
-            util.exit_with_error('`oiejq` could not be installed.\n' + err)
+            util.exit_with_error('`oiejq` could not be installed.\n' + str(err))
 
 
 def main_exn():
     parser = configure_parsers()
-    args = parser.parse_args()
+    arguments = []
+    curr_args = []
+    for arg in sys.argv[1:]:
+        if arg in util.get_command_names() and not (len(curr_args) > 0 and curr_args[0] == 'init'):
+            if curr_args:
+                arguments.append(curr_args)
+            curr_args = [arg]
+        else:
+            curr_args.append(arg)
+    if curr_args:
+        arguments.append(curr_args)
     commands = util.get_commands()
+    check_oiejq()
 
-    for command in commands:
-        if command.get_name() == args.command:
-            check_oiejq()
-            command.run(args)
-            exit(0)
-
-    parser.print_help()
+    for curr_args in arguments:
+        args = parser.parse_args(curr_args)
+        command_found = False
+        for command in commands:
+            if command.get_name() == args.command:
+                command_found = True
+                if len(arguments) > 1:
+                    print(f' {command.get_name()} command '.center(util.get_terminal_size()[1], '='))
+                command.run(args)
+        if not command_found:
+            parser.print_help()
+            exit(1)
 
 
 def main():

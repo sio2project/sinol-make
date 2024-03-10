@@ -5,7 +5,6 @@ import shutil
 import tarfile
 import tempfile
 import argparse
-import yaml
 
 from sinol_make import util, contest_types
 from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_ingen, ingen_exists
@@ -13,6 +12,7 @@ from sinol_make.helpers import package_util, parsers, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.outgen import Command as OutgenCommand, compile_correct_solution, get_correct_solution
 from sinol_make.commands.doc import Command as DocCommand
+from sinol_make.interfaces.Errors import UnknownContestType
 
 
 class Command(BaseCommand):
@@ -55,7 +55,7 @@ class Command(BaseCommand):
         if ingen_exists(self.task_id):
             ingen_path = get_ingen(self.task_id)
             ingen_path = os.path.join(prog_dir, os.path.basename(ingen_path))
-            ingen_exe = compile_ingen(ingen_path, self.args, self.args.weak_compilation_flags)
+            ingen_exe = compile_ingen(ingen_path, self.args, self.args.compile_mode)
             if not run_ingen(ingen_exe, in_dir):
                 util.exit_with_error('Failed to run ingen.')
 
@@ -75,7 +75,7 @@ class Command(BaseCommand):
         if len(outputs) > 0:
             outgen = OutgenCommand()
             correct_solution_exe = compile_correct_solution(get_correct_solution(self.task_id), self.args,
-                                                            self.args.weak_compilation_flags)
+                                                            self.args.compile_mode)
             outgen.args = self.args
             outgen.correct_solution_exe = correct_solution_exe
             outgen.generate_outputs(outputs)
@@ -221,7 +221,7 @@ class Command(BaseCommand):
         :param target_dir: Target directory path.
         :return: Path to archive.
         """
-        archive = os.path.join(os.getcwd(), f'{self.task_id}.tgz')
+        archive = os.path.join(os.getcwd(), f'{self.export_name}.tgz')
         with tarfile.open(archive, "w:gz") as tar:
             tar.add(target_dir, arcname=os.path.basename(target_dir))
         return archive
@@ -231,7 +231,12 @@ class Command(BaseCommand):
 
         self.args = args
         self.task_id = package_util.get_task_id()
+        self.export_name = self.task_id
         package_util.validate_test_names(self.task_id)
+        try:
+            self.contest = contest_types.get_contest_type()
+        except UnknownContestType as e:
+            util.exit_with_error(str(e))
 
         config = package_util.get_config()
 
@@ -246,6 +251,9 @@ class Command(BaseCommand):
         self.copy_package_required_files(export_package_path)
         self.clear_files(export_package_path)
         self.create_makefile_in(export_package_path, config)
+        export_name = self.contest.additional_export_job()
+        if export_name is not None:
+            self.export_name = export_name
         archive = self.compress(export_package_path)
 
-        print(util.info(f'Exported to {self.task_id}.tgz'))
+        print(util.info(f'Exported to {self.export_name}.tgz'))

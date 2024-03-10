@@ -3,24 +3,26 @@ import math
 import multiprocessing
 import platform
 import tarfile
-import tempfile
-import shutil
 import hashlib
-import subprocess
 import multiprocessing
 import resource
 from typing import Union
 
-import sinol_make
 from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
 from sinol_make.structs.status_structs import Status
+
+
+__cache = {}
 
 
 def get_commands():
     """
     Function to get an array of all available commands.
     """
+    global __cache
+    if 'commands' in __cache:
+        return __cache['commands']
     commands_path = glob.glob(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -32,7 +34,15 @@ def get_commands():
         temp = importlib.import_module('sinol_make.commands.' + os.path.basename(path), 'Command')
         commands.append(temp.Command())
 
+    __cache['commands'] = commands
     return commands
+
+
+def get_command_names():
+    """
+    Function to get an array of all available command names.
+    """
+    return [command.get_name() for command in get_commands()]
 
 
 def find_and_chdir_package():
@@ -56,7 +66,9 @@ def init_package_command(args):
     that require being in package directory
     """
     exit_if_not_package()
-    return get_contest_type().argument_overrides(args)
+    contest = get_contest_type()
+    contest.verify_config()
+    return contest.argument_overrides(args)
 
 
 def exit_if_not_package():
