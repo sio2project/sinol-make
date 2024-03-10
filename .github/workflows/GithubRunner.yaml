@@ -1,6 +1,9 @@
 name: pytest-github-runner
 run-name: Run tests for GitHub Runner
-on: [push, pull_request]
+on:
+  push:
+    branches: 'main'
+  pull_request:
 jobs:
   pytest:
     strategy:
