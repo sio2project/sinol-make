@@ -1,651 +1,1154 @@
-/*
-   oi.h - pakiet funkcji do pisania weryfikatorow wejsc (inwer) i wyjsc (chk)
-   Pierwotny autor: Piotr Niedzwiedz
-   W razie problemow, bledow lub pomyslow na ulepszenie prosze pisac issues: https://sinol3.dasie.mimuw.edu.pl/sinol3/template-package
-*/
+// oi.h - biblioteka do pisania sprawdzania wejsc (inwer), wyjsc (chk) oraz generowania testow (ingen).
+// Author: Krzysztof Małysa.
+// In case of problems or improvements, please open an issue / merge request:
+// https://sinol3.dasie.mimuw.edu.pl/sinol3/template-package
 
-#ifndef OI_LIB_OI_H_
-#define OI_LIB_OI_H_
+#pragma once
 
 #include <algorithm>
-#include <assert.h>
+#include <array>
+#include <cassert>
 #include <cctype>
-#include <climits>
+#include <cerrno>
 #include <cmath>
-#include <cstdio>
-#include <cstdlib>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio> // to prevent messing <cstdio> after forbidding scanf(), printf(), fopen() by macro
+#include <cstdlib> // to prevent messing <cstdlib> after forbidding exit() and _Exit() by macro
+#include <cstring>
+#include <fcntl.h>
+#include <exception>
+#include <fstream> // to prevent messing <fstream> after forbidding ifstream and fstream by macro
+#include <iostream> // to prevent messing <iostream> after forbidding cin is forbidden by macro
+#include <limits>
+#include <optional>
+#include <random>
+#include <set>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <sys/mman.h>
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <type_traits>
+#include <unistd.h> // to prevent messing <unistd.h> after forbidding _exit() by macro
+#include <utility>
 #include <vector>
 
+using std::string;
 using std::vector;
-using std::max;
-using std::swap;
-
-// We want prevent usage of standard random function.
-int rand(){
-  fprintf(stderr, "DONT USE rand or random_shuffle!\nUse oi::Random class.\n");
-  exit(1);
-  return 0;
-}
 
 namespace oi {
 
-enum Lang {
-  EN = 0,
-  PL = 1
+class CheckerVerdict {
+    std::optional<int> partial_score = std::nullopt;
+    string partial_score_msg;
+
+public:
+    // 100% points
+    [[noreturn]] void exit_ok();
+
+    // score * 1% points
+    template <class... Msg>
+    [[noreturn]] void exit_ok_with_score(int score, Msg&&... msg);
+
+    template<class... Msg>
+    void set_partial_score(int score, Msg&&... msg);
+
+    // If partial score is set, then partial_score * 1% points, 0% points otherwise
+    template <class... Msg>
+    [[noreturn]] void exit_wrong(Msg&&... msg);
+
+} inline checker_verdict;
+
+struct InwerVerdict {
+    struct Stream {
+        int exit_code;
+
+        struct StreamImpl {
+            int exit_code;
+            bool printed = false;
+
+            ~StreamImpl();
+
+            template<class T>
+            StreamImpl& operator<<(T&& arg);
+        };
+
+        StreamImpl operator()();
+    };
+
+    // Use like cout: oi::inwer_verdict.exit_ok() << "some comment";
+    // Exits the program with 0, after printing the comment.
+    Stream exit_ok{0};
+
+    // Use like cout: oi::inwer_verdict.exit_wrong() << "some comment";
+    // Exits the program with 1, after printing the comment.
+    Stream exit_wrong{1};
+} inline inwer_verdict;
+
+template <class... Msg>
+[[noreturn]] void bug(Msg&&... msg);
+
+#define oi_assert(condition, ...)                                          \
+    ((condition) ? (void)0 : [func = __PRETTY_FUNCTION__](auto&&... msg) { \
+        ::oi::detail::exit_with_error_msg(                                 \
+            3,                                                             \
+            __FILE__ ":",                                                  \
+            __LINE__,                                                      \
+            ": ",                                                          \
+            func,                                                          \
+            ": Assertion `" #condition "` failed",                         \
+            (sizeof...(msg) == 0 ? "." : ": "),                            \
+            std::forward<decltype(msg)>(msg)...                            \
+        );                                                                 \
+    }(__VA_ARGS__))
+
+
+enum class Lang {
+    EN = 0,
+    PL = 1,
 };
 
-class Reader;
+struct EofType {
+} eof;
+
+struct NlType {
+} nl;
+
+struct IgnoreWsType {
+} ignore_ws; // ignore every whitespace including newline
+
+struct Line {
+    string& var;
+    size_t max_size;
+
+    Line(string& var_, size_t max_size_) : var{var_}, max_size{max_size_} {}
+};
+
+struct Str {
+    string& var;
+    size_t max_size;
+
+    Str(string& var_, size_t max_size_) : var{var_}, max_size{max_size_} { assert(max_size_ > 0); }
+};
+
+struct Char {
+    char& var;
+    const char* variants;
+
+    Char(char& var_, const char* variants_) : var{var_}, variants{variants_} {}
+};
+
+template <class T>
+struct Num {
+    T& var;
+    T min, max; // inclusive
+
+    Num(T& var_, T min_, T max_) : var{var_}, min{min_}, max{max_} { assert(min <= max); }
+};
+
+template <class A, class B, class C>
+Num(A, B, C) -> Num<A>;
 
 class Scanner {
- protected:
-  static const int realNumbersLimit = 20;
+public:
+    enum class Mode {
+        UserOutput, // eof ignores newline and whitespace, nl ignores whitespace, destructor scans
+                    // eof
+        Lax, // eof ignores newline and whitespace, nl ignores whitespace, destructor does nothing
+        TestInput, // eof DOES NOT ignore newline or whitespace, nl DOES NOT ignore whitespace,
+                   // destructor scans eof
+    };
 
-  Lang lang;
-  Reader* reader;
-  void(*end)(const char* msg, int line, int position);
+    Scanner(FILE* file_, Mode mode_, Lang lang_);
+    Scanner(const char* file_path, Mode mode_, Lang lang_);
 
-  void readULL(unsigned long long int limit, unsigned long long int &val, bool &sign);
-  void readLDB(long double &val, bool &sign);
+    ~Scanner();
 
- public:
-  Scanner(const char* file, Lang _lang = Lang(EN));
-  Scanner(const char* file, void(*endf)(const char* msg, int line, int position), Lang _lang = Lang(EN));
-  Scanner(FILE* input, Lang _lang = Lang(EN));
-  Scanner(FILE* input, void(*endf)(const char* msg, int line, int position), Lang _lang = Lang(EN));
-  ~Scanner();
+    template <class... Msg>
+    [[noreturn]] void error(Msg&&... msg);
 
-  void                error(const char* msg);
+    Scanner& operator>>(const char& c);
+    Scanner& operator>>(EofType /*unused*/);
+    Scanner& operator>>(NlType /*unused*/);
+    Scanner& operator>>(IgnoreWsType /*unused*/);
 
-  // Skips all whitespaces until any occurrence of EOF or other non-white character.
-  int                 skipWhitespaces();
-  // Skips all whitespaces until any occurrence of EOF, EOLN or other non-white character.
-  int                 skipWhitespacesUntilEOLN();
+    // Reads line without the trailing newline character.
+    // Use like this: scanner >> Line{s, 1000}
+    Scanner& operator>>(Line line);
 
-  int                 readInt(int min_value = INT_MIN, int max_value = INT_MAX);
-  unsigned int        readUInt(unsigned int min_value = 0, unsigned int max_value = UINT_MAX);
-  long long           readLL(long long int min_value = LLONG_MIN, long long int max_value = LLONG_MAX);
-  unsigned long long  readULL(unsigned long long int min_value = 0, unsigned long long int max_value = ULLONG_MAX);
+    // Use like this: scanner >> Str{s, 1000}
+    Scanner& operator>>(Str str);
 
-  float               readFloat(float min_value, float max_value);
-  double              readDouble(double min_value, double max_value);
-  long double         readLDouble(long double min_value, long double max_value);
+    // Use like this: scanner >> Char{c, "TN"}
+    Scanner& operator>>(Char chr);
 
-  char                readChar();
+    // Use like this: scanner >> Num{x, -1000, 1000}
+    // Works with double too: scanner >> Num{x, -3.14, 3.14}
+    template <class T>
+    Scanner& operator>>(Num<T> num);
 
-  // Newline character is read, but isn't added to s
-  int                 readLine(char* s, int size);
+    Scanner(const Scanner&) = delete;
+    Scanner(Scanner&&) = delete;
+    Scanner& operator=(const Scanner&) = delete;
+    Scanner& operator=(Scanner&&) = delete;
 
-  // Reads a string until occurrence of EOF, EOLN or whitespace.
-  // Returns the number of characters read (possibly 0).
-  int                 readString(char* s, int size);
+    template <class...>
+    static constexpr inline bool always_false = false;
 
-  void                readEof();
-  void                readEofOrEoln();
-  void                readEoln();
-  void                readSpace();
-  void                readTab();
+    template <class T> requires std::is_same_v<T, char&> ||
+                (std::is_convertible_v<T&&, char> &&
+                 !std::is_same_v<std::remove_const_t<std::remove_reference_t<T>>, char>)
+    Scanner& operator>>(T&& /*unused*/) {
+        static_assert(
+            always_false<T>,
+            R"(Use Num{}, Char{} or Str{} e.g. scanner >> Num{x, 0, 42} >> Char{c, "TN"} >> Str{s, 100};)"
+        );
+        return *this;
+    }
 
-  bool                isEOF();
- private:
-  Scanner(Scanner&) {}
+    void do_destructor_checks();
+
+protected:
+    FILE* file;
+    FILE* owned_file = nullptr;
+    Mode mode;
+    Lang lang;
+
+    struct Pos {
+        size_t line;
+        size_t pos;
+    };
+
+    Pos next_char_pos = {.line = 1, .pos = 1};
+    Pos last_char_pos = {.line = 1, .pos = 1};
+    Pos prev_last_char_pos = {.line = 1, .pos = 1};
+    bool eofed = false;
+
+    std::optional<int> next_char;
+
+    bool getchar(int& ch) noexcept; // returns true if not eofed
+    void ungetchar(int ch) noexcept;
+    static string char_description(int ch);
+
+    template <class T>
+    void scan_integer(T& val);
+
+    template <class T>
+    void scan_floating_point(T& val);
 };
-
-class MultipleRecursiveGenerator;
 
 class Random {
- public:
-  Random();
-  explicit Random(unsigned int seed);
-  ~Random();
-  void setSeed(unsigned int seed);
+public:
+    explicit Random(uint_fast64_t seed = 5489);
 
-  // Random number from range <0..2^31 - 1>
-  int rand();
+    template <class T> requires std::is_arithmetic_v<T>
+    T operator()(T min, T max);
 
-  // randS* - signed *
-  // randU* - unsigned *
-  int randSInt();
-  unsigned int randUInt();
-  long long randSLL();
-  unsigned long long randULL();
+    template <class RandomAccessIterator>
+    void shuffle(RandomAccessIterator begin, RandomAccessIterator end);
 
-  /**
-   * Generuje liczbe pseudo-losowa z przedzialu [a..b] (obustronnie wlacznie).
-   * Podanie na wejsciu pustego przedzialu (b < a) jest bledem i skutkuje
-   * dzialaniem niezdefiniowanym.
-   */
-  int randSInt(const int a, const int b);
+    template <class T>
+    void shuffle(T& container) {
+        shuffle(container.begin(), container.end());
+    }
 
-  template<typename RandomAccessIterator>
-  void randomShuffle(RandomAccessIterator first, RandomAccessIterator last);
+    Random(const Random&) = delete;
+    Random(Random&&) = default;
+    Random& operator=(const Random&) = delete;
+    Random& operator=(Random&&) = default;
 
- private:
-  Random(Random&) {}
-  MultipleRecursiveGenerator* mrg_;
-  void init();
+private:
+    std::mt19937_64 generator;
 };
 
-class MultipleRecursiveGenerator {
- public:
-  MultipleRecursiveGenerator(unsigned int modulo,
-                             const vector<unsigned int> &A);
-  void setSeed(unsigned int seed);
+struct TestInput {
+    string str;
 
-  /**
-   * Generuje liczbe pseudo-losowa z przedzialu [0..modulo-1]. Chcemy zeby to
-   * bylo co najmniej 16 bitow, czyli musi byc (0xFFFF < modulo). Gwarantuje
-   * to asercja w konstruktorze klasy.
-   */
-  unsigned int next16Bits();
-
- private:
-  long int n_;
-  unsigned int modulo_;
-  vector<unsigned int> A_;
-  vector<unsigned int> X_;
+    explicit TestInput(string str_) : str{std::move(str_)} {}
 };
 
-class Reader {
- private:
-  static const int bufferSize = 1000;
-  char Buffer[bufferSize];
-  int head, tail;
-  int line, position;
-  void fillBuffer();
-  FILE* input;
- public:
-  explicit Reader(const char* file);
-  explicit Reader(FILE* _input);
-  ~Reader();
-  bool isEOF();
-  int getLine() {return line;}
-  int getPosition() {return position;}
-  char read(bool move = false);
- private:
-  Reader(Reader&) {};
+struct TestOutput {
+    string str;
+
+    explicit TestOutput(string str_) : str{std::move(str_)} {}
 };
 
+struct UserOutput {
+    string str;
 
-const char* msgLeadingZeros[]= {
-  "Leading zeros",
-  "Zera wiodace"};
-const char* msgMinusZero[]= {
-  "Minus zero -0",
-  "Minus zero -0"};
-const char* msgNoNumber[]= {
-  "No number",
-  "Brak liczby"};
-const char* msgNoChar[]= {
-  "No char - EOF",
-  "Brak znaku - EOF"};
-const char* msgNotEof[]= {
-  "Not EOF",
-  "Brak konca pliku"};
-const char* msgNotEoln[]= {
-  "Not EOLN",
-  "Brak konca linii"};
-const char* msgNotEofOrEoln[]= {
-  "Not EOF or EOLN",
-  "Brak konca linii i brak konca pliku"};
-const char* msgNotSpace[]= {
-  "Not space",
-  "Brak spacji"};
-const char* msgNotTab[]= {
-  "Not tab",
-  "Brak znaku tabulacji"};
-const char* msgOutOfRangeInt[]= {
-  "Integer out of range",
-  "Liczba calkowita spoza zakresu"};
-const char* msgOutOfRangeReal[]= {
-  "Real number out of range",
-  "Liczba rzeczywista spoza zakresu"};
-const char* msgRealNumberLimit[]= {
-  "Too many digits after dot",
-  "Za duzo cyfr po kropce dziesietnej"};
-const char* msgBadRealNumberFormat[]= {
-  "Bad real number format",
-  "Niepoprawny format liczby rzeczywistej"};
+    explicit UserOutput(string str_) : str{std::move(str_)} {}
+};
 
-// ------------------------------- Implementation -----------------------------
+struct CheckerOutput {
+    string str;
 
-typedef unsigned long long ull;
-typedef unsigned int uint;
-typedef long long ll;
-typedef long double ldb;
+    explicit CheckerOutput(string str_) : str{std::move(str_)} {}
+};
 
+} // namespace oi
 
-inline bool isDot(char x) {
-  return x == '.';
+#define CONCAT_RAW(a, b) a##b
+#define CONCAT(a, b) CONCAT_RAW(a, b)
+#define CHECKER_TEST(...)                                                             \
+    namespace {                                                                       \
+    __attribute__((constructor)) void CONCAT(checker_test_constructor_, __LINE__)() { \
+        ::oi::detail::get_checker_test_fns().emplace_back([] {                        \
+            using oi::CheckerOutput;                                                  \
+            using oi::TestInput;                                                      \
+            using oi::TestOutput;                                                     \
+            using oi::UserOutput;                                                     \
+            ::oi::detail::checker_test(                                               \
+                string{__FILE__ ":"} + std::to_string(__LINE__), __VA_ARGS__          \
+            );                                                                        \
+        });                                                                           \
+    }                                                                                 \
+    }
+
+//////////////////////////////// Implementation ////////////////////////////////
+
+namespace oi {
+
+inline std::set<Scanner*>& get_all_scanners() noexcept {
+    static std::set<Scanner*> scanners;
+    [[maybe_unused]] static bool x = [] {
+        void (*func)() = [] {
+            // To succeed, the destructor checks have to pass
+            for (auto* scanner : get_all_scanners()) {
+                scanner->do_destructor_checks();
+            }
+        };
+        if (atexit(func)) {
+            std::terminate();
+        }
+        return true;
+    }();
+    return scanners;
 }
 
-inline bool isEOLN(char x) {
-  return x == '\n';
+[[noreturn]] inline void CheckerVerdict::exit_ok() {
+    // To get the whole score, the destructor checks have to pass
+    for (auto* scanner : get_all_scanners()) {
+        scanner->do_destructor_checks();
+    }
+    std::cout << "OK\n\n100\n" << std::flush;
+    _exit(0);
 }
 
-inline bool isMinus(char x) {
-  return x == '-';
+template <class... Msg>
+[[noreturn]] void CheckerVerdict::exit_ok_with_score(int score, Msg&&... msg) {
+    assert(0 <= score && score <= 100);
+    if (score == 100) {
+        // To get the whole score, the destructor checks have to pass
+        for (auto* scanner : get_all_scanners()) {
+            scanner->do_destructor_checks();
+        }
+    }
+    std::cout << "OK\n";
+    (std::cout << ... << std::forward<Msg>(msg)) << '\n';
+    std::cout << score << '\n' << std::flush;
+    _exit(0);
 }
 
-inline bool isSpace(char x) {
-  return x == ' ';
+template<class... Msg>
+inline void CheckerVerdict::set_partial_score(int score, Msg&&... msg) {
+    assert(0 <= score && score < 100);
+    partial_score = score;
+
+    std::stringstream ss;
+    (ss << ... << std::forward<Msg>(msg));
+    partial_score_msg = std::move(ss).str();
 }
 
-inline bool isTab(char x) {
-  return x == '\t';
-}
-
-inline bool isWhitespace(char x) {
-  return x == ' ' || x == '\t' || x == '\n';
-}
-
-void endDefault(const char* msg, int line, int position) {
-  printf("ERROR(line: %d, position: %d): %s\n", line, position, msg);
-  exit(1);
-}
-
-// ------------------------------- Random -------------------------------------
-
-void Random::init() {
-// Here is a reference about it:
-// http://random.mat.sbg.ac.at/results/karl/server/node7.html
-  vector<unsigned int> A(5, 0);
-  static_assert(4<=sizeof(int), "Typ int musi miescic co najmniej 4 bajty.");
-  static_assert(0x7FFFFFFFLL<=INT_MAX, "Wartosc 2^31-1 musi miescic sie w typie int.");
-  A[0] = 107374182, A[4] = 104480;
-  unsigned int modulo = 2147483647;  // 2^31 -1
-  mrg_ = new MultipleRecursiveGenerator(modulo, A);
-}
-
-Random::Random() {
-  init();
-}
-
-Random::Random(unsigned int seed) {
-  init();
-  setSeed(seed);
-}
-
-Random::~Random() {
-  delete mrg_;
-}
-
-void Random::setSeed(unsigned int seed) {
-  mrg_->setSeed(seed);
-}
-
-static_assert(((8==CHAR_BIT) && (UCHAR_MAX==0xFF)), "Wiecej niz 8 bitow w bajcie? Nie wspierane, sorry.");
-#define RAND_TYPE(type)\
-    type res = 0;\
-    for (size_t i = 0; i < sizeof(type)/2; ++i) {\
-      res |= (((type)mrg_->next16Bits()) & (0xFFFF)) << (i * 16);\
-    }\
-    return res;
-
-
-int Random::rand() {
-  int x = randSInt();
-  if (x<0) return ~x;
-  return x;
-}
-
-int Random::randSInt(const int a, const int b) {
-  return (rand() % (b-a+1)) + a;
-}
-
-int Random::randSInt() {
-  RAND_TYPE(int);
-}
-
-unsigned int Random::randUInt() {
-  RAND_TYPE(unsigned int);
-}
-
-long long Random::randSLL() {
-  RAND_TYPE(long long);
-}
-
-unsigned long long Random::randULL() {
-  RAND_TYPE(unsigned long long);
-}
-
-template<typename RandomAccessIterator>
-void Random::randomShuffle(RandomAccessIterator first, RandomAccessIterator last) {
-  long int n = last - first;
-  for (int i = 1; i < n; ++i) {
-    int to = rand() % (i+1);
-    swap(first[to], first[i]);
-  }
-}
-
-// ----------------------- MultipleRecursiveGenerator -------------------------
-
-MultipleRecursiveGenerator::MultipleRecursiveGenerator(
-    unsigned int modulo,
-    const vector<unsigned int> &A) : modulo_(modulo), A_(A) {
-  assert(0xFFFFUL < modulo);
-  n_ = A_.size();
-  X_ = vector<unsigned int>(n_, 0);
-  setSeed(0);
-}
-
-void MultipleRecursiveGenerator::setSeed(unsigned int seed) {
-  for (int i = 0; i < n_; ++i) {
-    seed = (seed + 1) % modulo_;
-    X_[i] = seed;
-  }
-  for (int i = 0; i < n_; ++i) next16Bits();
-}
-
-unsigned int MultipleRecursiveGenerator::next16Bits() {
-  unsigned int res = 0;
-  static_assert(2 * sizeof(unsigned int) <= sizeof(unsigned long long), "Mozliwe przepelnienie arytmetyczne!");
-  for (int i = 0; i < n_; ++i) {
-    res = (unsigned int)((res + (unsigned long long)A_[i] * X_[i]) % (unsigned long long)modulo_);
-    if (i < n_ - 1) X_[i] = X_[i+1];
-  }
-  X_[n_ - 1] = res;
-  return res;
-}
-
-// --------------------------- Reader's methods -------------------------------
-
-Reader::Reader(const char* file) {
-  assert((input = fopen(file, "r")) != NULL);
-  head = tail= 0;
-  line = position = 1;
-}
-
-Reader::Reader(FILE* _input) {
-  input = _input;
-  head = tail = 0;
-  line = position = 1;
-}
-
-Reader::~Reader() {
-  assert(fclose(input) == 0);
-}
-
-void Reader::fillBuffer() {
-  while ((tail + 1) % bufferSize != head) {
-    int v = getc(input);
-    if (v == EOF) break;
-    Buffer[tail] = (char)v;
-    tail = (tail + 1) % bufferSize;
-  }
-}
-
-bool Reader::isEOF() {
-  fillBuffer();
-  return head == tail;
-}
-
-char Reader::read(bool move) {
-  fillBuffer();
-  assert((head != tail) || (!move));
-  if (head == tail) return 0;
-  char v = Buffer[head];
-  if (move) {
-    if (isEOLN(v)) {
-      line++;
-      position = 1;
+template <class... Msg>
+[[noreturn]] void CheckerVerdict::exit_wrong(Msg&&... msg) {
+    if (partial_score) {
+        std::cout << "OK\n";
+        std::cout << partial_score_msg;
+        if (!partial_score_msg.empty() && sizeof...(msg) != 0) {
+            std::cout << "; ";
+        }
+        (std::cout << ... << std::forward<Msg>(msg)) << '\n';
+        std::cout << *partial_score << '\n' << std::flush;
     } else {
-      position++;
+        std::cout << "WRONG\n";
+        (std::cout << ... << std::forward<Msg>(msg)) << '\n';
+        std::cout << "0\n" << std::flush;
     }
-    head = (head + 1) % bufferSize;
-  }
-  return v;
+    _exit(0);
 }
 
-// ---------------------------- Scanner's methods -----------------------------
-
-Scanner::Scanner(const char* file, Lang _lang): lang(_lang) {
-  reader = new Reader(file);
-  end = endDefault;
-}
-
-Scanner::Scanner(const char* file, void(*endf)(const char* msg, int line, int position), Lang _lang): lang(_lang) {
-  reader = new Reader(file);
-  end = endf;
-}
-
-Scanner::Scanner(FILE* input, Lang _lang): lang(_lang) {
-  reader = new Reader(input);
-  end = endDefault;
-}
-
-Scanner::Scanner(FILE* input, void(*endf)(const char* msg, int line, int position), Lang _lang): lang(_lang) {
-  reader = new Reader(input);
-  end = endf;
-}
-
-Scanner::~Scanner() {
-  delete reader;
-}
-
-void Scanner::error(const char* msg) {
-  int l = reader->getLine();
-  int p = reader->getPosition();
-  delete reader;
-  reader = NULL;
-  (*end)(msg, l, p);
-}
-
-int Scanner::skipWhitespaces() {
-  int result = 0;
-  while (isWhitespace(reader->read())) {
-    reader->read(1);
-    result++;
-  }
-  return result;
-}
-
-
-int Scanner::skipWhitespacesUntilEOLN() {
-  int result = 0;
-  while (isWhitespace(reader->read()) && !isEOLN(reader->read())) {
-    reader->read(1);
-    result++;
-  }
-  return result;
-}
-
-
-// INTEGERS
-
-int Scanner::readInt(int min_value, int max_value) {
-  return (int)readLL(min_value, max_value);
-}
-
-uint Scanner::readUInt(uint min_value, uint max_value) {
-  return (uint)readULL(min_value, max_value);
-}
-
-inline bool lower_equal(ull a, bool sign_a, ull b, bool sign_b) {
-  if (sign_a != sign_b) return sign_a;
-  if (sign_a) return a >= b;
-  return a <= b;
-}
-inline ull spec_abs(ll x) {
-  if (x < 0) return (-(x + 1)) + 1;
-  return x;
-}
-
-ll Scanner::readLL(ll min_value, ll max_value) {
-  assert(min_value <= max_value);
-  bool sign;
-  ull val;
-  readULL(max(spec_abs(min_value), spec_abs(max_value)), val, sign);
-  ll v = val;
-  if (!(lower_equal(spec_abs(min_value), min_value < 0, v, sign) &&
-        lower_equal(v, sign, spec_abs(max_value), max_value < 0)))
-    error(msgOutOfRangeInt[lang]);
-  if (sign) v *= -1;
-  return v;
-}
-
-ull Scanner::readULL(ull min_value, ull max_value) {
-  assert(min_value <= max_value);
-  bool sign;
-  ull val;
-  readULL(max_value, val, sign);
-  if (sign) error(msgOutOfRangeInt[lang]);
-  if (!(min_value <= val))
-    error(msgOutOfRangeInt[lang]);
-  return val;
-}
-
-// REAL NUMBERS
-
-float Scanner::readFloat(float min_value, float max_value) {
-  return (float)readLDouble(min_value, max_value);
-}
-
-double Scanner::readDouble(double min_value, double max_value) {
-  return (double)readLDouble(min_value, max_value);
-}
-
-long double Scanner::readLDouble(long double min_value, long double max_value) {
-  assert(min_value <= max_value);
-  bool sign;
-  ldb val;
-  readLDB(val, sign);
-  if (sign) val *= -1;
-  if (!(min_value <= val && val <= max_value))
-    error(msgOutOfRangeReal[lang]);
-  return val;
-}
-
-// STRINGS
-
-int Scanner::readString(char* s, int size) {
-  int x = 0;
-  while ( x < size - 1 && !isEOF() && !isWhitespace(reader->read()))
-    s[x++] = reader->read(1);
-  s[x]=0;
-  return x;
-}
-
-int Scanner::readLine(char* s, int size) {
-  int x = 0;
-  while ( x < size - 1 && !isEOLN(reader->read()) && !isEOF())
-    s[x++] = reader->read(1);
-  s[x] = 0;
-  if (isEOLN(reader->read())) reader->read(1);
-  return x;
-}
-
-char Scanner::readChar() {
-  if (reader->isEOF()) error(msgNoChar[lang]);
-  return reader->read(1);
-}
-
-// WHITESPACES
-
-void Scanner::readEof() {
-  if (!reader->isEOF()) error(msgNotEof[lang]);
-}
-
-void Scanner::readEoln() {
-  if (!isEOLN(reader->read())) error(msgNotEoln[lang]);
-  reader->read(1);
-}
-
-void Scanner::readEofOrEoln() {
-  if (isEOLN(reader->read())) {
-    reader->read(1);
-  } else if (!reader->isEOF()) {
-    error(msgNotEofOrEoln[lang]);
-  }
-}
-
-
-void Scanner::readSpace() {
-  if (!isSpace(reader->read())) error(msgNotSpace[lang]);
-  reader->read(1);
-}
-
-void Scanner::readTab() {
-  if (!isTab(reader->read())) error(msgNotTab[lang]);
-  reader->read(1);
-}
-
-bool Scanner::isEOF() {
-  return reader->isEOF();
-}
-
-
-// PROTECTED
-
-void Scanner::readULL(ull limit, ull &val, bool &sign) {
-  sign = 0;
-  val = 0;
-  sign = isMinus(reader->read());
-  if (sign) reader->read(1);
-  int zeros = 0;
-  int valDigits = 0;
-  while ('0' == reader->read()) {
-    zeros++;
-    valDigits++;
-    reader->read(1);
-    if (zeros > 1) error(msgLeadingZeros[lang]);
-  }
-  int limDigits = 0;
-  ull tmp = limit;
-  while (tmp) {
-    limDigits++;
-    tmp /= 10;
-  }
-  if (!limDigits) limDigits = 1;
-  while (isdigit(reader->read())) {
-    valDigits++;
-    if (valDigits > limDigits) error(msgOutOfRangeInt[lang]);
-    char x = reader->read(1);
-    if (valDigits == limDigits) {
-      if (limit / 10 < val) error(msgOutOfRangeInt[lang]);
-      if (limit / 10 == val && limit % 10 < (ull)(x - '0')) error(msgOutOfRangeInt[lang]);
+InwerVerdict::Stream::StreamImpl InwerVerdict::Stream::operator()() {
+    if (exit_code == 0) {
+        // To pass the input verification, the destructor checks have to pass
+        for (auto* scanner : get_all_scanners()) {
+            scanner->do_destructor_checks();
+        }
     }
-    val = val * 10 + x - '0';
-  }
-  if (val > 0 && zeros) error(msgLeadingZeros[lang]);
-  if (sign && zeros) error(msgMinusZero[lang]);
-  if (!valDigits) error(msgNoNumber[lang]);
+    return StreamImpl{exit_code};
 }
 
-void Scanner::readLDB(ldb &val, bool &sign) {
-  sign = 0;
-  val = 0;
-  sign = isMinus(reader->read());
-  if (sign) reader->read(1);
-  int zeros = 0;
-  int valDigits = 0;
-  while ('0' == reader->read()) {
-    zeros++;
-    valDigits++;
-    reader->read(1);
-    if (zeros > 1) error(msgLeadingZeros[lang]);
-  }
-  if (zeros && isdigit(reader->read())) error(msgLeadingZeros[lang]);
-  while (isdigit(reader->read())) {
-    valDigits++;
-    char x = reader->read(1);
-    val = val * 10.0 + x - '0';
-  }
-  if (!valDigits) error(msgNoNumber[lang]);
-  if (isDot(reader->read())) {
-    reader->read(1);
-    ldb dec = 1;
-    int dotDigits = 0;
-    while (isdigit(reader->read())) {
-      dotDigits++;
-      if (dotDigits > realNumbersLimit) error(msgRealNumberLimit[lang]);
-      char x = reader->read(1);
-      dec /= 10.0;
-      val += dec * (x - '0');
+template<class T>
+InwerVerdict::Stream::StreamImpl& InwerVerdict::Stream::StreamImpl::operator<<(T&& arg) {
+    printed = true;
+    std::cout << std::forward<T>(arg);
+    return *this;
+}
+
+InwerVerdict::Stream::StreamImpl::~StreamImpl() {
+    if (printed) {
+        std::cout << '\n';
     }
-    if (!dotDigits) error(msgBadRealNumberFormat[lang]);
-  }
+    std::cout << std::flush;
+    _exit(exit_code);
 }
 
-}  // namespace oi
+namespace detail {
 
-#endif  // OI_LIB_OI_H_
+std::ostream*& get_error_ostream() noexcept {
+    static auto* kind = &std::cerr;
+    return kind;
+}
+
+void change_error_ostream_to_cout() noexcept {
+    get_error_ostream() = &std::cout;
+}
+
+template <class... Msg>
+[[noreturn]] void exit_with_error_msg(int exit_code, Msg&&... msg) {
+    (*get_error_ostream() << ... << std::forward<Msg>(msg)) << '\n' << std::flush;
+    _exit(exit_code);
+}
+
+} // namespace detail
+
+template <class... Msg>
+[[noreturn]] void bug(Msg&&... msg) {
+    detail::exit_with_error_msg(2, "BUG: ", std::forward<Msg>(msg)...);
+}
+
+inline Scanner::Scanner(FILE* file_, Mode mode_, Lang lang_)
+: file{file_}
+, mode{mode_}
+, lang{lang_} {
+    get_all_scanners().emplace(this);
+}
+
+inline Scanner::Scanner(const char* file_path, Mode mode_, Lang lang_)
+: file{[file_path] {
+    FILE* f = fopen(file_path, "r");
+    if (!f) {
+        bug("fopen() failed - ", strerror(errno));
+    }
+    return f;
+}()}
+, owned_file{file}
+, mode{mode_}
+, lang{lang_} {
+    get_all_scanners().emplace(this);
+}
+
+inline Scanner::~Scanner() {
+    do_destructor_checks();
+
+    get_all_scanners().erase(this);
+    if (owned_file) {
+        (void)fclose(owned_file);
+    }
+}
+
+template <class... Msg>
+[[noreturn]] void do_error(Scanner::Mode mode, Msg&&... msg) {
+    switch (mode) {
+    case Scanner::Mode::UserOutput: checker_verdict.exit_wrong(std::forward<Msg>(msg)...);
+    case Scanner::Mode::Lax: detail::exit_with_error_msg(4, "Lax scanner: ", std::forward<Msg>(msg)...);
+    case Scanner::Mode::TestInput:
+        (inwer_verdict.exit_wrong() << ... << std::forward<Msg>(msg));
+    }
+    __builtin_unreachable();
+}
+
+template <class... Msg>
+[[noreturn]] void Scanner::error(Msg&&... msg) {
+    switch (lang) {
+    case Lang::EN:
+        do_error(
+            mode,
+            "Line ",
+            last_char_pos.line,
+            ", position ",
+            last_char_pos.pos,
+            ": ",
+            std::forward<Msg>(msg)...
+        );
+    case Lang::PL:
+        do_error(
+            mode,
+            "Wiersz ",
+            last_char_pos.line,
+            ", pozycja ",
+            last_char_pos.pos,
+            ": ",
+            std::forward<Msg>(msg)...
+        );
+    }
+    __builtin_unreachable();
+}
+
+constexpr const char* read_eof_expected_a_string[] = {
+    "Read EOF, expected a string",
+    "Wczytano EOF, oczekiwano napisu",
+};
+constexpr const char* too_long_string[] = {
+    "Too long string",
+    "Zbyt dlugi napis",
+};
+constexpr const char* read_eof_expected_a_number[] = {
+    "Read EOF, expected a number",
+    "Wczytano EOF, oczekiwano liczby",
+};
+constexpr const char* read_minus_expected_a_positive_number[] = {
+    "Read '-', expected a non-negative number",
+    "Wczytano '-', oczekiwano nieujemnej liczby",
+};
+constexpr const char* integer_value_out_of_range[] = {
+    "Integer value out of range",
+    "Liczba calkowita spoza zakresu",
+};
+constexpr const char* real_number_value_out_of_range[] = {
+    "Real number value out of range",
+    "Liczba rzeczywista spoza zakresu",
+};
+
+inline Scanner& Scanner::operator>>(const char& c) {
+    int ch = 0;
+    if (!getchar(ch)) {
+        switch (lang) {
+        case Lang::EN: error("Read EOF, expected ", char_description(c));
+        case Lang::PL: error("Wczytano EOF, oczekiwano ", char_description(c));
+        }
+    }
+    if (ch != c) {
+        switch (lang) {
+        case Lang::EN: error("Read ", char_description(ch), ", expected ", char_description(c));
+        case Lang::PL:
+            error("Wczytano ", char_description(ch), ", oczekiwano ", char_description(c));
+        }
+    }
+    return *this;
+}
+
+inline Scanner& Scanner::operator>>(EofType /*unused*/) {
+    int ch = 0;
+    switch (mode) {
+    case Mode::UserOutput:
+    case Mode::Lax: {
+        // Ignore whitespace including newline
+        for (;;) {
+            if (!getchar(ch)) {
+                return *this;
+            }
+            if (!isspace(ch)) {
+                ungetchar(ch);
+                break;
+            }
+        }
+    } break;
+    case Mode::TestInput: break;
+    }
+
+    if (getchar(ch)) {
+        switch (lang) {
+        case Lang::EN: error("Read ", char_description(ch), ", expected EOF");
+        case Lang::PL: error("Wczytano ", char_description(ch), ", oczekiwano EOF");
+        }
+    }
+    return *this;
+}
+
+inline Scanner& Scanner::operator>>(NlType /*unused*/) {
+    switch (mode) {
+    case Mode::UserOutput:
+    case Mode::Lax: {
+        *this >> ignore_ws;
+    } break;
+    case Mode::TestInput: break;
+    }
+    return *this >> '\n';
+}
+
+inline Scanner& Scanner::operator>>(IgnoreWsType /*unused*/) {
+    int ch = 0;
+    for (;;) {
+        if (!getchar(ch)) {
+            ungetchar(EOF);
+            break;
+        }
+        if (ch == '\n' || !isspace(ch)) {
+            ungetchar(ch);
+            break;
+        }
+    }
+    return *this;
+}
+
+inline Scanner& Scanner::operator>>(Line line) {
+    line.var.clear();
+    int ch = 0;
+    for (;;) {
+        if (!getchar(ch)) {
+            ungetchar(EOF);
+            break;
+        }
+        if (ch == '\n') {
+            ungetchar(ch);
+            break;
+        }
+        line.var += static_cast<char>(ch);
+    }
+    return *this;
+}
+
+inline Scanner& Scanner::operator>>(Str str) {
+    str.var.clear();
+    int ch = 0;
+    if (!getchar(ch)) {
+        error(read_eof_expected_a_string[static_cast<int>(lang)]);
+    }
+    if (isspace(ch)) {
+        switch (lang) {
+        case Lang::EN: error("Read ", char_description(ch), ", expected a string");
+        case Lang::PL: error("Wczytano ", char_description(ch), ", oczekiwano napisu");
+        }
+    }
+
+    for (;;) {
+        str.var += static_cast<char>(ch);
+        if (str.var.size() > str.max_size) {
+            error(too_long_string[static_cast<int>(lang)]);
+        }
+
+        if (!getchar(ch)) {
+            ungetchar(EOF);
+            break;
+        }
+        if (isspace(ch)) {
+            ungetchar(ch);
+            break;
+        }
+    }
+    return *this;
+}
+
+inline Scanner& Scanner::operator>>(Char chr) {
+    int ch = 0;
+    if (!getchar(ch)) {
+        switch (lang) {
+        case Lang::EN: error("Read EOF, expected one of characters: ", chr.variants);
+        case Lang::PL: error("Wczytano EOF, oczekiwano jednego ze znakow: ", chr.variants);
+        }
+    }
+    if (strchr(chr.variants, ch) == nullptr) {
+        switch (lang) {
+        case Lang::EN:
+            error("Read ", char_description(ch), ", expected one of characters: ", chr.variants);
+        case Lang::PL:
+            error(
+                "Wczytano ", char_description(ch), ", oczekiwano jednego ze znakow: ", chr.variants
+            );
+        }
+    }
+    chr.var = static_cast<char>(ch);
+    return *this;
+}
+
+template <class T>
+inline Scanner& Scanner::operator>>(Num<T> num) {
+    if constexpr (std::is_integral_v<T>) {
+        scan_integer(num.var);
+        if (num.var < num.min || num.var > num.max) {
+            error(integer_value_out_of_range[static_cast<int>(lang)]);
+        }
+    } else {
+        scan_floating_point(num.var);
+        if (num.var < num.min || num.var > num.max) {
+            error(real_number_value_out_of_range[static_cast<int>(lang)]);
+        }
+    }
+    return *this;
+}
+
+inline bool Scanner::getchar(int& ch) noexcept {
+    if (eofed) {
+        return false;
+    }
+
+    if (next_char) {
+        ch = *next_char;
+        next_char = std::nullopt;
+    } else {
+        ch = getc_unlocked(file);
+    }
+    eofed = (ch == EOF);
+    prev_last_char_pos = last_char_pos;
+    last_char_pos = next_char_pos;
+    if (ch == '\n') {
+        ++next_char_pos.line;
+        next_char_pos.pos = 1;
+    } else {
+        ++next_char_pos.pos;
+    }
+    return !eofed;
+}
+
+inline void Scanner::ungetchar(int ch) noexcept {
+    assert(!next_char && "cannot ungetchar() more than one without getchar()");
+    next_char = ch;
+    next_char_pos = last_char_pos;
+    last_char_pos = prev_last_char_pos;
+    eofed = false;
+}
+
+inline string Scanner::char_description(int ch) {
+    if (std::isgraph(ch)) {
+        return {'\'', static_cast<char>(ch), '\''};
+    }
+
+    if (ch == ' ') {
+        return "' '";
+    }
+    if (ch == '\n') {
+        return "'\\n'";
+    }
+    if (ch == '\r') {
+        return "'\\r'";
+    }
+    if (ch == '\t') {
+        return "'\\t'";
+    }
+    if (ch == '\0') {
+        return "'\\0'";
+    }
+
+    constexpr char digits[] = "0123456789abcdef";
+    return {'\'', '\\', 'x', digits[ch >> 4], digits[ch & 15], '\''};
+}
+
+template <class T>
+void Scanner::scan_integer(T& val) {
+    static_assert(std::is_integral_v<T>);
+    int ch = 0;
+    if (!getchar(ch)) {
+        error(read_eof_expected_a_number[static_cast<int>(lang)]);
+    }
+
+    bool minus = false;
+    if (ch == '-') {
+        if (std::is_unsigned_v<T>) {
+            error(read_minus_expected_a_positive_number[static_cast<int>(lang)]);
+        }
+        minus = true;
+        if (!getchar(ch)) {
+            error(read_eof_expected_a_number[static_cast<int>(lang)]);
+        }
+    }
+
+    if (ch < '0' || '9' < ch) {
+        switch (lang) {
+        case Lang::EN: error("Read ", char_description(ch), ", expected a number");
+        case Lang::PL: error("Wczytano ", char_description(ch), ", oczekiwano liczby");
+        }
+    }
+
+    val = static_cast<T>(minus ? '0' - ch : ch - '0'); // Will not overflow
+    for (;;) {
+        if (!getchar(ch)) {
+            ungetchar(EOF);
+            break;
+        }
+        if (!isdigit(ch)) {
+            ungetchar(ch);
+            break;
+        }
+
+        if (__builtin_mul_overflow(val, 10, &val)) {
+            error(integer_value_out_of_range[static_cast<int>(lang)]);
+        }
+        if (!minus && __builtin_add_overflow(val, ch - '0', &val)) {
+            error(integer_value_out_of_range[static_cast<int>(lang)]);
+        }
+        if (minus && __builtin_sub_overflow(val, ch - '0', &val)) {
+            error(integer_value_out_of_range[static_cast<int>(lang)]);
+        }
+    }
+}
+
+template <class T>
+void Scanner::scan_floating_point(T& val) {
+    static_assert(std::is_floating_point_v<T>);
+    int ch = 0;
+    if (!getchar(ch)) {
+        error(read_eof_expected_a_number[static_cast<int>(lang)]);
+    }
+
+    bool minus = false;
+    if (ch == '-') {
+        minus = true;
+        if (!getchar(ch)) {
+            error(read_eof_expected_a_number[static_cast<int>(lang)]);
+        }
+    }
+
+    if (ch < '0' || '9' < ch) {
+        switch (lang) {
+        case Lang::EN: error("Read ", char_description(ch), ", expected a number");
+        case Lang::PL: error("Wczytano ", char_description(ch), ", oczekiwano liczby");
+        }
+    }
+
+    val = (minus ? '0' - ch : ch - '0'); // Will not overflow
+    for (;;) {
+        if (!getchar(ch)) {
+            ungetchar(EOF);
+            return;
+        }
+        if (ch == '.') {
+            break;
+        }
+        if (!isdigit(ch)) {
+            ungetchar(ch);
+            return;
+        }
+        val *= 10;
+        if (!minus) {
+            val += ch - '0';
+        } else {
+            val -= ch - '0';
+        }
+        if (std::isinf(val)) {
+            error(real_number_value_out_of_range[static_cast<int>(lang)]);
+        }
+    }
+
+    T pow10 = 1;
+    T subpoint = 0;
+    for (;;) {
+        if (!getchar(ch)) {
+            ungetchar(EOF);
+            break;
+        }
+        if (!isdigit(ch)) {
+            ungetchar(ch);
+            break;
+        }
+        pow10 *= 0.1;
+        subpoint += pow10 * (ch - '0');
+    }
+    if (!minus) {
+        val += subpoint;
+    } else {
+        val -= subpoint;
+    }
+    if (std::isinf(val)) {
+        error(real_number_value_out_of_range[static_cast<int>(lang)]);
+    }
+}
+
+inline void Scanner::do_destructor_checks() {
+    switch (mode) {
+    case Mode::UserOutput:
+    case Mode::TestInput: {
+        *this >> eof;
+    } break;
+    case Mode::Lax: break;
+    }
+}
+
+inline Random::Random(uint_fast64_t seed) : generator{seed} {}
+
+template <class T> requires std::is_arithmetic_v<T>
+T Random::operator()(T min, T max) {
+    oi_assert(min <= max);
+    constexpr auto generator_range_len = decltype(generator)::max() - decltype(generator)::min();
+    if constexpr (std::is_floating_point_v<T>) {
+        auto val = generator() - decltype(generator)::min(); // in range [0, generator_range_len]
+        T scaled_val = static_cast<T>(val) / static_cast<T>(generator_range_len); // in range [0, 1]
+        return scaled_val * (max - min) + min;
+    } else if constexpr (std::is_unsigned_v<T>) {
+        auto range_len = static_cast<uint_fast64_t>(max) - static_cast<uint_fast64_t>(min) + 1;
+        if (range_len == 0) { // max range
+            return static_cast<T>(generator());
+        }
+        auto limit = generator_range_len - generator_range_len % range_len;
+        for (;;) {
+            auto val =
+                generator() - decltype(generator)::min(); // in range [0, generator_range_len]
+            // We want val to be in range [0, generator_range_len - generator_range_len % range_len
+            // - 1]
+            // <=> val < generator_range_len - generator_range_len % range_len
+            if (val >= limit) {
+                continue;
+            }
+            return static_cast<T>(val % range_len) + min;
+        }
+    } else {
+        using UT = std::make_unsigned_t<T>;
+        // Shift [min, max] to [umin, umax], where umin >= 0
+        UT umin = static_cast<UT>(min) - static_cast<UT>(std::numeric_limits<T>::min());
+        UT umax = static_cast<UT>(max) - static_cast<UT>(std::numeric_limits<T>::min());
+        UT val = this->operator()<UT>(umin, umax) + static_cast<UT>(std::numeric_limits<T>::min());
+        return static_cast<T>(val);
+    }
+}
+
+template <class RandomAccessIterator>
+void Random::shuffle(RandomAccessIterator begin, RandomAccessIterator end) {
+    for (auto i = end - begin; i > 1;) {
+        --i;
+        std::swap(begin[i], begin[this->operator()<decltype(i)>(0, i)]);
+    }
+}
+
+} // namespace oi
+
+namespace oi::detail {
+
+inline std::vector<void (*)()>& get_checker_test_fns() {
+    static std::vector<void (*)()> test_fns;
+    return test_fns;
+}
+
+} // namespace oi::detail
+
+int the_only_real_true_main(int, char**);
+
+namespace oi::detail {
+
+inline void checker_test(
+    const string& test_name,
+    TestInput test_input,
+    TestOutput test_output,
+    UserOutput user_output,
+    CheckerOutput checker_output
+) {
+    auto terminate_with_error = [test_name](auto&&... msg) {
+        ::oi::detail::exit_with_error_msg(
+            5, "Checker test ", test_name, " failed: ", std::forward<decltype(msg)>(msg)...
+        );
+    };
+
+    auto create_fd = [&terminate_with_error] {
+        // Using tmpfile() to be POSIX compliant, so that it works on MacOS.
+        auto* f = tmpfile();
+        if (!f) {
+            terminate_with_error("tmpfile() - ", strerror(errno));
+        }
+        int fd = dup(fileno(f));
+        if (fclose(f)) {
+            terminate_with_error("flose() - ", strerror(errno));
+        }
+        return fd;
+    };
+
+    auto create_fd_with_contents = [&terminate_with_error, &create_fd](const string& contents) {
+        auto fd = create_fd();
+        if (pwrite(fd, contents.data(), contents.size(), 0) !=
+            static_cast<ssize_t>(contents.size()))
+        {
+            terminate_with_error("pwrite() - ", strerror(errno));
+        }
+        return fd;
+    };
+
+    int in_fd = create_fd_with_contents(test_input.str);
+    int out_fd = create_fd_with_contents(test_output.str);
+    int user_out_fd = create_fd_with_contents(user_output.str);
+
+    int checker_out_fd = create_fd();
+
+    int pid = fork();
+    if (pid == -1) {
+        terminate_with_error("fork() - ", strerror(errno));
+    }
+    if (pid == 0) {
+        (void)freopen("/dev/null", "r", stdin);
+        if (dup2(checker_out_fd, STDOUT_FILENO) != STDOUT_FILENO) {
+            terminate_with_error("dup2() - ", strerror(errno));
+        }
+
+        char prog_name[] = "";
+        auto test_input_path = string{"/dev/fd/"} + std::to_string(in_fd);
+        auto test_output_path = string{"/dev/fd/"} + std::to_string(out_fd);
+        auto user_output_path = string{"/dev/fd/"} + std::to_string(user_out_fd);
+
+        char* argv[] = {
+            prog_name,
+            test_input_path.data(),
+            user_output_path.data(),
+            test_output_path.data(),
+            nullptr,
+        };
+        exit(the_only_real_true_main(4, argv));
+    }
+    (void)close(user_out_fd);
+    (void)close(out_fd);
+    (void)close(in_fd);
+
+    int status;
+    if (waitpid(pid, &status, 0) != pid) {
+        terminate_with_error("waitpid() - ", strerror(errno));
+    }
+
+    std::string captured_output;
+    std::array<char, 4096> buff;
+    for (off_t offset = 0;;) {
+        auto rc = pread(checker_out_fd, buff.data(), buff.size(), offset);
+        if (rc > 0) {
+            offset += rc;
+            captured_output.append(buff.data(), static_cast<size_t>(rc));
+            continue;
+        }
+        if (rc == 0) {
+            break;
+        }
+        terminate_with_error("pread() - ", strerror(errno));
+    }
+    (void)close(checker_out_fd);
+
+    if (!WIFEXITED(status)) {
+        terminate_with_error("checker program crashed with output:\n", captured_output);
+    }
+
+    int exit_code = WEXITSTATUS(status);
+    if (exit_code != 0) {
+        terminate_with_error(
+            "checker program exited with ", exit_code, " with output:\n", captured_output
+        );
+    }
+    if (captured_output != checker_output.str) {
+        terminate_with_error(
+            "checker program exited with 0 with output:\n",
+            captured_output,
+            "\nexpected it to exit with 0 and output:\n",
+            checker_output.str
+        );
+    }
+}
+
+inline void checker_test(const string &test_name, const string& data) {
+    constexpr std::string_view test_in_str = "@test_in\n";
+    constexpr std::string_view test_out_str = "@test_out\n";
+    constexpr std::string_view user_str = "@user\n";
+    constexpr std::string_view checker_str = "@checker\n";
+    auto find_beg_of = [&data](std::string_view delim, size_t start_pos) -> size_t {
+        auto delim_pos = data.find(delim, start_pos);
+        if (delim_pos == string::npos) {
+            oi::bug("Could not find ", delim, " in the test string");
+        }
+        return delim_pos + delim.size();
+    };
+
+    auto test_in_beg = find_beg_of(test_in_str, 0);
+    auto test_out_beg = find_beg_of(test_out_str, test_in_beg);
+    auto user_beg = find_beg_of(user_str, test_out_beg);
+    auto checker_beg = find_beg_of(checker_str, user_beg);
+    checker_test(
+        test_name,
+        TestInput{string{
+            data.begin() + static_cast<ssize_t>(test_in_beg),
+            data.begin() + static_cast<ssize_t>(test_out_beg - test_out_str.size())
+        }},
+        TestOutput{string{
+            data.begin() + static_cast<ssize_t>(test_out_beg),
+            data.begin() + static_cast<ssize_t>(user_beg - user_str.size())
+        }},
+        UserOutput{string{
+            data.begin() + static_cast<ssize_t>(user_beg),
+            data.begin() + static_cast<ssize_t>(checker_beg - checker_str.size())
+        }},
+        CheckerOutput{data.substr(checker_beg)}
+    );
+}
+
+inline bool we_are_running_on_sio2() {
+    auto user_str = getenv("USER");
+    return user_str != nullptr && std::string_view{user_str} == "oioioiworker";
+}
+
+} // namespace oi::detail
+
+#define main(...)                                                                              \
+    the_only_real_true_main(__VA_ARGS__);                                                      \
+    /* Before checker_test(), the_only_real_true_main() is declared as: */                     \
+    /* int the_only_real_true_main(int, char**); */                                            \
+    /* it overloads the_only_real_true_main() in case __VA_ARGS__ is empty, */                 \
+    /* hence the workaround */                                                                 \
+    int only_for_type_deduction_main(__VA_ARGS__);                                             \
+                                                                                               \
+    int main(int argc, char** argv) {                                                          \
+        auto filename = std::string_view{__FILE__};                                            \
+        /* Remove the extension */                                                             \
+        while (!filename.empty() && filename.back() != '.') {                                  \
+            filename.remove_suffix(1);                                                         \
+        }                                                                                      \
+        if (filename.ends_with("chk.")) {                                                      \
+            ::oi::detail::change_error_ostream_to_cout();                                      \
+        }                                                                                      \
+                                                                                               \
+        if (!::oi::detail::we_are_running_on_sio2() &&                                         \
+            !oi::detail::get_checker_test_fns().empty())                                       \
+        {                                                                                      \
+            std::cerr << "Running " << oi::detail::get_checker_test_fns().size()               \
+                      << " checker tests...\n";                                                \
+            for (auto checker_test_fn : ::oi::detail::get_checker_test_fns()) {                \
+                checker_test_fn();                                                             \
+            }                                                                                  \
+            std::cerr << "All tests passed.\n";                                                \
+        }                                                                                      \
+                                                                                               \
+        return [&](auto main_func) {                                                           \
+            /* We need main_func in the branches to be template-dependent, hence the lambda */ \
+            if constexpr (std::is_convertible_v<decltype(main_func), int (*)()>) {             \
+                return main_func();                                                            \
+            } else {                                                                           \
+                return main_func(argc, argv);                                                  \
+            }                                                                                  \
+        }(static_cast<decltype(&only_for_type_deduction_main)>(&the_only_real_true_main));     \
+    }                                                                                          \
+    int the_only_real_true_main(__VA_ARGS__)
+
+///////////////// FORBIDDING MACROS /////////////////
+#define cin                                                         \
+    cin;                                                            \
+    static_assert(false, "Don't use cin, use oi::Scanner instead"); \
+    ::std::cin
+#define cout cout; static_assert(false, "Don't use cout, use oi::checker_verdict or oi::inwer_verdict instead or oi::bug()"); ::std::cout
+#define fstream                                                         \
+    fstream;                                                            \
+    static_assert(false, "Don't use fstream, use oi::Scanner instead"); \
+    ::std::fstream
+#define ifstream                                                         \
+    ifstream;                                                            \
+    static_assert(false, "Don't use ifstream, use oi::Scanner instead"); \
+    ::std::ifstream
+#define scanf(...) static_assert(false, "Don't use scanf(), use oi::Scanner instead")
+#define fopen(...) static_assert(false, "Don't use fopen(), use oi::Scanner instead")
+#define printf(...) static_assert(false, "Don't use printf(), use oi::checker_verdict or oi::inwer_verdict or oi::bug() instead")
+#define puts(...) \
+    static_assert(false, "Don't use puts(), use oi::checker_verdict or oi::inwer_verdict instead")
+#define exit(...) static_assert(false, "Don't use exit(), use oi::checker_verdict or oi::inwer_verdict instead")
+#define _exit(...) \
+    static_assert(false, "Don't use _exit(), use oi::checker_verdict or oi::inwer_verdict instead")
+#define _Exit(...) \
+    static_assert(false, "Don't use _Exit(), use oi::checker_verdict or oi::inwer_verdict instead")
+#define rand(...) static_assert(false, "Don't use rand(), use oi::Random")::std::rand
+#define mt19337 \
+    mt19337;    \
+    static_assert(false, "Don't use mt19337, use oi::Random")::std::mt19337
+#define mt19337_64 \
+    mt19337_64;    \
+    static_assert(false, "Don't use mt19337_64, use oi::Random")::std::mt19337_64
+#undef assert
+#define assert(...) static_assert(false, "Don't use assert, use oi_assert()")

@@ -2,13 +2,13 @@
 // Task   : Zadanie przykładowe
 // Memory : O(1)
 // Time   : O(n)
-// Solv   : Rozwiązanie wzorcowe
+// Solv   : Rozwiązanie błędne - używa int zamiast double
 
 #include <bits/stdc++.h>
 
 using namespace std;
 
-long double a, b;
+int a, b;
 int n;
 
 int main() {
@@ -20,10 +20,7 @@ int main() {
 
     cin >> n;
     for (int i=1; i<=n; ++i) {
-        // rozwiązanie wzorcowe nie powinno wypisywać na końcu wiersza białych znaków
-        if (i > 1) {
-            cout << ' ';
-        }
+        if (i > 1) cout << ' ';
         cout << i;
     }
     cout << '\n';
