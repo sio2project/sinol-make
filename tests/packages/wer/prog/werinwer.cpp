@@ -3,6 +3,7 @@
 using namespace std;
 
 int main() {
+    #ifdef _INWER
     int n, a;
     cin >> n;
     for (int i = 0; i < n; i++) {
@@ -16,4 +17,7 @@ int main() {
 
     cout << "OK" << endl << "Group " << n - 1 << endl;
     return 0;
+    #else
+        This should not compile
+    #endif
 }
