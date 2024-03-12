@@ -41,13 +41,6 @@ class Command(BaseCommand):
                             help=f'number of cpus to use (default: {util.default_cpu_count()})')
         add_compilation_arguments(parser)
 
-    def compile_inwer(self, args: argparse.Namespace):
-        self.inwer_executable, compile_log_path = inwer_util.compile_inwer(self.inwer, args, args.compile_mode)
-        if self.inwer_executable is None:
-            util.exit_with_error('Compilation failed.', lambda: compile.print_compile_log(compile_log_path))
-        else:
-            print(util.info('Compilation successful.'))
-
     @staticmethod
     def verify_test(execution: InwerExecution) -> VerificationResult:
         """
@@ -210,7 +203,7 @@ class Command(BaseCommand):
             print('Verifying tests: ' + util.bold(', '.join(self.tests)))
 
         util.change_stack_size_to_unlimited()
-        self.compile_inwer(args)
+        self.inwer_executable = inwer_util.compile_inwer(self.inwer, args, args.compile_mode)
         results: Dict[str, TestResult] = self.verify_and_print_table()
         print('')
 

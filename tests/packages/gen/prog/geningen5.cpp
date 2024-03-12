@@ -3,6 +3,7 @@
 using namespace std;
 
 int main() {
+    #ifdef _INGEN
     ofstream f("gen1.in");
     f << "1 2\n";
     f.close();
@@ -10,4 +11,7 @@ int main() {
     f.open("gen2.in");
     f << "2 3\n";
     f.close();
+    #else
+        This should not compile
+    #endif
 }

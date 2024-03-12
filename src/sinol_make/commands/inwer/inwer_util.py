@@ -13,7 +13,7 @@ from sinol_make.helpers import compiler
 from sinol_make.interfaces.Errors import CompilationError
 
 
-def get_inwer_path(task_id: str, path = None) -> Union[str, None]:
+def get_inwer_path(task_id: str, path=None) -> Union[str, None]:
     """
     Returns path to inwer executable for given task or None if no inwer was found.
     """
@@ -34,8 +34,16 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace, compilation_flags='
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
     compilers = compiler.verify_compilers(args, [inwer_path])
-    return compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers, compilation_flags,
-                                use_fsanitize=True)
+    inwer_exe, compile_log_path = compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers,
+                                                       compilation_flags, use_fsanitize=True,
+                                                       additional_flags='-D_INWER')
+
+    if inwer_exe is None:
+        compile.print_compile_log(compile_log_path)
+        util.exit_with_error('Failed inwer compilation.')
+    else:
+        print(util.info('Compilation successful.'))
+    return inwer_exe
 
 
 def sort_tests(tests, task_id):
@@ -62,11 +70,13 @@ def print_view(term_width, term_height, table_data: TableData):
         tests.append(result.test_path)
     tests = sort_tests(tests, table_data.task_id)
 
-    column_lengths[3] = max(10, term_width - column_lengths[0] - column_lengths[1] - column_lengths[2] - 9 - 3) # 9 is for " | " between columns, 3 for margin.
+    column_lengths[3] = max(10, term_width - column_lengths[0] - column_lengths[1] - column_lengths[
+        2] - 9 - 3)  # 9 is for " | " between columns, 3 for margin.
     margin = "  "
 
     def print_line_separator():
-        res = "-" * (column_lengths[0] + 3) + "+" + "-" * (column_lengths[1] + 1) + "+" + "-" * (column_lengths[2] + 1) + "+"
+        res = "-" * (column_lengths[0] + 3) + "+" + "-" * (column_lengths[1] + 1) + "+" + "-" * (
+                    column_lengths[2] + 1) + "+"
         res += "-" * (term_width - len(res) - 1)
         print(res)
 
