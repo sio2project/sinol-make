@@ -7,6 +7,8 @@ import threading
 import time
 import psutil
 import glob
+import tempfile
+import shutil
 from io import StringIO
 from typing import Dict
 
@@ -338,7 +340,7 @@ class Command(BaseCommand):
 
 
     def get_output_file(self, test_path):
-        return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
+        return os.path.abspath(os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out")
 
 
     def get_groups(self, tests):
@@ -438,7 +440,7 @@ class Command(BaseCommand):
             return self.check_output_checker(name, input_file, output_file_path, answer_file_path)
 
     def execute_oiejq(self, name, timetool_path, executable, result_file_path, input_file_path, output_file_path, answer_file_path,
-                      time_limit, memory_limit, hard_time_limit):
+                      time_limit, memory_limit, hard_time_limit, execution_dir):
         command = f'"{timetool_path}" "{executable}"'
         env = os.environ.copy()
         env["MEM_LIMIT"] = f'{memory_limit}K'
@@ -449,7 +451,7 @@ class Command(BaseCommand):
         with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file, \
                 open(result_file_path, "w") as result_file:
             process = subprocess.Popen(command, shell=True, stdin=input_file, stdout=output_file,
-                                       stderr=result_file, env=env, preexec_fn=os.setsid)
+                                       stderr=result_file, env=env, preexec_fn=os.setsid, cwd=execution_dir)
 
             def sigint_handler(signum, frame):
                 try:
@@ -518,7 +520,7 @@ class Command(BaseCommand):
 
 
     def execute_time(self, name, executable, result_file_path, input_file_path, output_file_path, answer_file_path,
-                      time_limit, memory_limit, hard_time_limit):
+                      time_limit, memory_limit, hard_time_limit, execution_dir):
         if sys.platform == 'darwin':
             time_name = 'gtime'
         elif sys.platform == 'linux':
@@ -531,7 +533,7 @@ class Command(BaseCommand):
         mem_limit_exceeded = False
         with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
             process = subprocess.Popen(command, stdin=input_file, stdout=output_file, stderr=subprocess.DEVNULL,
-                                       preexec_fn=os.setsid)
+                                       preexec_fn=os.setsid, cwd=execution_dir)
 
             def sigint_handler(signum, frame):
                 try:
@@ -596,7 +598,7 @@ class Command(BaseCommand):
                 program_exit_code = int(lines[0].strip().split(" ")[-1])
             elif not mem_limit_exceeded:
                 result.Status = Status.RE
-                result.Error = "Unexpected output from time command: " + "\n".join(lines)
+                result.Error = "Unexpected output from time command: " + "".join(lines)
                 return result
 
         if program_exit_code is not None and program_exit_code != 0:
@@ -630,7 +632,7 @@ class Command(BaseCommand):
         Run an execution and return the result as ExecutionResult object.
         """
 
-        (name, executable, test, time_limit, memory_limit, timetool_path) = data_for_execution
+        (name, executable, test, time_limit, memory_limit, timetool_path, execution_dir) = data_for_execution
         file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test, self.ID))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
@@ -638,12 +640,12 @@ class Command(BaseCommand):
 
         if self.timetool_name == 'oiejq':
             return self.execute_oiejq(name, timetool_path, executable, result_file, test, output_file, self.get_output_file(test),
-                                      time_limit, memory_limit, hard_time_limit_in_s)
+                                      time_limit, memory_limit, hard_time_limit_in_s, execution_dir)
         elif self.timetool_name == 'time':
             return self.execute_time(name, executable, result_file, test, output_file, self.get_output_file(test),
-                                     time_limit, memory_limit, hard_time_limit_in_s)
+                                     time_limit, memory_limit, hard_time_limit_in_s, execution_dir)
 
-    def run_solutions(self, compiled_commands, names, solutions):
+    def run_solutions(self, compiled_commands, names, solutions, executables_dir):
         """
         Run solutions on tests and print the results as a table to stdout.
         """
@@ -652,6 +654,10 @@ class Command(BaseCommand):
         all_cache_files: Dict[str, CacheFile] = {}
         all_results = collections.defaultdict(
             lambda: collections.defaultdict(lambda: collections.defaultdict(map)))
+
+        for lang, files in self.config.get('extra_execution_files', {}).items():
+            for file in files:
+                shutil.copy(os.path.join(os.getcwd(), "prog", file), executables_dir)
 
         for (name, executable, result) in compiled_commands:
             lang = package_util.get_file_lang(name)
@@ -670,7 +676,7 @@ class Command(BaseCommand):
                         all_results[name][self.get_group(test)][test] = test_result.result
                     else:
                         executions.append((name, executable, test, test_time_limit, test_memory_limit,
-                                           self.timetool_path))
+                                           self.timetool_path, os.path.dirname(executable)))
                         all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
@@ -743,7 +749,7 @@ class Command(BaseCommand):
         executables = [paths.get_executables_path(package_util.get_executable(solution)) for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
         names = solutions
-        return self.run_solutions(compiled_commands, names, solutions)
+        return self.run_solutions(compiled_commands, names, solutions, paths.get_executables_path())
 
     def convert_status_to_string(self, dictionary):
         """
