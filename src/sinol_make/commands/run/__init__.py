@@ -657,6 +657,9 @@ class Command(BaseCommand):
         for lang, files in self.config.get('extra_execution_files', {}).items():
             for file in files:
                 shutil.copy(os.path.join(os.getcwd(), "prog", file), executables_dir)
+        # Copy swig generated .so files
+        for file in glob.glob(os.path.join(os.getcwd(), "prog", f"_{self.ID}lib.so")):
+            shutil.copy(file, executables_dir)
 
         for (name, executable, result) in compiled_commands:
             lang = package_util.get_file_lang(name)
