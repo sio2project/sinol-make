@@ -7,7 +7,6 @@ import threading
 import time
 import psutil
 import glob
-import tempfile
 import shutil
 from io import StringIO
 from typing import Dict
@@ -340,7 +339,7 @@ class Command(BaseCommand):
 
 
     def get_output_file(self, test_path):
-        return os.path.abspath(os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out")
+        return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
 
 
     def get_groups(self, tests):
