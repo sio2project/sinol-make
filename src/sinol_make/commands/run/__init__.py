@@ -1204,7 +1204,8 @@ class Command(BaseCommand):
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or util.default_cpu_count()
-        cache.save_to_cache_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
+        cache.process_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
+        cache.process_extra_execution_files(self.config.get("extra_execution_files", []), self.ID)
         cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')

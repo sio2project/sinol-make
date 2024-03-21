@@ -676,14 +676,17 @@ def test_extra_compilation_files_change(create_package, time_tool):
         with open(file, "w") as f:
             f.write(f"{comment_character} Changed source code.\n" + source)
 
-    def test(file_to_change, lang, comment_character):
+    def test(file_to_change, lang, comment_character, extra_compilation_files=True):
         # First run to cache test results.
         command.run(args)
 
         # Change file
         change_file(os.path.join(os.getcwd(), "prog", file_to_change), comment_character)
 
-        cache.save_to_cache_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
+        if extra_compilation_files:
+            cache.process_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
+        else:
+            cache.process_extra_execution_files(command.config.get("extra_execution_files", {}), command.ID)
         task_id = package_util.get_task_id()
         solutions = package_util.get_solutions(task_id, None)
         for solution in solutions:
@@ -695,7 +698,7 @@ def test_extra_compilation_files_change(create_package, time_tool):
 
     test("liblib.cpp", "cpp", "//")
     test("liblib.h", "cpp", "//")
-    test("liblib.py", "py", "#")
+    test("liblib.py", "py", "#", False)
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
