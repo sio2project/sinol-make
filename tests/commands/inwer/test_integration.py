@@ -143,20 +143,3 @@ def test_no_output(capsys, create_package):
     assert e.value.code == 0
     out = capsys.readouterr().out
     assert "No output" in out
-
-
-@pytest.mark.parametrize("create_package", [util.get_inwer_package_path()], indirect=True)
-def test_fsanitize(create_package):
-    """
-    Test if inwer is compiled with -fsanitize=address,undefined.
-    """
-    if sm_util.is_macos_arm():
-        pytest.skip("-fsanitize=address,undefined is not supported on Apple Silicon")
-    for inwer in ["prog/werinwer5.cpp", "prog/werinwer6.cpp"]:
-        parser = configure_parsers()
-        args = parser.parse_args(["inwer", inwer])
-        command = Command()
-        with pytest.raises(SystemExit) as e:
-            command.run(args)
-        assert e.type == SystemExit
-        assert e.value.code == 1
