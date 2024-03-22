@@ -29,13 +29,13 @@ def get_inwer_path(task_id: str, path=None) -> Union[str, None]:
         return None
 
 
-def compile_inwer(inwer_path: str, args: argparse.Namespace, compilation_flags='default'):
+def compile_inwer(inwer_path: str, args: argparse.Namespace, compilation_flags='default', use_fsanitize=False):
     """
     Compiles inwer and returns path to compiled executable and path to compile log.
     """
     compilers = compiler.verify_compilers(args, [inwer_path])
     inwer_exe, compile_log_path = compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers,
-                                                       compilation_flags, use_fsanitize=True,
+                                                       compilation_flags, use_fsanitize=use_fsanitize,
                                                        additional_flags='-D_INWER')
 
     if inwer_exe is None:
