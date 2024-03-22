@@ -15,14 +15,18 @@ def _check_if_oiejq_executable(path):
 
     try:
         oiejq = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        sio2jail = subprocess.Popen([os.path.join(os.path.dirname(path), 'sio2jail'), "--version"], shell=True,
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, _ = sio2jail.communicate()
         oiejq.wait()
-        return out == (b"SIO2jail v1.4.4 compiled on Sep 13 2023 10:25:10 Linux 6.1.0-11-amd64 with gcc 12.2.0\n"
-                       b"libseccomp 2.5.4\n") and oiejq.returncode == 0
+        return oiejq.returncode == 0
     except FileNotFoundError:
         return False
+
+
+def _check_sio2jail(path):
+    sio2jail = subprocess.Popen(path + " --version", shell=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, _ = sio2jail.communicate()
+    return out == (b"SIO2jail v1.4.4 compiled on Sep 13 2023 10:25:10 Linux 6.1.0-11-amd64 with gcc 12.2.0\n"
+                   b"libseccomp 2.5.4\n")
 
 
 def check_oiejq(path = None):
@@ -33,9 +37,10 @@ def check_oiejq(path = None):
         return False
 
     if path is not None:
-        return _check_if_oiejq_executable(path)
+        return _check_if_oiejq_executable(path) and _check_sio2jail(os.path.join(os.path.dirname(path), 'sio2jail'))
 
-    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
+    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')) and \
+            _check_sio2jail(os.path.expanduser('~/.local/bin/sio2jail')):
         return True
     else:
         return False
@@ -53,6 +58,12 @@ def install_oiejq():
 
     if not os.path.exists(os.path.expanduser('~/.local/bin')):
         os.makedirs(os.path.expanduser('~/.local/bin'), exist_ok=True)
+
+    if os.path.exists(os.path.expanduser('~/.local/bin/oiejq')) and \
+            not _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
+        util.exit_with_error("Couldn't install `oiejq`.\n"
+                        "There is a file/directory named `oiejq` in `~/.local/bin` which isn't an `oiejq` executable.\n"
+                        "Please rename it or remove it and try again.")
 
     try:
         request = requests.get('https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz')
