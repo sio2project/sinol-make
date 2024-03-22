@@ -70,6 +70,7 @@ def test_perf_counters_not_set():
     if sys.platform != 'linux':
         return
 
+    oiejq.install_oiejq()
     with pytest.raises(SystemExit):
         oiejq.check_perf_counters_enabled()
 
