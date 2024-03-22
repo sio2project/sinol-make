@@ -14,11 +14,19 @@ def _check_if_oiejq_executable(path):
         return False
 
     try:
-        p = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.wait()
-        return p.returncode == 0
+        oiejq = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        oiejq.wait()
+        return oiejq.returncode == 0
     except FileNotFoundError:
         return False
+
+
+def _check_sio2jail(path):
+    sio2jail = subprocess.Popen(path + " --version", shell=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, _ = sio2jail.communicate()
+    return out == (b"SIO2jail v1.4.4 compiled on Sep 13 2023 10:25:10 Linux 6.1.0-11-amd64 with gcc 12.2.0\n"
+                   b"libseccomp 2.5.4\n")
 
 
 def check_oiejq(path = None):
@@ -29,9 +37,10 @@ def check_oiejq(path = None):
         return False
 
     if path is not None:
-        return _check_if_oiejq_executable(path)
+        return _check_if_oiejq_executable(path) and _check_sio2jail(os.path.join(os.path.dirname(path), 'sio2jail'))
 
-    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')):
+    if _check_if_oiejq_executable(os.path.expanduser('~/.local/bin/oiejq')) and \
+            _check_sio2jail(os.path.expanduser('~/.local/bin/sio2jail')):
         return True
     else:
         return False
