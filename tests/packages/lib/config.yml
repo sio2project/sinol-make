@@ -4,9 +4,11 @@ time_limit: 1000
 scores:
   1: 50
   2: 50
-extra_compilation_files: [liblib.cpp, liblib.h, liblib.py]
+extra_compilation_files: [liblib.cpp, liblib.h]
 extra_compilation_args:
   cpp: [liblib.cpp]
+extra_execution_files:
+  py: [liblib.py]
 sinol_expected_scores:
   lib.cpp:
     expected:
