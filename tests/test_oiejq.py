@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+from urllib.request import urlretrieve
 import pytest
 
 from sinol_make import oiejq, util
@@ -15,7 +16,7 @@ def test_install_oiejq():
         os.remove(os.path.expanduser('~/.local/bin/oiejq'))
         os.remove(os.path.expanduser('~/.local/bin/sio2jail'))
     except IsADirectoryError:
-        shutil.rmtree(os.path.expanduser('~/.local/bin/oiejq'), ignore_errors=True)    
+        shutil.rmtree(os.path.expanduser('~/.local/bin/oiejq'), ignore_errors=True)
     except FileNotFoundError:
         pass
     assert not oiejq.check_oiejq()
@@ -27,7 +28,7 @@ def test_install_oiejq():
         os.remove(os.path.expanduser('~/.local/bin/sio2jail'))
     except FileNotFoundError:
         pass
-    
+
     assert not oiejq.check_oiejq()
     os.makedirs(os.path.expanduser('~/.local/bin/oiejq'))
     with pytest.raises(SystemExit):
@@ -43,7 +44,7 @@ def test_check_oiejq():
         os.remove(os.path.expanduser('~/.local/bin/oiejq'))
         os.remove(os.path.expanduser('~/.local/bin/sio2jail'))
     except IsADirectoryError:
-        shutil.rmtree(os.path.expanduser('~/.local/bin/oiejq'), ignore_errors=True)    
+        shutil.rmtree(os.path.expanduser('~/.local/bin/oiejq'), ignore_errors=True)
     except FileNotFoundError:
         pass
 
@@ -81,3 +82,21 @@ def test_perf_counters_set():
     if not util.is_linux():
         return
     oiejq.check_perf_counters_enabled()
+
+
+@pytest.mark.github_runner
+def test_updating():
+    """
+    Test updating oiejq
+    """
+    if sys.platform != 'linux':
+        return
+    test_install_oiejq()
+
+    # Download older sio2jail
+    urlretrieve('https://github.com/sio2project/sio2jail/releases/download/v1.4.3/sio2jail',
+                os.path.expanduser('~/.local/bin/sio2jail'))
+    os.chmod(os.path.expanduser('~/.local/bin/sio2jail'), 0o777)
+    assert not oiejq.check_oiejq()
+    assert oiejq.install_oiejq()
+    assert oiejq.check_oiejq()
