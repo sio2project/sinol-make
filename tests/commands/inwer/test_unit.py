@@ -26,7 +26,7 @@ def test_compile_inwer(create_package):
     task_id = package_util.get_task_id()
     inwer_path = inwer_util.get_inwer_path(task_id)
     args = compiler.get_default_compilers()
-    executable, compile_log = inwer_util.compile_inwer(inwer_path, args)
+    executable = inwer_util.compile_inwer(inwer_path, args)
     assert os.path.exists(executable)
 
 
@@ -45,7 +45,7 @@ def test_asserting_inwer(create_package):
         python_interpreter_path=compiler.get_python_interpreter_path(),
         java_compiler_path=compiler.get_java_compiler_path()
     )
-    executable, compile_log = inwer_util.compile_inwer(inwer_path, args)
+    executable = inwer_util.compile_inwer(inwer_path, args)
 
     execution = InwerExecution(
         inwer_exe_path=executable,

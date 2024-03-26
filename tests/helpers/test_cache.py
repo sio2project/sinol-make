@@ -81,7 +81,7 @@ def test_cache():
         with open("prog/abclib.cpp", "w") as f:
             f.write("int main() { return 0; }")
 
-        cache.save_to_cache_extra_compilation_files(["abclib.cpp"], "abc")
+        cache.process_extra_compilation_files(["abclib.cpp"], "abc")
         assert cache.get_cache_file("/some/very/long/path/abc.cpp") == CacheFile()
         assert cache.get_cache_file("abclib.cpp") != CacheFile()
 
@@ -89,7 +89,7 @@ def test_cache():
         cache_file.save("abc.py")
         with open("prog/abclib.cpp", "w") as f:
             f.write("/* Changed file */ int main() { return 0; }")
-        cache.save_to_cache_extra_compilation_files(["abclib.cpp"], "abc")
+        cache.process_extra_compilation_files(["abclib.cpp"], "abc")
         assert not os.path.exists(paths.get_cache_path("md5sums", "abc.cpp"))
         assert os.path.exists(paths.get_cache_path("md5sums", "abc.py"))
         assert cache.get_cache_file("abc.py") == cache_file

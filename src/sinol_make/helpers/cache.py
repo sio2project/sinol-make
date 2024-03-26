@@ -70,14 +70,29 @@ def save_compiled(file_path: str, exe_path: str, is_checker: bool = False):
         remove_results_cache()
 
 
-def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
+def _check_file_changed(file_path, lang, task_id):
+    solutions_re = package_util.get_solutions_re(task_id)
+    md5sum = util.get_file_md5(file_path)
+    info = get_cache_file(file_path)
+
+    if info.md5sum != md5sum:
+        for solution in os.listdir(paths.get_cache_path('md5sums')):
+            # Remove only files in the same language and matching the solution regex
+            if package_util.get_file_lang(solution) == lang and \
+                    solutions_re.match(solution) is not None:
+                os.unlink(paths.get_cache_path('md5sums', solution))
+
+    info.md5sum = md5sum
+    info.save(file_path)
+
+
+def process_extra_compilation_files(extra_compilation_files, task_id):
     """
     Checks if extra compilation files have changed and saves them to cache.
     If they have, removes all cached solutions that use them.
     :param extra_compilation_files: List of extra compilation files
     :param task_id: Task id
     """
-    solutions_re = package_util.get_solutions_re(task_id)
     for file in extra_compilation_files:
         file_path = os.path.join(os.getcwd(), "prog", file)
         if not os.path.exists(file_path):
@@ -86,17 +101,22 @@ def save_to_cache_extra_compilation_files(extra_compilation_files, task_id):
         lang = package_util.get_file_lang(file)
         if lang == 'h':
             lang = 'cpp'
-        info = get_cache_file(file_path)
+        _check_file_changed(file_path, lang, task_id)
 
-        if info.md5sum != md5sum:
-            for solution in os.listdir(paths.get_cache_path('md5sums')):
-                # Remove only files in the same language and matching the solution regex
-                if package_util.get_file_lang(solution) == lang and \
-                        solutions_re.match(solution) is not None:
-                    os.unlink(paths.get_cache_path('md5sums', solution))
 
-        info.md5sum = md5sum
-        info.save(file_path)
+def process_extra_execution_files(extra_execution_files, task_id):
+    """
+    Checks if extra execution files have changed and saves them to cache.
+    If they have, removes all cached solutions that use them.
+    :param extra_execution_files: List of extra execution files
+    :param task_id: Task id
+    """
+    for lang, files in extra_execution_files.items():
+        for file in files:
+            file_path = os.path.join(os.getcwd(), "prog", file)
+            if not os.path.exists(file_path):
+                continue
+            _check_file_changed(file_path, lang, task_id)
 
 
 def remove_results_cache():
