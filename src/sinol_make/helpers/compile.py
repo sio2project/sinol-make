@@ -112,7 +112,8 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
         return True
 
 
-def compile_file(file_path: str, name: str, compilers: Compilers, compilation_flags='default', use_fsanitize=False) \
+def compile_file(file_path: str, name: str, compilers: Compilers, compilation_flags='default',
+                 use_fsanitize=False, additional_flags=None) \
         -> Tuple[Union[str, None], str]:
     """
     Compile a file
@@ -121,6 +122,7 @@ def compile_file(file_path: str, name: str, compilers: Compilers, compilation_fl
     :param compilers: Compilers object
     :param compilation_flags: Group of compilation flags to use
     :param use_fsanitize: Whether to use fsanitize when compiling C/C++ programs. Sanitizes address and undefined behavior.
+    :param additional_flags: Additional flags for c / c++ compiler.
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
     os.makedirs(paths.get_executables_path(), exist_ok=True)
@@ -135,6 +137,8 @@ def compile_file(file_path: str, name: str, compilers: Compilers, compilation_fl
     if isinstance(args, str):
         args = [args]
     extra_compilation_args = [os.path.join(os.getcwd(), "prog", file) for file in args]
+    if additional_flags is not None:
+        extra_compilation_args.append(additional_flags)
 
     output = paths.get_executables_path(name)
     compile_log_path = paths.get_compilation_log_path(os.path.splitext(name)[0] + '.compile_log')

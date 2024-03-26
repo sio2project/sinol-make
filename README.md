@@ -90,7 +90,7 @@ program to use, what tests to check and how many CPUs to use. Run `st-make inwer
 You can also run multiple commands at once, for example:
 
 ```shell
-sinol-make gen prog/abcingen2.cpp inwer --cpus 4 run --tests abc1*.in doc export --no-statement
+st-make gen prog/abcingen2.cpp inwer --cpus 4 run --tests abc1*.in doc export --no-statement
 ```
 
 ### Reporting bugs and contributing code
