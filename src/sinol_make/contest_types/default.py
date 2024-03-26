@@ -126,3 +126,9 @@ class DefaultContest:
         Returns maximum score for single test
         """
         return 100
+
+    def verify_pre_gen(self):
+        """
+        Called by verify command before generating tests.
+        """
+        pass

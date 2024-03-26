@@ -76,6 +76,7 @@ class Command(BaseCommand):
                                  ' pdflatex - uses pdflatex. Works with .png and .jpg images.\n'
                                  ' latex_dvi - uses latex and dvipdf. Works with .ps and .eps images.', default='auto')
         parser.add_argument('files', type=str, nargs='*', help='files to compile')
+        return parser
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)

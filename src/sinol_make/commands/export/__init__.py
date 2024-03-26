@@ -37,6 +37,7 @@ class Command(BaseCommand):
         parser.add_argument('--export-ocen', dest='export_ocen', action='store_true',
                             help='Create ocen archive')
         parsers.add_compilation_arguments(parser)
+        return parser
 
     def generate_input_tests(self):
         print('Generating tests...')

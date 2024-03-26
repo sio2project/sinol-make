@@ -441,3 +441,7 @@ def exit_with_error(text, func=None):
     except TypeError:
         pass
     exit(1)
+
+
+def has_sanitizer_error(output, exit_code):
+    return ('ELF_ET_DYN_BASE' in output or 'ASan' in output) and exit_code != 0

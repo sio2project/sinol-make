@@ -39,7 +39,11 @@ class Command(BaseCommand):
                             help='test to verify, for example in/abc{0,1}*')
         parser.add_argument('-c', '--cpus', type=int,
                             help=f'number of cpus to use (default: {util.default_cpu_count()})')
+        parser.add_argument('-f', '--fsanitize', default=False, action='store_true',
+                            help='Use -fsanitize=address,undefined for compilation. Warning: this may fail on some '
+                                 'systems. Tof fix this, run `sudo sysctl vm.mmap_rnd_bits = 28`.')
         add_compilation_arguments(parser)
+        return parser
 
     @staticmethod
     def verify_test(execution: InwerExecution) -> VerificationResult:
@@ -94,11 +98,14 @@ class Command(BaseCommand):
             thr.start()
 
         keyboard_interrupt = False
+        sanitizer_error = False
         try:
             with mp.Pool(self.cpus) as pool:
                 for i, result in enumerate(pool.imap(self.verify_test, executions)):
                     table_data.results[result.test_path].set_results(result.valid, result.output)
                     table_data.i = i
+                    if util.has_sanitizer_error(result.output, 0 if result.valid else 1):
+                        sanitizer_error = True
         except KeyboardInterrupt:
             keyboard_interrupt = True
 
@@ -108,6 +115,10 @@ class Command(BaseCommand):
 
         print("\n".join(inwer_util.print_view(terminal_width, terminal_height, table_data)[0]))
 
+        if sanitizer_error:
+            print(util.warning('Warning: if inwer failed due to sanitizer errors, you can either run '
+                               '`sudo sysctl vm.mmap_rnd_bits = 28` to fix this or disable sanitizers with the '
+                               '--no-fsanitize flag.'))
         if keyboard_interrupt:
             util.exit_with_error('Keyboard interrupt.')
 
@@ -203,7 +214,7 @@ class Command(BaseCommand):
             print('Verifying tests: ' + util.bold(', '.join(self.tests)))
 
         util.change_stack_size_to_unlimited()
-        self.inwer_executable = inwer_util.compile_inwer(self.inwer, args, args.compile_mode)
+        self.inwer_executable = inwer_util.compile_inwer(self.inwer, args, args.compile_mode, args.fsanitize)
         results: Dict[str, TestResult] = self.verify_and_print_table()
         print('')
 
@@ -218,4 +229,3 @@ class Command(BaseCommand):
             print("Verifying tests order...")
             self.verify_tests_order()
             print(util.info('Verification successful.'))
-            exit(0)
