@@ -27,7 +27,10 @@ class Command(BaseCommand):
             description='Verify the whole package. This command will first '
                         'run stress tests (if the file `prog/{task_id}stresstest.sh` exists), '
                         'verify the config, generate tests, generate problem '
-                        'statements, run inwer and run all solutions.'
+                        'statements, run inwer and run all solutions. '
+                        'Ingen and inwer are compiled with sanitizers (-fsanitize=address,undefined), '
+                        'which may fail on some systems. To fix this, run `sudo sysctl vm.mmap_rnd_bits = 28` '
+                        'or disable sanitizers with --no-fsanitize.'
         )
 
         parser.add_argument('-f', '--no-fsanitize', action='store_true', default=False,
