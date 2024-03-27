@@ -1,0 +1,11 @@
+title: Package with stresstest.sh (for `verify` command)
+sinol_task_id: str
+time_limit: 1000
+memory_limit: 10240
+
+sinol_expected_scores:
+  str.cpp:
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 50, status: OK}
+    points: 100

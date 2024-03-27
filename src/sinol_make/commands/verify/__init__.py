@@ -8,7 +8,7 @@ from sinol_make.helpers import parsers, package_util
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.gen import Command as GenCommand
 from sinol_make.commands.doc import Command as DocCommand
-from sinol_make.commands.inwer import Command as InwerCommand
+from sinol_make.commands.inwer import Command as InwerCommand, inwer_util
 from sinol_make.commands.run import Command as RunCommand
 
 
@@ -135,9 +135,12 @@ class Command(BaseCommand):
         doc.run(self.prepare_args(doc))
 
         # Run inwer
-        print(util.bold(' Running inwer '.center(util.get_terminal_size()[1], '=')))
-        inwer = InwerCommand()
-        inwer.run(self.prepare_args(inwer))
+        if inwer_util.get_inwer_path(self.task_id) is None:
+            print(util.warning("Package doesn't have inwer."))
+        else:
+            print(util.bold(' Running inwer '.center(util.get_terminal_size()[1], '=')))
+            inwer = InwerCommand()
+            inwer.run(self.prepare_args(inwer))
 
         # Run solutions
         print(util.bold(' Running solutions '.center(util.get_terminal_size()[1], '=')))
