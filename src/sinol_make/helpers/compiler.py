@@ -9,7 +9,6 @@ from sinol_make.structs.compiler_structs import Compilers
 from sinol_make.util import cache_result
 
 
-@cache_result
 def check_if_installed(compiler):
     """
     Check if a compiler is installed
@@ -99,7 +98,8 @@ def get_default_compilers():
         c_compiler_path=get_c_compiler_path(),
         cpp_compiler_path=get_cpp_compiler_path(),
         python_interpreter_path=get_python_interpreter_path(),
-        java_compiler_path=get_java_compiler_path()
+        # Java is not currently supported by sinol-make
+        # java_compiler_path=get_java_compiler_path()
     )
 
 
