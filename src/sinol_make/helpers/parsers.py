@@ -2,6 +2,7 @@ import sys
 
 import argparse
 
+from sinol_make import util
 from sinol_make.helpers import compiler
 
 
@@ -29,3 +30,10 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
                              ' oioioi / o - uses the same flags as oioioi:\n'
                              '    (-Wall -Wno-unused-result -Werror)'
                              ' weak / w - disable all warning flags during C and C++ compilation', default='default')
+
+
+def add_cpus_argument(parser: argparse.ArgumentParser, help: str):
+    parser.add_argument('-c', '--cpus', type=int,
+                        help=f'{help} '
+                             f'(default: {util.default_cpu_count()})',
+                        default=util.default_cpu_count())

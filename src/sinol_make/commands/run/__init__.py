@@ -14,7 +14,7 @@ from typing import Dict
 from sinol_make import contest_types, oiejq
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
-from sinol_make.helpers.parsers import add_compilation_arguments
+from sinol_make.helpers import parsers
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
 from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
@@ -288,8 +288,7 @@ class Command(BaseCommand):
                             help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='tests to be run, for example in/abc{0,1}*')
-        parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use (default: {util.default_cpu_count()}')
+        parsers.add_cpus_argument(parser, 'number of cpus to use when running solutions')
         parser.add_argument('--tl', type=float, help='time limit for all tests (in s)')
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
@@ -300,7 +299,7 @@ class Command(BaseCommand):
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
-        add_compilation_arguments(parser)
+        parsers.add_compilation_arguments(parser)
 
     def parse_time(self, time_str):
         if len(time_str) < 3: return -1
