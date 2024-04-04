@@ -1,5 +1,4 @@
 import sys
-
 import argparse
 
 from sinol_make import util

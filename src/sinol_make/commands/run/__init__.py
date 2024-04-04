@@ -8,21 +8,23 @@ import time
 import psutil
 import glob
 import shutil
+import os
+import collections
+import sys
+import math
+import dictdiffer
+import multiprocessing as mp
 from io import StringIO
 from typing import Dict
 
-from sinol_make import contest_types, oiejq
+from sinol_make import contest_types, oiejq, util
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
-from sinol_make.helpers import parsers
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
-from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
+from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache, parsers
 from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
     TotalPointsChange
-import sinol_make.util as util
-import yaml, os, collections, sys, re, math, dictdiffer
-import multiprocessing as mp
 
 
 def color_memory(memory, limit):

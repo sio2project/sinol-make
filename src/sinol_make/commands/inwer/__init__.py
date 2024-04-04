@@ -10,8 +10,7 @@ from typing import Dict, List
 
 from sinol_make import util
 from sinol_make.structs.inwer_structs import TestResult, InwerExecution, VerificationResult, TableData
-from sinol_make.helpers import package_util, compile, printer, paths, parsers
-from sinol_make.helpers.parsers import add_compilation_arguments
+from sinol_make.helpers import package_util, printer, paths, parsers
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.inwer import inwer_util
 
@@ -38,7 +37,7 @@ class Command(BaseCommand):
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='test to verify, for example in/abc{0,1}*')
         parsers.add_cpus_argument(parser, 'number of cpus to use when verifying tests')
-        add_compilation_arguments(parser)
+        parsers.add_compilation_arguments(parser)
 
     @staticmethod
     def verify_test(execution: InwerExecution) -> VerificationResult:
