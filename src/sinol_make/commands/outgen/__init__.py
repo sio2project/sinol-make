@@ -49,7 +49,7 @@ class Command(BaseCommand):
             for i, result in enumerate(pool.imap(generate_output, arguments)):
                 results.append(result)
                 if result:
-                    print(util.info(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}'))
+                    print(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}')
                 else:
                     print(util.error(f'Failed to generate output file {os.path.basename(arguments[i].output_test)}'))
 

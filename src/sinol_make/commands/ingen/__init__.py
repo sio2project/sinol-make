@@ -41,7 +41,7 @@ class Command(BaseCommand):
         package_util.validate_test_names(self.task_id)
         util.change_stack_size_to_unlimited()
         self.ingen = get_ingen(self.task_id, args.ingen_path)
-        print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
+        print(f'Using ingen file {os.path.basename(self.ingen)}')
         self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode)
 
         previous_tests = []
@@ -60,7 +60,7 @@ class Command(BaseCommand):
         else:
             util.exit_with_error('Failed to generate input files.')
 
-        print(util.info('Cleaning up old input files.'))
+        print('Cleaning up old input files.')
         for test in glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in")):
             basename = os.path.basename(test)
             if basename in dates and dates[basename] == os.path.getmtime(test):

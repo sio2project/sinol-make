@@ -1016,7 +1016,7 @@ class Command(BaseCommand):
 
                 self.config["sinol_expected_scores"] = self.convert_status_to_string(config_expected_scores)
                 util.save_config(self.config)
-                print(util.info("Saved suggested expected scores description."))
+                print("Saved suggested expected scores description.")
             else:
                 util.exit_with_error("Use flag --apply-suggestions to apply suggestions.")
 
@@ -1210,7 +1210,7 @@ class Command(BaseCommand):
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
-            print(util.info("Checker found: %s" % os.path.basename(checker[0])))
+            print("Checker found: %s" % os.path.basename(checker[0]))
             self.checker = checker[0]
             self.compile_checker()
         else:
