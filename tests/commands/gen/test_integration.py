@@ -60,7 +60,7 @@ def test_correct_inputs(capsys, create_package):
     """
     task_id = package_util.get_task_id()
     correct_solution = package_util.get_correct_solution(task_id)
-    cache.save_compiled(correct_solution, "exe")
+    cache.save_compiled(correct_solution, "exe", "default", False)
     simple_run()
     md5_sums = get_md5_sums(create_package)
 
@@ -79,7 +79,7 @@ def test_changed_inputs(capsys, create_package):
     """
     task_id = package_util.get_task_id()
     correct_solution = package_util.get_correct_solution(task_id)
-    cache.save_compiled(correct_solution, "exe")
+    cache.save_compiled(correct_solution, "exe", "default", False)
     simple_run()
     md5_sums = get_md5_sums(create_package)
     correct_md5 = md5_sums.copy()
