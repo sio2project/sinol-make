@@ -78,7 +78,7 @@ class Command(BaseCommand):
                                      f"or not provide them at all (to have them assigned automatically).")
 
         for group in config_scores:
-            if str(group) not in scored_groups:
+            if int(group) not in scored_groups:
                 util.exit_with_error(f"Score for group '{group}' found in config, "
                                      f"but no such test group exists in scored groups. "
                                      f"You must either provide scores for all groups "
