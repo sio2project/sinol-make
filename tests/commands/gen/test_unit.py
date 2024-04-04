@@ -145,9 +145,6 @@ def test_validate_tests(create_package, capsys):
     ]
 
     for test, error in tests:
-        with pytest.raises(SystemExit) as e:
-            package_util.validate_test(os.path.join(package_path, "in", test))
-        assert e.type == SystemExit
-        assert e.value.code == 1
-        captured = capsys.readouterr()
-        assert error in captured.out, f"Expected error not found in output: {captured.out}"
+        valid, msg = package_util.validate_test(os.path.join(package_path, "in", test))
+        assert not valid
+        assert error in msg
