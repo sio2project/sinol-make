@@ -164,6 +164,13 @@ def get_bad_tests_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "bad_tests")
 
 
+def get_dlazaw_package():
+    """
+    Get path to package with dlazaw dir and no ocen tests (/tests/packages/dlazaw)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "dlazaw")
+
+  
 def get_stresstest_package_path():
     """
     Get path to package with stresstest.sh (/tests/packages/stresstest)
