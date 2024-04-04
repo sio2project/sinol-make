@@ -1,10 +1,11 @@
 import os
 import stat
+import shutil
 import argparse
 import subprocess
 
 from sinol_make import util, contest_types
-from sinol_make.helpers import parsers, package_util
+from sinol_make.helpers import parsers, package_util, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.gen import Command as GenCommand
 from sinol_make.commands.doc import Command as DocCommand
@@ -40,6 +41,14 @@ class Command(BaseCommand):
                                  f'(default: {util.default_cpu_count()})',
                             default=util.default_cpu_count())
         parsers.add_compilation_arguments(parser)
+
+    def remove_cache(self):
+        """
+        Remove whole cache dir
+        """
+        cache_dir = paths.get_cache_path()
+        if os.path.exists(cache_dir):
+            shutil.rmtree(cache_dir)
 
     def check_extra_files(self):
         """
@@ -117,6 +126,7 @@ class Command(BaseCommand):
         self.task_id = package_util.get_task_id()
         self.contest = contest_types.get_contest_type()
 
+        self.remove_cache()
         self.check_extra_files()
         self.contest.verify_pre_gen()
 
