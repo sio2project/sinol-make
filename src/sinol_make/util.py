@@ -7,6 +7,7 @@ import hashlib
 import multiprocessing
 import resource
 from typing import Union
+from packaging.version import parse as parse_version
 
 from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
@@ -150,10 +151,18 @@ def import_importlib_resources():
     return importlib
 
 
-def check_for_updates(current_version) -> Union[str, None]:
+def is_dev(version):
+    """
+    Function to check if the version is a development version.
+    """
+    return parse_version(version).is_devrelease
+
+
+def check_for_updates(current_version, check=True) -> Union[str, None]:
     """
     Function to check if there is a new version of sinol-make.
     :param current_version: current version of sinol-make
+    :param check: whether to check for new version
     :return: returns new version if there is one, None otherwise
     """
     importlib = import_importlib_resources()
@@ -164,8 +173,9 @@ def check_for_updates(current_version) -> Union[str, None]:
 
     # We check for new version asynchronously, so that it doesn't slow down the program.
     # If the main process exits, the check_version process will also exit.
-    process = multiprocessing.Process(target=check_version, daemon=True)
-    process.start()
+    if check:
+        process = multiprocessing.Process(target=check_version, daemon=True)
+        process.start()
     version_file = data_dir.joinpath("version")
 
     try:
@@ -178,7 +188,9 @@ def check_for_updates(current_version) -> Union[str, None]:
             return None
 
     try:
-        if compare_versions(current_version, version) == -1:
+        if not is_dev(version) and parse_version(version) > parse_version(current_version):
+            return version
+        if is_dev(current_version) and is_dev(version) and parse_version(version) > parse_version(current_version):
             return version
         else:
             return None
@@ -215,26 +227,6 @@ def check_version():
                     f.write(latest_version)
             except PermissionError:
                 pass
-
-
-def compare_versions(version_a, version_b):
-    """
-    Function to compare two versions.
-    Returns 1 if version_a > version_b, 0 if version_a == version_b, -1 if version_a < version_b.
-    """
-
-    def convert(version):
-        return tuple(map(int, version.split(".")))
-
-    version_a = convert(version_a)
-    version_b = convert(version_b)
-
-    if version_a > version_b:
-        return 1
-    elif version_a == version_b:
-        return 0
-    else:
-        return -1
 
 
 def lines_diff(lines1, lines2):
