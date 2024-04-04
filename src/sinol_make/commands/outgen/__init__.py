@@ -129,4 +129,4 @@ class Command(BaseCommand):
                 yaml.dump(md5_sums, f)
 
         if not self.args.no_validate:
-            package_util.validate_tests(outputs_to_generate, self.args.cpus, 'outputs')
+            package_util.validate_tests(sorted(outputs_to_generate), self.args.cpus, 'outputs')
