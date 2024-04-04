@@ -146,5 +146,5 @@ def verify_compilers(args: argparse.Namespace, solutions: List[str]) -> Compiler
         c_compiler_path=args.c_compiler_path,
         cpp_compiler_path=args.cpp_compiler_path,
         python_interpreter_path=args.python_interpreter_path,
-        java_compiler_path=args.java_compiler_path
+        java_compiler_path=None
     )
