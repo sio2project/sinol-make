@@ -170,6 +170,13 @@ def get_dlazaw_package():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "dlazaw")
 
+  
+def get_stresstest_package_path():
+    """
+    Get path to package with stresstest.sh (/tests/packages/stresstest)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "stresstest")
+
 
 def create_ins(package_path, task_id):
     """

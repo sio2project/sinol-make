@@ -301,6 +301,7 @@ class Command(BaseCommand):
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
         add_compilation_arguments(parser)
+        return parser
 
     def parse_time(self, time_str):
         if len(time_str) < 3: return -1

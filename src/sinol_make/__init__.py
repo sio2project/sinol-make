@@ -6,7 +6,7 @@ import argcomplete
 
 from sinol_make import util, oiejq
 
-__version__ = "1.5.29"
+__version__ = "1.6.0.dev1"
 
 
 def configure_parsers():
@@ -79,6 +79,9 @@ def main_exn():
 def main():
     new_version = None
     try:
+        if util.is_dev(__version__):
+            print(util.warning('You are using a development version of sinol-make. '
+                               'It may be unstable and contain bugs.'))
         new_version = util.check_for_updates(__version__)
         main_exn()
     except argparse.ArgumentError as err:
@@ -92,6 +95,12 @@ def main():
                              'https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
     finally:
         if new_version is not None:
-            print(util.warning(
-                f'New version of sinol-make is available (your version: {__version__}, available version: '
-                f'{new_version}).\nYou can update it by running `pip3 install sinol-make --upgrade`.'))
+            if not util.is_dev(new_version):
+                print(util.warning(
+                    f'New version of sinol-make is available (your version: {__version__}, available version: '
+                    f'{new_version}).\nYou can update it by running `pip3 install sinol-make --upgrade`.'))
+            elif util.is_dev(new_version):
+                print(util.warning(
+                    f'New development version of sinol-make is available (your version: {__version__}, available '
+                    f'version: {new_version}).\nYou can update it by running `pip3 install sinol-make --pre --upgrade`.'
+                ))

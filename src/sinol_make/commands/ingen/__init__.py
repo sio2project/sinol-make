@@ -30,7 +30,11 @@ class Command(BaseCommand):
                             help='path to ingen source file, for example prog/abcingen.cpp')
         parser.add_argument('-n', '--no-validate', default=False, action='store_true',
                             help='do not validate test contents')
+        parser.add_argument('-f', '--fsanitize', default=False, action='store_true',
+                            help='Use -fsanitize=address,undefined for compilation. Warning: this may fail on some '
+                                 'systems. Tof fix this, run `sudo sysctl vm.mmap_rnd_bits = 28`.')
         parsers.add_compilation_arguments(parser)
+        return parser
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)
@@ -42,7 +46,7 @@ class Command(BaseCommand):
         util.change_stack_size_to_unlimited()
         self.ingen = get_ingen(self.task_id, args.ingen_path)
         print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
-        self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode)
+        self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode, self.args.fsanitize)
 
         previous_tests = []
         try:

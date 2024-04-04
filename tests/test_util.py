@@ -44,28 +44,6 @@ def test_file_diff():
         assert util.file_diff(a_file, b_file) is False
 
 
-def test_compare_versions():
-    """
-    Tests for compare_versions function
-    """
-
-    assert util.compare_versions('1.0.0', '1.0.0') == 0
-    assert util.compare_versions('1.0.0', '1.0.1') == -1
-    assert util.compare_versions('1.0.1', '1.0.0') == 1
-    assert util.compare_versions('1.0.0', '1.1.0') == -1
-    assert util.compare_versions('1.1.0', '1.0.0') == 1
-    assert util.compare_versions('1.0.0', '2.0.0') == -1
-    assert util.compare_versions('2.0.0', '1.0.0') == 1
-    with pytest.raises(ValueError):
-        util.compare_versions('1.0.0', '')
-    with pytest.raises(ValueError):
-        util.compare_versions('', '1.0.0')
-    with pytest.raises(ValueError):
-        util.compare_versions('1.0.0', 'abc')
-    with pytest.raises(ValueError):
-        util.compare_versions('abc', '1.0.0')
-
-
 @requests_mock.Mocker(kw="mocker")
 def test_check_version(**kwargs):
     """
@@ -73,6 +51,29 @@ def test_check_version(**kwargs):
     Simulates wrong responses and exceptions with requests-mock
     """
     mocker = kwargs["mocker"]
+
+    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "1.0.0.dev2"}})
+    util.check_version()
+    version = util.check_for_updates("1.0.0.dev1", False)
+    assert version == "1.0.0.dev2"
+    assert util.is_dev(version)
+
+    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "1.0.0"}})
+    util.check_version()
+    version = util.check_for_updates("1.0.0.dev1", False)
+    assert version == "1.0.0"
+    assert not util.is_dev(version)
+
+    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "2.0.0.dev1"}})
+    util.check_version()
+    version = util.check_for_updates("1.0.0", False)
+    assert version is None
+
+    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json={"info": {"version": "1.0.1"}})
+    util.check_version()
+    version = util.check_for_updates("1.0.0", False)
+    assert version == "1.0.1"
+    assert not util.is_dev(version)
 
     importlib = util.import_importlib_resources()
 

@@ -34,6 +34,7 @@ class Command(BaseCommand):
         parser.add_argument('-n', '--no-validate', default=False, action='store_true',
                             help='do not validate test contents')
         parsers.add_compilation_arguments(parser)
+        return parser
 
     def generate_outputs(self, outputs_to_generate):
         print(f'Generating output files for {len(outputs_to_generate)} tests on {self.args.cpus} cpus.')
