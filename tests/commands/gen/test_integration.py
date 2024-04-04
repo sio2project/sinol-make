@@ -344,14 +344,27 @@ def test_cache_remove_after_flags_change(create_package):
     """
     Test if cache for a program is removed if compilation flags change or -fsanitize is disabled.
     """
+    def random_key_to_cache():
+        cache_file = cache.get_cache_file("abcingen.cpp")
+        print(cache_file)
+        cache_dict = cache_file.to_dict()
+        cache_dict["random_key"] = "random_value"
+        with open(paths.get_cache_path("md5sums", "abcingen.cpp"), "w") as f:
+            yaml.dump(cache_dict, f)
+
+    def check_assert():
+        with open(paths.get_cache_path("md5sums", "abcingen.cpp"), "r") as f:
+            cache_dict = yaml.load(f, Loader=yaml.FullLoader)
+        assert "random_key" not in cache_dict
+
     # Generate cache
     simple_run(command="gen")
-    cache_file = cache.get_cache_file("abcingen.cpp")
-    cache_dict = cache_file.to_dict()
-    cache_dict["random_key"] = "random_value"
-    with open(paths.get_cache_path("md5sums", "abcingen.cpp"), "w") as f:
-        yaml.dump(cache_dict, f)
+    random_key_to_cache()
     simple_run(["--compile-mode", "oioioi"], command="gen")
-    with open(paths.get_cache_path("md5sums", "abcingen.cpp"), "r") as f:
-        cache_dict = yaml.load(f, Loader=yaml.FullLoader)
-    assert "random_key" not in cache_dict
+    check_assert()
+
+    # Generate cache
+    simple_run(command="gen")
+    random_key_to_cache()
+    simple_run(["--fsanitize"], command="gen")
+    check_assert()
