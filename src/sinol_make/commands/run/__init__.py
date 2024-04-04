@@ -639,14 +639,12 @@ class Command(BaseCommand):
         file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test, self.ID))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
-        hard_time_limit_in_s = math.ceil(2 * time_limit / 1000.0)
+        hard_time_limit = math.ceil(2 * time_limit / 1000.0)
 
-        if self.timetool_name == 'oiejq':
-            return self.execute_oiejq(name, timetool_path, executable, result_file, test, output_file, self.get_output_file(test),
-                                      time_limit, memory_limit, hard_time_limit_in_s, execution_dir)
-        elif self.timetool_name == 'time':
-            return self.execute_time(name, executable, result_file, test, output_file, self.get_output_file(test),
-                                     time_limit, memory_limit, hard_time_limit_in_s, execution_dir)
+        oiejq = self.timetool_name == 'oiejq'
+        return self.task_type.run(oiejq, timetool_path, executable, result_file, test, output_file,
+                                  self.get_output_file(test), time_limit, memory_limit, hard_time_limit, execution_dir)
+
 
     def run_solutions(self, compiled_commands, names, solutions, executables_dir):
         """
@@ -1160,7 +1158,7 @@ class Command(BaseCommand):
                     if results[solution][group][test].Error is not None:
                         error_msg += f'Solution {solution} had an error on test {test}: {results[solution][group][test].Error}\n'
         if error_msg != "":
-            util.exit_with_error(error_msg)
+            print(util.error(error_msg))
 
     def compile_checker(self):
         checker_basename = os.path.basename(self.checker)
