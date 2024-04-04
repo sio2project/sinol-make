@@ -212,3 +212,30 @@ def test_no_ocen(create_package):
         with tarfile.open(f'{task_id}.tgz', "r") as tar:
             sinol_util.extract_tar(tar, tmpdir)
         assert not os.path.exists(os.path.join(tmpdir, task_id, "attachments", f"{task_id}ocen.zip"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_dlazaw_package()], indirect=True)
+def test_no_ocen_and_dlazaw(create_package):
+    """
+    Test if ocen archive is not created when there are no ocen tests.
+    Also test if dlazaw archive is created.
+    """
+    parser = configure_parsers()
+    args = parser.parse_args(["export", "--no-statement"])
+    command = Command()
+    command.run(args)
+    task_id = package_util.get_task_id()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{task_id}.tgz', "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+
+        assert not os.path.exists(os.path.join(tmpdir, task_id, "attachments", f"{task_id}ocen.zip"))
+        dlazaw_archive = os.path.join(tmpdir, task_id, "attachments", f"dlazaw.zip")
+        assert os.path.exists(dlazaw_archive)
+
+        with zipfile.ZipFile(dlazaw_archive, "r") as zip:
+            zip.extractall(os.path.join(tmpdir))
+
+        assert os.path.exists(os.path.join(tmpdir, "dlazaw"))
+        assert os.path.exists(os.path.join(tmpdir, "dlazaw", "epic_file"))
