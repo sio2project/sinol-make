@@ -8,6 +8,7 @@ from typing import List, Union, Dict, Any
 
 from sinol_make import util
 from sinol_make.helpers import paths
+from sinol_make.structs.package_structs import TaskType
 
 
 def get_task_id() -> str:

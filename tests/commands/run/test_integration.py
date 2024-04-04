@@ -651,7 +651,7 @@ def test_results_caching_checker_changed(create_package, time_tool):
         f.write("// Changed checker source code.\n" + checker_source)
 
     # Compile checker check if test results are removed.
-    command.compile_checker()
+    command.compile_additional_files([("checker", ["chkchk.cpp"], {"is_checker": True})])
     task_id = package_util.get_task_id()
     solutions = package_util.get_solutions(task_id, None)
     for solution in solutions:
@@ -771,7 +771,8 @@ def test_ghost_checker(create_package):
     shutil.copytree(paths.get_cache_path(), os.path.join(os.getcwd(), ".cache-copy"))
 
     command = Command()
-    command.check_had_checker(False)
+    command.set_constants()
+    command.task_type._check_had_checker(False)
 
     for solution in os.listdir(paths.get_cache_path("md5sums")):
         cache_file: CacheFile = cache.get_cache_file(solution)

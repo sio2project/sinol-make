@@ -113,8 +113,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
 
 
 def compile_file(file_path: str, name: str, compilers: Compilers, compilation_flags='default',
-                 use_fsanitize=False, additional_flags=None) \
-        -> Tuple[Union[str, None], str]:
+                 use_fsanitize=False, additional_flags=None) -> Tuple[Union[str, None], str]:
     """
     Compile a file
     :param file_path: Path to the file to compile

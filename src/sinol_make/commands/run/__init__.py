@@ -5,13 +5,14 @@ import subprocess
 import signal
 import threading
 import time
+import traceback
 import psutil
 import glob
 import shutil
 from io import StringIO
 from typing import Dict
 
-from sinol_make import contest_types, oiejq
+from sinol_make import contest_types, oiejq, task_type
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
 from sinol_make.helpers.parsers import add_compilation_arguments
@@ -357,6 +358,8 @@ class Command(BaseCommand):
 
 
     def compile(self, solution, use_extras = False, is_checker = False):
+        os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
+        os.makedirs(paths.get_executables_path(), exist_ok=True)
         compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         output = paths.get_executables_path(package_util.get_executable(solution))
@@ -506,7 +509,8 @@ class Command(BaseCommand):
                 result.Status = Status.ML
             else:
                 try:
-                    correct, result.Points = self.check_output(name, input_file_path, output_file_path, output, answer_file_path)
+                    correct, result.Points = self.task_type.check_output(input_file_path, output_file_path,
+                                                                         output, answer_file_path)
                     if not correct:
                         result.Status = Status.WA
                 except CheckerOutputException as e:
@@ -613,8 +617,8 @@ class Command(BaseCommand):
             result.Status = Status.ML
         else:
             try:
-                correct, result.Points = self.check_output(name, input_file_path, output_file_path, output,
-                                                           answer_file_path)
+                correct, result.Points = self.task_type.check_output(input_file_path, output_file_path,
+                                                                     output, answer_file_path)
                 if correct:
                     result.Status = Status.OK
                 else:
@@ -800,7 +804,7 @@ class Command(BaseCommand):
                 if group not in self.scores:
                     util.exit_with_error(f'Group {group} doesn\'t have points specified in config file.')
 
-        if self.checker is None:
+        if self.task_type.has_checker():
             for solution in results.keys():
                 new_expected_scores[solution] = {
                     "expected": results[solution],
@@ -1025,6 +1029,7 @@ class Command(BaseCommand):
         self.ID = package_util.get_task_id()
         self.SOURCE_EXTENSIONS = ['.c', '.cpp', '.py', '.java']
         self.SOLUTIONS_RE = package_util.get_solutions_re(self.ID)
+        self.task_type = task_type.get_task_type()
 
 
     def validate_arguments(self, args):
@@ -1165,24 +1170,12 @@ class Command(BaseCommand):
         if not checker_compilation[0]:
             util.exit_with_error('Checker compilation failed.')
 
-    def check_had_checker(self, has_checker):
-        """
-        Checks if there was a checker and if it is now removed (or the other way around) and if so, removes tests cache.
-        In theory, removing cache after adding a checker is redundant, because during its compilation, the cache is
-        removed.
-        """
-        had_checker = os.path.exists(paths.get_cache_path("checker"))
-        if (had_checker and not has_checker) or (not had_checker and has_checker):
-            cache.remove_results_cache()
-        if has_checker:
-            with open(paths.get_cache_path("checker"), "w") as f:
-                f.write("")
-        else:
-            try:
-                os.remove(paths.get_cache_path("checker"))
-            except FileNotFoundError:
-                pass
 
+
+    def compile_additional_files(self, files):
+        for name, args, kwargs in files:
+            print(f'Compiling {name}...')
+            self.compile(*args, **kwargs)
 
     def run(self, args):
         args = util.init_package_command(args)
@@ -1208,14 +1201,7 @@ class Command(BaseCommand):
         cache.process_extra_execution_files(self.config.get("extra_execution_files", {}), self.ID)
         cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
-        checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
-        if len(checker) != 0:
-            print(util.info("Checker found: %s" % os.path.basename(checker[0])))
-            self.checker = checker[0]
-            self.compile_checker()
-        else:
-            self.checker = None
-        self.check_had_checker(self.checker is not None)
+        self.compile_additional_files(self.task_type.get_files_to_compile())
 
         lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0
@@ -1243,7 +1229,8 @@ class Command(BaseCommand):
             self.config = util.try_fix_config(self.config)
             try:
                 validation_results = self.validate_expected_scores(results)
-            except Exception:
+            except Exception as e:
+                print(traceback.format_exc())
                 util.exit_with_error("Validating expected scores failed. "
                                      "This probably means that `sinol_expected_scores` is broken. "
                                      "Delete it and run `sinol-make run --apply-suggestions` again.")
