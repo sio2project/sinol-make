@@ -214,7 +214,9 @@ def check_version():
         return
 
     data = request.json()
-    latest_version = data["info"]["version"]
+    versions = list(data["releases"].keys())
+    versions.sort(key=parse_version)
+    latest_version = versions[-1]
 
     version_file = importlib.files("sinol_make").joinpath("data/version")
     try:
