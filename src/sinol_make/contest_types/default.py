@@ -64,7 +64,7 @@ class DefaultContest:
         :param scores: Dictionary: {"<group>": <points>}
         :return: Maximum possible score.
         """
-        if groups[0] == 0 and len(groups) == 1:
+        if len(groups) == 0 or (groups[0] == 0 and len(groups) == 1):
             return 0
 
         possible_score = 0
