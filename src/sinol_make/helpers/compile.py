@@ -37,10 +37,17 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if use_fsanitize and util.is_macos_arm():
         use_fsanitize = False
 
+    if compilation_flags == 'w':
+        compilation_flags = 'weak'
+    elif compilation_flags == 'o':
+        compilation_flags = 'oioioi'
+    elif compilation_flags == 'd':
+        compilation_flags = 'default'
+
     if extra_compilation_files is None:
         extra_compilation_files = []
 
-    compiled_exe = check_compiled(program)
+    compiled_exe = check_compiled(program, compilation_flags, use_fsanitize)
     if compiled_exe is not None:
         if compile_log is not None:
             compile_log.write(f'Using cached executable {compiled_exe}\n')
@@ -53,12 +60,11 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
         shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
 
     gcc_compilation_flags = ''
-    if compilation_flags == 'weak' or compilation_flags == 'w':
-        compilation_flags = 'weak'
+    if compilation_flags == 'weak':
         gcc_compilation_flags = ''  # Disable all warnings
-    elif compilation_flags == 'oioioi' or compilation_flags == 'o':
+    elif compilation_flags == 'oioioi':
         gcc_compilation_flags = ' -Wall -Wno-unused-result -Werror'  # Same flags as oioioi
-    elif compilation_flags == 'default' or compilation_flags == 'd':
+    elif compilation_flags == 'default':
         gcc_compilation_flags = ' -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal'
     else:
         util.exit_with_error(f'Unknown compilation flags group: {compilation_flags}')
@@ -108,7 +114,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
-        save_compiled(program, output, is_checker)
+        save_compiled(program, output, compilation_flags, use_fsanitize, is_checker)
         return True
 
 
