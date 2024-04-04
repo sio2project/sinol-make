@@ -30,6 +30,8 @@ class Command(BaseCommand):
                             help='path to ingen source file, for example prog/abcingen.cpp')
         parser.add_argument('-n', '--no-validate', default=False, action='store_true',
                             help='do not validate test contents')
+        parser.add_argument('-c', '--cpus', type=int,
+                            help=f'number of cpus to use (default: {util.default_cpu_count()})')
         parsers.add_compilation_arguments(parser)
 
     def run(self, args: argparse.Namespace):
@@ -70,8 +72,5 @@ class Command(BaseCommand):
             f.write("\n".join(glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in"))))
 
         if not self.args.no_validate:
-            print(util.info('Validating input test contents.'))
             tests = sorted(glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in")))
-            for test in tests:
-                package_util.validate_test(test)
-            print(util.info('Input test contents are valid!'))
+            package_util.validate_tests(tests, self.args.cpus, 'input')
