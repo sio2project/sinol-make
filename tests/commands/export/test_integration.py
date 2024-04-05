@@ -239,3 +239,23 @@ def test_no_ocen_and_dlazaw(create_package):
 
         assert os.path.exists(os.path.join(tmpdir, "dlazaw"))
         assert os.path.exists(os.path.join(tmpdir, "dlazaw", "epic_file"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_ocen_package_path()], indirect=True)
+def test_dlazaw_ocen(create_package):
+    """
+    Test if ocen archive isn't created when dlazaw directory exists
+    """
+    os.makedirs("dlazaw")
+    parser = configure_parsers()
+    args = parser.parse_args(["export", "--no-statement"])
+    command = Command()
+    command.run(args)
+    task_id = package_util.get_task_id()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{task_id}.tgz', "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+
+        assert not os.path.exists(os.path.join(tmpdir, task_id, "attachments", f"{task_id}ocen.zip"))
+        assert os.path.join(tmpdir, task_id, "attachments", f"dlazaw.zip")
