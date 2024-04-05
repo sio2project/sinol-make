@@ -785,3 +785,30 @@ def test_ghost_checker(create_package):
     with pytest.raises(SystemExit) as e:
         command.run(args)
     assert e.value.code == 1
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+def test_ignore_expected_flag(create_package, capsys):
+    """
+    Test flag --ignore-expected.
+    """
+    config = package_util.get_config()
+    del config["sinol_expected_scores"]
+    util.save_config(config)
+
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run"])
+    command = Command()
+
+    with pytest.raises(SystemExit):
+        command.run(args)
+    out = capsys.readouterr().out
+    assert "Use flag --apply-suggestions to apply suggestions." in out
+
+    args = parser.parse_args(["run", "--ignore-expected"])
+    command = Command()
+    command.run(args)
+    out = capsys.readouterr().out
+    assert "Ignoring expected scores." in out

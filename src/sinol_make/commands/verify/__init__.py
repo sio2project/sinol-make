@@ -40,6 +40,10 @@ class Command(BaseCommand):
                             help=f'number of cpus that sinol-make will use '
                                  f'(default: {util.default_cpu_count()})',
                             default=util.default_cpu_count())
+        parser.add_argument('--ignore-expected', dest='ignore_expected', action='store_true',
+                            help='ignore expected scores from config.yml. When this flag is set, '
+                                 'the expected scores are not compared with the actual scores. '
+                                 'This flag will be passed to the run command.')
         parsers.add_compilation_arguments(parser)
 
     def remove_cache(self):
