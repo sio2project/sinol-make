@@ -300,6 +300,9 @@ class Command(BaseCommand):
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
+        parser.add_argument('--ignore-expected', dest='ignore_expected', action='store_true',
+                            help='ignore expected scores from config.yml. When this flag is set, '
+                                 'the expected scores are not compared with the actual scores.')
         add_compilation_arguments(parser)
         return parser
 
@@ -1238,6 +1241,11 @@ class Command(BaseCommand):
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)
+        if self.args.ignore_expected:
+            print(util.warning("Ignoring expected scores."))
+            self.exit()
+            return
+
         try:
             validation_results = self.validate_expected_scores(results)
         except Exception:
