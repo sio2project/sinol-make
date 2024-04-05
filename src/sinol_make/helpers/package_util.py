@@ -3,8 +3,9 @@ import re
 import yaml
 import glob
 import fnmatch
+import multiprocessing as mp
 from enum import Enum
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Tuple
 
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util
@@ -355,11 +356,12 @@ def save_contest_type_to_cache(contest_type):
         contest_type_file.write(contest_type)
 
 
-def validate_test(test_path: str):
+def validate_test(test_path: str) -> Tuple[bool, str]:
     """
     Check if test doesn't contain leading/trailing whitespaces,
     has only one space between tokens and ends with newline.
     Exits with error if any of the conditions is not met.
+    :return: Tuple of two values: True if test is valid, error message otherwise.
     """
     basename = os.path.basename(test_path)
     num_empty = 0
@@ -368,24 +370,45 @@ def validate_test(test_path: str):
         for i, line in enumerate(lines):
             line = line.decode('utf-8')
             if len(line) > 0 and line[0] == ' ':
-                util.exit_with_error(f'Leading whitespace in {basename}:{i + 1}')
+                return False, util.error(f'Leading whitespace in {basename}:{i + 1}')
             if len(line) > 0 and (line[-2:] == '\r\n' or line[-2:] == '\n\r' or line[-1] == '\r'):
-                util.exit_with_error(f'Carriage return at the end of {basename}:{i + 1}')
+                return False, util.error(f'Carriage return at the end of {basename}:{i + 1}')
             if len(line) > 0 and line[-1] != '\n':
-                util.exit_with_error(f'No newline at the end of {basename}')
+                return False, util.error(f'No newline at the end of {basename}')
             if line == '\n' or line == '':
                 num_empty += 1
                 continue
             elif i == len(lines) - 1:
                 num_empty = 0
             if line[-2] == ' ':
-                util.exit_with_error(f'Trailing whitespace in {basename}:{i + 1}')
+                return False, util.error(f'Trailing whitespace in {basename}:{i + 1}')
             for j in range(len(line) - 1):
                 if line[j] == ' ' and line[j + 1] == ' ':
-                    util.exit_with_error(f'Tokens not separated by one space in {basename}:{i + 1}')
+                    return False, util.error(f'Tokens not separated by one space in {basename}:{i + 1}')
 
         if num_empty != 0:
-            util.exit_with_error(f'Exactly one empty line expected in {basename}')
+            return False, util.error(f'Exactly one empty line expected in {basename}')
+
+    return True, ''
+
+
+def validate_tests(tests: List[str], cpus: int, type: str = 'input'):
+    """
+    Validate all tests in parallel.
+    """
+    if not tests:
+        return
+    print(f'Validating {type} test contents.')
+    num_tests = len(tests)
+    finished = 0
+    with mp.Pool(cpus) as pool:
+        for valid, message in pool.imap(validate_test, tests):
+            if not valid:
+                util.exit_with_error(message)
+            finished += 1
+            print(f'Validated {finished}/{num_tests} tests', end='\r')
+    print()
+    print(util.info(f'All {type} tests are valid!'))
 
 
 def get_all_inputs(task_id):
