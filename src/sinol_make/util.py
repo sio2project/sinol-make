@@ -1,6 +1,5 @@
 import glob, importlib, os, sys, requests, yaml
 import math
-import multiprocessing
 import platform
 import tarfile
 import hashlib
@@ -10,23 +9,8 @@ from typing import Union
 
 from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
+from sinol_make.helpers.func_cache import cache_result
 from sinol_make.structs.status_structs import Status
-
-
-__cache = {}
-
-
-def cache_result(func):
-    """
-    Function to cache the result of a function.
-    """
-    def wrapper(*args, **kwargs):
-        if func.__name__ in __cache:
-            return __cache[func.__name__]
-        result = func(*args, **kwargs)
-        __cache[func.__name__] = result
-        return result
-    return wrapper
 
 
 @cache_result
@@ -34,7 +18,6 @@ def get_commands():
     """
     Function to get an array of all available commands.
     """
-    global __cache
     commands_path = glob.glob(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),

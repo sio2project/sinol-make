@@ -6,7 +6,7 @@ import os
 
 from sinol_make import util
 from sinol_make.structs.compiler_structs import Compilers
-from sinol_make.util import cache_result
+from sinol_make.helpers.func_cache import cache_result
 
 
 def check_if_installed(compiler):
