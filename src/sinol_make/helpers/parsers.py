@@ -1,7 +1,7 @@
 import sys
-
 import argparse
 
+from sinol_make import util
 from sinol_make.helpers import compiler
 
 
@@ -20,8 +20,9 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--python-interpreter-path', dest='python_interpreter_path', type=str,
                         default=compiler.get_python_interpreter_path(),
                         help='Python interpreter to use (default: python3)')
-    parser.add_argument('--java-compiler-path', dest='java_compiler_path', type=str,
-                        default=compiler.get_java_compiler_path(), help='Java compiler to use (default: javac)')
+    # Java is not currently supported by sinol-make
+    # parser.add_argument('--java-compiler-path', dest='java_compiler_path', type=str,
+    #                     default=compiler.get_java_compiler_path(), help='Java compiler to use (default: javac)')
     parser.add_argument('--compile-mode', '-C', dest='compile_mode', choices=['default', 'oioioi', 'weak', 'd', 'o', 'w'],
                         help='Warning flag groups used to compile C/C++ files. Available options:\n'
                              ' default / d - uses default flags: \n'
@@ -29,3 +30,10 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
                              ' oioioi / o - uses the same flags as oioioi:\n'
                              '    (-Wall -Wno-unused-result -Werror)'
                              ' weak / w - disable all warning flags during C and C++ compilation', default='default')
+
+
+def add_cpus_argument(parser: argparse.ArgumentParser, help: str):
+    parser.add_argument('-c', '--cpus', type=int,
+                        help=f'{help} '
+                             f'(default: {util.default_cpu_count()})',
+                        default=util.default_cpu_count())
