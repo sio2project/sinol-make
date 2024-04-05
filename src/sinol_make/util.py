@@ -13,7 +13,7 @@ from sinol_make.helpers.func_cache import cache_result
 from sinol_make.structs.status_structs import Status
 
 
-@cache_result
+@cache_result()
 def get_commands():
     """
     Function to get an array of all available commands.

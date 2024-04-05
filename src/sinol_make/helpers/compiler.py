@@ -22,7 +22,7 @@ def check_if_installed(compiler):
     return True
 
 
-@cache_result
+@cache_result()
 def get_c_compiler_path():
     """
     Get the C compiler
@@ -42,7 +42,7 @@ def get_c_compiler_path():
         return None
 
 
-@cache_result
+@cache_result()
 def get_cpp_compiler_path():
     """
     Get the C++ compiler
@@ -64,7 +64,7 @@ def get_cpp_compiler_path():
         return None
 
 
-@cache_result
+@cache_result()
 def get_python_interpreter_path():
     """
     Get the Python interpreter
@@ -78,7 +78,7 @@ def get_python_interpreter_path():
     return None
 
 
-@cache_result
+@cache_result()
 def get_java_compiler_path():
     """
     Get the Java compiler

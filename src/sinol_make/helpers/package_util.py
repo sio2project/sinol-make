@@ -11,7 +11,7 @@ from sinol_make import util
 from sinol_make.helpers import paths
 
 
-@cache_result
+@cache_result(cwd=True)
 def get_task_id() -> str:
     config = get_config()
     if "sinol_task_id" in config:

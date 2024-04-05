@@ -202,6 +202,7 @@ def create_ins_outs(package_path):
     """
     os.chdir(package_path)
     task_id = package_util.get_task_id()
+    print(task_id)
     create_ins(package_path, task_id)
     has_lib = package_util.any_files_matching_pattern(task_id, f"{task_id}lib.*")
     if not has_lib:
