@@ -1,0 +1,20 @@
+title: Interactive task via IO
+sinol_task_id: iio
+memory_limit: 10240
+time_limit: 5000
+sinol_expected_scores:
+  iio.cpp:
+    expected:
+      0: {points: 0, status: OK}
+      1: {points: 100, status: OK}
+    points: 100
+  iio2.cpp:
+    expected:
+      0: {points: 0, status: WA}
+      1: {points: 0, status: RE}
+    points: 0
+  iio3.cpp:
+    expected:
+      0: {points: 0, status: OK}
+      1: {points: 50, status: OK}
+    points: 50
