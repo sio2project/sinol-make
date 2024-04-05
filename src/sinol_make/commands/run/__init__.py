@@ -635,15 +635,15 @@ class Command(BaseCommand):
         Run an execution and return the result as ExecutionResult object.
         """
 
-        (name, executable, test, time_limit, memory_limit, timetool_path, execution_dir) = data_for_execution
+        (name, executable, test, output_test, time_limit, memory_limit, timetool_path, execution_dir) = data_for_execution
         file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test, self.ID))
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit = math.ceil(2 * time_limit / 1000.0)
 
         oiejq = self.timetool_name == 'oiejq'
-        return self.task_type.run(oiejq, timetool_path, executable, result_file, test, output_file,
-                                  self.get_output_file(test), time_limit, memory_limit, hard_time_limit, execution_dir)
+        return self.task_type.run(oiejq, timetool_path, executable, result_file, os.path.join(os.getcwd(), test), output_file,
+                                  output_test, time_limit, memory_limit, hard_time_limit, execution_dir)
 
 
     def run_solutions(self, compiled_commands, names, solutions, executables_dir):
@@ -679,8 +679,9 @@ class Command(BaseCommand):
                             test_result.time_tool == self.timetool_name:
                         all_results[name][self.get_group(test)][test] = test_result.result
                     else:
-                        executions.append((name, executable, test, test_time_limit, test_memory_limit,
-                                           self.timetool_path, os.path.dirname(executable)))
+                        executions.append((name, executable, test,
+                                           os.path.join(os.getcwd(), self.get_output_file(test)), test_time_limit,
+                                           test_memory_limit, self.timetool_path, os.path.dirname(executable)))
                         all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:

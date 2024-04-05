@@ -4,7 +4,7 @@ import time
 import signal
 import psutil
 import subprocess
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Union
 
 from sinol_make import util
 from sinol_make.interfaces.Errors import CheckerOutputException
@@ -134,17 +134,30 @@ class BaseTaskType:
                         setattr(result, key, value)
         return result
 
-    def _run_subprocess(self, oiejq, executable, memory_limit, hard_time_limit, *args, **kwargs):
+    def _run_subprocess(self, oiejq: bool, sigint_handler, executable, memory_limit, hard_time_limit, *args, **kwargs):
+        # print("oiejq", oiejq)
+        # print("executable", executable)
+        # print("memory_limit", memory_limit)
+        # print("hard_time_limit", hard_time_limit)
+        # print(args, kwargs)
+        # stdin_stat = os.fstat(kwargs['stdin'])
+        # print("stdin", kwargs['stdin'], "stdin_stat", stdin_stat)
+        # stdout_stat = os.fstat(kwargs['stdout'])
+        # print("stdout", kwargs['stdout'], "stdout_stat", stdout_stat)
         process = subprocess.Popen(*args, **kwargs)
+        if 'pass_fds' in kwargs:
+            for fd in kwargs['pass_fds']:
+                os.close(fd)
 
-        def sigint_handler(signum, frame):
-            try:
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-            except ProcessLookupError:
-                pass
-            sys.exit(1)
+        if sigint_handler:
+            def sigint_handler(signum, frame):
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                sys.exit(1)
 
-        signal.signal(signal.SIGINT, sigint_handler)
+            signal.signal(signal.SIGINT, sigint_handler)
         timeout = False
         mem_limit_exceeded = False
 
@@ -189,33 +202,46 @@ class BaseTaskType:
 
         return timeout, mem_limit_exceeded
 
+    def _run_program_oiejq(self, command, env, executable, result_file_path, input_file_path, output_file_path,
+                           answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
+        raise NotImplementedError()
+
+    def _run_program_time(self, command, env, executable, result_file_path, input_file_path, output_file_path,
+                          answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
+        raise NotImplementedError()
+
+    def _update_result_RE(self, result, program_exit_code):
+        pass
+
+    def _parse_additional_time(self, result_file_path) -> Union[ExecutionResult, None]:
+        return None
+
     def run(self, oiejq: bool, timetool_path, executable, result_file_path, input_file_path, output_file_path,
             answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir) -> ExecutionResult:
         env = os.environ.copy()
         result = ExecutionResult()
         if oiejq:
-            command = self._wrap_with_oiejq(f'"{executable}"', timetool_path)
-            env = self._prepare_oiejq_env(env, memory_limit)
-            with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file, \
-                    open(result_file_path, "w") as result_file:
-                timeout, mem_limit_exceeded = self._run_subprocess(oiejq, executable, memory_limit, hard_time_limit,
-                                                                   command, shell=True, stdin=input_file,
-                                                                   stdout=output_file, stderr=result_file, env=env,
-                                                                   preexec_fn=os.setsid, cwd=execution_dir)
+            timeout, mem_limit_exceeded = self._run_program_oiejq(timetool_path, env, executable, result_file_path,
+                                                                  input_file_path, output_file_path, answer_file_path,
+                                                                  time_limit, memory_limit, hard_time_limit,
+                                                                  execution_dir)
             result = self._parse_oiejq_output(result_file_path)
         else:
-            command = self._wrap_with_time([f'"{executable}"'], result_file_path)
-            with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
-                timeout, mem_limit_exceeded = self._run_subprocess(oiejq, executable, memory_limit, hard_time_limit,
-                                                                   ' '.join(command), shell=True, stdin=input_file, stdout=output_file,
-                                                                   stderr=subprocess.DEVNULL, preexec_fn=os.setsid,
-                                                                   cwd=execution_dir)
+            timeout, mem_limit_exceeded = self._run_program_time(timetool_path, env, executable, result_file_path,
+                                                                 input_file_path, output_file_path, answer_file_path,
+                                                                 time_limit, memory_limit, hard_time_limit,
+                                                                 execution_dir)
             if not timeout:
                 result, program_exit_code = self._parse_time_output(result_file_path)
                 if program_exit_code is not None and program_exit_code != 0:
                     result.Status = Status.RE
                     result.Error = f"Program exited with code {program_exit_code}."
+                    self._update_result_RE(result, program_exit_code)
                     return result
+
+                additional_result = self._parse_additional_time(result_file_path)
+                if additional_result is not None:
+                    return additional_result
 
         with open(output_file_path, "r") as output_file:
             output = output_file.readlines()

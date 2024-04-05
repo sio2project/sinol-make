@@ -44,8 +44,34 @@ class NormalTask(BaseTaskType):
             self._check_had_checker(False)
         return []
 
+
     def _run_checker(self, input_file, output_file_path, answer_file_path) -> List[str]:
         command = [self.checker_exe, input_file, output_file_path, answer_file_path]
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         process.wait()
         return process.communicate()[0].decode("utf-8").splitlines()
+
+    def _run_program_oiejq(self, timetool_path, env, executable, result_file_path, input_file_path, output_file_path,
+                           answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
+
+        command = self._wrap_with_oiejq(f'"{executable}"', timetool_path)
+        env = self._prepare_oiejq_env(env, memory_limit)
+        with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file, \
+                open(result_file_path, "w") as result_file:
+            timeout, mem_limit_exceeded = self._run_subprocess(True, True, executable, memory_limit, hard_time_limit,
+                                                               command, shell=True, stdin=input_file,
+                                                               stdout=output_file, stderr=result_file, env=env,
+                                                               preexec_fn=os.setsid, cwd=execution_dir)
+        return timeout, mem_limit_exceeded
+
+    def _run_program_time(self, timetool_path, env, executable, result_file_path, input_file_path, output_file_path,
+                          answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
+
+        command = self._wrap_with_time([f'"{executable}"'], result_file_path)
+        with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file:
+            timeout, mem_limit_exceeded = self._run_subprocess(False, True, executable, memory_limit, hard_time_limit,
+                                                               ' '.join(command), shell=True, stdin=input_file,
+                                                               stdout=output_file,
+                                                               stderr=subprocess.DEVNULL, preexec_fn=os.setsid,
+                                                               cwd=execution_dir)
+        return timeout, mem_limit_exceeded
