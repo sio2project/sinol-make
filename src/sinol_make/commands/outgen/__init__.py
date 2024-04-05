@@ -26,11 +26,7 @@ class Command(BaseCommand):
             help='Generate output files',
             description='Generate output files using the correct solution.'
         )
-
-        parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use to generate output files '
-                                 f'(default: {util.default_cpu_count()})',
-                            default=util.default_cpu_count())
+        parsers.add_cpus_argument(parser, 'number of cpus to use to generate output files')
         parser.add_argument('-n', '--no-validate', default=False, action='store_true',
                             help='do not validate test contents')
         parsers.add_compilation_arguments(parser)
@@ -50,7 +46,7 @@ class Command(BaseCommand):
             for i, result in enumerate(pool.imap(generate_output, arguments)):
                 results.append(result)
                 if result:
-                    print(util.info(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}'))
+                    print(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}')
                 else:
                     print(util.error(f'Failed to generate output file {os.path.basename(arguments[i].output_test)}'))
 

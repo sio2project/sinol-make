@@ -28,10 +28,7 @@ class Command(BaseCommand):
             self.get_name(),
             help='Create archive for oioioi upload',
             description='Creates archive in the current directory ready to upload to sio2 or szkopul.')
-        parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use to generate output files '
-                                 f'(default: {util.default_cpu_count()})',
-                            default=util.default_cpu_count())
+        parsers.add_cpus_argument(parser, 'number of cpus to use to generate output files')
         parser.add_argument('--no-statement', dest='no_statement', action='store_true',
                             help='allow export without statement')
         parser.add_argument('--export-ocen', dest='export_ocen', action='store_true',

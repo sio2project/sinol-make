@@ -18,7 +18,7 @@ class Command(BaseCommand):
         return "doc"
 
     def compile_file_latex_div(self, file_path):
-        print(util.info(f'Compiling {os.path.basename(file_path)} (latex to dvi)...'))
+        print(f'Compiling {os.path.basename(file_path)} (latex to dvi)...')
         os.chdir(os.path.dirname(file_path))
         subprocess.run(['latex', file_path])
         dvi_file = os.path.splitext(file_path)[0] + '.dvi'
@@ -35,7 +35,7 @@ class Command(BaseCommand):
         return True
 
     def compile_pdf_latex(self, file_path):
-        print(util.info(f'Compiling {os.path.basename(file_path)} (pdflatex)...'))
+        print(f'Compiling {os.path.basename(file_path)} (pdflatex)...')
         os.chdir(os.path.dirname(file_path))
         subprocess.run(['pdflatex', file_path])
         pdf_file = os.path.splitext(file_path)[0] + '.pdf'
@@ -62,7 +62,7 @@ class Command(BaseCommand):
         for pattern in self.LOG_PATTERNS:
             for file in glob.glob(os.path.join(os.getcwd(), 'doc', pattern)):
                 os.rename(file, os.path.join(output_dir, os.path.basename(file)))
-        print(util.info(f'Compilation log files can be found in {os.path.relpath(output_dir, os.getcwd())}'))
+        print(f'Compilation log files can be found in {os.path.relpath(output_dir, os.getcwd())}')
 
     def configure_subparser(self, subparser: argparse.ArgumentParser):
         parser = subparser.add_parser(

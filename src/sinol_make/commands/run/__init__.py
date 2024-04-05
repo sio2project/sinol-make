@@ -8,21 +8,23 @@ import time
 import psutil
 import glob
 import shutil
+import os
+import collections
+import sys
+import math
+import dictdiffer
+import multiprocessing as mp
 from io import StringIO
 from typing import Dict
 
-from sinol_make import contest_types, oiejq
+from sinol_make import contest_types, oiejq, util
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
-from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
-from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
+from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache, parsers
 from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
     TotalPointsChange
-import sinol_make.util as util
-import yaml, os, collections, sys, re, math, dictdiffer
-import multiprocessing as mp
 
 
 def color_memory(memory, limit):
@@ -288,8 +290,7 @@ class Command(BaseCommand):
                             help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='tests to be run, for example in/abc{0,1}*')
-        parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use (default: {util.default_cpu_count()}')
+        parsers.add_cpus_argument(parser, 'number of cpus to use when running solutions')
         parser.add_argument('--tl', type=float, help='time limit for all tests (in s)')
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
@@ -303,7 +304,7 @@ class Command(BaseCommand):
         parser.add_argument('--ignore-expected', dest='ignore_expected', action='store_true',
                             help='ignore expected scores from config.yml. When this flag is set, '
                                  'the expected scores are not compared with the actual scores.')
-        add_compilation_arguments(parser)
+        parsers.add_compilation_arguments(parser)
         return parser
 
     def parse_time(self, time_str):
@@ -1020,7 +1021,7 @@ class Command(BaseCommand):
 
                 self.config["sinol_expected_scores"] = self.convert_status_to_string(config_expected_scores)
                 util.save_config(self.config)
-                print(util.info("Saved suggested expected scores description."))
+                print("Saved suggested expected scores description.")
             else:
                 util.exit_with_error("Use flag --apply-suggestions to apply suggestions.")
 
@@ -1214,7 +1215,7 @@ class Command(BaseCommand):
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
-            print(util.info("Checker found: %s" % os.path.basename(checker[0])))
+            print("Checker found: %s" % os.path.basename(checker[0]))
             self.checker = checker[0]
             self.compile_checker()
         else:

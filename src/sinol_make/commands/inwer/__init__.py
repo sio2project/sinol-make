@@ -10,8 +10,7 @@ from typing import Dict, List
 
 from sinol_make import util
 from sinol_make.structs.inwer_structs import TestResult, InwerExecution, VerificationResult, TableData
-from sinol_make.helpers import package_util, compile, printer, paths
-from sinol_make.helpers.parsers import add_compilation_arguments
+from sinol_make.helpers import package_util, printer, paths, parsers
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.inwer import inwer_util
 
@@ -37,12 +36,11 @@ class Command(BaseCommand):
                             help='path to inwer source file, for example prog/abcinwer.cpp')
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='test to verify, for example in/abc{0,1}*')
-        parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use (default: {util.default_cpu_count()})')
+        parsers.add_cpus_argument(parser, 'number of cpus to use when verifying tests')
         parser.add_argument('-f', '--fsanitize', default=False, action='store_true',
                             help='Use -fsanitize=address,undefined for compilation. Warning: this may fail on some '
                                  'systems. Tof fix this, run `sudo sysctl vm.mmap_rnd_bits = 28`.')
-        add_compilation_arguments(parser)
+        parsers.add_compilation_arguments(parser)
         return parser
 
     @staticmethod
