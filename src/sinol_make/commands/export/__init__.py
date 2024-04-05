@@ -118,12 +118,14 @@ class Command(BaseCommand):
                     shutil.copy(test, os.path.join(ocen_dir, ext, os.path.basename(test)))
                     num_tests += 1
 
+            dlazaw_dir = os.path.join(os.getcwd(), 'dlazaw')
             if num_tests == 0:
                 print(util.warning('No ocen tests found.'))
+            elif os.path.exists(dlazaw_dir):
+                print(util.warning('Skipping ocen arhive creation because dlazaw directory exists.'))
             else:
                 shutil.make_archive(os.path.join(attachments_dir, f'{self.task_id}ocen'), 'zip', tmpdir)
 
-            dlazaw_dir = os.path.join(os.getcwd(), 'dlazaw')
             if os.path.exists(dlazaw_dir):
                 print('Archiving dlazaw directory and adding to attachments.')
                 os.makedirs(os.path.join(tmpdir, 'dlazaw'), exist_ok=True)
