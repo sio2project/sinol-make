@@ -50,8 +50,10 @@ def main_exn():
     parser = configure_parsers()
     arguments = []
     curr_args = []
+    commands = util.get_commands()
+    commands_dict = {command.get_name(): command for command in commands}
     for arg in sys.argv[1:]:
-        if arg in util.get_command_names() and not (len(curr_args) > 0 and curr_args[0] == 'init'):
+        if arg in commands_dict.keys() and not (len(curr_args) > 0 and curr_args[0] == 'init'):
             if curr_args:
                 arguments.append(curr_args)
             curr_args = [arg]
@@ -59,19 +61,19 @@ def main_exn():
             curr_args.append(arg)
     if curr_args:
         arguments.append(curr_args)
-    commands = util.get_commands()
+    if not arguments:
+        parser.print_help()
+        exit(1)
     check_oiejq()
 
     for curr_args in arguments:
         args = parser.parse_args(curr_args)
-        command_found = False
-        for command in commands:
-            if command.get_name() == args.command:
-                command_found = True
-                if len(arguments) > 1:
-                    print(f' {command.get_name()} command '.center(util.get_terminal_size()[1], '='))
-                command.run(args)
-        if not command_found:
+        command = commands_dict.get(args.command, None)
+        if command:
+            if len(arguments) > 1:
+                print(f' {command.get_name()} command '.center(util.get_terminal_size()[1], '='))
+            command.run(args)
+        else:
             parser.print_help()
             exit(1)
 

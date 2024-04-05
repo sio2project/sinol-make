@@ -6,10 +6,12 @@ import fnmatch
 from enum import Enum
 from typing import List, Union, Dict, Any
 
+from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util
 from sinol_make.helpers import paths
 
 
+@cache_result(cwd=True)
 def get_task_id() -> str:
     config = get_config()
     if "sinol_task_id" in config:

@@ -1,6 +1,5 @@
 import glob, importlib, os, sys, requests, yaml
 import math
-import multiprocessing
 import platform
 import tarfile
 import hashlib
@@ -11,19 +10,15 @@ from packaging.version import parse as parse_version
 
 from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
+from sinol_make.helpers.func_cache import cache_result
 from sinol_make.structs.status_structs import Status
 
 
-__cache = {}
-
-
+@cache_result()
 def get_commands():
     """
     Function to get an array of all available commands.
     """
-    global __cache
-    if 'commands' in __cache:
-        return __cache['commands']
     commands_path = glob.glob(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -35,7 +30,6 @@ def get_commands():
         temp = importlib.import_module('sinol_make.commands.' + os.path.basename(path), 'Command')
         commands.append(temp.Command())
 
-    __cache['commands'] = commands
     return commands
 
 
