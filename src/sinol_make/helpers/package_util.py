@@ -6,10 +6,12 @@ import fnmatch
 from enum import Enum
 from typing import List, Union, Dict, Any
 
+from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util
 from sinol_make.helpers import paths
 
 
+@cache_result(cwd=True)
 def get_task_id() -> str:
     config = get_config()
     if "sinol_task_id" in config:
@@ -266,6 +268,14 @@ def get_memory_limit(test_path, config, lang, task_id, args=None):
     return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang, task_id)
 
 
+def get_in_tests_re(task_id: str) -> re.Pattern:
+    return re.compile(r'^%s(([0-9]+)([a-z]?[a-z0-9]*))\.in$' % re.escape(task_id))
+
+
+def get_out_tests_re(task_id: str) -> re.Pattern:
+    return re.compile(r'^%s(([0-9]+)([a-z]?[a-z0-9]*))\.out$' % re.escape(task_id))
+
+
 def validate_test_names(task_id):
     """
     Checks if all files in the package have valid names.
@@ -278,12 +288,12 @@ def validate_test_names(task_id):
                 invalid_files.append(os.path.basename(file))
         return invalid_files
 
-    in_test_re = re.compile(r'^(%s(([0-9]+)([a-z]?[a-z0-9]*))).in$' % (re.escape(task_id)))
+    in_test_re = get_in_tests_re(task_id)
     invalid_in_tests = get_invalid_files(os.path.join("in", "*.in"), in_test_re)
     if len(invalid_in_tests) > 0:
         util.exit_with_error(f'Input tests with invalid names: {", ".join(invalid_in_tests)}.')
 
-    out_test_re = re.compile(r'^(%s(([0-9]+)([a-z]?[a-z0-9]*))).out$' % (re.escape(task_id)))
+    out_test_re = get_out_tests_re(task_id)
     invalid_out_tests = get_invalid_files(os.path.join("out", "*.out"), out_test_re)
     if len(invalid_out_tests) > 0:
         util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')
@@ -376,3 +386,12 @@ def validate_test(test_path: str):
 
         if num_empty != 0:
             util.exit_with_error(f'Exactly one empty line expected in {basename}')
+
+
+def get_all_inputs(task_id):
+    in_test_re = get_in_tests_re(task_id)
+    inputs = []
+    for file in glob.glob(os.path.join(os.getcwd(), "in", "*.in")):
+        if in_test_re.match(os.path.basename(file)):
+            inputs.append(file)
+    return inputs

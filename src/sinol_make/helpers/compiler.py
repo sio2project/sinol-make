@@ -1,12 +1,12 @@
 from typing import List
-
+import subprocess
 import argparse
+import sys
 import os
 
-import sinol_make.util as util
-import sys, subprocess
-
+from sinol_make import util
 from sinol_make.structs.compiler_structs import Compilers
+from sinol_make.helpers.func_cache import cache_result
 
 
 def check_if_installed(compiler):
@@ -22,6 +22,7 @@ def check_if_installed(compiler):
     return True
 
 
+@cache_result()
 def get_c_compiler_path():
     """
     Get the C compiler
@@ -41,6 +42,7 @@ def get_c_compiler_path():
         return None
 
 
+@cache_result()
 def get_cpp_compiler_path():
     """
     Get the C++ compiler
@@ -62,6 +64,7 @@ def get_cpp_compiler_path():
         return None
 
 
+@cache_result()
 def get_python_interpreter_path():
     """
     Get the Python interpreter
@@ -75,6 +78,7 @@ def get_python_interpreter_path():
     return None
 
 
+@cache_result()
 def get_java_compiler_path():
     """
     Get the Java compiler
@@ -94,7 +98,8 @@ def get_default_compilers():
         c_compiler_path=get_c_compiler_path(),
         cpp_compiler_path=get_cpp_compiler_path(),
         python_interpreter_path=get_python_interpreter_path(),
-        java_compiler_path=get_java_compiler_path()
+        # Java is not currently supported by sinol-make
+        # java_compiler_path=get_java_compiler_path()
     )
 
 
@@ -141,5 +146,5 @@ def verify_compilers(args: argparse.Namespace, solutions: List[str]) -> Compiler
         c_compiler_path=args.c_compiler_path,
         cpp_compiler_path=args.cpp_compiler_path,
         python_interpreter_path=args.python_interpreter_path,
-        java_compiler_path=args.java_compiler_path
+        java_compiler_path=None
     )

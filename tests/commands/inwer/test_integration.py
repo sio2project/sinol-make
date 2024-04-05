@@ -19,12 +19,7 @@ def test_default(capsys, create_package):
     parser = configure_parsers()
     args = parser.parse_args(["inwer"])
     command = Command()
-
-    with pytest.raises(SystemExit) as e:
-        command.run(args)
-
-    assert e.type == SystemExit
-    assert e.value.code == 0
+    command.run(args)
 
     out = capsys.readouterr().out
     assert "Verification successful." in out
@@ -42,12 +37,7 @@ def test_specified_inwer(capsys, create_package):
     for inwer_path in ["prog/werinwer.cpp", "prog/werinwer7.cpp"]:
         args = parser.parse_args(["inwer", inwer_path])
         command = Command()
-
-        with pytest.raises(SystemExit) as e:
-            command.run(args)
-
-        assert e.type == SystemExit
-        assert e.value.code == 0
+        command.run(args)
 
         out = capsys.readouterr().out
         assert "Verification successful." in out
@@ -98,12 +88,7 @@ def test_flag_tests(capsys, create_package):
     parser = configure_parsers()
     args = parser.parse_args(["inwer", "prog/werinwer.cpp", "--tests", "in/wer2a.in"])
     command = Command()
-
-    with pytest.raises(SystemExit) as e:
-        command.run(args)
-
-    assert e.type == SystemExit
-    assert e.value.code == 0
+    command.run(args)
 
     out = capsys.readouterr().out
     assert "Verification successful." in out
@@ -137,10 +122,7 @@ def test_no_output(capsys, create_package):
     parser = configure_parsers()
     args = parser.parse_args(["inwer", "prog/werinwer4.cpp"])
     command = Command()
-
-    with pytest.raises(SystemExit) as e:
-        command.run(args)
-    assert e.value.code == 0
+    command.run(args)
     out = capsys.readouterr().out
     assert "No output" in out
 
@@ -154,7 +136,7 @@ def test_fsanitize(create_package):
         pytest.skip("-fsanitize=address,undefined is not supported on Apple Silicon")
     for inwer in ["prog/werinwer5.cpp", "prog/werinwer6.cpp"]:
         parser = configure_parsers()
-        args = parser.parse_args(["inwer", inwer])
+        args = parser.parse_args(["inwer", "--fsanitize", inwer])
         command = Command()
         with pytest.raises(SystemExit) as e:
             command.run(args)
