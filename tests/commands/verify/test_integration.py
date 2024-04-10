@@ -114,3 +114,25 @@ def test_scores_not_100(capsys, create_package):
     assert e.value.code == 1
     out = capsys.readouterr().out
     assert "Total score in config is 99, but should be 100." in out
+
+
+@pytest.mark.parametrize("create_package", [util.get_dlazaw_package()], indirect=True)
+def test_expected_contest_and_no_scores(capsys, create_package):
+    """
+    Test if --expected-contest-type flag works,
+    and if contest type is OI and there are no scores in config.yml, the verify command will fail.
+    """
+    config = package_util.get_config()
+    with pytest.raises(SystemExit) as e:
+        run(["--expected-contest-type", "icpc"])
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "Invalid contest type 'oi'. Expected 'icpc'." in out
+
+    del config["scores"]
+    sm_util.save_config(config)
+    with pytest.raises(SystemExit) as e:
+        run(["--expected-contest-type", "oi"])
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "Scores are not defined in config.yml." in out

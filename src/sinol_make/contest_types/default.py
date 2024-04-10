@@ -16,6 +16,12 @@ class DefaultContest:
     Max possible score is sum of group scores.
     """
 
+    def get_type(self) -> str:
+        """
+        Returns type of contest.
+        """
+        return "default"
+
     def argument_overrides(self, args: argparse.Namespace) -> argparse.Namespace:
         """
         Add contest specific arguments

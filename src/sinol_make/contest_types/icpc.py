@@ -12,6 +12,9 @@ class ICPCContest(DefaultContest):
     The score is 0 if any of the tests fail.
     """
 
+    def get_type(self) -> str:
+        return "icpc"
+
     def assign_scores(self, groups: List[int]) -> Dict[int, int]:
         return {group: 1 for group in groups}
 

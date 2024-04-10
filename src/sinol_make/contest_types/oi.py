@@ -11,6 +11,9 @@ class OIContest(DefaultContest):
     Contest type for Polish Olympiad in Informatics.
     """
 
+    def get_type(self) -> str:
+        return "oi"
+
     def argument_overrides(self, args: argparse.Namespace) -> argparse.Namespace:
         """
         Add arguments for features required by OI contest
@@ -37,7 +40,7 @@ class OIContest(DefaultContest):
         """
         config = package_util.get_config()
         if 'scores' not in config:
-            return
+            util.exit_with_error("Scores are not defined in config.yml.")
         total_score = sum(config['scores'].values())
         if total_score != 100:
             util.exit_with_error(f"Total score in config is {total_score}, but should be 100.")
