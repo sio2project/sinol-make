@@ -34,6 +34,8 @@ class Command(BaseCommand):
                         'or disable sanitizers with --no-fsanitize.'
         )
 
+        parser.add_argument('-e', '--expected-contest-type', type=str,
+                            help='expected contest type. Fails if the actual contest type is different.')
         parser.add_argument('-f', '--no-fsanitize', action='store_true', default=False,
                              help='do not use sanitizers for ingen and inwer programs')
         parser.add_argument('-c', '--cpus', type=int,
@@ -45,6 +47,12 @@ class Command(BaseCommand):
                                  'the expected scores are not compared with the actual scores. '
                                  'This flag will be passed to the run command.')
         parsers.add_compilation_arguments(parser)
+
+    def correct_contest_type(self):
+        if self.args.expected_contest_type is not None:
+            if self.contest.get_type() != self.args.expected_contest_type.lower():
+                util.exit_with_error(f"Invalid contest type '{self.contest.get_type()}'. "
+                                     f"Expected '{self.args.expected_contest_type}'.")
 
     def remove_cache(self):
         """
@@ -130,6 +138,7 @@ class Command(BaseCommand):
         self.task_id = package_util.get_task_id()
         self.contest = contest_types.get_contest_type()
 
+        self.correct_contest_type()
         self.remove_cache()
         self.check_extra_files()
         self.contest.verify_pre_gen()
