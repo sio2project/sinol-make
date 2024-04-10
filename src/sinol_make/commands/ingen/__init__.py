@@ -43,7 +43,6 @@ class Command(BaseCommand):
         self.args = args
 
         self.task_id = package_util.get_task_id()
-        package_util.validate_test_names(self.task_id)
         util.change_stack_size_to_unlimited()
         self.ingen = get_ingen(self.task_id, args.ingen_path)
         print(f'Using ingen file {os.path.basename(self.ingen)}')

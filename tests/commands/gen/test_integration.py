@@ -363,6 +363,8 @@ def test_cache_remove_after_flags_change(create_package):
     simple_run(["--compile-mode", "oioioi"], command="gen")
     check_assert()
 
+    if sm_util.is_macos_arm():  # -fsanitize=address,undefined is not supported on Apple Silicon
+        return
     # Generate cache
     simple_run(command="gen")
     random_key_to_cache()
