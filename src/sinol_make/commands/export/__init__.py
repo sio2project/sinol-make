@@ -119,7 +119,7 @@ class Command(BaseCommand):
             if num_tests == 0:
                 print(util.warning('No ocen tests found.'))
             elif os.path.exists(dlazaw_dir):
-                print(util.warning('Skipping ocen arhive creation because dlazaw directory exists.'))
+                print(util.warning('Skipping ocen archive creation because dlazaw directory exists.'))
             else:
                 shutil.make_archive(os.path.join(attachments_dir, f'{self.task_id}ocen'), 'zip', tmpdir)
 
