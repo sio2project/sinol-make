@@ -25,7 +25,7 @@ def _check_sio2jail(path):
     sio2jail = subprocess.Popen(path + " --version", shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, _ = sio2jail.communicate()
-    return out == (b"SIO2jail v1.4.4 compiled on Sep 13 2023 10:25:10 Linux 6.1.0-11-amd64 with gcc 12.2.0\n"
+    return out == (b"SIO2jail v1.5.0 compiled on Apr 15 2024 12:34:31 Linux 6.1.0-20-amd64 with gcc 10.2.1 20210110\n"
                    b"libseccomp 2.5.4\n")
 
 
