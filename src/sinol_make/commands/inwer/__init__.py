@@ -37,9 +37,7 @@ class Command(BaseCommand):
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='test to verify, for example in/abc{0,1}*')
         parsers.add_cpus_argument(parser, 'number of cpus to use when verifying tests')
-        parser.add_argument('-f', '--fsanitize', default=False, action='store_true',
-                            help='Use -fsanitize=address,undefined for compilation. Warning: this may fail on some '
-                                 'systems. Tof fix this, run `sudo sysctl vm.mmap_rnd_bits = 28`.')
+        parsers.add_fsanitize_argument(parser)
         parsers.add_compilation_arguments(parser)
         return parser
 

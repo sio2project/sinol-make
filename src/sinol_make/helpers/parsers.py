@@ -37,3 +37,9 @@ def add_cpus_argument(parser: argparse.ArgumentParser, help: str):
                         help=f'{help} '
                              f'(default: {util.default_cpu_count()})',
                         default=util.default_cpu_count())
+
+
+def add_fsanitize_argument(parser: argparse.ArgumentParser):
+    parser.add_argument('-f', '--fsanitize', default=False, action='store_true',
+                        help='Use -fsanitize=address,undefined for compilation. Warning: this may fail on some '
+                             'systems. Tof fix this, run `sudo sysctl vm.mmap_rnd_bits = 28`.')
