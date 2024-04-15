@@ -304,6 +304,8 @@ class Command(BaseCommand):
         parser.add_argument('--ignore-expected', dest='ignore_expected', action='store_true',
                             help='ignore expected scores from config.yml. When this flag is set, '
                                  'the expected scores are not compared with the actual scores.')
+        parser.add_argument('--no-outputs', dest='allow_no_outputs', action='store_true',
+                            help='allow running the script without full outputs')
         parsers.add_compilation_arguments(parser)
         return parser
 
@@ -1126,9 +1128,14 @@ class Command(BaseCommand):
 
             print(util.warning('Missing output files for tests: ' + ', '.join(
                 [self.extract_file_name(test) for test in missing_tests])))
+            if self.args.allow_no_outputs != True:
+                util.exit_with_error('There are tests without outputs. \n'
+                                     'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.')
             print(util.warning('Running only on tests with output files.'))
             self.tests = valid_input_files
             self.groups = self.get_groups(self.tests)
+            if len(self.groups) < 1:
+                util.exit_with_error('No tests with valid outputs.')
 
     def check_are_any_tests_to_run(self):
         """
