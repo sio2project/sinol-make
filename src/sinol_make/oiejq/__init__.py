@@ -13,12 +13,9 @@ def _check_if_oiejq_executable(path):
     if not os.access(path, os.X_OK):
         return False
 
-    try:
-        oiejq = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        oiejq.wait()
-        return oiejq.returncode == 0
-    except FileNotFoundError:
-        return False
+    oiejq = subprocess.Popen([path], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    oiejq.wait()
+    return oiejq.returncode == 0
 
 
 def _check_sio2jail(path):
