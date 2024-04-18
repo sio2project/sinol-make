@@ -32,6 +32,29 @@ class Command(BaseCommand):
                             help='do not validate test contents')
         parsers.add_compilation_arguments(parser)
 
+    def delete_dangling_files(self, dates):
+        to_delete = set()
+        for test in glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in")):
+            basename = os.path.basename(test)
+            if basename in dates and dates[basename] == os.path.getmtime(test):
+                to_delete.add(os.path.basename(test))
+        if to_delete:
+            config = package_util.get_config()
+            if 'sinol_static_tests' not in config:
+                print(util.warning('Old input files won\'t be deleted, '
+                                   'because static tests are not defined. '
+                                   'You can define them in config.yml with `sinol_static_tests` key.'))
+            else:
+                static_files = config['sinol_static_tests']
+                if isinstance(static_files, str):
+                    static_files = [static_files]
+                static_files = set([os.path.basename(test) for test in static_files])
+                to_delete = to_delete - static_files
+                if to_delete:
+                    print(util.info('Cleaning up old input files.'))
+                    for test in to_delete:
+                        os.remove(os.path.join(os.getcwd(), "in", test))
+
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)
 
@@ -60,11 +83,7 @@ class Command(BaseCommand):
         else:
             util.exit_with_error('Failed to generate input files.')
 
-        print(util.info('Cleaning up old input files.'))
-        for test in glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in")):
-            basename = os.path.basename(test)
-            if basename in dates and dates[basename] == os.path.getmtime(test):
-                os.unlink(test)
+        self.delete_dangling_files(dates)
 
         with open(paths.get_cache_path("input_tests"), "w") as f:
             f.write("\n".join(glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in"))))
