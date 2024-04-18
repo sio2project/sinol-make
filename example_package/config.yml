@@ -83,6 +83,11 @@ sinol_task_id: abc
 #            A solution passes when all groups pass.
 sinol_contest_type: oi
 
+# You can specify which tests are static (handwritten). This allows sinol-make to differentiate between
+# old and handwritten tests. If this key is not present old tests won't be removed.
+# This key is optional and should be a list of tests.
+sinol_static_tests: ["abc0.in", "abc0a.in"]
+
 # sinol-make can check if the solutions run as expected when using `run` command.
 # Key `sinol_expected_scores` defines expected scores for each solution on each tests.
 # There should be no reason to change this key manually.
