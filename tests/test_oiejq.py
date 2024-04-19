@@ -34,6 +34,14 @@ def test_install_oiejq():
     with pytest.raises(SystemExit):
         oiejq.install_oiejq()
 
+    # Test if oiejq is reinstalled when oiejq.sh is changed
+    os.rmdir(os.path.expanduser('~/.local/bin/oiejq'))
+    oiejq.install_oiejq()
+    with open(os.path.expanduser('~/.local/bin/oiejq'), 'a') as f:
+        f.write('\n')
+    assert not oiejq.check_oiejq()
+    oiejq.install_oiejq()
+
 
 @pytest.mark.github_runner
 def test_check_oiejq():
