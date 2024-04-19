@@ -6,6 +6,7 @@ import argcomplete
 
 from sinol_make import util, oiejq
 
+
 __version__ = "1.6.0"
 
 

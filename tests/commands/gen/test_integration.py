@@ -296,17 +296,40 @@ def test_bad_tests(create_package, capsys):
 
 
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path()], indirect=True)
-def test_dangling_input_files(create_package):
+def test_dangling_inputs(create_package, capsys):
     """
     Test if dangling input files are removed.
     """
     simple_run(["prog/geningen5.cpp"], command="ingen")
     for f in ["gen1.in", "gen2.in"]:
         assert os.path.exists(os.path.join(create_package, "in", f))
+    _ = capsys.readouterr().out
 
     simple_run(["prog/geningen6.cpp"], command="ingen")
+    out = capsys.readouterr().out
+    assert ("Old input files won't be deleted, because static tests are not defined. "
+            "You can define them in config.yml with `sinol_static_tests` key.") in out
+
+    config = package_util.get_config()
+    config["sinol_static_tests"] = []
+    sm_util.save_config(config)
+    simple_run(["prog/geningen6.cpp"], command="ingen")
+    out = capsys.readouterr().out
+    assert "Cleaning up old input files." in out
     assert not os.path.exists(os.path.join(create_package, "in", "gen1.in"))
     assert os.path.exists(os.path.join(create_package, "in", "gen2.in"))
+
+    config = package_util.get_config()
+    config["sinol_static_tests"] = "gen1.in"
+    sm_util.save_config(config)
+    simple_run(["prog/geningen5.cpp"], command="ingen")
+    for f in ["gen1.in", "gen2.in"]:
+        assert os.path.exists(os.path.join(create_package, "in", f))
+    _ = capsys.readouterr().out
+    simple_run(["prog/geningen6.cpp"], command="ingen")
+    out = capsys.readouterr().out
+    for f in ["gen1.in", "gen2.in"]:
+        assert os.path.exists(os.path.join(create_package, "in", f))
 
 
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
