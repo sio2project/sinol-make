@@ -447,6 +447,8 @@ class Command(BaseCommand):
         env["MEM_LIMIT"] = f'{memory_limit}K'
         env["MEASURE_MEM"] = "1"
         env["UNDER_OIEJQ"] = "1"
+        for key in ["OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS"]:
+            env[key] = "1"
 
         timeout = False
         with open(input_file_path, "r") as input_file, open(output_file_path, "w") as output_file, \
