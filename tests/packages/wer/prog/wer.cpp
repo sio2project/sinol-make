@@ -11,5 +11,5 @@ int main() {
         s += a;
     }
     s *= n;
-    cout << s;
+    cout << s << "\n";
 }

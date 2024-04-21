@@ -60,7 +60,7 @@ def test_correct_inputs(capsys, create_package):
     """
     task_id = package_util.get_task_id()
     correct_solution = package_util.get_correct_solution(task_id)
-    cache.save_compiled(correct_solution, "exe")
+    cache.save_compiled(correct_solution, "exe", "default", False)
     simple_run()
     md5_sums = get_md5_sums(create_package)
 
@@ -79,7 +79,7 @@ def test_changed_inputs(capsys, create_package):
     """
     task_id = package_util.get_task_id()
     correct_solution = package_util.get_correct_solution(task_id)
-    cache.save_compiled(correct_solution, "exe")
+    cache.save_compiled(correct_solution, "exe", "default", False)
     simple_run()
     md5_sums = get_md5_sums(create_package)
     correct_md5 = md5_sums.copy()
@@ -245,7 +245,7 @@ def test_fsanitize(create_package):
         pytest.skip("-fsanitize=address,undefined is not supported on Apple Silicon")
     for ingen in ["prog/geningen3.cpp", "prog/geningen4.cpp"]:
         with pytest.raises(SystemExit) as e:
-            simple_run([ingen])
+            simple_run(["--fsanitize", ingen])
         assert e.type == SystemExit
         assert e.value.code == 1
 
@@ -360,3 +360,36 @@ def test_outgen_cache_cleaning(create_package, capsys):
     simple_run(command="outgen")
     # Run should pass, because output file was regenerated and cache for this test was cleaned.
     RunCommand().run(args)
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
+def test_cache_remove_after_flags_change(create_package):
+    """
+    Test if cache for a program is removed if compilation flags change or -fsanitize is disabled.
+    """
+    def random_key_to_cache():
+        cache_file = cache.get_cache_file("abcingen.cpp")
+        print(cache_file)
+        cache_dict = cache_file.to_dict()
+        cache_dict["random_key"] = "random_value"
+        with open(paths.get_cache_path("md5sums", "abcingen.cpp"), "w") as f:
+            yaml.dump(cache_dict, f)
+
+    def check_assert():
+        with open(paths.get_cache_path("md5sums", "abcingen.cpp"), "r") as f:
+            cache_dict = yaml.load(f, Loader=yaml.FullLoader)
+        assert "random_key" not in cache_dict
+
+    # Generate cache
+    simple_run(command="gen")
+    random_key_to_cache()
+    simple_run(["--compile-mode", "oioioi"], command="gen")
+    check_assert()
+
+    if sm_util.is_macos_arm():  # -fsanitize=address,undefined is not supported on Apple Silicon
+        return
+    # Generate cache
+    simple_run(command="gen")
+    random_key_to_cache()
+    simple_run(["--fsanitize"], command="gen")
+    check_assert()

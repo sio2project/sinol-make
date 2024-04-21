@@ -30,7 +30,10 @@ class Command(BaseCommand):
                             help='path to ingen source file, for example prog/abcingen.cpp')
         parser.add_argument('-n', '--no-validate', default=False, action='store_true',
                             help='do not validate test contents')
+        parsers.add_cpus_argument(parser, 'number of cpus used for validating tests')
+        parsers.add_fsanitize_argument(parser)
         parsers.add_compilation_arguments(parser)
+        return parser
 
     def delete_dangling_files(self, dates):
         to_delete = set()
@@ -51,7 +54,7 @@ class Command(BaseCommand):
                 static_files = set([os.path.basename(test) for test in static_files])
                 to_delete = to_delete - static_files
                 if to_delete:
-                    print(util.info('Cleaning up old input files.'))
+                    print('Cleaning up old input files.')
                     for test in to_delete:
                         os.remove(os.path.join(os.getcwd(), "in", test))
 
@@ -61,11 +64,10 @@ class Command(BaseCommand):
         self.args = args
 
         self.task_id = package_util.get_task_id()
-        package_util.validate_test_names(self.task_id)
         util.change_stack_size_to_unlimited()
         self.ingen = get_ingen(self.task_id, args.ingen_path)
-        print(util.info(f'Using ingen file {os.path.basename(self.ingen)}'))
-        self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode)
+        print(f'Using ingen file {os.path.basename(self.ingen)}')
+        self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode, self.args.fsanitize)
 
         previous_tests = []
         try:
@@ -89,8 +91,5 @@ class Command(BaseCommand):
             f.write("\n".join(glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in"))))
 
         if not self.args.no_validate:
-            print(util.info('Validating input test contents.'))
             tests = sorted(glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in")))
-            for test in tests:
-                package_util.validate_test(test)
-            print(util.info('Input test contents are valid!'))
+            package_util.validate_tests(tests, self.args.cpus, 'input')

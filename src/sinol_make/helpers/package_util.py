@@ -3,13 +3,16 @@ import re
 import yaml
 import glob
 import fnmatch
+import multiprocessing as mp
 from enum import Enum
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Tuple
 
+from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util
 from sinol_make.helpers import paths
 
 
+@cache_result(cwd=True)
 def get_task_id() -> str:
     config = get_config()
     if "sinol_task_id" in config:
@@ -266,6 +269,14 @@ def get_memory_limit(test_path, config, lang, task_id, args=None):
     return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang, task_id)
 
 
+def get_in_tests_re(task_id: str) -> re.Pattern:
+    return re.compile(r'^%s(([0-9]+)([a-z]?[a-z0-9]*))\.in$' % re.escape(task_id))
+
+
+def get_out_tests_re(task_id: str) -> re.Pattern:
+    return re.compile(r'^%s(([0-9]+)([a-z]?[a-z0-9]*))\.out$' % re.escape(task_id))
+
+
 def validate_test_names(task_id):
     """
     Checks if all files in the package have valid names.
@@ -278,12 +289,12 @@ def validate_test_names(task_id):
                 invalid_files.append(os.path.basename(file))
         return invalid_files
 
-    in_test_re = re.compile(r'^(%s(([0-9]+)([a-z]?[a-z0-9]*))).in$' % (re.escape(task_id)))
+    in_test_re = get_in_tests_re(task_id)
     invalid_in_tests = get_invalid_files(os.path.join("in", "*.in"), in_test_re)
     if len(invalid_in_tests) > 0:
         util.exit_with_error(f'Input tests with invalid names: {", ".join(invalid_in_tests)}.')
 
-    out_test_re = re.compile(r'^(%s(([0-9]+)([a-z]?[a-z0-9]*))).out$' % (re.escape(task_id)))
+    out_test_re = get_out_tests_re(task_id)
     invalid_out_tests = get_invalid_files(os.path.join("out", "*.out"), out_test_re)
     if len(invalid_out_tests) > 0:
         util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')
@@ -345,11 +356,12 @@ def save_contest_type_to_cache(contest_type):
         contest_type_file.write(contest_type)
 
 
-def validate_test(test_path: str):
+def validate_test(test_path: str) -> Tuple[bool, str]:
     """
     Check if test doesn't contain leading/trailing whitespaces,
     has only one space between tokens and ends with newline.
     Exits with error if any of the conditions is not met.
+    :return: Tuple of two values: True if test is valid, error message otherwise.
     """
     basename = os.path.basename(test_path)
     num_empty = 0
@@ -358,21 +370,51 @@ def validate_test(test_path: str):
         for i, line in enumerate(lines):
             line = line.decode('utf-8')
             if len(line) > 0 and line[0] == ' ':
-                util.exit_with_error(f'Leading whitespace in {basename}:{i + 1}')
+                return False, util.error(f'Leading whitespace in {basename}:{i + 1}')
             if len(line) > 0 and (line[-2:] == '\r\n' or line[-2:] == '\n\r' or line[-1] == '\r'):
-                util.exit_with_error(f'Carriage return at the end of {basename}:{i + 1}')
+                return False, util.error(f'Carriage return at the end of {basename}:{i + 1}')
             if len(line) > 0 and line[-1] != '\n':
-                util.exit_with_error(f'No newline at the end of {basename}')
+                return False, util.error(f'No newline at the end of {basename}')
             if line == '\n' or line == '':
                 num_empty += 1
                 continue
             elif i == len(lines) - 1:
                 num_empty = 0
             if line[-2] == ' ':
-                util.exit_with_error(f'Trailing whitespace in {basename}:{i + 1}')
+                return False, util.error(f'Trailing whitespace in {basename}:{i + 1}')
             for j in range(len(line) - 1):
                 if line[j] == ' ' and line[j + 1] == ' ':
-                    util.exit_with_error(f'Tokens not separated by one space in {basename}:{i + 1}')
+                    return False, util.error(f'Tokens not separated by one space in {basename}:{i + 1}')
 
         if num_empty != 0:
-            util.exit_with_error(f'Exactly one empty line expected in {basename}')
+            return False, util.error(f'Exactly one empty line expected in {basename}')
+
+    return True, ''
+
+
+def validate_tests(tests: List[str], cpus: int, type: str = 'input'):
+    """
+    Validate all tests in parallel.
+    """
+    if not tests:
+        return
+    print(f'Validating {type} test contents.')
+    num_tests = len(tests)
+    finished = 0
+    with mp.Pool(cpus) as pool:
+        for valid, message in pool.imap(validate_test, tests):
+            if not valid:
+                util.exit_with_error(message)
+            finished += 1
+            print(f'Validated {finished}/{num_tests} tests', end='\r')
+    print()
+    print(util.info(f'All {type} tests are valid!'))
+
+
+def get_all_inputs(task_id):
+    in_test_re = get_in_tests_re(task_id)
+    inputs = []
+    for file in glob.glob(os.path.join(os.getcwd(), "in", "*.in")):
+        if in_test_re.match(os.path.basename(file)):
+            inputs.append(file)
+    return inputs

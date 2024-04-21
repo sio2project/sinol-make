@@ -3,7 +3,7 @@ import pytest
 from ..commands.run.util import create_ins
 from ..fixtures import *
 from tests import util
-from sinol_make.helpers import package_util
+from sinol_make.helpers import package_util, func_cache
 
 
 @pytest.mark.parametrize("create_package", [util.get_long_name_package_path()], indirect=True)
@@ -12,6 +12,7 @@ def test_get_task_id(create_package):
     assert package_util.get_task_id() == "lpn"
     with open(os.path.join(package_path, "config.yml"), "w") as config_file:
         config_file.write("title: Long package name\n")
+    func_cache.clear_cache()
     with pytest.raises(SystemExit):
         package_util.get_task_id()
 

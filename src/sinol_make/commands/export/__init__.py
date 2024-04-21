@@ -28,15 +28,13 @@ class Command(BaseCommand):
             self.get_name(),
             help='Create archive for oioioi upload',
             description='Creates archive in the current directory ready to upload to sio2 or szkopul.')
-        parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use to generate output files '
-                                 f'(default: {util.default_cpu_count()})',
-                            default=util.default_cpu_count())
+        parsers.add_cpus_argument(parser, 'number of cpus to use to generate output files')
         parser.add_argument('--no-statement', dest='no_statement', action='store_true',
                             help='allow export without statement')
         parser.add_argument('--export-ocen', dest='export_ocen', action='store_true',
                             help='Create ocen archive')
         parsers.add_compilation_arguments(parser)
+        return parser
 
     def generate_input_tests(self):
         print('Generating tests...')
@@ -97,6 +95,7 @@ class Command(BaseCommand):
         Creates ocen archive for sio2.
         :param target_dir: Path to exported package.
         """
+        print('Generating ocen archive...')
         attachments_dir = os.path.join(target_dir, 'attachments')
         if not os.path.exists(attachments_dir):
             os.makedirs(attachments_dir)
@@ -109,12 +108,27 @@ class Command(BaseCommand):
             os.makedirs(in_dir)
             out_dir = os.path.join(ocen_dir, 'out')
             os.makedirs(out_dir)
+            num_tests = 0
             for ext in ['in', 'out']:
                 for test in glob.glob(os.path.join(tests_dir, ext, f'{self.task_id}0*.{ext}')) + \
                             glob.glob(os.path.join(tests_dir, ext, f'{self.task_id}*ocen.{ext}')):
                     shutil.copy(test, os.path.join(ocen_dir, ext, os.path.basename(test)))
+                    num_tests += 1
 
-            shutil.make_archive(os.path.join(attachments_dir, f'{self.task_id}ocen'), 'zip', tmpdir)
+            dlazaw_dir = os.path.join(os.getcwd(), 'dlazaw')
+            if num_tests == 0:
+                print(util.warning('No ocen tests found.'))
+            elif os.path.exists(dlazaw_dir):
+                print(util.warning('Skipping ocen archive creation because dlazaw directory exists.'))
+            else:
+                shutil.make_archive(os.path.join(attachments_dir, f'{self.task_id}ocen'), 'zip', tmpdir)
+
+            if os.path.exists(dlazaw_dir):
+                print('Archiving dlazaw directory and adding to attachments.')
+                os.makedirs(os.path.join(tmpdir, 'dlazaw'), exist_ok=True)
+                shutil.copytree(dlazaw_dir, os.path.join(tmpdir, 'dlazaw', 'dlazaw'))
+                shutil.make_archive(os.path.join(attachments_dir, 'dlazaw'), 'zip',
+                                    os.path.join(tmpdir, 'dlazaw'))
 
     def compile_statement(self):
         command = DocCommand()
@@ -168,7 +182,6 @@ class Command(BaseCommand):
 
         self.generate_output_files()
         if self.args.export_ocen:
-            print('Generating ocen archive...')
             self.create_ocen(target_dir)
 
     def clear_files(self, target_dir: str):

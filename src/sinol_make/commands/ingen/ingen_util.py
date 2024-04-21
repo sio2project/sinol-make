@@ -47,7 +47,7 @@ def get_ingen(task_id, ingen_path=None):
     return correct_ingen
 
 
-def compile_ingen(ingen_path: str, args: argparse.Namespace, compilation_flags='default'):
+def compile_ingen(ingen_path: str, args: argparse.Namespace, compilation_flags='default', use_fsanitize=False):
     """
     Compiles ingen and returns path to compiled executable.
     If ingen_path is shell script, then it will be returned.
@@ -57,7 +57,7 @@ def compile_ingen(ingen_path: str, args: argparse.Namespace, compilation_flags='
 
     compilers = compiler.verify_compilers(args, [ingen_path])
     ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path),
-                                                       compilers, compilation_flags, use_fsanitize=True,
+                                                       compilers, compilation_flags, use_fsanitize=use_fsanitize,
                                                        additional_flags='-D_INGEN')
 
     if ingen_exe is None:
@@ -86,11 +86,21 @@ def run_ingen(ingen_exe, working_dir=None):
     print(util.bold(' Ingen output '.center(util.get_terminal_size()[1], '=')))
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                cwd=working_dir, shell=is_shell)
+    whole_output = ''
     while process.poll() is None:
-        print(process.stdout.readline().decode('utf-8'), end='')
-
-    print(process.stdout.read().decode('utf-8'), end='')
+        out = process.stdout.readline().decode('utf-8')
+        if out != '':
+            print(out, end='')
+            whole_output += out
+    out = process.stdout.read().decode('utf-8')
+    whole_output += out
+    print(out, end='')
     exit_code = process.returncode
     print(util.bold(' End of ingen output '.center(util.get_terminal_size()[1], '=')))
+
+    if util.has_sanitizer_error(whole_output, exit_code):
+        print(util.warning('Warning: if ingen failed due to sanitizer errors, you can either run '
+                           '`sudo sysctl vm.mmap_rnd_bits = 28` to fix this or disable sanitizers with the '
+                           '--no-fsanitize flag.'))
 
     return exit_code == 0
