@@ -1,10 +1,11 @@
 import os
+import shutil
 import pytest
 
 from sinol_make import configure_parsers
 from sinol_make import util as sm_util
 from sinol_make.commands.verify import Command
-from sinol_make.helpers import package_util
+from sinol_make.helpers import package_util, paths
 from tests import util
 from tests.fixtures import create_package
 
@@ -103,24 +104,29 @@ def test_invalid_scores(capsys, create_package):
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
 def test_scores_not_100(capsys, create_package):
     """
-    Test if scores not adding up to 100 will cause the verify command to fail.
+    Test if scores not adding up to 100 will cause the verify command to fail if contest type is OI or OIJ.
     """
     config = package_util.get_config()
-    config["sinol_contest_type"] = "oi"
     config["scores"][1] -= 1
     sm_util.save_config(config)
-    with pytest.raises(SystemExit) as e:
-        run()
-    assert e.value.code == 1
-    out = capsys.readouterr().out
-    assert "Total score in config is 99, but should be 100." in out
+    for contest_type in ["oi", "oij"]:
+        if os.path.exists(paths.get_cache_path()):
+            shutil.rmtree(paths.get_cache_path())
+        config = package_util.get_config()
+        config["sinol_contest_type"] = contest_type
+        sm_util.save_config(config)
+        with pytest.raises(SystemExit) as e:
+            run()
+        assert e.value.code == 1
+        out = capsys.readouterr().out
+        assert "Total score in config is 99, but should be 100." in out
 
 
 @pytest.mark.parametrize("create_package", [util.get_dlazaw_package()], indirect=True)
 def test_expected_contest_and_no_scores(capsys, create_package):
     """
     Test if --expected-contest-type flag works,
-    and if contest type is OI and there are no scores in config.yml, the verify command will fail.
+    and if contest type is OI or OIJ and there are no scores in config.yml, the verify command will fail.
     """
     config = package_util.get_config()
     with pytest.raises(SystemExit) as e:
@@ -130,9 +136,11 @@ def test_expected_contest_and_no_scores(capsys, create_package):
     assert "Invalid contest type 'oi'. Expected 'icpc'." in out
 
     del config["scores"]
-    sm_util.save_config(config)
-    with pytest.raises(SystemExit) as e:
-        run(["--expected-contest-type", "oi"])
-    assert e.value.code == 1
-    out = capsys.readouterr().out
-    assert "Scores are not defined in config.yml." in out
+    for contest_type in ["oi", "oij"]:
+        config["sinol_contest_type"] = contest_type
+        sm_util.save_config(config)
+        with pytest.raises(SystemExit) as e:
+            run(["--expected-contest-type", contest_type])
+        assert e.value.code == 1
+        out = capsys.readouterr().out
+        assert "Scores are not defined in config.yml." in out
