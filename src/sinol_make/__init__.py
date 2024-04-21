@@ -33,7 +33,7 @@ def configure_parsers():
 
 def check_oiejq():
     if util.is_linux() and not oiejq.check_oiejq():
-        print(util.warning('`oiejq` in `~/.local/bin/` not found, installing now...'))
+        print(util.warning('Up to date `oiejq` in `~/.local/bin/` not found, installing new version...'))
         try:
             if oiejq.install_oiejq():
                 print(util.info('`oiejq` was successfully installed.'))
