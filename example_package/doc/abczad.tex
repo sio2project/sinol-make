@@ -1,13 +1,13 @@
 \documentclass[zad]{talentTex}
-\title{Przykładowe zadanie z długą nazwą}
+
+\title{Przykładowy tytuł zadania}
 \id{abc}
-\iomode{stdin} % stdin / interactive
-\Time{10,5} % Nie dodawać "s"
-\Memory{256} % Nie dodawać "MB"
-% Poniższe pola uzupełnia kierownik konkursu.
+\iomode{stdin} % stdin
+\Memory{256} % w MB
+\Time{2,4} % w sekundach
+\group{A} 
 \konkurs{SKN 2023/24}
 \day{Runda 17}
-\group{A} % Sama literka / nazwa
 
 %%%%%%%%%%%%%%%%%%
 % Przydatne komendy:
@@ -19,20 +19,20 @@
 
 %%%%%%%%%%%%%%%%%%
 % Komendy talentowe
-% \start{}  % Rozpoczyna treść, musi być na samym początku treści zadania
-% \finish{} % Kończy treść, musi być na samym końcu treści zadania
-% \tSection{text} % Nagłówek w stylu talentu
-% \tNoSkipSection{text} % Jak wyżej, tylko bez odstępu od poprzedniego akapitu
-% \tSmallSection{text} % Mały nagłówek w stylu talentu
-% \tc{text} % Styl używany do oznaczania zmiennych
-% \makecompactexample{id}   % 2 style dodawania automatycznie testów "zad0{id}" z paczki
-% \makestandardexample{id}  % compact - obok siebie, standard - pod sobą
+% \start{}  % Rozpoczyna treść, musi być na samym początku treści zadania.
+% \finish{} % Kończy treść, musi być na samym końcu treści zadania.
+% \tSection{text} % Nagłówek w stylu talentu.
+% \tCustomSection{text}{xpt} % Nagłówek w stylu talentu, z możliwością ustawienia odstępu 'x' od poprzedniego akapitu.
+% \tSmallSection{text} % Mały nagłówek w stylu talentu.
+% \tc{text} % Styl używany do oznaczania zmiennych.
+% \makecompactexample{id}   % 2 style dodawania automatycznie testów "zad0{id}" z paczki.
+% \makestandardexample{id}  % compact - obok siebie, standard - pod sobą.
 %     % Przy kompilacji testy są automatycznie czytane z folderów ./in i ./out
-% \ocen{text} % Lista wszystkich testów ocen
-% \testOcen{text}{text2} % Pojedyńczy test ocen z opisem
-% \ocenTable{text} % Tabela z podzadaniami
-% \ocenRow{text} % Pojedyńczy wiersz tabeli: kolejne komórki powinne być rodzielone znakiem &
-% \ocenElement{text} % Jeśli chcesz mieć 2 linie w pojedyńczej komórce tabeli
+% \ocen{text} % Lista wszystkich testów ocen.
+% \testOcen{text}{text2} % Pojedyńczy test ocen z opisem.
+% \ocenTable{text} % Tabela z podzadaniami.
+% \ocenRow{text} % Pojedyńczy wiersz tabeli: kolejne komórki powinne być rodzielone znakiem &.
+% \ocenElement{text} % Jeśli chcesz mieć 2 linie w pojedyńczej komórce tabeli.
 
 \start{}
 
@@ -59,10 +59,10 @@ W pierwszym wierszu wyjścia powinna znajdować się jedna liczba $\tc{z}$, wyni
 
 \tSection{Przykład}
 
-\makecompactexample{}  % abc0.in -> {}, abc0x.in -> {x}
+\makestandardexample{a}  % abc0.in -> {}, abc0x.in -> {x}
 \makecompactexample{a}  % testy muszą być wygenerowane więc użyj st-make ingen outgen
 
-\tNoSkipSection{Wyjaśnienie przykładów}{0pt}
+\tCustomSection{Wyjaśnienie przykładów}{5pt}
 
 \tSmallSection{Przykład 1}
 
@@ -92,8 +92,8 @@ Testy do każdego podzadania składają się z jednej lub większej liczby osobn
 
 \ocenTable{
   \ocenRow{1 & $\tc{n} \leq 100$ & 30}
-  \ocenRow{2 & \ocenElement{$\tc{n} \leq 1000$  Dwie\\ Linie} & 50}
-  \ocenRow{3 & Bez ograniczeń & 20}
+  \ocenRow{2 & \ocenElement{$\tc{n} \leq 1000$  Dwie\\ Linie} & 20}
+  \ocenRow{3 & Bez ograniczeń & 50}
 }
 
 \finish{}

@@ -1,11 +1,7 @@
-\documentclass[12pt]{article}
-\usepackage{geometry} 
-\geometry{a4paper} 
-\usepackage{amssymb}
-\usepackage{polski}
+\documentclass[opr]{talentTex}
 
-\title{Opracowanie}
-\date{} % pozostaw puste
+\title{Przykładowy tytuł zadania}
+\id{abc}
 
 %%%%%%%%%%%%%%%%%%
 % Przydatne komendy:
@@ -15,22 +11,36 @@
 % Dokumentacja:
 %   https://www.overleaf.com/learn
 
-\begin{document}
-\maketitle
+%%%%%%%%%%%%%%%%%%
+% Komendy talentowe
+% \start{}  % Rozpoczyna treść, musi być na samym początku treści opeacowania.
+% \finish{} % Kończy treść, musi być na samym końcu treści opeacowania.
+% \tSection{text} % Nagłówek w stylu talentu.
+% \tCustomSection{text}{xpt} % Nagłówek w stylu talentu, z możliwością ustawienia odstępu 'x' od poprzedniego akapitu.
+% \tSmallSection{text} % Mały nagłówek w stylu talentu.
+% \tc{text} % Styl używany do oznaczania zmiennych.
 
-\section{Poziom zadania, statystyki}
+\start{}
 
-
-\section{Ustawienie limitów}
-
-
-\section{Istniejące rozwiązania}
-
-
-\section{Jak wygenerowano testy}
-
-
-\section{Inne}
+\tSection{Pochodzienie zadanie}
 
 
-\end{document}
+\tSection{Poziom zadania, trudnoości}
+
+
+\tSection{Podzadania}
+
+
+\tSection{Istniejące rozwiązania}
+
+
+\tSection{Jak wygenerowano testy}
+
+
+\tSection{Ustawienie limitów}
+
+
+\tSection{Inne}
+
+
+\finish{}

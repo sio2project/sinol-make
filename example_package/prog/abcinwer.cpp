@@ -1,81 +1,60 @@
 #include <bits/stdc++.h>
 #include "oi.h"
+
 using namespace std;
 
-const int MIN_N = 1;
-const int MAX_N = 10'000;
+const int MIN_N = 0;
+const int MAX_N = 1'000'000;
 
 void inwer(oi::Scanner in) {
     // This is an example inwer.
     // Remove or change the code as needed.
     
-    double a, b;
+    double n, m;
     
-    in >> oi::Num{a, -1e6, 1e6} >> ' ' >> oi::Num{b, -1e6, 1e6} >> oi::nl;
-    // `oi::Num{a, x, y}` reads "a", where "a" is in the range <x,y>
+    in >> oi::Num{n, MIN_N, MAX_N} >> ' ' >> oi::Num{m, n, MAX_N} >> oi::nl;
+    in >> oi::eof;
+    // `oi::eof` in `oi::Scanner::Mode::TestInput` mode allows only EOF.
+    // `oi::Num{n, x, y}` reads "n", where "n" is in the range <x,y>
     // `oi::nl` in `oi::Scanner::Mode::TestInput` mode allows only a single `\n`.
+    // The template solution should not print whitespace at the end of the line.
     
-    if (false) {
-        // `oi::Num` works with ints and long longs and double and ...
-        long long x;
-        in >> oi::Num{x, 1ll, static_cast<long long>(1e12)};
-    }
-    
-    oi_assert(a <= b, "optional msg");
-    if (a > b) {
+    oi_assert(n <= m, "optional msg");
+    if (n > m) {
         oi::bug("a > b, something is wrong with the generator");
     }
 
-    int n;
-    in >> oi::Num{n, MIN_N, MAX_N} >> oi::nl;
-    vector<int> v(n), vv(n);
-    for (int i = 0; i < n; ++i) {
-        in >> oi::Num{v[i], 1, n};
-        vv[i] = v[i];
-        if (i < n - 1) {
-            in >> ' ';
-        } else {
-            // The template solution should not print whitespace at the end of the line.
-            in >> oi::nl;
-        }
-    }
-    in >> oi::eof; // `oi::eof` in `oi::Scanner::Mode::TestInput` mode allows only EOF.
 
-    // This checks whether `v` is a permutation of `1, ..., n`.
-    std::sort(v.begin(), v.end());
-    for (int i = 0; i < n; ++i) {
-        oi_assert(v[i] == i + 1);
-    }
-
-    ////////////////////////////////////////
-    // Validation of subtasks and pre-tests.
-
+    ///////////////////////////////////////////////////////////////////////////
+    // This part of the code validates subtasks and pretests.
+    
+    // Add more groups and pre-tests.
     auto is_subtask1 = [&]() -> bool {
-        return a <= 10 && b <= 10;
+        return n <= 10 && m <= 10;
     };
     auto is_subtask2 = [&]() -> bool {
-        return a+b <= 1'000'000;
+        return n <= 1'000;
     };
-    // Add more groups.
+    auto is_subtask3 = [&]() -> bool {
+        return n <= 1'000'000;
+    };
 
-    auto is_0 = [&]() -> bool {
-        return abs(a - -1.0) < 1e-6 && abs(b - 1.0) < 1e-6 && n == 3 && vv[0] == 3 && vv[1] == 2 && vv[2] == 1 ;
+    auto is_0a = [&]() -> bool {
+        return fabs(n-1) <= 1e-6 && fabs(m-2) <= 1e-6;
     };
     auto is_1ocen = [&]() -> bool {
-        return abs(a - -1e6) < 1e-6 && abs(b - 1e6) < 1e-6 && n == 1000;
+        return fabs(n-1.001) <= 1e-6 && fabs(m-2.002) <= 1e-6;
     };
-    // Add more pre-tests.
 
     // Set up the subtasks and pre-tests you have.
     map<int, bool> subtasks = {
         {1, is_subtask1()},
         {2, is_subtask2()},
-        // Add more groups.
+        {3, is_subtask3()},
     };
     map<string, bool> sample_tests = {
-        {"0", is_0()},
+        {"0a", is_0a()},
         {"1ocen", is_1ocen()},
-        // Add more pre-tests.
     };
 
     string subtasks_s;
@@ -89,8 +68,8 @@ void inwer(oi::Scanner in) {
 
     // You can display various information.
     oi::inwer_verdict.exit_ok()
-        << "a = " << setw(8) << a
-        << ", n = " << setw(5) << n
+        << "n = " << setw(8) << n
+        << ", m = " << setw(8) << m
         << " | subtasks = " << subtasks_s << ", sample test = " << sample_test_s;
 }
 

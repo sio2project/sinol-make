@@ -1,6 +1,8 @@
-title: Przykładowy tytuł
+title: Przykładowy tytuł zadania
 
 sinol_task_id: abc
+
+sinol_contest_type: talent
 
 memory_limit: 262144 # kB
 
@@ -84,6 +86,15 @@ scores:
 # an archive with the proper name, which sio2 uses as the task id.
 
 
+### Contest type
+
+# sinol_contest_type: talent
+
+# sinol-make can behave differently depending on the value of `sinol_contest_type` key.
+# Mainly, it affects how points are calculated.
+# If the key is not specified, then (in st-make) `talent` is used. In sinol-make (OI version) is used 'default'.
+
+
 ### expected scores
 
 # sinol_expected_scores: {}
@@ -92,5 +103,3 @@ scores:
 # Key `sinol_expected_scores` defines expected scores for each solution on each tests.
 # There should be no reason to change this key manually.
 # It is automatically generated and managed by st-make.
-
-sinol_expected_scores: {}

@@ -14,6 +14,11 @@ current_test.set_group(group); gen_test_reseed(current_test++, []() -> void { co
 using namespace std;
 oi::Random rng;
 
+// Set task id!
+const string get_task_id() {
+    return "abc";
+}
+
 struct TestName {
 private:    
     string tag;
@@ -24,23 +29,17 @@ public:
     TestName() {
         max_group = 0;
         set_group(0);
-        tag = [](string path) {
-            auto end = path.rfind("ingen.");
-            oi_assert(end != string::npos);
-            auto beg = path.rfind('/', end);
-            if (beg == string::npos) {
-                beg = 0;
-            } else {
-                ++beg;
-            }
-            return path.substr(beg, end - beg);
-        }(__FILE__);
+        tag = get_task_id();
     }
 
     ~TestName() {
         // Group 0 and 'ocen' are not required.
-        for (int i=1; i<= max_group; ++i) {
-            oi_assert(id.find(i) != id.end(), "there can not be a gap in the groups, you don't have " + to_string(i));
+        bool there_was_a_gap = false;
+        for (int i=1; i<=max_group; ++i) {
+            if (there_was_a_gap && id.find(i) != id.end()) {
+                oi::bug("There can not be a gap in the groups, you don't have " + to_string(i) + " group.");
+            }
+            if (id.find(i) == id.end()) there_was_a_gap = true;
         }
     }
 
@@ -119,105 +118,77 @@ void gen_test_reseed(string test_name, Func&& func, Args&&... args) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const int MIN_N = 1;
-const int MAX_N = 10'000;
+const int MIN_N = 0;
+const int MAX_N = 1'000'000;
+const int MAX_N_2 = 1'000;
 
 struct TestData {
     double a, b;
-    int n;
-    vector<int> v;
 
     void print() {
         cout << min(a, b) << ' ' << max(a, b) << '\n';
-        cout << n << '\n';
-        for (int i = 0; i < n; ++i) {
-            cout << v[i] << (i == n - 1 ? '\n' : ' ');
-        }
     }
 };
 
 void gen_0() {
-    cout << "-1 1\n";
-    cout << "3\n";
-    cout << "3 2 1\n";
+    cout << "1 2\n";
 }
 
 void gen_1ocen() {
-    cout << "-1000000 1000000\n";
-    cout << "1000\n";
-    for (int i = 1000; i >= 1; --i) {
-        cout << i << (i == 1 ? '\n' : ' ');
-    }
+    cout << "1.001 2.002\n";
 }
 
-void gen_2ocen() {
-    gen_1ocen();
-}
-
-void gen_proper_test(pair<int, int> rn) {
+void gen_proper_test(double p, double k) {
     TestData t;
     // `rng` also works with double.
-    t.a = rng(-1e6, 1e6);
-    t.b = rng(-1e6, 1e6);
-    t.n = rng(rn.first, rn.second);
-    vector<int> v(t.n);
-    iota(v.begin(), v.end(), 1);
-    rng.shuffle(v);
-    t.v = v;
+    t.a = rng(p, k);
+    t.b = rng(t.a, k);
     t.print();
 }
 
-void gen1() {
-    double a = rng(-1e6, 1e6);
-    double b = rng(-1e6, 1e6);
-    cout << min(a, b) << ' ' << max(a, b) << '\n';
+double gen1(double p, double k) {
+    return rng(p, k);
 }
 
-void gen2(int a=MIN_N, int b=MAX_N) {
-    int n = rng(a, b);
-    cout << n << '\n';
-    vector<int> v(n);
-    iota(v.begin(), v.end(), 1);
-    rng.shuffle(v);
-    for (int i = 0; i < n; ++i) {
-        cout << v[i] << (i == n - 1 ? '\n' : ' ');
-    }
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void gen_all_tests() {
     current_test.set_group(ocen); // Group ocen.
-    gen_test_reseed("1ocen", gen_1ocen);
-    current_test.advance_id();
-    GEN_TEST_RESEED(gen_2ocen());
+    GEN_TEST_RESEED(gen_1ocen());
 
-    current_test.advance_group(); // Group 0.
-    gen_test_reseed("0", gen_0);
+    current_test.set_group(0); // Group 0.
+    GEN_TEST_RESEED(gen_0());
 
     current_test.advance_group(); // Group 1.
-    gen_test_reseed(current_test++, gen_proper_test, pair{1, 100});
-    GEN_TEST_RESEED(gen_proper_test({100, 100}));
+    GEN_TEST_RESEED(gen_proper_test(1, 10));
+    gen_test_reseed(current_test++, gen_proper_test, 1, 10);
+    gen_test_reseed("1c", gen_proper_test, 1, 10);
+    current_test.advance_id();
+    gen_test_reseed(current_test++, gen_proper_test, 1, 10);
+    // You can optionally use this method, (it gives you more freedom).
 
     current_test.advance_group(); // Group 2.
-    GEN_TEST_RESEED(cout << "0.001 1.34\n2\n2 1\n");
-    GEN_TEST(12345678, gen_proper_test({100, 100}));
-    GEN_TEST_RESEED(
-        int x = MAX_N / 5;
-        gen1();
-        gen2(x);
+    GEN_TEST(12345678, gen_proper_test(1, 1000));
+    GEN_TEST( 12348765,
+        int x = MAX_N_2 / 2;
+        cout << gen1(1, x) << ' ';
+        cout << gen1(x, MAX_N) << '\n';
     );
 
-    GEN_TEST_RESEED_GROUP(1, gen_0());
-    GEN_TEST_RESEED_GROUP(3, gen_0());
-    GEN_TEST_RESEED(gen1(); gen2()); // Generates group 3, because last time it was 3.
-    GEN_TEST_GROUP(0, 12345678, gen_0());
+    // A group of my choice
+    GEN_TEST_RESEED_GROUP(2, gen_proper_test(0, 1000));
+    GEN_TEST_GROUP(1, 12345678, gen_proper_test(0, 10));
+    GEN_TEST_RESEED_GROUP(3, gen_proper_test(0, 1000000));
+    // This does not have a group. So generates group 3, because last time it was 3.
+    GEN_TEST_RESEED(gen_proper_test(0, 1000000));
 
     return;
 }
 
 void gen_stresstest() {
-    // Optionally, print a small random test.
+    // Print a small random test.
+    gen_proper_test(0, 100);
     return;
 }
 
@@ -228,7 +199,7 @@ int main(int argc, char* argv[]) {
         gen_stresstest();
         return 0;
     }
-    oi_assert(argc == 1, "Run prog to create proper tests or prog stresstest seed to additionally generate stresstest.");
+    oi_assert(argc == 1, "Run '[prog]' to create proper tests or '[prog] stresstest [seed]' to generate stresstest.");
     gen_all_tests();
     return 0;
 }
