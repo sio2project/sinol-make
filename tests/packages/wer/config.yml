@@ -6,3 +6,11 @@ scores:
   1: 33
   2: 33
   3: 34
+
+sinol_expected_scores:
+  wer.cpp:
+    expected:
+      1: {points: 33, status: OK}
+      2: {points: 33, status: OK}
+      3: {points: 34, status: OK}
+    points: 100

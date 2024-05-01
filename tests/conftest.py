@@ -111,6 +111,6 @@ def pytest_collection_modifyitems(config, items: List[pytest.Item]):
 
     for item in items:
         if "oiejq" in item.keywords:
-            if sys.platform != "linux" or config.getoption("--time-tool") == ["time"] or \
+            if not util.is_linux() or config.getoption("--time-tool") == ["time"] or \
                     config.getoption("--github-runner"):
                 item.add_marker(pytest.mark.skip(reason="oiejq required"))

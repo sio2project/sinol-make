@@ -21,7 +21,7 @@ def test_simple_package(create_package):
 
 @pytest.mark.parametrize("create_package", [util.get_inwer_package_path()], indirect=True)
 def test_inwer_package(create_package):
-    run("sinol-make ingen inwer run")
+    run("sinol-make gen inwer run")
     run("sinol-make ingen prog/weringen.cpp inwer prog/werinwer.cpp --tests wer1a.in run --tests wer2a.in")
     run("sinol-make ingen inwer run export --no-statement")
 

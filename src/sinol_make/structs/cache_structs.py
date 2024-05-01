@@ -43,20 +43,28 @@ class CacheFile:
     md5sum: str
     # Path to the executable
     executable_path: str
+    # Compilation flags used
+    compilation_flags: str
+    # Whether -fsanitize=undefined,address was used
+    sanitizers: bool
     # Test results
     tests: Dict[str, CacheTest]
 
-    def __init__(self, md5sum="", executable_path="", tests=None):
+    def __init__(self, md5sum="", executable_path="", compilation_flags="default", sanitizers=False, tests=None):
         if tests is None:
             tests = {}
         self.md5sum = md5sum
         self.executable_path = executable_path
+        self.compilation_flags = compilation_flags
+        self.sanitizers = sanitizers
         self.tests = tests
 
     def to_dict(self) -> Dict:
         return {
             "md5sum": self.md5sum,
             "executable_path": self.executable_path,
+            "compilation_flags": self.compilation_flags,
+            "sanitizers": self.sanitizers,
             "tests": {k: v.to_dict() for k, v in self.tests.items()}
         }
 
@@ -65,6 +73,8 @@ class CacheFile:
         return CacheFile(
             md5sum=dict.get("md5sum", ""),
             executable_path=dict.get("executable_path", ""),
+            compilation_flags=dict.get("compilation_flags", "default"),
+            sanitizers=dict.get("sanitizers", False),
             tests={k: CacheTest(
                 time_limit=v["time_limit"],
                 memory_limit=v["memory_limit"],

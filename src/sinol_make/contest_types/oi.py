@@ -1,5 +1,7 @@
 import argparse
 
+from sinol_make import util
+from sinol_make.helpers import package_util
 from sinol_make.structs.status_structs import ExecutionResult
 from sinol_make.contest_types.default import DefaultContest
 
@@ -8,6 +10,9 @@ class OIContest(DefaultContest):
     """
     Contest type for Polish Olympiad in Informatics.
     """
+
+    def get_type(self) -> str:
+        return "oi"
 
     def argument_overrides(self, args: argparse.Namespace) -> argparse.Namespace:
         """
@@ -28,3 +33,14 @@ class OIContest(DefaultContest):
             return result.Points
         else:
             return 1 + int((result.Points - 1) * ((time_limit - result.Time) / (time_limit / 2.0)))
+
+    def verify_pre_gen(self):
+        """
+        Verify if scores sum up to 100.
+        """
+        config = package_util.get_config()
+        if 'scores' not in config:
+            util.exit_with_error("Scores are not defined in config.yml.")
+        total_score = sum(config['scores'].values())
+        if total_score != 100:
+            util.exit_with_error(f"Total score in config is {total_score}, but should be 100.")

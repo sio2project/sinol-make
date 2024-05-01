@@ -83,6 +83,9 @@ Run `sinol-make ingen --help` to see available flags.
 program to use, what tests to check and how many CPUs to use. Run `sinol-make inwer --help` to see available flags.
 - `sinol-make export` -- Creates archive ready to upload to sio2 or szkopul. Run `sinol-make export --help` to see all available flags.
 - `sinol-make doc` -- Compiles all LaTeX files in doc/ directory to PDF. Run `sinol-make doc --help` to see all available flags.
+- `sinol-make verify` -- Verifies the package. This command runs stress tests (if available), verifies the config,
+generates tests, generates problem statements, runs inwer and run all solutions. Ingen and inwer are compiled with
+address and UB sanitizers. Run `sinol-make verify --help` to see all available flags.
 - `sinol-make init [id]` -- Creates package from template [on github](https://github.com/sio2project/sinol-make/tree/main/example_package) and sets task id to provided `[id]`. Requires an internet connection to run.
 
 You can also run multiple commands at once, for example:
