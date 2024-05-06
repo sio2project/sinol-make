@@ -3,6 +3,7 @@ import signal
 from threading import Thread
 from typing import Tuple, Union
 
+from sinol_make import oiejq
 from sinol_make.helpers import package_util, paths
 from sinol_make.structs.status_structs import ExecutionResult, Status
 from sinol_make.task_type import BaseTaskType
@@ -62,47 +63,130 @@ class InteractiveIOTask(BaseTaskType):
             result_file_path
         )
         command_interactor = self._wrap_with_time(
-            [f'"{self.interactor_exe}"', f'"{input_file_path}"', f'"{answer_file_path}"'],
+            [f'"{self.interactor_exe}"', f'"{input_file_path}"', f'"{output_file_path}"'],
             self._get_interactor_result_file(result_file_path)
         )
 
         def thread_wrapper(result, *args, **kwargs):
             result.append(self._run_subprocess(*args, **kwargs))
 
-        with open(output_file_path, "w") as output_file:
-            sol_result = []
-            solution = Thread(
-                target=thread_wrapper,
-                args=(sol_result, False, False, executable, memory_limit, hard_time_limit, ' '.join(command_sol),),
-                kwargs={
-                    "shell": True,
-                    "stdin": r1,
-                    "stdout": w2,
-                    "preexec_fn": os.setsid,
-                    "cwd": execution_dir,
-                    "pass_fds": (r1, w2,)
-                }
-            )
-            interactor_result = []
-            interactor = Thread(
-                target=thread_wrapper,
-                args=(interactor_result, False, False, self.interactor_exe, memory_limit, hard_time_limit,
-                      ' '.join(command_interactor),),
-                kwargs={
-                    "shell": True,
-                    "stdin": r2,
-                    "stdout": w1,
-                    "stderr": output_file,
-                    "preexec_fn": os.setsid,
-                    "cwd": execution_dir,
-                    "pass_fds": (r2, w1,)
-                }
-            )
-            solution.start()
-            interactor.start()
-            for fd in (r1, w1, r2, w2):
-                os.close(fd)
-            solution.join()
-            interactor.join()
+        sol_result = []
+        solution = Thread(
+            target=thread_wrapper,
+            args=(sol_result, False, False, executable, memory_limit, hard_time_limit, ' '.join(command_sol),),
+            kwargs={
+                "shell": True,
+                "stdin": r1,
+                "stdout": w2,
+                "preexec_fn": os.setsid,
+                "cwd": execution_dir,
+                "pass_fds": (r1, w2,),
+            }
+        )
+        interactor_result = []
+        interactor = Thread(
+            target=thread_wrapper,
+            args=(interactor_result, False, False, self.interactor_exe, memory_limit, hard_time_limit,
+                    ' '.join(command_interactor),),
+            kwargs={
+                "shell": True,
+                "stdin": r2,
+                "stdout": w1,
+                "preexec_fn": os.setsid,
+                "cwd": execution_dir,
+                "pass_fds": (r2, w1,)
+            }
+        )
+        solution.start()
+        interactor.start()
+        solution.join()
+        interactor.join()
 
         return sol_result[0][0], sol_result[0][1]
+
+    def _wrap_with_sio2jail(self, command, result_file_path, sio2jail_path, mem_limit):
+        return [f'"{sio2jail_path}"', "--mount-namespace", "off", "--pid-namespace", "off", "--uts-namespace", "off",
+                "--ipc-namespace", "off", "--net-namespace", "off", "--capability-drop", "off",
+                "--user-namespace", "off", "-s", "-m", str(mem_limit), "-f", "3", "-o", "oiaug", "--"] + \
+                command + [f'3>"{result_file_path}"']
+
+    def _run_program_oiejq(self, command, env, executable, result_file_path, input_file_path, output_file_path, answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
+        r1, w1 = os.pipe()
+        r2, w2 = os.pipe()
+        for fd in (r1, w1, r2, w2):
+            os.set_inheritable(fd, True)
+
+        oiejq_path = oiejq.get_oiejq_path()
+        sio2jail_path = os.path.join(os.path.dirname(oiejq_path), "sio2jail")
+        command_sol = self._wrap_with_sio2jail(
+            [f'"{executable}"'],
+            result_file_path,
+            sio2jail_path,
+            memory_limit
+        )
+
+        command_interactor = self._wrap_with_sio2jail(
+            [f'"{self.interactor_exe}"', f'"{input_file_path}"', f'"{output_file_path}"'],
+            self._get_interactor_result_file(result_file_path),
+            sio2jail_path,
+            memory_limit
+        )
+
+        def thread_wrapper(result, *args, **kwargs):
+            result.append(self._run_subprocess(*args, **kwargs))
+
+        sol_result = []
+        solution = Thread(
+            target=thread_wrapper,
+            args=(sol_result, True, False, executable, memory_limit, hard_time_limit, ' '.join(command_sol),),
+            kwargs={
+                "shell": True,
+                "stdin": r1,
+                "stdout": w2,
+                "preexec_fn": os.setsid,
+                "cwd": execution_dir,
+                "pass_fds": (r1, w2,)
+            }
+        )
+        interactor_result = []
+        interactor = Thread(
+            target=thread_wrapper,
+            args=(interactor_result, True, False, self.interactor_exe, memory_limit, hard_time_limit,
+                    ' '.join(command_interactor),),
+            kwargs={
+                "shell": True,
+                "stdin": r2,
+                "stdout": w1,
+                "preexec_fn": os.setsid,
+                "cwd": execution_dir,
+                "pass_fds": (r2, w1,)
+            }
+        )
+        solution.start()
+        interactor.start()
+        solution.join()
+        interactor.join()
+
+        print(open(self._get_interactor_result_file(result_file_path), "r").read())
+        return sol_result[0][0], sol_result[0][1]
+
+    def _parse_oiejq_output(self, result_file_path: str):
+        result = ExecutionResult()
+        with open(result_file_path, "r") as result_file:
+            try:
+                line = result_file.readline()
+                status, code, time, _, mem, _ = line.split()
+            except ValueError:
+                result.Status = Status.RE
+                result.Error = "Invalid output format: " + line
+                return result
+
+        result.Time = round(float(time * 1000))
+        result.Memory = int(mem)
+        if int(code) != 0:
+            result.Status = Status.RE
+            result.Error = f"Program exited with code {code}."
+        return result
+
+    def require_outputs(self):
+        return False

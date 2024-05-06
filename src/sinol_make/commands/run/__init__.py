@@ -1153,7 +1153,7 @@ class Command(BaseCommand):
             if len(example_tests) == len(self.tests):
                 print(util.warning('Running only on example tests.'))
 
-            if not self.has_lib:
+            if self.task_type.require_outputs() and not self.has_lib:
                 self.validate_existence_of_outputs()
         else:
             util.exit_with_error('There are no tests to run.')

@@ -251,6 +251,8 @@ class BaseTaskType:
                 return default
             return getattr(obj, attr)
 
+        if result.Status == Status.RE:
+            return result
         if timeout:
             result.Status = Status.TL
         elif mem_limit_exceeded:
@@ -268,7 +270,10 @@ class BaseTaskType:
                 else:
                     result.Status = Status.WA
             except CheckerOutputException as e:
-                result.Status = Status.CE
+                result.Status = Status.RE
                 result.Error = str(e)
 
         return result
+
+    def require_outputs(self):
+        return True
