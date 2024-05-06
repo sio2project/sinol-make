@@ -100,8 +100,8 @@ class InteractiveIOTask(BaseTaskType):
             )
             solution.start()
             interactor.start()
-            # for fd in (r1, w1, r2, w2):
-            #     os.close(fd)
+            for fd in (r1, w1, r2, w2):
+                os.close(fd)
             solution.join()
             interactor.join()
 
