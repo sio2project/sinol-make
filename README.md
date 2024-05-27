@@ -63,7 +63,7 @@ activate-global-python-argcomplete
 
 ### Usage
 
-The availabe commands (see `sinol-make --help`) are:
+The available commands (see `sinol-make --help`) are:
 
 - `sinol-make run` -- Runs selected solutions (by default all solutions) on selected tests (by default all tests) with a given number
 of CPUs. Measures the solutions' time with oiejq, unless specified otherwise. After running the solutions, it
