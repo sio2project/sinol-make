@@ -200,6 +200,13 @@ class InteractiveIOTask(BaseTaskType):
                 result.Error = "Invalid interactor output format: " + line
                 return result
 
+        code = int(code)
+        code_interactor = int(code_interactor)
+        if code > 128:
+            code -= 128
+        if code_interactor > 128:
+            code_interactor -= 128
+
         result = self._check_errors(result, int(code_interactor), int(code))
         result.Time = round(float(time * 1000))
         result.Memory = int(mem)

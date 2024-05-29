@@ -85,7 +85,7 @@ class BaseTaskType:
 
     def _parse_time_output(self, result_file_path: str):
         result = ExecutionResult()
-        program_exit_code = None
+        program_exit_code = 0
         with open(result_file_path, "r") as result_file:
             lines = result_file.readlines()
         if len(lines) == 3:
@@ -99,11 +99,13 @@ class BaseTaskType:
             result.Time = round(float(lines[0].strip()) * 1000)
             result.Memory = int(lines[1].strip())
             program_exit_code = int(lines[2].strip())
-        elif len(lines) > 0 and "Command terminated by signal " in lines[0]:
+        elif len(lines) > 0 and ("Command terminated by signal " in lines[0] or "Command exited with non-zero status" in lines[0]):
             """
             If there was a runtime error, the first line is the error message with signal number.
             For example:
                 Command terminated by signal 11
+            or
+                Command exited with non-zero status 1
             """
             program_exit_code = int(lines[0].strip().split(" ")[-1])
         else:
@@ -243,8 +245,11 @@ class BaseTaskType:
                 if additional_result is not None:
                     return additional_result
 
-        with open(output_file_path, "r") as output_file:
-            output = output_file.readlines()
+        try:
+            with open(output_file_path, "r") as output_file:
+                output = output_file.readlines()
+        except FileNotFoundError:
+            output = []
 
         def getattrd(obj, attr, default):
             if getattr(obj, attr, None) is None:
