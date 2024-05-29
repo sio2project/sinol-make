@@ -38,18 +38,28 @@ class InteractiveIOTask(BaseTaskType):
         if program_exit_code == signal.Signals.SIGPIPE:
             result.Error = "Interactor exited prematurely"
 
+    def _check_errors(self, result, interactor_exit_code, program_exit_code):
+        if interactor_exit_code != 0 and interactor_exit_code != signal.Signals.SIGPIPE:
+            result.Status = Status.RE
+            result.Error = f"Interactor exited with code {interactor_exit_code}."
+            return result
+        elif program_exit_code != 0 and program_exit_code != signal.Signals.SIGPIPE:
+            result.Status = Status.RE
+            result.Error = f"Solution exited with code {program_exit_code}."
+            return result
+        elif interactor_exit_code == signal.Signals.SIGPIPE:
+            result.Status = Status.RE
+            result.Error = "Interactor exited prematurely"
+            return result
+        else:
+            return None
+
     def _parse_additional_time(self, result_file_path) -> Union[ExecutionResult, None]:
-        result, program_exit_code = self._parse_time_output(
+        result, program_exit_code = self._parse_time_output(result_file_path)
+        _, interactor_exit_code = self._parse_time_output(
             self._get_interactor_result_file(result_file_path)
         )
-        if program_exit_code is not None and program_exit_code != 0:
-            result.Status = Status.RE
-            if program_exit_code == signal.Signals.SIGPIPE:
-                result.Error = "Solution exited prematurely"
-            else:
-                result.Error = f"Program exited with code {program_exit_code}."
-            return result
-        return None
+        return self._check_errors(result, interactor_exit_code, program_exit_code)
 
     def _run_program_time(self, command, env, executable, result_file_path, input_file_path, output_file_path,
                           answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
@@ -181,11 +191,18 @@ class InteractiveIOTask(BaseTaskType):
                 result.Error = "Invalid output format: " + line
                 return result
 
+        with open(self._get_interactor_result_file(result_file_path), "r") as result_file:
+            try:
+                line = result_file.readline()
+                status_interactor, code_interactor, time_interactor, _, mem_interactor, _ = line.split()
+            except ValueError:
+                result.Status = Status.RE
+                result.Error = "Invalid interactor output format: " + line
+                return result
+
+        result = self._check_errors(result, int(code_interactor), int(code))
         result.Time = round(float(time * 1000))
         result.Memory = int(mem)
-        if int(code) != 0:
-            result.Status = Status.RE
-            result.Error = f"Program exited with code {code}."
         return result
 
     def require_outputs(self):
