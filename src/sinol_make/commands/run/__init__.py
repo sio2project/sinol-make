@@ -1186,7 +1186,8 @@ class Command(BaseCommand):
     def compile_additional_files(self, files):
         for name, args, kwargs in files:
             print(f'Compiling {name}...')
-            self.compile(*args, **kwargs)
+            if not self.compile(*args, **kwargs):
+                util.exit_with_error(f'Compilation of {name} failed.')
 
     def run(self, args):
         args = util.init_package_command(args)
