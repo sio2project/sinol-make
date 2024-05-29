@@ -15,6 +15,9 @@ class InteractiveIOTask(BaseTaskType):
         self.interactor = None
         self.interactor_exe = None
 
+    def run_outgen(self):
+        return False
+
     def get_files_to_compile(self):
         super().get_files_to_compile()
         interactors = package_util.get_files_matching_pattern(self.task_id, f'{self.task_id}soc.*')

@@ -10,6 +10,7 @@ from sinol_make.commands.outgen.outgen_util import get_correct_solution, compile
 from sinol_make.structs.gen_structs import OutputGenerationArguments
 from sinol_make.helpers import parsers, package_util, cache, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
+from sinol_make.task_type import get_task_type
 
 
 class Command(BaseCommand):
@@ -106,6 +107,9 @@ class Command(BaseCommand):
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)
+        task_type = get_task_type()
+        if not task_type.run_outgen():
+            util.exit_with_error('This task type does not support output generation.')
 
         self.args = args
         self.task_id = package_util.get_task_id()

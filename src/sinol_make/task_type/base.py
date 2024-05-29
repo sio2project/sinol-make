@@ -16,6 +16,9 @@ class BaseTaskType:
         self.task_id = task_id
         self._has_checker = False
 
+    def run_outgen(self):
+        return True
+
     def get_files_to_compile(self) -> List[Tuple[str, List[str], Dict[str, Any]]]:
         """
         Returns a list of tuples where:

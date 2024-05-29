@@ -5,6 +5,7 @@ from sinol_make.commands.ingen import Command as IngenCommand
 from sinol_make.commands.outgen import Command as OutgenCommand
 from sinol_make.helpers import parsers
 from sinol_make.interfaces.BaseCommand import BaseCommand
+from sinol_make.task_type import get_task_type
 
 
 class Command(BaseCommand):
@@ -40,6 +41,7 @@ class Command(BaseCommand):
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)
+        task_type = get_task_type()
 
         self.args = args
         self.ins = args.only_inputs
@@ -53,6 +55,6 @@ class Command(BaseCommand):
             command = IngenCommand()
             command.run(args)
 
-        if self.outs:
+        if self.outs and task_type.run_outgen():
             command = OutgenCommand()
             command.run(args)
