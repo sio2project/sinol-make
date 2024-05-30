@@ -8,18 +8,19 @@ int main(int argc, char const *argv[]) {
         return 1;
     }
     ifstream ifs(argv[1]);
+    ofstream out(argv[2]);
     int a;
     ifs >> a;
     cout << a << "\n" << flush;
     int ans;
     cin >> ans;
     if (ans == a + 42) {
-        cerr << "OK\n";
+        out << "OK\n";
     }
     else if (ans == a + 10) {
-        cerr << "OK\nwrong diff\n50";
+        out << "OK\nwrong diff\n50";
     }
     else {
-        cerr << "WRONG\n";
+        out << "WRONG\n" << ans;
     }
 }

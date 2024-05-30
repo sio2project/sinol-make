@@ -5,6 +5,7 @@ from typing import Tuple, Union
 
 from sinol_make import oiejq
 from sinol_make.helpers import package_util, paths
+from sinol_make.interfaces.Errors import CheckerOutputException
 from sinol_make.structs.status_structs import ExecutionResult, Status
 from sinol_make.task_type import BaseTaskType
 
@@ -16,6 +17,9 @@ class InteractiveIOTask(BaseTaskType):
         self.interactor_exe = None
 
     def run_outgen(self):
+        return False
+
+    def require_outputs(self):
         return False
 
     def get_files_to_compile(self):
@@ -32,14 +36,15 @@ class InteractiveIOTask(BaseTaskType):
         ext = os.path.basename(sol_result_file_path).split(".")[1]
         return os.path.join(dirname, f"{basename_no_ext}_interactor.{ext}")
 
+    def _raise_empty_output(self):
+        raise CheckerOutputException("Interactor output is empty.")
+
     def check_output(self, input_file, output_file_path, output, answer_file_path) -> Tuple[bool, int]:
+        if not os.path.exists(output_file_path):
+            self._raise_empty_output()
         with open(output_file_path, "r") as output_file:
             output = output_file.read().splitlines()
         return self._parse_checker_output(output)
-
-    def _update_result_RE(self, result, program_exit_code):
-        if program_exit_code == signal.Signals.SIGPIPE:
-            result.Error = "Interactor exited prematurely"
 
     def _check_errors(self, result, interactor_exit_code, program_exit_code):
         if interactor_exit_code != 0 and interactor_exit_code != signal.Signals.SIGPIPE:
@@ -52,24 +57,31 @@ class InteractiveIOTask(BaseTaskType):
             return result
         elif interactor_exit_code == signal.Signals.SIGPIPE:
             result.Status = Status.RE
-            result.Error = "Interactor exited prematurely"
+            result.Error = "Solution exited prematurely"
             return result
         else:
-            return None
+            return result
 
-    def _parse_additional_time(self, result_file_path) -> Union[ExecutionResult, None]:
-        result, program_exit_code = self._parse_time_output(result_file_path)
-        _, interactor_exit_code = self._parse_time_output(
+    def _parse_time_output(self, result_file_path) -> Tuple[Union[ExecutionResult, None], int]:
+        result, program_exit_code = super()._parse_time_output(result_file_path)
+        _, interactor_exit_code = super()._parse_time_output(
             self._get_interactor_result_file(result_file_path)
         )
-        return self._check_errors(result, interactor_exit_code, program_exit_code)
+        return self._check_errors(result, interactor_exit_code, program_exit_code), program_exit_code
 
-    def _run_program_time(self, command, env, executable, result_file_path, input_file_path, output_file_path,
-                          answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
+    def _get_pipes(self):
         r1, w1 = os.pipe()
         r2, w2 = os.pipe()
         for fd in (r1, w1, r2, w2):
             os.set_inheritable(fd, True)
+        return r1, w1, r2, w2
+
+    def _thread_wrapper(self, result, *args, **kwargs):
+        result.append(self._run_subprocess(*args, **kwargs))
+
+    def _run_program_time(self, command, env, executable, result_file_path, input_file_path, output_file_path,
+                          answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
+        r1, w1, r2, w2 = self._get_pipes()
 
         command_sol = self._wrap_with_time(
             [f'"{executable}"'],
@@ -80,12 +92,9 @@ class InteractiveIOTask(BaseTaskType):
             self._get_interactor_result_file(result_file_path)
         )
 
-        def thread_wrapper(result, *args, **kwargs):
-            result.append(self._run_subprocess(*args, **kwargs))
-
         sol_result = []
         solution = Thread(
-            target=thread_wrapper,
+            target=self._thread_wrapper,
             args=(sol_result, False, False, executable, memory_limit, hard_time_limit, ' '.join(command_sol),),
             kwargs={
                 "shell": True,
@@ -98,9 +107,9 @@ class InteractiveIOTask(BaseTaskType):
         )
         interactor_result = []
         interactor = Thread(
-            target=thread_wrapper,
+            target=self._thread_wrapper,
             args=(interactor_result, False, False, self.interactor_exe, memory_limit, hard_time_limit,
-                    ' '.join(command_interactor),),
+                  ' '.join(command_interactor),),
             kwargs={
                 "shell": True,
                 "stdin": r2,
@@ -121,13 +130,11 @@ class InteractiveIOTask(BaseTaskType):
         return [f'"{sio2jail_path}"', "--mount-namespace", "off", "--pid-namespace", "off", "--uts-namespace", "off",
                 "--ipc-namespace", "off", "--net-namespace", "off", "--capability-drop", "off",
                 "--user-namespace", "off", "-s", "-m", str(mem_limit), "-f", "3", "-o", "oiaug", "--"] + \
-                command + [f'3>"{result_file_path}"']
+            command + [f'3>"{result_file_path}"']
 
-    def _run_program_oiejq(self, command, env, executable, result_file_path, input_file_path, output_file_path, answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
-        r1, w1 = os.pipe()
-        r2, w2 = os.pipe()
-        for fd in (r1, w1, r2, w2):
-            os.set_inheritable(fd, True)
+    def _run_program_oiejq(self, command, env, executable, result_file_path, input_file_path, output_file_path,
+                           answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
+        r1, w1, r2, w2 = self._get_pipes()
 
         oiejq_path = oiejq.get_oiejq_path()
         sio2jail_path = os.path.join(os.path.dirname(oiejq_path), "sio2jail")
@@ -145,12 +152,9 @@ class InteractiveIOTask(BaseTaskType):
             memory_limit
         )
 
-        def thread_wrapper(result, *args, **kwargs):
-            result.append(self._run_subprocess(*args, **kwargs))
-
         sol_result = []
         solution = Thread(
-            target=thread_wrapper,
+            target=self._thread_wrapper,
             args=(sol_result, True, False, executable, memory_limit, hard_time_limit, ' '.join(command_sol),),
             kwargs={
                 "shell": True,
@@ -163,9 +167,9 @@ class InteractiveIOTask(BaseTaskType):
         )
         interactor_result = []
         interactor = Thread(
-            target=thread_wrapper,
+            target=self._thread_wrapper,
             args=(interactor_result, True, False, self.interactor_exe, memory_limit, hard_time_limit,
-                    ' '.join(command_interactor),),
+                  ' '.join(command_interactor),),
             kwargs={
                 "shell": True,
                 "stdin": r2,
@@ -180,7 +184,6 @@ class InteractiveIOTask(BaseTaskType):
         solution.join()
         interactor.join()
 
-        print(open(self._get_interactor_result_file(result_file_path), "r").read())
         return sol_result[0][0], sol_result[0][1]
 
     def _parse_oiejq_output(self, result_file_path: str):
@@ -214,6 +217,3 @@ class InteractiveIOTask(BaseTaskType):
         result.Time = round(float(time * 1000))
         result.Memory = int(mem)
         return result
-
-    def require_outputs(self):
-        return False

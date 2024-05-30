@@ -19,6 +19,9 @@ class BaseTaskType:
     def run_outgen(self):
         return True
 
+    def require_outputs(self):
+        return True
+
     def get_files_to_compile(self) -> List[Tuple[str, List[str], Dict[str, Any]]]:
         """
         Returns a list of tuples where:
@@ -33,6 +36,9 @@ class BaseTaskType:
 
     def _run_checker(self, input_file, output_file_path, answer_file_path) -> List[str]:
         return []
+
+    def _raise_empty_output(self):
+        raise CheckerOutputException("Checker output is empty.")
 
     def _parse_checker_output(self, checker_output: List[str]) -> Tuple[bool, int]:
         """
@@ -140,15 +146,6 @@ class BaseTaskType:
         return result
 
     def _run_subprocess(self, oiejq: bool, sigint_handler, executable, memory_limit, hard_time_limit, *args, **kwargs):
-        # print("oiejq", oiejq)
-        # print("executable", executable)
-        # print("memory_limit", memory_limit)
-        # print("hard_time_limit", hard_time_limit)
-        # print(args, kwargs)
-        # stdin_stat = os.fstat(kwargs['stdin'])
-        # print("stdin", kwargs['stdin'], "stdin_stat", stdin_stat)
-        # stdout_stat = os.fstat(kwargs['stdout'])
-        # print("stdout", kwargs['stdout'], "stdout_stat", stdout_stat)
         process = subprocess.Popen(*args, **kwargs)
         if 'pass_fds' in kwargs:
             for fd in kwargs['pass_fds']:
@@ -215,9 +212,6 @@ class BaseTaskType:
                           answer_file_path, time_limit, memory_limit, hard_time_limit, execution_dir):
         raise NotImplementedError()
 
-    def _update_result_RE(self, result, program_exit_code):
-        pass
-
     def _parse_additional_time(self, result_file_path) -> Union[ExecutionResult, None]:
         return None
 
@@ -238,15 +232,10 @@ class BaseTaskType:
                                                                  execution_dir)
             if not timeout:
                 result, program_exit_code = self._parse_time_output(result_file_path)
-                if program_exit_code is not None and program_exit_code != 0:
+                if program_exit_code is not None and program_exit_code != 0 and result.Status != Status.RE:
                     result.Status = Status.RE
                     result.Error = f"Program exited with code {program_exit_code}."
-                    self._update_result_RE(result, program_exit_code)
                     return result
-
-                additional_result = self._parse_additional_time(result_file_path)
-                if additional_result is not None:
-                    return additional_result
 
         try:
             with open(output_file_path, "r") as output_file:
@@ -282,6 +271,3 @@ class BaseTaskType:
                 result.Error = str(e)
 
         return result
-
-    def require_outputs(self):
-        return True
