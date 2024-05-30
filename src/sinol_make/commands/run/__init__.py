@@ -354,17 +354,17 @@ class Command(BaseCommand):
         return sorted(list(set([self.get_group(test) for test in tests])))
 
 
-    def compile_solutions(self, solutions, is_checker=False):
+    def compile_solutions(self, solutions, remove_all_cache=False):
         os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
         os.makedirs(paths.get_executables_path(), exist_ok=True)
         print("Compiling %d solutions..." % len(solutions))
-        args = [(solution, True, is_checker) for solution in solutions]
+        args = [(solution, True, remove_all_cache) for solution in solutions]
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.starmap(self.compile, args)
         return compilation_results
 
 
-    def compile(self, solution, use_extras = False, is_checker = False):
+    def compile(self, solution, use_extras=False, remove_all_cache=False):
         os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
         os.makedirs(paths.get_executables_path(), exist_ok=True)
         compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
@@ -387,7 +387,7 @@ class Command(BaseCommand):
         try:
             with open(compile_log_file, "w") as compile_log:
                 compile.compile(source_file, output, self.compilers, compile_log, self.args.compile_mode,
-                                extra_compilation_args, extra_compilation_files, is_checker=is_checker)
+                                extra_compilation_args, extra_compilation_files, remove_all_cache=remove_all_cache)
             print(util.info("Compilation of file %s was successful."
                             % package_util.get_file_name(solution)))
             return True
@@ -1177,7 +1177,7 @@ class Command(BaseCommand):
         checker_basename = os.path.basename(self.checker)
         self.checker_executable = paths.get_executables_path(checker_basename + ".e")
 
-        checker_compilation = self.compile_solutions([self.checker], is_checker=True)
+        checker_compilation = self.compile_solutions([self.checker], remove_all_cache=True)
         if not checker_compilation[0]:
             util.exit_with_error('Checker compilation failed.')
 

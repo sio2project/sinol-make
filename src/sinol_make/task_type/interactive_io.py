@@ -24,7 +24,7 @@ class InteractiveIOTask(BaseTaskType):
         if interactors:
             self.interactor = interactors[0]
             self.interactor_exe = paths.get_executables_path(package_util.get_executable(self.interactor))
-            return [("interactor", [self.interactor], {})]
+            return [("interactor", [self.interactor], {'remove_all_cache': True})]
 
     def _get_interactor_result_file(self, sol_result_file_path: str):
         dirname = os.path.dirname(sol_result_file_path)

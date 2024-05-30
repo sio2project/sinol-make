@@ -14,7 +14,7 @@ from sinol_make.structs.compiler_structs import Compilers
 
 
 def compile(program, output, compilers: Compilers = None, compile_log=None, compilation_flags='default',
-            extra_compilation_args=None, extra_compilation_files=None, is_checker=False, use_fsanitize=False):
+            extra_compilation_args=None, extra_compilation_files=None, remove_all_cache=False, use_fsanitize=False):
     """
     Compile a program.
     :param program: Path to the program to compile
@@ -24,7 +24,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     :param compilation_flags: Group of compilation flags to use
     :param extra_compilation_args: Extra compilation arguments
     :param extra_compilation_files: Extra compilation files
-    :param is_checker: Set to True if compiling a checker. This will remove all cached test results.
+    :param remove_all_cache: Set to True if you want to remove all cached test results.
     :param use_fsanitize: Whether to use fsanitize when compiling C/C++ programs. Sanitizes address and undefined behavior.
     """
     if extra_compilation_args is None:
@@ -114,7 +114,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
-        save_compiled(program, output, compilation_flags, use_fsanitize, is_checker)
+        save_compiled(program, output, compilation_flags, use_fsanitize, remove_all_cache)
         return True
 
 

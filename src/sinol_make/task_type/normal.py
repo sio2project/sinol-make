@@ -38,7 +38,7 @@ class NormalTask(BaseTaskType):
             self.checker = checkers[0]
             self._check_had_checker(True)
             self.checker_exe = paths.get_executables_path(package_util.get_executable(self.checker))
-            return [("checker", [self.checker], {"is_checker": True})]
+            return [("checker", [self.checker], {"remove_all_cache": True})]
         else:
             self._has_checker = False
             self._check_had_checker(False)
