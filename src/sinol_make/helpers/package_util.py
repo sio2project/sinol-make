@@ -10,6 +10,7 @@ from typing import List, Union, Dict, Any, Tuple
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util
 from sinol_make.helpers import paths
+from sinol_make.structs.package_structs import TaskType
 
 
 @cache_result(cwd=True)
@@ -54,7 +55,7 @@ def get_test_key(test, task_id):
 def get_config():
     try:
         with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
-            return yaml.load(config_file, Loader=yaml.FullLoader)
+            return yaml.load(config_file, Loader=yaml.FullLoader) or {}
     except FileNotFoundError:
         # Potentially redundant with util:exit_if_not_package
         util.exit_with_error("You are not in a package directory (couldn't find config.yml in current directory).")

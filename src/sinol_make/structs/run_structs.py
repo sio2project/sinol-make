@@ -12,6 +12,8 @@ class ExecutionData:
     executable: str
     # Filename of the test
     test: str
+    #Filename of the output file
+    output_test: str
     # Time limit for this test in milliseconds
     time_limit: int
     # Memory limit in KB

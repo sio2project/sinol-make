@@ -34,12 +34,13 @@ def test_execution(create_package, time_tool):
 
     create_ins_outs(package_path)
     test = package_util.get_tests("abc", None)[0]
+    output_test = command.get_output_file(test)
 
     with open(os.path.join(package_path, "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
 
     os.makedirs(paths.get_executions_path(solution), exist_ok=True)
-    result = command.run_solution((solution, paths.get_executables_path(executable), test, config['time_limit'],
+    result = command.run_solution((solution, paths.get_executables_path(executable), test, output_test, config['time_limit'],
                                    config['memory_limit'], oiejq.get_oiejq_path(), paths.get_executions_path()))
     assert result.Status == Status.OK
 

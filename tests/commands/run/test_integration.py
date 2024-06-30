@@ -339,8 +339,8 @@ def test_missing_output_files(capsys, create_package):
     assert 'There are tests without outputs.' in out
     assert 'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.' in out
     assert 'An error occurred while running the command.' not in out
-    
-    
+
+
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
 def test_missing_output_files_allow_missing(capsys, create_package):
     """
@@ -680,7 +680,7 @@ def test_results_caching_checker_changed(create_package, time_tool):
         f.write("// Changed checker source code.\n" + checker_source)
 
     # Compile checker check if test results are removed.
-    command.compile_checker()
+    command.compile_additional_files([("checker", ["chkchk.cpp"], {"remove_all_cache": True})])
     task_id = package_util.get_task_id()
     solutions = package_util.get_solutions(task_id, None)
     for solution in solutions:
@@ -800,7 +800,8 @@ def test_ghost_checker(create_package):
     shutil.copytree(paths.get_cache_path(), os.path.join(os.getcwd(), ".cache-copy"))
 
     command = Command()
-    command.check_had_checker(False)
+    command.set_constants()
+    command.task_type._check_had_checker(False)
 
     for solution in os.listdir(paths.get_cache_path("md5sums")):
         cache_file: CacheFile = cache.get_cache_file(solution)

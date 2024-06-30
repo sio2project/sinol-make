@@ -53,7 +53,7 @@ def check_compiled(file_path: str, compilation_flags: str, sanitizers: bool) -> 
         return None
 
 
-def save_compiled(file_path: str, exe_path: str, compilation_flags: str, sanitizers: bool, is_checker: bool = False):
+def save_compiled(file_path: str, exe_path: str, compilation_flags: str, sanitizers: bool, remove_all_cache: bool = False):
     """
     Save the compiled executable path to cache in `.cache/md5sums/<basename of file_path>`,
     which contains the md5sum of the file and the path to the executable.
@@ -61,11 +61,11 @@ def save_compiled(file_path: str, exe_path: str, compilation_flags: str, sanitiz
     :param exe_path: Path to the compiled executable
     :param compilation_flags: Compilation flags used
     :param sanitizers: Whether -fsanitize=undefined,address was used
-    :param is_checker: Whether the compiled file is a checker. If True, all cached tests are removed.
+    :param remove_all_cache: Whether to remove all cached files. If True, all cached tests are removed.
     """
     info = CacheFile(util.get_file_md5(file_path), exe_path, compilation_flags, sanitizers)
     info.save(file_path)
-    if is_checker:
+    if remove_all_cache:
         remove_results_cache()
 
 
