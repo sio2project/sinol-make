@@ -146,10 +146,11 @@ class BaseTaskType:
         return result
 
     def _run_subprocess(self, oiejq: bool, sigint_handler, executable, memory_limit, hard_time_limit, *args, **kwargs):
+        fds_to_close = kwargs.pop('fds_to_close', [])
         process = subprocess.Popen(*args, **kwargs)
-        if 'pass_fds' in kwargs:
-            for fd in kwargs['pass_fds']:
-                os.close(fd)
+        for fd in fds_to_close:
+            print("Closing fd " + str(fd))
+            os.close(fd)
 
         if sigint_handler:
             def sigint_handler(signum, frame):

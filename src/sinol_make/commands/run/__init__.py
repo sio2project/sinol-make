@@ -447,6 +447,7 @@ class Command(BaseCommand):
         print_data = PrintData(0)
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
+        has_terminal = False
 
         if has_terminal:
             run_event = threading.Event()

@@ -10,7 +10,7 @@ sinol_expected_scores:
     points: 100
   iio2.cpp:
     expected:
-      0: {points: 0, status: WA}
+      0: {points: 0, status: RE}
       1: {points: 0, status: RE}
     points: 0
   iio3.cpp:

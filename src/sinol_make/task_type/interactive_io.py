@@ -102,7 +102,7 @@ class InteractiveIOTask(BaseTaskType):
                 "stdout": w2,
                 "preexec_fn": os.setsid,
                 "cwd": execution_dir,
-                "pass_fds": (r1, w2,),
+                "fds_to_close": (r1, w2,),
             }
         )
         interactor_result = []
@@ -116,7 +116,7 @@ class InteractiveIOTask(BaseTaskType):
                 "stdout": w1,
                 "preexec_fn": os.setsid,
                 "cwd": execution_dir,
-                "pass_fds": (r2, w1,)
+                "fds_to_close": (r2, w1,)
             }
         )
         solution.start()
@@ -162,7 +162,7 @@ class InteractiveIOTask(BaseTaskType):
                 "stdout": w2,
                 "preexec_fn": os.setsid,
                 "cwd": execution_dir,
-                "pass_fds": (r1, w2,)
+                "fds_to_close": (r1, w2,)
             }
         )
         interactor_result = []
@@ -176,7 +176,7 @@ class InteractiveIOTask(BaseTaskType):
                 "stdout": w1,
                 "preexec_fn": os.setsid,
                 "cwd": execution_dir,
-                "pass_fds": (r2, w1,)
+                "fds_to_close": (r2, w1,)
             }
         )
         solution.start()
