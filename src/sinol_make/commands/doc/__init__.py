@@ -12,7 +12,7 @@ class Command(BaseCommand):
     """
     Class for `doc` command.
     """
-    LOG_PATTERNS = ['*~', '*.aux', '*.log', '*.dvi', '*.err', '*.inf']
+    LOG_PATTERNS = ['*~', '*.aux', '*.log', '*.dvi', '*.err', '*.inf', '*.out']
 
     def get_name(self):
         return "doc"
