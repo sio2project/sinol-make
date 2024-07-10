@@ -218,12 +218,15 @@ class Command(BaseCommand):
                 if 'c' in config['extra_compilation_args']:
                     c_flags += ' ' + format_multiple_arguments(config['extra_compilation_args']['c'])
 
+            tl = config.get('time_limit', None)
+            if not tl:
+                tl = config['time_limits'][0]
             f.write(f'MODE = wer\n'
                     f'ID = {self.task_id}\n'
                     f'SIG = sinolmake\n'
                     f'\n'
-                    f'TIMELIMIT = {config["time_limit"]}\n'
-                    f'SLOW_TIMELIMIT = {4 * config["time_limit"]}\n'
+                    f'TIMELIMIT = {tl}\n'
+                    f'SLOW_TIMELIMIT = {4 * tl}\n'
                     f'MEMLIMIT = {config["memory_limit"]}\n'
                     f'\n'
                     f'OI_TIME = oiejq\n'
