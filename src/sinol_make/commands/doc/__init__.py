@@ -40,7 +40,8 @@ class Command(BaseCommand):
     def compile_pdf_latex(self, file_path):
         print(f'Compiling {os.path.basename(file_path)} (pdflatex)...')
         os.chdir(os.path.dirname(file_path))
-        subprocess.run(['pdflatex', file_path])
+        for _ in range(3):
+            subprocess.run(['pdflatex', file_path])
         pdf_file = os.path.splitext(file_path)[0] + '.pdf'
         pdf_file_path = os.path.join(os.path.dirname(file_path), pdf_file)
         if not os.path.exists(pdf_file_path):
