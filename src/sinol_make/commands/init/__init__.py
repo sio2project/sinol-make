@@ -40,6 +40,8 @@ class Command(BaseCommand):
         mapping[self.template_dir] = os.getcwd()
         for root, dirs, files in os.walk(self.template_dir):
             for directory in dirs:
+                if directory == '.git':
+                    continue
                 mapping[os.path.join(root, directory)] = os.path.join(mapping[root], directory)
                 os.mkdir(os.path.join(mapping[root], directory))
             for file in files:
