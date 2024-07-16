@@ -22,7 +22,11 @@ class Command(BaseCommand):
             help='Create package from the template',
             description='Create package from predefined template with given id.'
         )
-        parser.add_argument('task_id', type=str, help='Id of the task to create')
+        parser.add_argument('task_id', type=str, help='id of the task to create')
+        parser.add_argument('directory', type=str, nargs='?',
+            help='destination directory to copy the template into, defaults to task_id')
+        parser.add_argument('-f', '--force', action='store_true',
+            help='overwrite files in destination directory if they already exist')
         return parser
 
     def download_template(self):
@@ -33,17 +37,21 @@ class Command(BaseCommand):
         ret = subprocess.run(['git', 'clone', '-q', '--depth', '1', repo], cwd=tmp_dir)
         if ret.returncode != 0:
             util.exit_with_error("Could not access repository. Please try again.")
-        return os.path.join(tmp_dir, package_dir)
+        path = os.path.join(tmp_dir, package_dir)
+        shutil.rmtree(os.path.join(path, '.git'))
+        return path
 
     def move_folder(self):
         mapping = {}
         mapping[self.template_dir] = os.getcwd()
         for root, dirs, files in os.walk(self.template_dir):
             for directory in dirs:
-                if directory == '.git':
-                    continue
                 mapping[os.path.join(root, directory)] = os.path.join(mapping[root], directory)
-                os.mkdir(os.path.join(mapping[root], directory))
+                try:
+                    os.mkdir(os.path.join(mapping[root], directory))
+                except FileExistsError:
+                    if not self.force:
+                        raise
             for file in files:
                 dest_filename = file
                 if file[:3] == 'abc':
@@ -60,15 +68,20 @@ class Command(BaseCommand):
 
     def run(self, args: argparse.Namespace):
         self.task_id = args.task_id
-        destination = os.path.join(os.getcwd(), args.task_id)
-        if os.path.isdir(destination) or os.path.isfile(destination):
-            util.exit_with_error(f"Cannot create task {args.task_id}, this name is already used in current directory. "
-                                 f"Remove the file/folder with this name or choose another id.")
+        self.force = args.force
+        destination = args.directory or self.task_id
+        if not os.path.isabs(destination):
+            destination = os.path.join(os.getcwd(), destination)
+        try:
+            os.mkdir(destination)
+        except FileExistsError:
+            if not args.force:
+                util.exit_with_error(f"Destination {destination} already exists. "
+                                     f"Provide a different task id or directory name, "
+                                     f"or use the --force flag to overwrite.")
+        os.chdir(destination)
 
         self.template_dir = self.download_template()
-
-        os.mkdir(os.path.join(os.getcwd(), self.task_id))
-        os.chdir(os.path.join(os.getcwd(), self.task_id))
 
         self.move_folder()
         self.update_config()
