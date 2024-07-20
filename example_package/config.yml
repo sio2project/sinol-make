@@ -90,14 +90,14 @@ scores:
 
 # sinol_contest_type: talent
 
-# sinol-make can behave differently depending on the value of `sinol_contest_type` key.
+# st-make can behave differently depending on the value of `sinol_contest_type` key.
 # Mainly, it affects how points are calculated.
-# If the key is not specified, then (in st-make) `talent` is used. In sinol-make (OI version) is used 'default'.
+# If the key is not specified, then (in st-make) `talent` is used. In st-make (OI version) is used 'default'.
 
 
 ### handwritten tests
 
-# You can specify which tests are static (handwritten). This allows sinol-make to differentiate between
+# You can specify which tests are static (handwritten). This allows st-make to differentiate between
 # old and handwritten tests. If this key is not present old tests won't be removed.
 # This key is optional and should be a list of tests.
 sinol_static_tests: ["abc0.in", "abc0a.in"]
@@ -107,7 +107,7 @@ sinol_static_tests: ["abc0.in", "abc0a.in"]
 
 # sinol_expected_scores: {}
 
-# sinol-make can check if the solutions run as expected when using `run` command.
+# st-make can check if the solutions run as expected when using `run` command.
 # Key `sinol_expected_scores` defines expected scores for each solution on each tests.
 # There should be no reason to change this key manually.
 # It is automatically generated and managed by st-make.

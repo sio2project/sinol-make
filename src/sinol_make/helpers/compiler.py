@@ -98,7 +98,7 @@ def get_default_compilers():
         c_compiler_path=get_c_compiler_path(),
         cpp_compiler_path=get_cpp_compiler_path(),
         python_interpreter_path=get_python_interpreter_path(),
-        # Java is not currently supported by sinol-make
+        # Java is not currently supported by st-make
         # java_compiler_path=get_java_compiler_path()
     )
 

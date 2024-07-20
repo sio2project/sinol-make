@@ -38,7 +38,7 @@ class Command(BaseCommand):
                             help='expected contest type. Fails if the actual contest type is different.')
         parser.add_argument('-f', '--no-fsanitize', action='store_true', default=False,
                              help='do not use sanitizers for ingen and inwer programs')
-        parsers.add_cpus_argument(parser, 'number of cpus that sinol-make will use')
+        parsers.add_cpus_argument(parser, 'number of cpus that st-make will use')
         parser.add_argument('--ignore-expected', dest='ignore_expected', action='store_true',
                             help='ignore expected scores from config.yml. When this flag is set, '
                                  'the expected scores are not compared with the actual scores. '

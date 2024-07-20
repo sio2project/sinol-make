@@ -82,7 +82,7 @@ def main():
     new_version = None
     try:
         if util.is_dev(__version__):
-            print(util.warning('You are using a development version of sinol-make. '
+            print(util.warning('You are using a development version of st-make. '
                                'It may be unstable and contain bugs.'))
         new_version = util.check_for_updates(__version__)
         main_exn()
@@ -99,10 +99,10 @@ def main():
         if new_version is not None:
             if not util.is_dev(new_version):
                 print(util.warning(
-                    f'New version of sinol-make is available (your version: {__version__}, available version: '
-                    f'{new_version}).\nYou can update it by running `pip3 install sinol-make --upgrade`.'))
+                    f'New version of st-make is available (your version: {__version__}, available version: '
+                    f'{new_version}).\nYou can update it by running `pip3 install st-make --upgrade`.'))
             elif util.is_dev(new_version):
                 print(util.warning(
-                    f'New development version of sinol-make is available (your version: {__version__}, available '
-                    f'version: {new_version}).\nYou can update it by running `pip3 install sinol-make --pre --upgrade`.'
+                    f'New development version of st-make is available (your version: {__version__}, available '
+                    f'version: {new_version}).\nYou can update it by running `pip3 install st-make --pre --upgrade`.'
                 ))

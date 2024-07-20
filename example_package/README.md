@@ -449,7 +449,7 @@ an archive with the proper name, which sio2 uses as the task id.
 sinol_contest_type: talent
 ```
 
-sinol-make can behave differently depending on the value of `sinol_contest_type` key.
+st-make can behave differently depending on the value of `sinol_contest_type` key.
 Mainly, it affects how points are calculated.
 If the key is not specified, then (in st-make) `talent` is used. In sinol-make (OI version) is used 'default'.
 

@@ -55,24 +55,24 @@ def test_check_version(**kwargs):
     def create_response(version):
         return {"releases": {version: "something"}}
 
-    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json=create_response("1.0.0.dev2"))
+    mocker.get("https://pypi.python.org/pypi/st-make/json", json=create_response("1.0.0.dev2"))
     util.check_version()
     version = util.check_for_updates("1.0.0.dev1", False)
     assert version == "1.0.0.dev2"
     assert util.is_dev(version)
 
-    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json=create_response("1.0.0"))
+    mocker.get("https://pypi.python.org/pypi/st-make/json", json=create_response("1.0.0"))
     util.check_version()
     version = util.check_for_updates("1.0.0.dev1", False)
     assert version == "1.0.0"
     assert not util.is_dev(version)
 
-    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json=create_response("2.0.0.dev1"))
+    mocker.get("https://pypi.python.org/pypi/st-make/json", json=create_response("2.0.0.dev1"))
     util.check_version()
     version = util.check_for_updates("1.0.0", False)
     assert version is None
 
-    mocker.get("https://pypi.python.org/pypi/sinol-make/json", json=create_response("1.0.1"))
+    mocker.get("https://pypi.python.org/pypi/st-make/json", json=create_response("1.0.1"))
     util.check_version()
     version = util.check_for_updates("1.0.0", False)
     assert version == "1.0.1"

@@ -20,7 +20,7 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--python-interpreter-path', dest='python_interpreter_path', type=str,
                         default=compiler.get_python_interpreter_path(),
                         help='Python interpreter to use (default: python3)')
-    # Java is not currently supported by sinol-make
+    # Java is not currently supported by st-make
     # parser.add_argument('--java-compiler-path', dest='java_compiler_path', type=str,
     #                     default=compiler.get_java_compiler_path(), help='Java compiler to use (default: javac)')
     parser.add_argument('--compile-mode', '-C', dest='compile_mode', choices=['default', 'oioioi', 'weak', 'd', 'o', 'w'],
