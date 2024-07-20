@@ -177,7 +177,7 @@ def check_for_updates(current_version, check=True) -> Union[str, None]:
         version = version_file.read_text()
     except (PermissionError, FileNotFoundError):
         try:
-            with open(paths.get_cache_path("sinol_make_version"), "r") as f:
+            with open(paths.get_cache_path("st_make_version"), "r") as f:
                 version = f.read()
         except (FileNotFoundError, PermissionError):
             return None
@@ -220,7 +220,7 @@ def check_version():
         if find_and_chdir_package():
             try:
                 os.makedirs(paths.get_cache_path(), exist_ok=True)
-                with open(paths.get_cache_path("sinol_make_version"), "w") as f:
+                with open(paths.get_cache_path("st_make_version"), "w") as f:
                     f.write(latest_version)
             except PermissionError:
                 pass
