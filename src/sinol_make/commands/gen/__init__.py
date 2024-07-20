@@ -31,13 +31,12 @@ class Command(BaseCommand):
                             help='path to ingen source file, for example prog/abcingen.cpp')
         parser.add_argument('-i', '--only-inputs', action='store_true', help='generate input files only')
         parser.add_argument('-o', '--only-outputs', action='store_true', help='generate output files only')
-        parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use to generate output files '
-                                 f'(default: {util.default_cpu_count()})',
-                            default=util.default_cpu_count())
+        parsers.add_cpus_argument(parser, 'number of cpus to use to generate output files')
         parser.add_argument('-n', '--no-validate', default=False, action='store_true',
                             help='do not validate test contents')
+        parsers.add_fsanitize_argument(parser)
         parsers.add_compilation_arguments(parser)
+        return parser
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)

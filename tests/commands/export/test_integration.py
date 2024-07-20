@@ -1,6 +1,7 @@
 import yaml
 import stat
 import glob
+import shutil
 import pytest
 import tarfile
 import zipfile
@@ -9,6 +10,7 @@ import tempfile
 from sinol_make import configure_parsers
 from sinol_make import util as sinol_util
 from sinol_make.commands.doc import Command as DocCommand
+from sinol_make.helpers import paths
 from tests import util
 from tests.fixtures import create_package
 from .util import *
@@ -41,6 +43,17 @@ def _test_archive(package_path, out, tar):
         else:
             assert glob.glob(os.path.join(extracted, "in", "*")) == []
             assert glob.glob(os.path.join(extracted, "out", "*")) == []
+
+
+def _set_contest_type(contest_type):
+    config = package_util.get_config()
+    config["sinol_contest_type"] = contest_type
+    sinol_util.save_config(config)
+    task_id = package_util.get_task_id()
+    if os.path.exists(os.path.join(os.getcwd(), f'{task_id}.tgz')):
+        os.remove(f'{task_id}.tgz')
+    if os.path.exists(paths.get_cache_path()):
+        shutil.rmtree(paths.get_cache_path())
 
 
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path(), util.get_library_package_path(),
@@ -166,35 +179,37 @@ def test_ocen_archive(create_package):
     """
     Test creation of ocen archive.
     """
-    parser = configure_parsers()
-    args = parser.parse_args(["export", "--no-statement"])
-    command = Command()
-    command.run(args)
-    task_id = package_util.get_task_id()
-    in_handwritten = ["ocen0.in", "ocen0a.in", "ocen1a.in", "ocen1ocen.in"]
-    out_handwritten = ["ocen0.out"]
-    ocen_tests = ["ocen0", "ocen0a", "ocen0b", "ocen1ocen", "ocen2ocen"]
+    for contest_type in ["oi", "oij"]:
+        _set_contest_type(contest_type)
+        parser = configure_parsers()
+        args = parser.parse_args(["export", "--no-statement"])
+        command = Command()
+        command.run(args)
+        task_id = package_util.get_task_id()
+        in_handwritten = ["ocen0.in", "ocen0a.in", "ocen1a.in", "ocen1ocen.in"]
+        out_handwritten = ["ocen0.out"]
+        ocen_tests = ["ocen0", "ocen0a", "ocen0b", "ocen1ocen", "ocen2ocen"]
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        package_path = os.path.join(tmpdir, task_id)
-        os.mkdir(package_path)
-        with tarfile.open(f'{task_id}.tgz', "r") as tar:
-            sinol_util.extract_tar(tar, tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            package_path = os.path.join(tmpdir, task_id)
+            os.mkdir(package_path)
+            with tarfile.open(f'{task_id}.tgz', "r") as tar:
+                sinol_util.extract_tar(tar, tmpdir)
 
-        for ext in ["in", "out"]:
-            tests = [os.path.basename(f) for f in glob.glob(os.path.join(package_path, ext, f'*.{ext}'))]
-            assert set(tests) == set(in_handwritten if ext == "in" else out_handwritten)
+            for ext in ["in", "out"]:
+                tests = [os.path.basename(f) for f in glob.glob(os.path.join(package_path, ext, f'*.{ext}'))]
+                assert set(tests) == set(in_handwritten if ext == "in" else out_handwritten)
 
-        ocen_archive = os.path.join(package_path, "attachments", f"{task_id}ocen.zip")
-        assert os.path.exists(ocen_archive)
-        ocen_dir = os.path.join(package_path, "ocen_dir")
+            ocen_archive = os.path.join(package_path, "attachments", f"{task_id}ocen.zip")
+            assert os.path.exists(ocen_archive)
+            ocen_dir = os.path.join(package_path, "ocen_dir")
 
-        with zipfile.ZipFile(ocen_archive, "r") as zip:
-            zip.extractall(ocen_dir)
+            with zipfile.ZipFile(ocen_archive, "r") as zip:
+                zip.extractall(ocen_dir)
 
-        for ext in ["in", "out"]:
-            tests = [os.path.basename(f) for f in glob.glob(os.path.join(ocen_dir, task_id, ext, f'*.{ext}'))]
-            assert set(tests) == set([f'{test}.{ext}' for test in ocen_tests])
+            for ext in ["in", "out"]:
+                tests = [os.path.basename(f) for f in glob.glob(os.path.join(ocen_dir, task_id, ext, f'*.{ext}'))]
+                assert set(tests) == set([f'{test}.{ext}' for test in ocen_tests])
 
 
 @pytest.mark.parametrize("create_package", [util.get_icpc_package_path()], indirect=True)
@@ -212,3 +227,54 @@ def test_no_ocen(create_package):
         with tarfile.open(f'{task_id}.tgz', "r") as tar:
             sinol_util.extract_tar(tar, tmpdir)
         assert not os.path.exists(os.path.join(tmpdir, task_id, "attachments", f"{task_id}ocen.zip"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_dlazaw_package()], indirect=True)
+def test_no_ocen_and_dlazaw(create_package):
+    """
+    Test if ocen archive is not created when there are no ocen tests.
+    Also test if dlazaw archive is created.
+    """
+    for contest_type in ["oi", "oij"]:
+        _set_contest_type(contest_type)
+        parser = configure_parsers()
+        args = parser.parse_args(["export", "--no-statement"])
+        command = Command()
+        command.run(args)
+        task_id = package_util.get_task_id()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with tarfile.open(f'{task_id}.tgz', "r") as tar:
+                sinol_util.extract_tar(tar, tmpdir)
+
+            assert not os.path.exists(os.path.join(tmpdir, task_id, "attachments", f"{task_id}ocen.zip"))
+            dlazaw_archive = os.path.join(tmpdir, task_id, "attachments", f"dlazaw.zip")
+            assert os.path.exists(dlazaw_archive)
+
+            with zipfile.ZipFile(dlazaw_archive, "r") as zip:
+                zip.extractall(os.path.join(tmpdir))
+
+            assert os.path.exists(os.path.join(tmpdir, "dlazaw"))
+            assert os.path.exists(os.path.join(tmpdir, "dlazaw", "epic_file"))
+
+
+@pytest.mark.parametrize("create_package", [util.get_ocen_package_path()], indirect=True)
+def test_dlazaw_ocen(create_package):
+    """
+    Test if ocen archive isn't created when dlazaw directory exists
+    """
+    for contest_type in ["oi", "oij"]:
+        _set_contest_type(contest_type)
+        os.makedirs("dlazaw", exist_ok=True)
+        parser = configure_parsers()
+        args = parser.parse_args(["export", "--no-statement"])
+        command = Command()
+        command.run(args)
+        task_id = package_util.get_task_id()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with tarfile.open(f'{task_id}.tgz', "r") as tar:
+                sinol_util.extract_tar(tar, tmpdir)
+
+            assert not os.path.exists(os.path.join(tmpdir, task_id, "attachments", f"{task_id}ocen.zip"))
+            assert os.path.join(tmpdir, task_id, "attachments", f"dlazaw.zip")

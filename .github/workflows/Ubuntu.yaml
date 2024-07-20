@@ -6,7 +6,7 @@ jobs:
     runs-on: self-hosted
     strategy:
         matrix:
-            python-version: ["3.7.17", "3.12.0"]
+            python-version: ["3.8", "3.12"]
     name: pytest-ubuntu-python-${{ matrix.python-version }}
     container:
       image: ubuntu:latest

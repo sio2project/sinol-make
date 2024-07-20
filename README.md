@@ -65,7 +65,7 @@ activate-global-python-argcomplete
 
 ### Usage
 
-The availabe commands (see `st-make --help`) are:
+The available commands (see `st-make --help`) are:
 
 - `st-make run` -- Runs selected solutions (by default all solutions) on selected tests (by default all tests) with a given number
 of CPUs. Measures the solutions' time with oiejq, unless specified otherwise. After running the solutions, it
@@ -85,6 +85,9 @@ Run `st-make ingen --help` to see available flags.
 program to use, what tests to check and how many CPUs to use. Run `st-make inwer --help` to see available flags.
 - `st-make export` -- Creates archive ready to upload to Wyzwania, Talent-camp and other sio2 instances. Run `st-make export --help` to see all available flags.
 - `st-make doc` -- Compiles all LaTeX files in doc/ directory to PDF. Run `st-make doc --help` to see all available flags.
+- `st-make verify` -- Verifies the package. This command runs stress tests (if available), verifies the config,
+generates tests, generates problem statements, runs inwer and run all solutions. Ingen and inwer are compiled with
+address and UB sanitizers. Run `st-make verify --help` to see all available flags.
 - `st-make init [id]` -- Creates package from template [on github](https://github.com/Stowarzyszenie-Talent/st-make/tree/main/example_package) and sets task id to provided `[id]`. Requires an internet connection to run.
 
 You can also run multiple commands at once, for example:

@@ -336,6 +336,35 @@ def test_missing_output_files(capsys, create_package):
 
     out = capsys.readouterr().out
     assert f'Missing output files for tests: {out1}, {out2}' in out
+    assert 'There are tests without outputs.' in out
+    assert 'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.' in out
+    assert 'An error occurred while running the command.' not in out
+    
+    
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
+def test_missing_output_files_allow_missing(capsys, create_package):
+    """
+    Test with missing output files.
+    """
+    package_path = create_package
+    command = get_command()
+    create_ins_outs(package_path)
+
+    outs = glob.glob(os.path.join(package_path, "out", "*.out"))
+    for i in outs:
+        os.unlink(i)
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", "time", "--no-outputs"])
+    command = Command()
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+    out = capsys.readouterr().out
+    assert 'No tests with valid outputs.' in out
+    assert 'An error occurred while running the command.' not in out
+    assert 'There are tests without outputs.' not in out
+    assert 'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.' not in out
 
 
 @pytest.mark.parametrize("create_package", [get_limits_package_path()], indirect=True)
@@ -785,3 +814,30 @@ def test_ghost_checker(create_package):
     with pytest.raises(SystemExit) as e:
         command.run(args)
     assert e.value.code == 1
+
+
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
+def test_ignore_expected_flag(create_package, capsys):
+    """
+    Test flag --ignore-expected.
+    """
+    config = package_util.get_config()
+    del config["sinol_expected_scores"]
+    util.save_config(config)
+
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run"])
+    command = Command()
+
+    with pytest.raises(SystemExit):
+        command.run(args)
+    out = capsys.readouterr().out
+    assert "Use flag --apply-suggestions to apply suggestions." in out
+
+    args = parser.parse_args(["run", "--ignore-expected"])
+    command = Command()
+    command.run(args)
+    out = capsys.readouterr().out
+    assert "Ignoring expected scores." in out

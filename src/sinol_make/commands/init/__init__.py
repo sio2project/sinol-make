@@ -23,6 +23,7 @@ class Command(BaseCommand):
             description='Create package from predefined template with given id.'
         )
         parser.add_argument('task_id', type=str, help='Id of the task to create')
+        return parser
 
     def download_template(self):
         repo = 'https://github.com/Stowarzyszenie-Talent/st-make.git'
@@ -69,8 +70,7 @@ class Command(BaseCommand):
 
         self.move_folder()
         self.update_config()
-        
+
         self.used_tmpdir.cleanup()
 
         print(util.info(f'Successfully created task "{self.task_id}"'))
-

@@ -8,21 +8,23 @@ import time
 import psutil
 import glob
 import shutil
+import os
+import collections
+import sys
+import math
+import dictdiffer
+import multiprocessing as mp
 from io import StringIO
 from typing import Dict
 
-from sinol_make import contest_types, oiejq
+from sinol_make import contest_types, oiejq, util
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
-from sinol_make.helpers.parsers import add_compilation_arguments
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.interfaces.Errors import CompilationError, CheckerOutputException, UnknownContestType
-from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache
+from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache, parsers
 from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
     TotalPointsChange
-import sinol_make.util as util
-import yaml, os, collections, sys, re, math, dictdiffer
-import multiprocessing as mp
 
 
 def color_memory(memory, limit):
@@ -288,8 +290,7 @@ class Command(BaseCommand):
                             help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='tests to be run, for example in/abc{0,1}*')
-        parser.add_argument('-c', '--cpus', type=int,
-                            help=f'number of cpus to use (default: {util.default_cpu_count()}')
+        parsers.add_cpus_argument(parser, 'number of cpus to use when running solutions')
         parser.add_argument('--tl', type=float, help='time limit for all tests (in s)')
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
@@ -300,7 +301,13 @@ class Command(BaseCommand):
                             help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
-        add_compilation_arguments(parser)
+        parser.add_argument('--ignore-expected', dest='ignore_expected', action='store_true',
+                            help='ignore expected scores from config.yml. When this flag is set, '
+                                 'the expected scores are not compared with the actual scores.')
+        parser.add_argument('--no-outputs', dest='allow_no_outputs', action='store_true',
+                            help='allow running the script without full outputs')
+        parsers.add_compilation_arguments(parser)
+        return parser
 
     def parse_time(self, time_str):
         if len(time_str) < 3: return -1
@@ -1016,7 +1023,7 @@ class Command(BaseCommand):
 
                 self.config["sinol_expected_scores"] = self.convert_status_to_string(config_expected_scores)
                 util.save_config(self.config)
-                print(util.info("Saved suggested expected scores description."))
+                print("Saved suggested expected scores description.")
             else:
                 util.exit_with_error("Use flag --apply-suggestions to apply suggestions.")
 
@@ -1121,9 +1128,14 @@ class Command(BaseCommand):
 
             print(util.warning('Missing output files for tests: ' + ', '.join(
                 [self.extract_file_name(test) for test in missing_tests])))
+            if self.args.allow_no_outputs != True:
+                util.exit_with_error('There are tests without outputs. \n'
+                                     'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.')
             print(util.warning('Running only on tests with output files.'))
             self.tests = valid_input_files
             self.groups = self.get_groups(self.tests)
+            if len(self.groups) < 1:
+                util.exit_with_error('No tests with valid outputs.')
 
     def check_are_any_tests_to_run(self):
         """
@@ -1210,7 +1222,7 @@ class Command(BaseCommand):
 
         checker = package_util.get_files_matching_pattern(self.ID, f'{self.ID}chk.*')
         if len(checker) != 0:
-            print(util.info("Checker found: %s" % os.path.basename(checker[0])))
+            print("Checker found: %s" % os.path.basename(checker[0]))
             self.checker = checker[0]
             self.compile_checker()
         else:
@@ -1237,6 +1249,11 @@ class Command(BaseCommand):
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)
+        if self.args.ignore_expected:
+            print(util.warning("Ignoring expected scores."))
+            self.exit()
+            return
+
         try:
             validation_results = self.validate_expected_scores(results)
         except Exception:

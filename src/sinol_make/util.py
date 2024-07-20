@@ -1,28 +1,24 @@
 import glob, importlib, os, sys, requests, yaml
 import math
-import multiprocessing
 import platform
 import tarfile
 import hashlib
 import multiprocessing
 import resource
 from typing import Union
+from packaging.version import parse as parse_version
 
 from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
+from sinol_make.helpers.func_cache import cache_result
 from sinol_make.structs.status_structs import Status
 
 
-__cache = {}
-
-
+@cache_result()
 def get_commands():
     """
     Function to get an array of all available commands.
     """
-    global __cache
-    if 'commands' in __cache:
-        return __cache['commands']
     commands_path = glob.glob(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -34,7 +30,6 @@ def get_commands():
         temp = importlib.import_module('sinol_make.commands.' + os.path.basename(path), 'Command')
         commands.append(temp.Command())
 
-    __cache['commands'] = commands
     return commands
 
 
@@ -95,6 +90,7 @@ def save_config(config):
         "title_en",
         "sinol_task_id",
         "sinol_contest_type",
+        "sinol_static_tests",
         "sinol_undocumented_time_tool",
         "sinol_undocumented_test_limits",
         "memory_limit",
@@ -150,10 +146,18 @@ def import_importlib_resources():
     return importlib
 
 
-def check_for_updates(current_version) -> Union[str, None]:
+def is_dev(version):
+    """
+    Function to check if the version is a development version.
+    """
+    return parse_version(version).is_devrelease
+
+
+def check_for_updates(current_version, check=True) -> Union[str, None]:
     """
     Function to check if there is a new version of st-make.
     :param current_version: current version of st-make
+    :param check: whether to check for new version
     :return: returns new version if there is one, None otherwise
     """
     importlib = import_importlib_resources()
@@ -164,8 +168,9 @@ def check_for_updates(current_version) -> Union[str, None]:
 
     # We check for new version asynchronously, so that it doesn't slow down the program.
     # If the main process exits, the check_version process will also exit.
-    process = multiprocessing.Process(target=check_version, daemon=True)
-    process.start()
+    if check:
+        process = multiprocessing.Process(target=check_version, daemon=True)
+        process.start()
     version_file = data_dir.joinpath("version")
 
     try:
@@ -178,7 +183,9 @@ def check_for_updates(current_version) -> Union[str, None]:
             return None
 
     try:
-        if compare_versions(current_version, version) == -1:
+        if not is_dev(version) and parse_version(version) > parse_version(current_version):
+            return version
+        if is_dev(current_version) and is_dev(version) and parse_version(version) > parse_version(current_version):
             return version
         else:
             return None
@@ -202,7 +209,9 @@ def check_version():
         return
 
     data = request.json()
-    latest_version = data["info"]["version"]
+    versions = list(data["releases"].keys())
+    versions.sort(key=parse_version)
+    latest_version = versions[-1]
 
     version_file = importlib.files("sinol_make").joinpath("data/version")
     try:
@@ -215,26 +224,6 @@ def check_version():
                     f.write(latest_version)
             except PermissionError:
                 pass
-
-
-def compare_versions(version_a, version_b):
-    """
-    Function to compare two versions.
-    Returns 1 if version_a > version_b, 0 if version_a == version_b, -1 if version_a < version_b.
-    """
-
-    def convert(version):
-        return tuple(map(int, version.split(".")))
-
-    version_a = convert(version_a)
-    version_b = convert(version_b)
-
-    if version_a > version_b:
-        return 1
-    elif version_a == version_b:
-        return 0
-    else:
-        return -1
 
 
 def lines_diff(lines1, lines2):
@@ -441,3 +430,7 @@ def exit_with_error(text, func=None):
     except TypeError:
         pass
     exit(1)
+
+
+def has_sanitizer_error(output, exit_code):
+    return ('ELF_ET_DYN_BASE' in output or 'ASan' in output) and exit_code != 0
