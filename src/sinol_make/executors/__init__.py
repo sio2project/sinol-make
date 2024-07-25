@@ -38,7 +38,7 @@ class BaseExecutor:
         raise NotImplementedError()
 
     def execute(self, command: List[str], time_limit, hard_time_limit, memory_limit, result_file_path, executable,
-                execution_dir, stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                execution_dir, stdin=None, stdout=subprocess.DEVNULL, stderr=None,
                 fds_to_close: Union[None, List[int]] = None, *args, **kwargs) -> ExecutionResult:
         """
         Executes the command and returns the result, stdout and stderr.

@@ -895,7 +895,11 @@ class Command(BaseCommand):
             for group in results[solution]:
                 for test in results[solution][group]:
                     if results[solution][group][test].Error is not None:
-                        error_msg += f'Solution {solution} had an error on test {test}: {results[solution][group][test].Error}\n'
+                        error_msg += (f'Solution {solution} had an error on test {test}: '
+                                      f'{results[solution][group][test].Error}')
+                        if results[solution][group][test].Stderr != ['']:
+                            error_msg += f' Stderr:\n{results[solution][group][test].Stderr}'
+                        error_msg += '\n'
                         fail |= results[solution][group][test].Fail
         if error_msg != "":
             print(util.error(error_msg))
