@@ -3,9 +3,8 @@ import argparse
 from sinol_make import util
 from sinol_make.commands.ingen import Command as IngenCommand
 from sinol_make.commands.outgen import Command as OutgenCommand
-from sinol_make.helpers import parsers
+from sinol_make.helpers import parsers, package_util
 from sinol_make.interfaces.BaseCommand import BaseCommand
-from sinol_make.task_type import BaseTaskType
 
 
 class Command(BaseCommand):
@@ -45,7 +44,7 @@ class Command(BaseCommand):
         self.args = args
         self.ins = args.only_inputs
         self.outs = args.only_outputs
-        self.task_type = BaseTaskType.get_task_type()
+        self.task_type = package_util.get_task_type()
         # If no arguments are specified, generate both input and output files.
         if not self.ins and not self.outs:
             self.ins = True

@@ -21,7 +21,6 @@ from sinol_make.interfaces.Errors import CompilationError, UnknownContestType
 from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache, parsers
 from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
     TotalPointsChange
-from sinol_make.task_type import BaseTaskType
 
 # Required for side effects
 from sinol_make.task_type.normal import NormalTaskType # noqa
@@ -946,7 +945,7 @@ class Command(BaseCommand):
         cache.process_extra_execution_files(self.config.get("extra_execution_files", {}), self.ID)
         cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
-        task_type_cls = BaseTaskType.get_task_type()
+        task_type_cls = package_util.get_task_type()
         self.task_type = task_type_cls(self.timetool_name, self.timetool_path)
         additional_files = self.task_type.additional_files_to_compile()
         os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
