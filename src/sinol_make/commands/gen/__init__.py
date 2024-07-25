@@ -44,7 +44,7 @@ class Command(BaseCommand):
         self.args = args
         self.ins = args.only_inputs
         self.outs = args.only_outputs
-        self.task_type = package_util.get_task_type()
+        self.task_type = package_util.get_task_type_cls()
         # If no arguments are specified, generate both input and output files.
         if not self.ins and not self.outs:
             self.ins = True

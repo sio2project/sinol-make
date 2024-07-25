@@ -421,5 +421,10 @@ def get_all_inputs(task_id):
     return inputs
 
 
-def get_task_type() -> Type[BaseTaskType]:
+def get_task_type_cls() -> Type[BaseTaskType]:
     return BaseTaskType.get_task_type()
+
+
+def get_task_type(timetool_name, timetool_path) -> BaseTaskType:
+    task_type_cls = get_task_type_cls()
+    return task_type_cls(timetool_name, timetool_path)

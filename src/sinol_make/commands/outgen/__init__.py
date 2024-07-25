@@ -109,7 +109,7 @@ class Command(BaseCommand):
 
         self.args = args
         self.task_id = package_util.get_task_id()
-        self.task_type = package_util.get_task_type()
+        self.task_type = package_util.get_task_type_cls()
         if not self.task_type.run_outgen():
             util.exit_with_error('Output generation is not supported for this task type.')
         package_util.validate_test_names(self.task_id)

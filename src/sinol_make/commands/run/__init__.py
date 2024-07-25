@@ -921,6 +921,19 @@ class Command(BaseCommand):
         if not any_comments:
             print("No comments.")
 
+    def set_task_type(self, timetool_name, timetool_path):
+        self.task_type = package_util.get_task_type(timetool_name, timetool_path)
+
+    def compile_additional_files(self):
+        additional_files = self.task_type.additional_files_to_compile()
+        os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
+        os.makedirs(paths.get_executables_path(), exist_ok=True)
+        for file, dest, name, clear_cache, fail_on_error in additional_files:
+            print(f"Compiling {name}...")
+            success = self.compile(file, dest, False, clear_cache, name)
+            if not success and fail_on_error:
+                sys.exit(1)
+
     def run(self, args):
         args = util.init_package_command(args)
 
@@ -945,16 +958,8 @@ class Command(BaseCommand):
         cache.process_extra_execution_files(self.config.get("extra_execution_files", {}), self.ID)
         cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 
-        task_type_cls = package_util.get_task_type()
-        self.task_type = task_type_cls(self.timetool_name, self.timetool_path)
-        additional_files = self.task_type.additional_files_to_compile()
-        os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
-        os.makedirs(paths.get_executables_path(), exist_ok=True)
-        for file, dest, name, clear_cache, fail_on_error in additional_files:
-            print(f"Compiling {name}...")
-            success = self.compile(file, dest, False, clear_cache, name)
-            if not success and fail_on_error:
-                sys.exit(1)
+        self.set_task_type(self.timetool_name, self.timetool_path)
+        self.compile_additional_files()
 
         lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0
