@@ -16,7 +16,7 @@ class TimeExecutor(BaseExecutor):
         if sys.platform == 'darwin':
             time_name = 'gtime'
         elif sys.platform == 'linux':
-            time_name = '/usr/bin/time'
+            time_name = '\\time'
         else:
             util.exit_with_error("Measuring time with GNU time on Windows is not supported.")
 
