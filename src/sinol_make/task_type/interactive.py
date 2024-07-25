@@ -6,6 +6,7 @@ from typing import Tuple, List
 
 from sinol_make.executors.detailed import DetailedExecutor
 from sinol_make.helpers import package_util, paths
+from sinol_make.interfaces.Errors import CheckerException
 from sinol_make.structs.status_structs import ExecutionResult, Status
 from sinol_make.task_type import BaseTaskType
 from sinol_make import util
@@ -100,13 +101,20 @@ class InteractiveTaskType(BaseTaskType):
         inter_sig = iresult.ExitSignal
 
         if interactor_output[0] != '':
-            ok, points, comment = self._parse_checker_output(interactor_output)
+            try:
+                ok, points, comment = self._parse_checker_output(interactor_output)
+            except CheckerException as e:
+                result.Status = Status.RE
+                result.Error = str(e)
+                result.Fail = True
+                return
             result.Points = float(points)
             result.Comment = comment
             if ok:
                 result.Status = Status.OK
             else:
                 result.Status = Status.WA
+            result.Error = None
         elif iresult.Status != Status.OK and iresult.Status != Status.TL and inter_sig != signal.SIGPIPE:
             result.Status = Status.RE
             result.Error = (f"Interactor got {iresult.Status}. This would cause SE on sio. "

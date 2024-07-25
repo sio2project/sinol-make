@@ -25,7 +25,7 @@ class DetailedExecutor(BaseExecutor):
         mem_used = 0
         if stderr is None:
             stderr = subprocess.PIPE
-        process = subprocess.Popen(command, *args, stdin=stdin, stdout=stdout, stderr=stderr,
+        process = subprocess.Popen(" ".join(command), shell=True, *args, stdin=stdin, stdout=stdout, stderr=stderr,
                                    preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
         if fds_to_close is not None:
             for fd in fds_to_close:
@@ -40,7 +40,6 @@ class DetailedExecutor(BaseExecutor):
                     if child.name() == executable:
                         executable_process = child
                         break
-                mem_used = max(mem_used, executable_process.memory_info().rss)
                 if executable_process is not None:
                     mem_used = max(mem_used, executable_process.memory_info().rss)
                 if executable_process is not None and mem_used > memory_limit * 1024:

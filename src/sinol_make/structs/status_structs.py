@@ -119,6 +119,9 @@ class ExecutionResult:
             Points=dict.get("Points", 0),
             Error=dict.get("Error", None),
             Fail=dict.get("Fail", False),
+            ExitSignal=dict.get("ExitSignal", 0),
+            Comment=dict.get("Comment", ""),
+            Stderr=dict.get("Stderr", []),
         )
 
     def to_dict(self):
@@ -129,4 +132,7 @@ class ExecutionResult:
             "Points": self.Points,
             "Error": self.Error,
             "Fail": self.Fail,
+            "ExitSignal": self.ExitSignal,
+            "Comment": self.Comment,
+            "Stderr": self.Stderr,
         }
