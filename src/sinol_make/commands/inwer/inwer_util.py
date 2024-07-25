@@ -36,7 +36,7 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace, compilation_flags='
     compilers = compiler.verify_compilers(args, [inwer_path])
     inwer_exe, compile_log_path = compile.compile_file(inwer_path, package_util.get_executable(inwer_path), compilers,
                                                        compilation_flags, use_fsanitize=use_fsanitize,
-                                                       additional_flags='-D_INWER')
+                                                       additional_flags='-D_INWER', use_extras=False)
 
     if inwer_exe is None:
         compile.print_compile_log(compile_log_path)
