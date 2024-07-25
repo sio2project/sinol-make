@@ -272,6 +272,8 @@ class Command(BaseCommand):
     def get_name(self):
         return 'run'
 
+    def get_short_name(self):
+        return 'r'
 
     def configure_subparser(self, subparser):
         parser = subparser.add_parser(

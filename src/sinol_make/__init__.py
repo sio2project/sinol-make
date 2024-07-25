@@ -53,11 +53,16 @@ def main_exn():
     curr_args = []
     commands = util.get_commands()
     commands_dict = {command.get_name(): command for command in commands}
+    commands_short_dict = {command.get_short_name(): command for command in commands if command.get_short_name()}
     for arg in sys.argv[1:]:
         if arg in commands_dict.keys() and not (len(curr_args) > 0 and curr_args[0] == 'init'):
             if curr_args:
                 arguments.append(curr_args)
             curr_args = [arg]
+        elif arg in commands_short_dict.keys() and not (len(curr_args) > 0 and curr_args[0] == 'init'):
+            if curr_args:
+                arguments.append(curr_args)
+            curr_args = [commands_short_dict[arg].get_name()]
         else:
             curr_args.append(arg)
     if curr_args:
