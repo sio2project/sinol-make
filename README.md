@@ -94,6 +94,15 @@ You can also run multiple commands at once, for example:
 sinol-make gen prog/abcingen2.cpp inwer --cpus 4 run --tests abc1*.in doc export --no-statement
 ```
 
+There are also available short aliases for the commands:
+- `sinol-make r` for `sinol-make run`
+- `sinol-make g` for `sinol-make gen`
+- `sinol-make i` for `sinol-make inwer`
+- `sinol-make e` for `sinol-make export`
+- `sinol-make d` for `sinol-make doc`
+- `sinol-make v` for `sinol-make verify`
+- `sm` for `sinol-make`
+
 ### Reporting bugs and contributing code
 
 - Want to report a bug or request a feature? [Open an issue](https://github.com/sio2project/sinol-make/issues).

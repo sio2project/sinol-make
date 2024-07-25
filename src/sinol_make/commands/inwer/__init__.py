@@ -23,6 +23,9 @@ class Command(BaseCommand):
     def get_name(self):
         return "inwer"
 
+    def get_short_name(self):
+        return "i"
+
     def configure_subparser(self, subparser: argparse.ArgumentParser):
         parser = subparser.add_parser(
             self.get_name(),

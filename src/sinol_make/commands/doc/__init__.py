@@ -17,6 +17,9 @@ class Command(BaseCommand):
     def get_name(self):
         return "doc"
 
+    def get_short_name(self):
+        return "d"
+
     def compile_file_latex_div(self, file_path):
         print(f'Compiling {os.path.basename(file_path)} (latex to dvi)...')
         os.chdir(os.path.dirname(file_path))
