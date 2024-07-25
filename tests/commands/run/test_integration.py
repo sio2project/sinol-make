@@ -339,8 +339,8 @@ def test_missing_output_files(capsys, create_package):
     assert 'There are tests without outputs.' in out
     assert 'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.' in out
     assert 'An error occurred while running the command.' not in out
-    
-    
+
+
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
 def test_missing_output_files_allow_missing(capsys, create_package):
     """
@@ -841,3 +841,33 @@ def test_ignore_expected_flag(create_package, capsys):
     command.run(args)
     out = capsys.readouterr().out
     assert "Ignoring expected scores." in out
+
+
+@pytest.mark.parametrize("create_package", [get_simple_interactive_package(), get_two_interactive_package()],
+                         indirect=True)
+def test_interactive(create_package, time_tool, capsys):
+    """
+    Test  interactive tasks.
+    """
+    package_path = create_package
+    comments = []
+    if os.path.basename(package_path) == "simple_interactive":
+        comments = ["CoMmEnT", "Solution exited prematurely"]
+    elif os.path.basename(package_path) == "two_interactive":
+        comments = ["Wrong answer on third interaction",
+                    "Wrong answer on second interaction"]
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--comments", "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+    out = capsys.readouterr().out
+    for comment in comments:
+        assert comment in out, f"Comment {comment} not found in output."
+
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+    out = capsys.readouterr().out
+    for comment in comments:
+        assert comment not in out, f"Comment {comment} found in output."

@@ -393,3 +393,22 @@ def test_cache_remove_after_flags_change(create_package):
     random_key_to_cache()
     simple_run(["--fsanitize"], command="gen")
     check_assert()
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_interactive_package()], indirect=True)
+def test_no_outputs_interactive(create_package, capsys):
+    """
+    Test if ingen command works with interactive tasks.
+    """
+    simple_run(command="gen")
+    assert os.path.exists(os.path.join(create_package, "in", "int1.in"))
+    assert not os.path.exists(os.path.join(create_package, "out", "int1.out"))
+    out = capsys.readouterr().out
+    assert "Outgen is not supported for this task type." in out
+
+    with pytest.raises(SystemExit) as e:
+        simple_run(command="outgen")
+    assert e.type == SystemExit
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "Output generation is not supported for this task type." in out

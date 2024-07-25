@@ -1,0 +1,21 @@
+title: Simple interactive
+sinol_task_id: int
+memory_limit: 102400
+time_limit: 1000
+
+sinol_expected_scores:
+  int.cpp:
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 50, status: OK}
+    points: 100
+  int2.cpp:
+    expected:
+      1: {points: 0, status: WA}
+      2: {points: 25, status: OK}
+    points: 25
+  int3.cpp:
+    expected:
+      1: {points: 0, status: WA}
+      2: {points: 0, status: WA}
+    points: 0
