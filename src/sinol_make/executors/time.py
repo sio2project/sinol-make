@@ -80,7 +80,7 @@ class TimeExecutor(BaseExecutor):
                 lines = result_file.readlines()
             if len(lines) == 4 and lines[0].startswith("Command exited with non-zero status"):
                 result.Status = Status.RE
-                exit_signal = int(lines[0].strip()[len("Command exited with non-zero status "):])
+                exit_signal = abs(int(lines[0].strip()[len("Command exited with non-zero status "):]))
                 program_exit_code = os.WTERMSIG(exit_signal)
             elif len(lines) == 3:
                 """
