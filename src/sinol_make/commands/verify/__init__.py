@@ -21,6 +21,9 @@ class Command(BaseCommand):
     def get_name(self):
         return "verify"
 
+    def get_short_name(self):
+        return "v"
+
     def configure_subparser(self, subparser):
         parser = subparser.add_parser(
             self.get_name(),
