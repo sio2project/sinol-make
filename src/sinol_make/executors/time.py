@@ -99,7 +99,7 @@ class TimeExecutor(BaseExecutor):
                 For example:
                     Command terminated by signal 11
                 """
-                program_exit_code = int(lines[0].strip().split(" ")[-1])
+                program_exit_code = abs(int(lines[0].strip().split(" ")[-1]))
             elif not mle:
                 result.Status = Status.RE
                 result.Error = "Unexpected output from time command:\n" + "".join(lines)
