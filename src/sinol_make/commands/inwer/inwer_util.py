@@ -86,8 +86,12 @@ def print_view(term_width, term_height, table_data: TableData):
           " | " + "Output")
     print_line_separator()
 
+    last_group = None
     for test_path in tests:
         result = results[test_path]
+        if last_group is not None and last_group != result.test_group:
+            print_line_separator()
+        last_group = result.test_group
         print(margin + result.test_name.ljust(column_lengths[0]) + " | ", end='')
         print(result.test_group.ljust(column_lengths[1] - 1) + " | ", end='')
 
