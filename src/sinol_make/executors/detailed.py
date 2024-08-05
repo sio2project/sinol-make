@@ -84,7 +84,8 @@ class DetailedExecutor(BaseExecutor):
             result.Error = "Unexpected output from execution:\n" + "".join(lines)
             result.Fail = True
         if program_exit_code != 0:
+            program_exit_code = abs(program_exit_code)
             result.Status = Status.RE
-            result.Error = f"Solution exited with code {program_exit_code}"
+            result.Error = f"Program exited with code {program_exit_code}"
             result.ExitSignal = os.WTERMSIG(program_exit_code)
         return result
