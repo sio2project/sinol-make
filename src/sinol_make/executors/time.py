@@ -105,8 +105,8 @@ class TimeExecutor(BaseExecutor):
                 result.Error = "Unexpected output from time command:\n" + "".join(lines)
                 result.Fail = True
 
-        program_exit_code = abs(program_exit_code)
         if program_exit_code is not None and program_exit_code != 0:
+            program_exit_code = abs(program_exit_code)
             result.Status = Status.RE
             result.Error = f"Solution exited with code {program_exit_code}"
             result.ExitSignal = os.WTERMSIG(program_exit_code)
