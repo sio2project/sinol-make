@@ -93,6 +93,7 @@ def save_config(config):
         "sinol_static_tests",
         "sinol_undocumented_time_tool",
         "sinol_undocumented_test_limits",
+        "num_processes",
         "memory_limit",
         "memory_limits",
         "time_limit",

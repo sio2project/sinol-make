@@ -10,7 +10,7 @@ class CompilationError(SinolMakeException):
         return self.message
 
 
-class CheckerOutputException(SinolMakeException):
+class CheckerException(SinolMakeException):
     def __init__(self, message):
         self.message = message
 

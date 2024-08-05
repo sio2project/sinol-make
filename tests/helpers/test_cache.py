@@ -81,7 +81,7 @@ def test_cache():
         cache_file.save("abc.cpp")
         assert cache.get_cache_file("abc.cpp") == cache_file
         cache.save_compiled("abc.cpp", "abc.e", "default", False,
-                            is_checker=True)
+                            clear_cache=True)
         assert cache.get_cache_file("abc.cpp").tests == {}
 
         # Test that cache is cleared when extra compilation files change

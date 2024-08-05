@@ -5,11 +5,12 @@ import glob
 import fnmatch
 import multiprocessing as mp
 from enum import Enum
-from typing import List, Union, Dict, Any, Tuple
+from typing import List, Union, Dict, Any, Tuple, Type
 
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util
 from sinol_make.helpers import paths
+from sinol_make.task_type import BaseTaskType
 
 
 @cache_result(cwd=True)
@@ -418,3 +419,12 @@ def get_all_inputs(task_id):
         if in_test_re.match(os.path.basename(file)):
             inputs.append(file)
     return inputs
+
+
+def get_task_type_cls() -> Type[BaseTaskType]:
+    return BaseTaskType.get_task_type()
+
+
+def get_task_type(timetool_name, timetool_path) -> BaseTaskType:
+    task_type_cls = get_task_type_cls()
+    return task_type_cls(timetool_name, timetool_path)

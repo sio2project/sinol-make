@@ -1,0 +1,21 @@
+title: Two interactive
+sinol_task_id: two
+num_processes: 2
+memory_limit: 102400
+time_limit: 1000
+sinol_expected_scores:
+  two.cpp:
+    expected:
+      1: {points: 50, status: OK}
+      2: {points: 50, status: OK}
+    points: 100
+  two1.cpp:
+    expected:
+      1: {points: 38, status: OK}
+      2: {points: 38, status: OK}
+    points: 76
+  two2.cpp:
+    expected:
+      1: {points: 25, status: OK}
+      2: {points: 25, status: OK}
+    points: 50

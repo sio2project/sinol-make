@@ -170,12 +170,26 @@ def get_dlazaw_package():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "dlazaw")
 
-  
+
 def get_stresstest_package_path():
     """
     Get path to package with stresstest.sh (/tests/packages/stresstest)
     """
     return os.path.join(os.path.dirname(__file__), "packages", "stresstest")
+
+
+def get_simple_interactive_package():
+    """
+    Get path to package with simple interactive task (/tests/packages/simple_interactive)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "simple_interactive")
+
+
+def get_two_interactive_package():
+    """
+    Get path to interactive package with two processes (/tests/packages/two_interactive)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "two_interactive")
 
 
 def create_ins(package_path, task_id):
@@ -216,8 +230,8 @@ def create_ins_outs(package_path):
     """
     os.chdir(package_path)
     task_id = package_util.get_task_id()
-    print(task_id)
+    task_type = package_util.get_task_type_cls()
     create_ins(package_path, task_id)
     has_lib = package_util.any_files_matching_pattern(task_id, f"{task_id}lib.*")
-    if not has_lib:
+    if not has_lib and task_type.run_outgen():
         create_outs(package_path, task_id)
