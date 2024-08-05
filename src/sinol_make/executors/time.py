@@ -80,7 +80,7 @@ class TimeExecutor(BaseExecutor):
                 lines = result_file.readlines()
             if len(lines) == 4 and lines[0].startswith("Command exited with non-zero status"):
                 result.Status = Status.RE
-                exit_signal = abs(int(lines[0].strip()[len("Command exited with non-zero status "):]))
+                exit_signal = int(lines[0].strip()[len("Command exited with non-zero status "):])
                 program_exit_code = os.WTERMSIG(exit_signal)
             elif len(lines) == 3:
                 """
@@ -99,12 +99,13 @@ class TimeExecutor(BaseExecutor):
                 For example:
                     Command terminated by signal 11
                 """
-                program_exit_code = abs(int(lines[0].strip().split(" ")[-1]))
+                program_exit_code = int(lines[0].strip().split(" ")[-1])
             elif not mle:
                 result.Status = Status.RE
                 result.Error = "Unexpected output from time command:\n" + "".join(lines)
                 result.Fail = True
 
+        program_exit_code = abs(program_exit_code)
         if program_exit_code is not None and program_exit_code != 0:
             result.Status = Status.RE
             result.Error = f"Solution exited with code {program_exit_code}"
