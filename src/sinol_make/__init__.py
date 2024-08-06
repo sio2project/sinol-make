@@ -110,9 +110,13 @@ def main():
             if not util.is_dev(new_version):
                 print(util.warning(
                     f'New version of sinol-make is available (your version: {__version__}, available version: '
-                    f'{new_version}).\nYou can update it by running `pip3 install sinol-make --upgrade`.'))
+                    f'{new_version}).\n'
+                    f'Changelog can be found at https://github.com/sio2project/sinol-make/releases.\n'
+                    f'You can update sinol-make by running `pip install sinol-make --upgrade`.'))
             elif util.is_dev(new_version):
                 print(util.warning(
                     f'New development version of sinol-make is available (your version: {__version__}, available '
-                    f'version: {new_version}).\nYou can update it by running `pip3 install sinol-make --pre --upgrade`.'
+                    f'version: {new_version}).\n'
+                    f'Changelog can be found at https://github.com/sio2project/sinol-make/releases.\n'
+                    f'You can update sinol-make by running `pip install sinol-make --pre --upgrade`.'
                 ))
