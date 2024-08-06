@@ -150,3 +150,9 @@ class DefaultContest:
         Returns preferred time tool
         """
         return 'oiejq'
+
+    def verify_tests_order(self):
+        """
+        Whether to verify tests order
+        """
+        return False

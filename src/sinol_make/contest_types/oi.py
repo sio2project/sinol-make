@@ -47,3 +47,6 @@ class OIContest(DefaultContest):
 
     def allow_per_test_limits(self):
         return False
+
+    def verify_tests_order(self):
+        return True

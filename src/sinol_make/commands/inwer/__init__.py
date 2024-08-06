@@ -8,7 +8,7 @@ import multiprocessing as mp
 from functools import cmp_to_key
 from typing import Dict, List
 
-from sinol_make import util
+from sinol_make import util, contest_types
 from sinol_make.structs.inwer_structs import TestResult, InwerExecution, VerificationResult, TableData
 from sinol_make.helpers import package_util, printer, paths, parsers
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -206,6 +206,7 @@ class Command(BaseCommand):
 
         self.cpus = args.cpus or util.default_cpu_count()
         self.tests = package_util.get_tests(self.task_id, args.tests)
+        self.contest_type = contest_types.get_contest_type()
 
         if len(self.tests) == 0:
             util.exit_with_error('No tests found.')
@@ -224,7 +225,7 @@ class Command(BaseCommand):
 
         if len(failed_tests) > 0:
             util.exit_with_error(f'Verification failed for tests: {", ".join(failed_tests)}')
-        else:
+        elif self.contest_type.verify_tests_order():
             print("Verifying tests order...")
             self.verify_tests_order()
-            print(util.info('Verification successful.'))
+        print(util.info('Verification successful.'))

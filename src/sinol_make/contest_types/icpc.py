@@ -41,3 +41,6 @@ class ICPCContest(DefaultContest):
 
     def preferred_timetool(self):
         return "time"
+
+    def verify_tests_order(self):
+        return True
