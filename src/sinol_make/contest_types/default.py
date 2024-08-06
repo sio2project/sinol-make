@@ -144,3 +144,9 @@ class DefaultContest:
         Returns True if limits in config can be set per test
         """
         return True
+
+    def preferred_timetool(self):
+        """
+        Returns preferred time tool
+        """
+        return 'oiejq'

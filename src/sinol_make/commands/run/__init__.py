@@ -794,7 +794,13 @@ class Command(BaseCommand):
             return 'time', 'time'
 
         timetool_path, timetool_name = None, None
-        use_default_timetool = use_oiejq if util.is_linux() else use_time
+        preferred_timetool = self.contest.preferred_timetool()
+        if preferred_timetool == 'oiejq' and util.is_linux():
+            use_default_timetool = use_oiejq
+        elif preferred_timetool == 'time':
+            use_default_timetool = use_time
+        else:
+            use_default_timetool = use_oiejq if util.is_linux() else use_time
 
         if args.time_tool is None and self.config.get('sinol_undocumented_time_tool', '') != '':
             if self.config.get('sinol_undocumented_time_tool', '') == 'oiejq':
