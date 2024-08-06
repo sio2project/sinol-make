@@ -15,6 +15,7 @@ with features such as:
 - [Why?](#why)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Contest types](#contest-types)
 - [Reporting bugs and contributing code](#reporting-bugs-and-contributing-code)
 
 ### Why?
@@ -102,6 +103,22 @@ There are also available short aliases for the commands:
 - `sinol-make d` for `sinol-make doc`
 - `sinol-make v` for `sinol-make verify`
 - `sm` for `sinol-make`
+
+### Contest types
+
+`sinol-make` changes its behavior depending on the contest type specified in `config.yml`. You can specify
+the contest type with the `sinol_contest_type` key in config. Here is the table of available contest types and their
+features:
+
+| Feature                                                                                             | `default` | `oi`  | `oij` | `icpc` |
+|-----------------------------------------------------------------------------------------------------|-----------|-------|-------|--------|
+| Max score                                                                                           | 100       | 100   | 100   | 1      |
+| Default time tool                                                                                   | oiejq     | oiejq | oiejq | time   |
+| Full score if took less than half of the time limit, <br/>otherwise linearly decreasing to 1.       | ❌         | ✔️    | ❌     | ❌      |
+| Full score if took less than the time limit                                                         | ✔️        | ❌     | ✔️    | ✔️     |
+| Scores must sum up to 100                                                                           | ❌         | ✔️    | ✔️    | ❌      |
+| Limits can be set for individual tests                                                              | ✔️        | ❌     | ✔️    | ✔️     |
+| Verifies if tests are named correctly<br/> (letters within groups increase, group numbers increase) | ❌         | ✔️    | ✔️    | ✔️     |
 
 ### Reporting bugs and contributing code
 
