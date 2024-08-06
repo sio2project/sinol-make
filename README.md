@@ -104,6 +104,7 @@ There are also available short aliases for the commands:
 - `sinol-make e` for `sinol-make export`
 - `sinol-make d` for `sinol-make doc`
 - `sinol-make v` for `sinol-make verify`
+- `sinol-make c` for `sinol-make chkwer`
 - `sm` for `sinol-make`
 
 ### Contest types
