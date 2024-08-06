@@ -8,7 +8,7 @@ from enum import Enum
 from typing import List, Union, Dict, Any, Tuple, Type
 
 from sinol_make.helpers.func_cache import cache_result
-from sinol_make import util
+from sinol_make import util, contest_types
 from sinol_make.helpers import paths
 from sinol_make.task_type import BaseTaskType
 
@@ -55,7 +55,7 @@ def get_test_key(test, task_id):
 def get_config():
     try:
         with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
-            return yaml.load(config_file, Loader=yaml.FullLoader)
+            return yaml.load(config_file, Loader=yaml.FullLoader) or {}
     except FileNotFoundError:
         # Potentially redundant with util:exit_if_not_package
         util.exit_with_error("You are not in a package directory (couldn't find config.yml in current directory).")
@@ -229,7 +229,8 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
 def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], lang: str, task_id: str):
     test_id = extract_test_id(test_path, task_id)
     test_group = str(get_group(test_path, task_id))
-    allow_test_limit = config.get("sinol_undocumented_test_limits", False)
+    contest_type = contest_types.get_contest_type()
+    allow_test_limit = config.get("sinol_undocumented_test_limits", False) or contest_type.allow_per_test_limits()
     global_limit = _get_limit_from_dict(config, limit_type, test_id, test_group, test_path, allow_test_limit)
     override_limits_dict = config.get("override_limits", {}).get(lang, {})
     overriden_limit = _get_limit_from_dict(override_limits_dict, limit_type, test_id, test_group, test_path,

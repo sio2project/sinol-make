@@ -2,6 +2,7 @@ title: Package with undocumented sinol-make options
 sinol_task_id: und
 sinol_undocumented_time_tool: time
 sinol_undocumented_test_limits: true
+sinol_contest_type: oi
 memory_limit: 20480
 time_limit: 1000
 time_limits:

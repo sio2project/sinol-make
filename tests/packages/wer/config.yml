@@ -1,6 +1,7 @@
 title: Test package for veryfing inwer command
 memory_limit: 16000
 time_limit: 1000
+sinol_contest_type: oi
 
 scores:
   1: 33

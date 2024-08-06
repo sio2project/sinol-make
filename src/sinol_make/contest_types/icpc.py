@@ -38,3 +38,9 @@ class ICPCContest(DefaultContest):
 
     def max_score_per_test(self):
         return 1
+
+    def preferred_timetool(self):
+        return "time"
+
+    def verify_tests_order(self):
+        return True

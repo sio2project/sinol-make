@@ -138,3 +138,21 @@ class DefaultContest:
         Called by verify command before generating tests.
         """
         pass
+
+    def allow_per_test_limits(self):
+        """
+        Returns True if limits in config can be set per test
+        """
+        return True
+
+    def preferred_timetool(self):
+        """
+        Returns preferred time tool
+        """
+        return 'oiejq'
+
+    def verify_tests_order(self):
+        """
+        Whether to verify tests order
+        """
+        return False
