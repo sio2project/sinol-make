@@ -5,7 +5,7 @@ import pytest
 from sinol_make import configure_parsers
 from sinol_make import util as sm_util
 from sinol_make.commands.verify import Command
-from sinol_make.helpers import package_util, paths
+from sinol_make.helpers import package_util, paths, func_cache
 from tests import util
 from tests.fixtures import create_package
 
@@ -137,6 +137,7 @@ def test_expected_contest_and_no_scores(capsys, create_package):
 
     del config["scores"]
     for contest_type in ["oi", "oij"]:
+        func_cache.clear_cache()
         config["sinol_contest_type"] = contest_type
         sm_util.save_config(config)
         with pytest.raises(SystemExit) as e:

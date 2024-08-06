@@ -88,6 +88,8 @@ def test_get_time_limit():
         }
     }
 
+    with open("config.yml", "w") as f:
+        f.write("")
     assert package_util.get_time_limit("in/abc1a.in", config, "cpp", "abc") == 1000
     assert package_util.get_time_limit("in/abc2a.in", config, "cpp", "abc") == 2000
     assert package_util.get_time_limit("in/abc2b.in", config, "cpp", "abc") == 2000
@@ -158,6 +160,8 @@ def test_get_memory_limit():
         }
     }
 
+    with open("config.yml", "w") as f:
+        f.write("")
     assert package_util.get_memory_limit("in/abc1a.in", config, "cpp", "abc") == 256
     assert package_util.get_memory_limit("in/abc2a.in", config, "cpp", "abc") == 512
     assert package_util.get_memory_limit("in/abc2b.in", config, "cpp", "abc") == 512

@@ -138,3 +138,9 @@ class DefaultContest:
         Called by verify command before generating tests.
         """
         pass
+
+    def allow_per_test_limits(self):
+        """
+        Returns True if limits in config can be set per test
+        """
+        return True
