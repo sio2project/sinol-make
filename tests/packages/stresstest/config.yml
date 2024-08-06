@@ -1,7 +1,7 @@
 title: Package with stresstest.sh (for `verify` command)
 sinol_task_id: str
 time_limit: 1000
-memory_limit: 10240
+memory_limit: 50240
 
 sinol_expected_scores:
   str.cpp:

@@ -1,6 +1,6 @@
 title: Package with example tests
 sinol_task_id: exa
-memory_limit: 10240
+memory_limit: 50240
 time_limit: 1000
 
 sinol_expected_scores:
