@@ -31,3 +31,11 @@ def get_executions_path(*paths):
     With no arguments, it returns the path to the executions directory.
     """
     return os.path.join(get_cache_path("executions"), *paths)
+
+
+def get_chkwer_path(*paths):
+    """
+    Function to get a path in chkwer directory. In this directory chkwer will generate outputs.
+    Works the same as os.path.join. With no arguments, it returns the path to the chkwer directory.
+    """
+    return os.path.join(get_cache_path("chkwer"), *paths)

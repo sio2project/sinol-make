@@ -429,3 +429,10 @@ def get_task_type_cls() -> Type[BaseTaskType]:
 def get_task_type(timetool_name, timetool_path) -> BaseTaskType:
     task_type_cls = get_task_type_cls()
     return task_type_cls(timetool_name, timetool_path)
+
+
+def get_out_from_in(test) -> str:
+    """
+    Returns path to output file corresponding to given input file.
+    """
+    return os.path.join("out", os.path.splitext(os.path.basename(test))[0] + ".out")

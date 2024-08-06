@@ -96,6 +96,11 @@ class InteractiveTaskType(BaseTaskType):
         # In interactive tasks via IO output files don't exist.
         return False
 
+    @staticmethod
+    def allow_chkwer() -> bool:
+        # Probably could be implemented but sounds painful.
+        return False
+
     def _fill_result(self, result: ExecutionResult, iresult: ExecutionResult, interactor_output: List[str]):
         sol_sig = result.ExitSignal
         inter_sig = iresult.ExitSignal

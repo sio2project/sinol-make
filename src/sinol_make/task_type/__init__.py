@@ -114,6 +114,13 @@ class BaseTaskType(RegisteredSubclassesBase):
         """
         return True
 
+    @staticmethod
+    def allow_chkwer() -> bool:
+        """
+        Whether chkwer should be allowed to run.
+        """
+        return True
+
     def _output_to_fraction(self, output_str):
         if not output_str:
             return Fraction(100, 1)

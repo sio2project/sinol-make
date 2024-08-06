@@ -22,10 +22,6 @@ from sinol_make.helpers import compile, compiler, package_util, printer, paths, 
 from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
     TotalPointsChange
 
-# Required for side effects
-from sinol_make.task_type.normal import NormalTaskType # noqa
-from sinol_make.task_type.interactive import InteractiveTaskType # noqa
-
 
 def color_memory(memory, limit):
     if memory == -1: return util.color_yellow("")
@@ -330,9 +326,6 @@ class Command(BaseCommand):
             possible_score += self.scores[group]
         return possible_score
 
-    def get_output_file(self, test_path):
-        return os.path.join("out", os.path.split(os.path.splitext(test_path)[0])[1]) + ".out"
-
     def get_groups(self, tests):
         return sorted(list(set([self.get_group(test) for test in tests])))
 
@@ -390,7 +383,7 @@ class Command(BaseCommand):
         hard_time_limit = math.ceil(2 * time_limit / 1000.0)
 
         return self.task_type.run(time_limit, hard_time_limit, memory_limit, test, output_file,
-                                  self.get_output_file(test), result_file, executable, execution_dir)
+                                  package_util.get_out_from_in(test), result_file, executable, execution_dir)
 
     def run_solutions(self, compiled_commands, names, solutions, executables_dir):
         """

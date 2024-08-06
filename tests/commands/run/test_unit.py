@@ -12,8 +12,7 @@ from ...fixtures import *
 
 def test_get_output_file():
     os.chdir(get_simple_package_path())
-    command = get_command()
-    assert command.get_output_file("in/abc1a.in") == "out/abc1a.out"
+    assert package_util.get_out_from_in("in/abc1a.in") == "out/abc1a.out"
 
 
 def test_compile_solutions(create_package):
