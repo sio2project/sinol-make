@@ -100,7 +100,7 @@ def run_ingen(ingen_exe, working_dir=None):
 
     if util.has_sanitizer_error(whole_output, exit_code):
         print(util.warning('Warning: if ingen failed due to sanitizer errors, you can either run '
-                           '`sudo sysctl vm.mmap_rnd_bits = 28` to fix this or disable sanitizers with the '
+                           '`sudo sysctl vm.mmap_rnd_bits=28` to fix this or disable sanitizers with the '
                            '--no-fsanitize flag.'))
 
     return exit_code == 0
