@@ -354,8 +354,12 @@ class Command(BaseCommand):
             args = self.config.get("extra_compilation_args", {}).get(lang, [])
             if isinstance(args, str):
                 args = [args]
-            for file in args:
-                extra_compilation_args.append(os.path.join(os.getcwd(), "prog", file))
+            for arg in args:
+                path = os.path.join(os.getcwd(), "prog", arg)
+                if os.path.exists(path):
+                    extra_compilation_args.append(path)
+                else:
+                    extra_compilation_args.append(arg)
 
             for file in self.config.get("extra_compilation_files", []):
                 extra_compilation_files.append(os.path.join(os.getcwd(), "prog", file))

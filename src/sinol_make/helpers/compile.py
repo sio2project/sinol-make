@@ -137,17 +137,22 @@ def compile_file(file_path: str, name: str, compilers: Compilers, compilation_fl
 
     config = package_util.get_config()
 
-    lang = os.path.splitext(file_path)[1][1:]
-    args = config.get('extra_compilation_args', {}).get(lang, [])
-    if isinstance(args, str):
-        args = [args]
+    extra_compilation_args = []
+    extra_compilation_files = []
     if use_extras:
-        extra_compilation_args = [os.path.join(os.getcwd(), "prog", file) for file in args]
-        extra_compilation_files = [os.path.join(os.getcwd(), "prog", file)
-                                   for file in config.get("extra_compilation_files", [])]
-    else:
-        extra_compilation_args = []
-        extra_compilation_files = []
+        lang = os.path.splitext(file_path)[1][1:]
+        args = config.get("extra_compilation_args", {}).get(lang, [])
+        if isinstance(args, str):
+            args = [args]
+        for arg in args:
+            path = os.path.join(os.getcwd(), "prog", arg)
+            if os.path.exists(path):
+                extra_compilation_args.append(path)
+            else:
+                extra_compilation_args.append(arg)
+
+        for file in config.get("extra_compilation_files", []):
+            extra_compilation_files.append(os.path.join(os.getcwd(), "prog", file))
     if additional_flags is not None:
         extra_compilation_args.append(additional_flags)
 
