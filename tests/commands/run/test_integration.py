@@ -8,7 +8,7 @@ from sinol_make.helpers import cache
 from sinol_make.structs.cache_structs import CacheFile
 from ...fixtures import *
 from .util import *
-from sinol_make import configure_parsers, util, oiejq
+from sinol_make import configure_parsers, util, sio2jail
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
@@ -525,7 +525,7 @@ def test_undocumented_time_tool_option(create_package):
     assert command.timetool_path == "time"
 
 
-@pytest.mark.oiejq
+@pytest.mark.sio2jail
 @pytest.mark.parametrize("create_package", [get_undocumented_options_package_path()], indirect=True)
 def test_override_undocumented_time_tool_option(create_package):
     """
@@ -534,10 +534,10 @@ def test_override_undocumented_time_tool_option(create_package):
     package_path = create_package
     create_ins_outs(package_path)
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--time-tool", "oiejq"])
+    args = parser.parse_args(["run", "--time-tool", "sio2jail"])
     command = Command()
     command.run(args)
-    assert command.timetool_path == oiejq.get_oiejq_path()
+    assert command.timetool_path == sio2jail.get_default_sio2jail_path()
 
 
 @pytest.mark.parametrize("create_package", [get_undocumented_options_package_path()], indirect=True)
