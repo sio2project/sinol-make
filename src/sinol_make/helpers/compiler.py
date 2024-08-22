@@ -34,7 +34,7 @@ def get_c_compiler_path():
         else:
             return 'gcc'
     elif sys.platform == 'darwin':
-        for i in [9, 10, 11, 13, 14]:
+        for i in [9, 10, 11, 12, 13, 14]:
             compiler = 'gcc-' + str(i)
             if check_if_installed(compiler):
                 return compiler
