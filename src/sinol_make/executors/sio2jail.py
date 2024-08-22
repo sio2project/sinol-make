@@ -25,8 +25,10 @@ class Sio2jailExecutor(BaseExecutor):
                  result_file_path: str, executable: str, execution_dir: str, stdin: int, stdout: int,
                  stderr: Union[None, int], fds_to_close: Union[None, List[int]],
                  *args, **kwargs) -> Tuple[bool, bool, int, List[str]]:
+        env = os.environ.copy()
+        env['UNDER_SIO2JAIL'] = 1
         with open(result_file_path, "w") as result_file:
-            process = subprocess.Popen(' '.join(command), *args, shell=True, stdin=stdin, stdout=stdout,
+            process = subprocess.Popen(' '.join(command), *args, shell=True, stdin=stdin, stdout=stdout, env=env,
                                        stderr=result_file, preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
             if fds_to_close is not None:
                 for fd in fds_to_close:

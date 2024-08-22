@@ -80,7 +80,7 @@ def test_perf_counters_set():
 @pytest.mark.github_runner
 def test_updating():
     """
-    Test updating oiejq
+    Test updating sio2jail
     """
     if sys.platform != 'linux':
         return
