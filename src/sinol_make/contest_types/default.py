@@ -149,7 +149,7 @@ class DefaultContest:
         """
         Returns preferred time tool
         """
-        return 'oiejq'
+        return 'sio2jail'
 
     def verify_tests_order(self):
         """

@@ -4,7 +4,7 @@ from fractions import Fraction
 from typing import Tuple, List, Type
 
 from sinol_make import util
-from sinol_make.executors.oiejq import OiejqExecutor
+from sinol_make.executors.sio2jail import Sio2jailExecutor
 from sinol_make.executors.time import TimeExecutor
 from sinol_make.helpers import package_util, paths, cache
 from sinol_make.helpers.classinit import RegisteredSubclassesBase
@@ -54,17 +54,17 @@ class BaseTaskType(RegisteredSubclassesBase):
         with open(paths.get_cache_path("task_type"), "w") as f:
             f.write(name)
 
-    def __init__(self, timetool, oiejq_path):
+    def __init__(self, timetool, sio2jail_path):
         super().__init__()
         self.timetool = timetool
-        self.oiejq_path = oiejq_path
+        self.sio2jail_path = sio2jail_path
         self.has_checker = False
         self.checker_path = None
 
         if self.timetool == 'time':
             self.executor = TimeExecutor()
-        elif self.timetool == 'oiejq':
-            self.executor = OiejqExecutor(oiejq_path)
+        elif self.timetool == 'sio2jail':
+            self.executor = Sio2jailExecutor(sio2jail_path)
         else:
             util.exit_with_error(f"Unknown timetool {self.timetool}")
         self._check_task_type_changed()

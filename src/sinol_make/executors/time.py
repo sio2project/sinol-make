@@ -12,7 +12,7 @@ from sinol_make.structs.status_structs import ExecutionResult, Status
 
 
 class TimeExecutor(BaseExecutor):
-    def _wrap_command(self, command: List[str], result_file_path: str) -> List[str]:
+    def _wrap_command(self, command: List[str], result_file_path: str, time_limit: int, memory_limit: int) -> List[str]:
         if sys.platform == 'darwin':
             time_name = 'gtime'
         elif sys.platform == 'linux':

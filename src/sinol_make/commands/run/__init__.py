@@ -13,7 +13,7 @@ import multiprocessing as mp
 from io import StringIO
 from typing import Dict
 
-from sinol_make import contest_types, oiejq, util
+from sinol_make import contest_types, util, sio2jail
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -276,11 +276,11 @@ class Command(BaseCommand):
             description='Runs selected solutions (by default all solutions) \
                 on selected tests (by default all tests) \
                 with a given number of cpus. \
-                Measures the solutions\' time with oiejq, unless specified otherwise. \
+                Measures the solutions\' time with sio2jail, unless specified otherwise. \
                 After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
         )
 
-        default_timetool = 'oiejq' if util.is_linux() else 'time'
+        default_timetool = 'sio2jail' if util.is_linux() else 'time'
 
         parser.add_argument('-s', '--solutions', type=str, nargs='+',
                             help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
@@ -291,10 +291,10 @@ class Command(BaseCommand):
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
                             help='hide memory usage in report')
-        parser.add_argument('-T', '--time-tool', dest='time_tool', choices=['oiejq', 'time'],
+        parser.add_argument('-T', '--time-tool', dest='time_tool', choices=['sio2jail', 'time'],
                             help=f'tool to measure time and memory usage (default: {default_timetool})')
-        parser.add_argument('--oiejq-path', dest='oiejq_path', type=str,
-                            help='path to oiejq executable (default: `~/.local/bin/oiejq`)')
+        parser.add_argument('--sio2jail-path', dest='sio2jail_path', type=str,
+                            help='path to sio2jail executable (default: `~/.local/bin/sio2jail`)')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
                             help='apply suggestions from expected scores report')
         parser.add_argument('--ignore-expected', dest='ignore_expected', action='store_true',
@@ -765,26 +765,26 @@ class Command(BaseCommand):
     def validate_arguments(self, args):
         compilers = compiler.verify_compilers(args, package_util.get_solutions(self.ID, None))
 
-        def use_oiejq():
+        def use_sio2jail():
             timetool_path = None
             if not util.is_linux():
-                util.exit_with_error('As `oiejq` works only on Linux-based operating systems,\n'
-                                     'we do not recommend using operating systems such as Windows or macOS.\n'
+                util.exit_with_error('As `sio2jail` works only on Linux-based operating systems,\n'
+                                     'we do not recommend using operating systems such as macOS.\n'
                                      'Nevertheless, you can still run sinol-make by specifying\n'
                                      'another way of measuring time through the `--time-tool` flag.\n'
                                      'See `sinol-make run --help` for more information about the flag.\n'
-                                     'See https://github.com/sio2project/sinol-make#why for more information about `oiejq`.\n')
+                                     'See https://github.com/sio2project/sinol-make#why for more information about `sio2jail`.\n')
 
-            oiejq.check_perf_counters_enabled()
-            if 'oiejq_path' in args and args.oiejq_path is not None:
-                if not oiejq.check_oiejq(args.oiejq_path):
-                    util.exit_with_error('Invalid oiejq path.')
-                timetool_path = args.oiejq_path
+            sio2jail.check_perf_counters_enabled()
+            if 'sio2jail_path' in args and args.sio2jail_path is not None:
+                if not sio2jail.check_sio2jail(args.sio2jail_path):
+                    util.exit_with_error('Invalid `sio2jail` path.')
+                timetool_path = args.sio2jail_path
             else:
-                timetool_path = oiejq.get_oiejq_path()
+                timetool_path = sio2jail.get_default_sio2jail_path()
             if timetool_path is None:
-                util.exit_with_error('oiejq is not installed.')
-            return timetool_path, 'oiejq'
+                util.exit_with_error('`sio2jail` is not installed.')
+            return timetool_path, 'sio2jail'
         def use_time():
             if sys.platform == 'win32' or sys.platform == 'cygwin':
                 util.exit_with_error('Measuring with `time` is not supported on Windows.')
@@ -792,24 +792,24 @@ class Command(BaseCommand):
 
         timetool_path, timetool_name = None, None
         preferred_timetool = self.contest.preferred_timetool()
-        if preferred_timetool == 'oiejq' and util.is_linux():
-            use_default_timetool = use_oiejq
+        if preferred_timetool == 'sio2jail' and util.is_linux():
+            use_default_timetool = use_sio2jail
         elif preferred_timetool == 'time':
             use_default_timetool = use_time
         else:
-            use_default_timetool = use_oiejq if util.is_linux() else use_time
+            use_default_timetool = use_sio2jail if util.is_linux() else use_time
 
         if args.time_tool is None and self.config.get('sinol_undocumented_time_tool', '') != '':
-            if self.config.get('sinol_undocumented_time_tool', '') == 'oiejq':
-                timetool_path, timetool_name = use_oiejq()
+            if self.config.get('sinol_undocumented_time_tool', '') == 'sio2jail':
+                timetool_path, timetool_name = use_sio2jail()
             elif self.config.get('sinol_undocumented_time_tool', '') == 'time':
                 timetool_path, timetool_name = use_time()
             else:
                 util.exit_with_error('Invalid time tool specified in config.yml.')
         elif args.time_tool is None:
             timetool_path, timetool_name = use_default_timetool()
-        elif args.time_tool == 'oiejq':
-            timetool_path, timetool_name = use_oiejq()
+        elif args.time_tool == 'sio2jail':
+            timetool_path, timetool_name = use_sio2jail()
         elif args.time_tool == 'time':
             timetool_path, timetool_name = use_time()
         else:

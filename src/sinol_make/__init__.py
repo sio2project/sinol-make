@@ -4,7 +4,7 @@ import argparse
 import traceback
 import argcomplete
 
-from sinol_make import util, oiejq
+from sinol_make import util, sio2jail
 
 # Required for side effects
 from sinol_make.task_type.normal import NormalTaskType # noqa
@@ -36,19 +36,19 @@ def configure_parsers():
     return parser
 
 
-def check_oiejq():
-    if util.is_linux() and not oiejq.check_oiejq():
-        print(util.warning('Up to date `oiejq` in `~/.local/bin/` not found, installing new version...'))
+def check_sio2jail():
+    if util.is_linux() and not sio2jail.check_sio2jail():
+        print(util.warning('Up to date `sio2jail` in `~/.local/bin/` not found, installing new version...'))
         try:
-            if oiejq.install_oiejq():
-                print(util.info('`oiejq` was successfully installed.'))
+            if sio2jail.install_sio2jail():
+                print(util.info('Newest `sio2jail` was successfully installed.'))
             else:
-                util.exit_with_error('`oiejq` could not be installed.\n'
-                                     'You can download it from https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz, '
-                                     'unpack it to `~/.local/bin/` and rename oiejq.sh to oiejq.\n'
-                                     'You can also use --oiejq-path to specify path to your oiejq.')
+                util.exit_with_error('`sio2jail` could not be installed.\n'
+                                     'You can download it from https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz '
+                                     'and unpack it to `~/.local/bin/`.\n'
+                                     'You can also use --sio2jail-path to specify path to your sio2jail.')
         except Exception as err:
-            util.exit_with_error('`oiejq` could not be installed.\n' + str(err))
+            util.exit_with_error('`sio2jail` could not be installed.\n' + str(err))
 
 
 def main_exn():
@@ -74,7 +74,7 @@ def main_exn():
     if not arguments:
         parser.print_help()
         exit(1)
-    check_oiejq()
+    check_sio2jail()
 
     for curr_args in arguments:
         args = parser.parse_args(curr_args)

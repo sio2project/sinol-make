@@ -12,7 +12,7 @@ class BaseExecutor:
     def __init__(self):
         pass
 
-    def _wrap_command(self, command: List[str], result_file_path: str) -> List[str]:
+    def _wrap_command(self, command: List[str], result_file_path: str, time_limit: int, memory_limit: int) -> List[str]:
         """
         Wraps the command with the necessary tools to measure time and memory usage.
         """
@@ -44,7 +44,7 @@ class BaseExecutor:
         Executes the command and returns the result, stdout and stderr.
         """
 
-        command = self._wrap_command(command, result_file_path)
+        command = self._wrap_command(command, result_file_path, time_limit, memory_limit)
         tle, mle, return_code, proc_stderr = self._execute(command, time_limit, hard_time_limit, memory_limit,
                                                            result_file_path, executable, execution_dir, stdin, stdout,
                                                            stderr, fds_to_close, *args, **kwargs)
