@@ -14,7 +14,7 @@ jobs:
     container:
       image: archlinux:latest
       volumes:
-        - /home/actions/oiejq:/github/home/.local/bin
+        - /home/actions/sio2jail:/github/home/.local/bin
       options:
         --privileged
     steps:
