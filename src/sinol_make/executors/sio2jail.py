@@ -4,6 +4,7 @@ import subprocess
 import sys
 from typing import List, Tuple, Union
 
+from sinol_make import util
 from sinol_make.executors import BaseExecutor
 from sinol_make.structs.status_structs import ExecutionResult, Status
 
@@ -28,8 +29,12 @@ class Sio2jailExecutor(BaseExecutor):
         env = os.environ.copy()
         env['UNDER_SIO2JAIL'] = 1
         with open(result_file_path, "w") as result_file:
-            process = subprocess.Popen(' '.join(command), *args, shell=True, stdin=stdin, stdout=stdout, env=env,
-                                       stderr=result_file, preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
+            try:
+                process = subprocess.Popen(' '.join(command), *args, shell=True, stdin=stdin, stdout=stdout, env=env,
+                                           stderr=result_file, preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
+            except TypeError as e:
+                print(util.error("Invalid command: " + str(command)))
+                raise e
             if fds_to_close is not None:
                 for fd in fds_to_close:
                     os.close(fd)
