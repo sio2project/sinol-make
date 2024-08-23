@@ -34,7 +34,7 @@ def get_c_compiler_path():
         else:
             return 'gcc'
     elif sys.platform == 'darwin':
-        for i in [9, 10, 11]:
+        for i in [9, 10, 11, 12, 13, 14]:
             compiler = 'gcc-' + str(i)
             if check_if_installed(compiler):
                 return compiler
@@ -56,7 +56,7 @@ def get_cpp_compiler_path():
     elif sys.platform == 'darwin':
         if check_if_installed('g++-12'):  # g++12 is currently the default compiler on sio.
             return 'g++-12'
-        for i in [9, 10, 11]:
+        for i in [9, 10, 11, 13, 14]:
             compiler = 'g++-' + str(i)
             if check_if_installed(compiler):
                 return compiler
