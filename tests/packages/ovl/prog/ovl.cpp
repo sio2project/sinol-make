@@ -12,7 +12,7 @@ void s2j_wait(long long instructions) {
 }
 
 int wait(int secs) {
-    if (getenv("UNDER_OIEJQ") != NULL) {
+    if (getenv("UNDER_SIO2JAIL") != NULL) {
         s2j_wait((long long)secs * 2'000'000'000);
         return 0;
     }

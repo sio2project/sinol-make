@@ -14,7 +14,7 @@ class DetailedExecutor(BaseExecutor):
     Executor which doesn't use time or sio2jail for measuring time and memory usage.
     """
 
-    def _wrap_command(self, command: List[str], result_file_path: str) -> List[str]:
+    def _wrap_command(self, command: List[str], result_file_path: str, time_limit: int, memory_limit: int) -> List[str]:
         return command
 
     def _execute(self, command: List[str], time_limit: int, hard_time_limit: int, memory_limit: int,

@@ -31,7 +31,7 @@ def pytest_addoption(parser):
     parser.addoption("--github-runner", action="store_true", help="if set, will run tests specified for GitHub runner")
     parser.addoption(
         '--time-tool',
-        choices=['oiejq', 'time'],
+        choices=['sio2jail', 'time'],
         action='append',
         default=[],
         help='Time tool to use. Default: if linux - both, otherwise time'
@@ -93,7 +93,7 @@ def pytest_generate_tests(metafunc):
         if metafunc.config.getoption("time_tool") != []:
             time_tools = metafunc.config.getoption("time_tool")
         elif util.is_linux():
-            time_tools = ["oiejq", "time"]
+            time_tools = ["sio2jail", "time"]
         else:
             time_tools = ["time"]
         metafunc.parametrize("time_tool", time_tools)
@@ -110,7 +110,7 @@ def pytest_collection_modifyitems(config, items: List[pytest.Item]):
                 item.add_marker(pytest.mark.skip(reason="only for GitHub runner"))
 
     for item in items:
-        if "oiejq" in item.keywords:
+        if "sio2jail" in item.keywords:
             if not util.is_linux() or config.getoption("--time-tool") == ["time"] or \
                     config.getoption("--github-runner"):
-                item.add_marker(pytest.mark.skip(reason="oiejq required"))
+                item.add_marker(pytest.mark.skip(reason="sio2jail required"))

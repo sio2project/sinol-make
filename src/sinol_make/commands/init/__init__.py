@@ -38,7 +38,8 @@ class Command(BaseCommand):
         if ret.returncode != 0:
             util.exit_with_error("Could not access repository. Please try again.")
         path = os.path.join(tmp_dir, package_dir)
-        shutil.rmtree(os.path.join(path, '.git'))
+        if os.path.exists(os.path.join(path, '.git')):
+            shutil.rmtree(os.path.join(path, '.git'))
         return path
 
     def move_folder(self):

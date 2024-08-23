@@ -1,6 +1,6 @@
 import argparse, re, yaml
 
-from sinol_make import util, oiejq
+from sinol_make import util, sio2jail
 from sinol_make.structs.status_structs import Status, ResultChange, ValidationResult
 from sinol_make.helpers import package_util
 from sinol_make.task_type.normal import NormalTaskType
@@ -28,7 +28,7 @@ def test_execution(create_package, time_tool):
     command = get_command(package_path)
     command.args.time_tool = time_tool
     command.timetool_name = time_tool
-    command.task_type = NormalTaskType(timetool=time_tool, oiejq_path=oiejq.get_oiejq_path())
+    command.task_type = NormalTaskType(timetool=time_tool, sio2jail_path=sio2jail.get_default_sio2jail_path())
     solution = "abc.cpp"
     executable = package_util.get_executable(solution)
     result = command.compile_solutions([solution])
@@ -42,7 +42,7 @@ def test_execution(create_package, time_tool):
 
     os.makedirs(paths.get_executions_path(solution), exist_ok=True)
     result = command.run_solution((solution, paths.get_executables_path(executable), test, config['time_limit'],
-                                   config['memory_limit'], oiejq.get_oiejq_path(), paths.get_executions_path()))
+                                   config['memory_limit'], sio2jail.get_default_sio2jail_path(), paths.get_executions_path()))
     assert result.Status == Status.OK
 
 
@@ -59,9 +59,9 @@ def test_run_solutions(create_package, time_tool):
     command.possible_score = command.get_possible_score(command.groups)
     command.memory_limit = command.config["memory_limit"]
     command.time_limit = command.config["time_limit"]
-    command.timetool_path = oiejq.get_oiejq_path()
+    command.timetool_path = sio2jail.get_default_sio2jail_path()
     command.timetool_name = time_tool
-    command.task_type = NormalTaskType(timetool=time_tool, oiejq_path=oiejq.get_oiejq_path())
+    command.task_type = NormalTaskType(timetool=time_tool, sio2jail_path=sio2jail.get_default_sio2jail_path())
     def flatten_results(results):
         new_results = {}
         for solution in results.keys():
