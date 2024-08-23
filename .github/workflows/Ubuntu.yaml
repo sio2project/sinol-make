@@ -41,4 +41,4 @@ jobs:
         env:
           PYTEST_ADDOPTS: "--color=yes"
         run: |
-          python3 -m pytest -v
+          python3 -m pytest -v -n $((`nproc` / 2))
