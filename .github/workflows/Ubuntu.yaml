@@ -14,7 +14,7 @@ jobs:
     container:
       image: ubuntu:latest
       volumes:
-        - /home/actions/sio2jail:/github/home/.local/bin
+        - /home/actions/oiejq:/github/home/.local/bin
       env:
         DEB_PYTHON_INSTALL_LAYOUT: deb
         DEBIAN_FRONTEND: noninteractive
