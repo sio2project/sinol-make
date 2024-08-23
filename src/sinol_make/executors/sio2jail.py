@@ -27,7 +27,7 @@ class Sio2jailExecutor(BaseExecutor):
                  stderr: Union[None, int], fds_to_close: Union[None, List[int]],
                  *args, **kwargs) -> Tuple[bool, bool, int, List[str]]:
         env = os.environ.copy()
-        env['UNDER_SIO2JAIL'] = 1
+        env['UNDER_SIO2JAIL'] = "1"
         with open(result_file_path, "w") as result_file:
             try:
                 process = subprocess.Popen(' '.join(command), *args, shell=True, stdin=stdin, stdout=stdout, env=env,
