@@ -103,6 +103,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     else:
         raise CompilationError('Unknown file extension: ' + ext)
 
+    print("compilation arguments", arguments)
     process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = process.communicate()
     if compile_log is not None:
