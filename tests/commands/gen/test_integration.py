@@ -208,6 +208,7 @@ def test_missing_output_files(create_package):
         assert os.path.exists(outs[0])
         shutil.rmtree(paths.get_cache_path())
         os.unlink(os.path.join(package_path, "in", ".md5sums"))
+        cache.create_cache_dirs()
 
 
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],

@@ -8,7 +8,7 @@ import fnmatch
 import multiprocessing as mp
 
 from sinol_make import util
-from sinol_make.helpers import compile, paths
+from sinol_make.helpers import compile, paths, cache
 from sinol_make.interfaces.Errors import CompilationError
 
 
@@ -69,6 +69,11 @@ def pytest_configure(config):
 
     # We remove tests cache as it may interfere with testing.
     for package in packages:
+        cwd = os.getcwd()
+        os.chdir(package)
+        cache.create_cache_dirs()
+        os.chdir(cwd)
+
         for md5sum_file in glob.glob(os.path.join(package, ".cache", "md5sums", "*")):
             try:
                 with open(md5sum_file, "r") as f:
