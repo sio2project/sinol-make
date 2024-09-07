@@ -109,6 +109,10 @@ def save_config(config):
             "default_flow_style": None
         },
         {
+            "key": "extra_execution_files",
+            "default_flow_style": None
+        },
+        {
             "key": "sinol_expected_scores",
             "default_flow_style": None
         },
