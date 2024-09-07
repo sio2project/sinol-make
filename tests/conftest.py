@@ -48,6 +48,11 @@ def pytest_configure(config):
 
         files_to_compile = []
         for package in packages:
+            cwd = os.getcwd()
+            os.chdir(package)
+            cache.create_cache_dirs()
+            os.chdir(cwd)
+
             if os.path.exists(os.path.join(package, "no-precompile")):
                 print(f'Skipping precompilation for {package} due to no-precompile file')
                 continue
@@ -69,11 +74,6 @@ def pytest_configure(config):
 
     # We remove tests cache as it may interfere with testing.
     for package in packages:
-        cwd = os.getcwd()
-        os.chdir(package)
-        cache.create_cache_dirs()
-        os.chdir(cwd)
-
         for md5sum_file in glob.glob(os.path.join(package, ".cache", "md5sums", "*")):
             try:
                 with open(md5sum_file, "r") as f:
