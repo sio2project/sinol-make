@@ -5,6 +5,7 @@ import traceback
 import argcomplete
 
 from sinol_make import util, sio2jail
+from sinol_make.helpers import cache
 
 # Required for side effects
 from sinol_make.task_type.normal import NormalTaskType # noqa
@@ -82,6 +83,7 @@ def main_exn():
         if command:
             if len(arguments) > 1:
                 print(f' {command.get_name()} command '.center(util.get_terminal_size()[1], '='))
+            cache.create_cache_dirs()
             command.run(args)
         else:
             parser.print_help()

@@ -64,7 +64,6 @@ class Command(BaseCommand):
         return RunResult(execution.in_test_path, ok, int(points), comment)
 
     def run_and_print_table(self) -> Dict[str, TestResult]:
-        os.makedirs(paths.get_chkwer_path(), exist_ok=True)
         results = {}
         sorted_tests = sorted(self.tests, key=lambda test: package_util.get_group(test, self.task_id))
         executions: List[ChkwerExecution] = []

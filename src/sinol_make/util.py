@@ -220,7 +220,6 @@ def check_version():
     except PermissionError:
         if find_and_chdir_package():
             try:
-                os.makedirs(paths.get_cache_path(), exist_ok=True)
                 with open(paths.get_cache_path("sinol_make_version"), "w") as f:
                     f.write(latest_version)
             except PermissionError:

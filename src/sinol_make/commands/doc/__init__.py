@@ -62,7 +62,6 @@ class Command(BaseCommand):
 
     def move_logs(self):
         output_dir = paths.get_cache_path('doc_logs')
-        os.makedirs(output_dir, exist_ok=True)
         for pattern in self.LOG_PATTERNS:
             for file in glob.glob(os.path.join(os.getcwd(), 'doc', pattern)):
                 os.rename(file, os.path.join(output_dir, os.path.basename(file)))

@@ -330,8 +330,6 @@ class Command(BaseCommand):
         return sorted(list(set([self.get_group(test) for test in tests])))
 
     def compile_solutions(self, solutions):
-        os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
-        os.makedirs(paths.get_executables_path(), exist_ok=True)
         print("Compiling %d solutions..." % len(solutions))
         args = [(solution, None, True, False, None) for solution in solutions]
         with mp.Pool(self.cpus) as pool:
@@ -492,7 +490,6 @@ class Command(BaseCommand):
         for i in range(len(solutions)):
             if not compilation_results[i]:
                 self.failed_compilations.append(solutions[i])
-        os.makedirs(paths.get_executions_path(), exist_ok=True)
         executables = [paths.get_executables_path(package_util.get_executable(solution)) for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
         names = solutions
@@ -932,8 +929,6 @@ class Command(BaseCommand):
 
     def compile_additional_files(self):
         additional_files = self.task_type.additional_files_to_compile()
-        os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
-        os.makedirs(paths.get_executables_path(), exist_ok=True)
         for file, dest, name, clear_cache, fail_on_error in additional_files:
             print(f"Compiling {name}...")
             success = self.compile(file, dest, False, clear_cache, name)

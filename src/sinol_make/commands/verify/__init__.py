@@ -5,7 +5,7 @@ import argparse
 import subprocess
 
 from sinol_make import util, contest_types
-from sinol_make.helpers import parsers, package_util, paths
+from sinol_make.helpers import parsers, package_util, paths, cache
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.gen import Command as GenCommand
 from sinol_make.commands.doc import Command as DocCommand
@@ -58,11 +58,12 @@ class Command(BaseCommand):
 
     def remove_cache(self):
         """
-        Remove whole cache dir
+        Remove whole cache dir, but keep the directories.
         """
         cache_dir = paths.get_cache_path()
         if os.path.exists(cache_dir):
             shutil.rmtree(cache_dir)
+        cache.create_cache_dirs()
 
     def check_extra_files(self):
         """

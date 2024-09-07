@@ -353,7 +353,6 @@ def save_contest_type_to_cache(contest_type):
     Saves contest type to cache.
     :param contest_type: Contest type.
     """
-    os.makedirs(paths.get_cache_path(), exist_ok=True)
     with open(paths.get_cache_path("contest_type"), "w") as contest_type_file:
         contest_type_file.write(contest_type)
 
