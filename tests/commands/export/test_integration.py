@@ -10,7 +10,7 @@ import tempfile
 from sinol_make import configure_parsers
 from sinol_make import util as sinol_util
 from sinol_make.commands.doc import Command as DocCommand
-from sinol_make.helpers import paths
+from sinol_make.helpers import paths, cache
 from tests import util
 from tests.fixtures import create_package
 from .util import *
@@ -54,6 +54,7 @@ def _set_contest_type(contest_type):
         os.remove(f'{task_id}.tgz')
     if os.path.exists(paths.get_cache_path()):
         shutil.rmtree(paths.get_cache_path())
+    cache.create_cache_dirs()
 
 
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path(), util.get_library_package_path(),

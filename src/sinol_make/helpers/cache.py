@@ -13,7 +13,6 @@ def get_cache_file(solution_path: str) -> CacheFile:
     :param solution_path: Path to solution
     :return: Content of cache file
     """
-    os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
     cache_file_path = paths.get_cache_path("md5sums", os.path.basename(solution_path))
     try:
         with open(cache_file_path, 'r') as cache_file:
@@ -143,7 +142,6 @@ def check_can_access_cache():
     Checks if user can access cache.
     """
     try:
-        os.makedirs(paths.get_cache_path(), exist_ok=True)
         with open(paths.get_cache_path("test"), "w") as f:
             f.write("test")
         os.unlink(paths.get_cache_path("test"))
@@ -177,3 +175,19 @@ def check_correct_solution(task_id: str):
 
     if has_file_changed(solution) and os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
         os.unlink(os.path.join(os.getcwd(), 'in', '.md5sums'))
+
+
+def create_cache_dirs():
+    """
+    Creates all required cache directories.
+    """
+    for dir in [
+        paths.get_cache_path(),
+        paths.get_executables_path(),
+        paths.get_compilation_log_path(),
+        paths.get_executions_path(),
+        paths.get_chkwer_path(),
+        paths.get_cache_path('md5sums'),
+        paths.get_cache_path('doc_logs'),
+    ]:
+        os.makedirs(dir, exist_ok=True)

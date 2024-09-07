@@ -132,9 +132,6 @@ def compile_file(file_path: str, name: str, compilers: Compilers, compilation_fl
     :param use_extras: Whether to use extra compilation files and arguments from config
     :return: Tuple of (executable path or None if compilation failed, log path)
     """
-    os.makedirs(paths.get_executables_path(), exist_ok=True)
-    os.makedirs(paths.get_compilation_log_path(), exist_ok=True)
-
     config = package_util.get_config()
 
     extra_compilation_args = []

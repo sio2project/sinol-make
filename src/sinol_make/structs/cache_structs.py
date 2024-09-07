@@ -84,6 +84,5 @@ class CacheFile:
         )
 
     def save(self, solution_path: str):
-        os.makedirs(paths.get_cache_path("md5sums"), exist_ok=True)
         with open(paths.get_cache_path("md5sums", os.path.basename(solution_path)), 'w') as cache_file:
             yaml.dump(self.to_dict(), cache_file)

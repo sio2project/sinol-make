@@ -1,11 +1,13 @@
 import os
 import shutil
+from linecache import cache
+
 import pytest
 
 from sinol_make import configure_parsers
 from sinol_make import util as sm_util
 from sinol_make.commands.verify import Command
-from sinol_make.helpers import package_util, paths, func_cache
+from sinol_make.helpers import package_util, paths, func_cache, cache
 from tests import util
 from tests.fixtures import create_package
 
@@ -112,6 +114,7 @@ def test_scores_not_100(capsys, create_package):
     for contest_type in ["oi", "oij"]:
         if os.path.exists(paths.get_cache_path()):
             shutil.rmtree(paths.get_cache_path())
+            cache.create_cache_dirs()
         config = package_util.get_config()
         config["sinol_contest_type"] = contest_type
         sm_util.save_config(config)
