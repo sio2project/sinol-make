@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   build-and-publish:
     name: Build and publish to PyPi
@@ -23,6 +26,11 @@ jobs:
       - name: Build
         run: |
           python3 -m build --sdist --wheel --outdir dist/ .
+      - name: Upload to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.ref }} dist/*
       - name: Publish
 #        if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
