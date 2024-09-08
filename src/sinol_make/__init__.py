@@ -12,7 +12,7 @@ from sinol_make.task_type.normal import NormalTaskType # noqa
 from sinol_make.task_type.interactive import InteractiveTaskType # noqa
 
 
-__version__ = "1.8.1"
+__version__ = "1.8.2"
 
 
 def configure_parsers():
@@ -83,7 +83,6 @@ def main_exn():
         if command:
             if len(arguments) > 1:
                 print(f' {command.get_name()} command '.center(util.get_terminal_size()[1], '='))
-            cache.create_cache_dirs()
             command.run(args)
         else:
             parser.print_help()

@@ -74,6 +74,7 @@ def exit_if_not_package():
     """
     if not find_and_chdir_package():
         exit_with_error('You are not in a package directory (couldn\'t find config.yml in current directory).')
+    cache.create_cache_dirs()
     cache.check_can_access_cache()
 
 
