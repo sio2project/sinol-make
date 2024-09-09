@@ -5,7 +5,7 @@ import traceback
 import argcomplete
 
 from sinol_make import util, sio2jail
-from sinol_make.helpers import cache
+from sinol_make.helpers import cache, oicompare
 
 # Required for side effects
 from sinol_make.task_type.normal import NormalTaskType # noqa
@@ -76,6 +76,7 @@ def main_exn():
         parser.print_help()
         exit(1)
     check_sio2jail()
+    oicompare.check_and_download()
 
     for curr_args in arguments:
         args = parser.parse_args(curr_args)

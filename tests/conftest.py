@@ -8,7 +8,7 @@ import fnmatch
 import multiprocessing as mp
 
 from sinol_make import util
-from sinol_make.helpers import compile, paths, cache
+from sinol_make.helpers import compile, paths, cache, oicompare
 from sinol_make.interfaces.Errors import CompilationError
 
 
@@ -90,6 +90,8 @@ def pytest_configure(config):
                     os.unlink(md5sum_file)
             except FileNotFoundError:
                 pass
+
+    oicompare.check_and_download()
 
 
 def pytest_generate_tests(metafunc):
