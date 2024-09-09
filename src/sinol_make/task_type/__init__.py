@@ -6,7 +6,7 @@ from typing import Tuple, List, Type
 from sinol_make import util
 from sinol_make.executors.sio2jail import Sio2jailExecutor
 from sinol_make.executors.time import TimeExecutor
-from sinol_make.helpers import package_util, paths, cache
+from sinol_make.helpers import package_util, paths, cache, oicompare
 from sinol_make.helpers.classinit import RegisteredSubclassesBase
 from sinol_make.interfaces.Errors import CheckerException
 from sinol_make.structs.status_structs import ExecutionResult
@@ -162,6 +162,23 @@ class BaseTaskType(RegisteredSubclassesBase):
         else:
             return False, Fraction(0, 1), ""
 
+    def _run_oicompare(self, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str]:
+        path = oicompare.get_path()
+        proc = subprocess.Popen([path, output_file_path, answer_file_path, 'english_abbreviated'],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc.wait()
+        output, stderr = proc.communicate()
+        if proc.returncode == 0:
+            return True, Fraction(100, 1), ""
+        elif proc.returncode == 1:
+            return False, Fraction(0, 1), output.decode('utf-8').strip()
+        else:
+            raise CheckerException(f"!!! oicompare failed with code {proc.returncode}. This is a huge bug, please report"
+                                   f" it here https://github.com/sio2project/sinol-make/issues/new/choose and provide "
+                                   f"these files: {output_file_path}, {answer_file_path}.\n"
+                                   f"Output: {output.decode('utf-8').strip()}\n"
+                                   f"Stderr: {stderr.decode('utf-8').strip()}")
+
     def check_output(self, input_file_path, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str]:
         """
         Runs the checker (or runs diff) and returns a tuple of three values:
@@ -171,6 +188,8 @@ class BaseTaskType(RegisteredSubclassesBase):
         """
         if self.has_checker:
             return self._run_checker(input_file_path, output_file_path, answer_file_path)
+        elif oicompare.check_installed():
+            return self._run_oicompare(output_file_path, answer_file_path)
         else:
             return self._run_diff(output_file_path, answer_file_path)
 
