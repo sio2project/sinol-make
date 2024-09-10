@@ -12,7 +12,7 @@ from sinol_make.task_type.normal import NormalTaskType # noqa
 from sinol_make.task_type.interactive import InteractiveTaskType # noqa
 
 
-__version__ = "1.8.3"
+__version__ = "1.8.4"
 
 
 def configure_parsers():
