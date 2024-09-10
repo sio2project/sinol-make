@@ -49,6 +49,9 @@ def download_oicomapare():
 
 
 def check_and_download():
+    # macOS doesn't allow compiling statically and I don't want to deal with it
+    if util.is_macos():
+        return
     if check_installed():
         return
     download_oicomapare()
