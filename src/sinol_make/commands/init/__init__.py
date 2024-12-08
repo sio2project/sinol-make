@@ -114,9 +114,9 @@ class Command(BaseCommand):
             self.move_folder()
             self.update_task_id()
 
-            self.used_tmpdir.cleanup()
-
             print(util.info(f'Successfully created task "{self.task_id}"'))
         except:
             shutil.rmtree(destination)
             raise
+        finally:
+            self.used_tmpdir.cleanup()
