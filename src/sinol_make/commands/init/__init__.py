@@ -70,6 +70,9 @@ class Command(BaseCommand):
                         raise
             for file in files:
                 dest_filename = file
+                # TODO: remove the old 'abc' template
+                if file[:3] == 'abc':
+                    dest_filename = self.task_id + file[3:]
                 if file[:len(self.TEMPLATE_ID)] == self.TEMPLATE_ID:
                     dest_filename = self.task_id + file[len(self.TEMPLATE_ID):]
                 shutil.move(os.path.join(root, file), os.path.join(mapping[root], dest_filename))
@@ -84,6 +87,8 @@ class Command(BaseCommand):
                     except UnicodeDecodeError:
                         # ignore non-text files
                         continue
+                # TODO: remove the old "abc" template
+                file_data = file_data.replace('abc', self.task_id)
                 file_data = file_data.replace(self.TEMPLATE_ID, self.task_id)
 
                 with open(path, 'w') as file:
@@ -104,7 +109,7 @@ class Command(BaseCommand):
                                      f"or use the --force flag to overwrite.")
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
-                self.template_dir = self.download_template(tmpdir.name, args.template, args.verbose)
+                self.template_dir = self.download_template(tmpdir, args.template, args.verbose)
 
                 os.chdir(destination)
 
