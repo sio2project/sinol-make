@@ -38,7 +38,7 @@ def configure_parsers():
 
 
 def check_sio2jail():
-    if util.is_linux() and not sio2jail.check_sio2jail():
+    if sio2jail.sio2jail_supported() and not sio2jail.check_sio2jail():
         print(util.warning('Up to date `sio2jail` in `~/.local/bin/` not found, installing new version...'))
         try:
             if sio2jail.install_sio2jail():

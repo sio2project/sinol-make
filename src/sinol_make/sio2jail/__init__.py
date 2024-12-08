@@ -77,7 +77,7 @@ def check_perf_counters_enabled():
     Checks if `kernel.perf_event_paranoid` is set to -1.
     :return:
     """
-    if not util.is_linux() or not check_sio2jail():
+    if not sio2jail_supported() or not check_sio2jail():
         return
 
     sio2jail = get_default_sio2jail_path()
