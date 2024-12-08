@@ -44,7 +44,7 @@ class Command(BaseCommand):
         self.used_tmpdir = tempfile.TemporaryDirectory()
         tmp_dir = self.used_tmpdir.name
 
-        is_url = template.startswith("https://") or template.startswith("git@")
+        is_url = template.startswith(('http://', 'https://', 'ssh://', 'git@', 'file://'))
         print(('Cloning' if is_url else 'Copying') + ' template ' +
             (f'{subdir} from {template}' if subdir else f'{template}'))
         if is_url:
