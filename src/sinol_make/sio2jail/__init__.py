@@ -108,7 +108,8 @@ def check_perf_counters_enabled():
                 "Check if the Intel PMU driver is loaded: `dmesg | grep -i 'perf'`\n"
                 "You can also check if the perf tool works correctly: `perf stat -e instructions:u -- sleep 0`\n"
                 "(if perf can't be found, it might be located in: `/usr/lib/linux-tools/*/perf`).\n")
-        util.exit_with_error(f"Failed performance counters test: `{" ".join(process.args)}`\n"
+        cmdline = " ".join(process.args)
+        util.exit_with_error(f"Failed performance counters test: `{cmdline}`\n"
             + hint +
             "Alternatively, you can run sinol-make without instruction counting"
             ", by adding the `--time-tool time` flag.\n"
