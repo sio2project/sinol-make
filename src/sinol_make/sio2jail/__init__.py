@@ -74,11 +74,13 @@ def install_sio2jail(directory=None):
 
 def check_perf_counters_enabled():
     """
-    Checks if `kernel.perf_event_paranoid` is set to -1.
-    :return:
+    Checks if sio2jail is able to use perf counters to count instructions.
     """
-    if not util.is_linux() or not check_sio2jail():
+    if not sio2jail_supported() or not check_sio2jail():
         return
+
+    with open('/proc/sys/kernel/perf_event_paranoid') as f:
+        perf_event_paranoid = int(f.read())
 
     sio2jail = get_default_sio2jail_path()
     test_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'perf_test.py')
@@ -94,9 +96,21 @@ def check_perf_counters_enabled():
         process.terminate()
 
     if output != "Test string\n":
-        util.exit_with_error("To use the recommended tool for measuring time called `sio2jail`, please:\n"
-                             "- execute `sudo sysctl kernel.perf_event_paranoid=-1` to make `sio2jail` work for\n"
-                             "  the current system session,\n"
-                             "- or add `kernel.perf_event_paranoid=-1` to `/etc/sysctl.conf`\n"
-                             "  and reboot to permanently make sio2jail work.\n"
-                             "For more details, see https://github.com/sio2project/sio2jail#running.\n")
+        max_perf_event_paranoid = 2
+        if perf_event_paranoid > max_perf_event_paranoid:
+            hint = (f"You have `kernel.perf_event_paranoid` set to `{perf_event_paranoid}`"
+                ", which might be preventing userspace perf counters from working.\n"
+                f"Try running: `sudo sysctl kernel.perf_event_paranoid={max_perf_event_paranoid}`\n"
+                "If that fixes the problem, you can set this permanently by adding "
+                f"`kernel.perf_event_paranoid={max_perf_event_paranoid}` to `/etc/sysctl.conf` and rebooting.\n")
+        else:
+            hint = ("Your kernel, drivers, or hardware might be too old.\n"
+                "Check if the Intel PMU driver is loaded: `dmesg | grep -i 'perf'`\n"
+                "You can also check if the perf tool works correctly: `perf stat -e instructions:u -- sleep 0`\n"
+                "(if perf can't be found, it might be located in: `/usr/lib/linux-tools/*/perf`).\n")
+        cmdline = " ".join(process.args)
+        util.exit_with_error(f"Failed performance counters test: `{cmdline}`\n"
+            + hint +
+            "Alternatively, you can run sinol-make without instruction counting"
+            ", by adding the `--time-tool time` flag.\n"
+            "For more details, see https://github.com/sio2project/sio2jail#running.\n")

@@ -321,9 +321,9 @@ def is_wsl():
 
 def is_linux():
     """
-    Function to check if the program is running on Linux and not WSL.
+    Function to check if the program is running on Linux (including WSL).
     """
-    return sys.platform == "linux" and not is_wsl()
+    return sys.platform == "linux"
 
 
 def is_macos():
