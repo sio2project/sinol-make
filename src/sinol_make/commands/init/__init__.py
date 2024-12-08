@@ -37,22 +37,20 @@ class Command(BaseCommand):
         parser.add_argument('-v', '--verbose', action='store_true')
         return parser
 
-    def download_template(self, template_paths = [DEFAULT_TEMPLATE, DEFAULT_SUBDIR]):
+    def download_template(self, tmpdir, template_paths = [DEFAULT_TEMPLATE, DEFAULT_SUBDIR], verbose = False):
         template = template_paths[0]
         subdir = template_paths[1] if len(template_paths) > 1 else ''
-
-        tmp_dir = self.used_tmpdir.name
 
         is_url = template.startswith(('http://', 'https://', 'ssh://', 'git@', 'file://'))
         print(('Cloning' if is_url else 'Copying') + ' template ' +
             (f'{subdir} from {template}' if subdir else f'{template}'))
         if is_url:
-            ret = subprocess.run(['git', 'clone', '-v' if self.verbose else '-q', '--depth', '1', template, tmp_dir])
+            ret = subprocess.run(['git', 'clone', '-v' if verbose else '-q', '--depth', '1', template, tmpdir])
             if ret.returncode != 0:
                 util.exit_with_error("Could not access repository. Please try again.")
-            path = os.path.join(tmp_dir, subdir)
+            path = os.path.join(tmpdir, subdir)
         else:
-            path = os.path.join(tmp_dir, 'template')
+            path = os.path.join(tmpdir, 'template')
             shutil.copytree(os.path.join(os.getcwd(), template, subdir), path)
 
         if os.path.exists(os.path.join(path, '.git')):
@@ -94,7 +92,6 @@ class Command(BaseCommand):
     def run(self, args: argparse.Namespace):
         self.task_id = args.task_id
         self.force = args.force
-        self.verbose = args.verbose
         destination = args.output or self.task_id
         if not os.path.isabs(destination):
             destination = os.path.join(os.getcwd(), destination)
@@ -105,18 +102,16 @@ class Command(BaseCommand):
                 util.exit_with_error(f"Destination {destination} already exists. "
                                      f"Provide a different task id or directory name, "
                                      f"or use the --force flag to overwrite.")
-        self.used_tmpdir = tempfile.TemporaryDirectory()
-        try:
-            self.template_dir = self.download_template(args.template)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            try:
+                self.template_dir = self.download_template(tmpdir.name, args.template, args.verbose)
 
-            os.chdir(destination)
+                os.chdir(destination)
 
-            self.move_folder()
-            self.update_task_id()
+                self.move_folder()
+                self.update_task_id()
 
-            print(util.info(f'Successfully created task "{self.task_id}"'))
-        except:
-            shutil.rmtree(destination)
-            raise
-        finally:
-            self.used_tmpdir.cleanup()
+                print(util.info(f'Successfully created task "{self.task_id}"'))
+            except:
+                shutil.rmtree(destination)
+                raise
