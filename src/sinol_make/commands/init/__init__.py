@@ -41,7 +41,6 @@ class Command(BaseCommand):
         template = template_paths[0]
         subdir = template_paths[1] if len(template_paths) > 1 else ''
 
-        self.used_tmpdir = tempfile.TemporaryDirectory()
         tmp_dir = self.used_tmpdir.name
 
         is_url = template.startswith(('http://', 'https://', 'ssh://', 'git@', 'file://'))
@@ -106,6 +105,7 @@ class Command(BaseCommand):
                 util.exit_with_error(f"Destination {destination} already exists. "
                                      f"Provide a different task id or directory name, "
                                      f"or use the --force flag to overwrite.")
+        self.used_tmpdir = tempfile.TemporaryDirectory()
         try:
             self.template_dir = self.download_template(args.template)
 
