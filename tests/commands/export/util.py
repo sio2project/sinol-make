@@ -41,12 +41,15 @@ def assert_makefile_in(lines, task_id, config):
     :param task_id: Task id
     :param config: Config dict
     """
-    def _get_value_from_key(key, seperator):
+    def _get_values_from_key(key, separator):
         for line in lines:
-            split = line.split(seperator)
+            split = line.split(separator)
             if split[0].strip() == key:
-                return split[1].strip().strip('\n')
-        return None
+                yield split[1].strip().strip('\n')
+
+    def _get_value_from_key(key, separator):
+        value, = _get_values_from_key(key, separator)
+        return value
 
     assert _get_value_from_key("ID", "=") == task_id
     assert _get_value_from_key("TIMELIMIT", "=") == str(config["time_limit"])
@@ -60,11 +63,15 @@ def assert_makefile_in(lines, task_id, config):
             return obj
         return ' '.join(obj)
 
+    cxx_flags_vals = list(_get_values_from_key("CXXFLAGS", "+="))
+    c_flags_vals = list(_get_values_from_key("CFLAGS", "+="))
+    assert cxx_flags_vals[0] == cxx_flags
+    assert c_flags_vals[0] == c_flags
     if 'extra_compilation_args' in config:
+        # extra C/CXX args should be appended after ingen/inwer/chk targets
         if 'cpp' in config['extra_compilation_args']:
-            cxx_flags += ' ' + format_multiple_arguments(config['extra_compilation_args']['cpp'])
+            extra_cxx_args = format_multiple_arguments(config['extra_compilation_args']['cpp'])
+            assert cxx_flags_vals[1] == extra_cxx_args
         if 'c' in config['extra_compilation_args']:
             c_flags += ' ' + format_multiple_arguments(config['extra_compilation_args']['c'])
-
-    assert _get_value_from_key("CXXFLAGS", "+=") == cxx_flags
-    assert _get_value_from_key("CFLAGS", "+=") == c_flags
+            assert c_flags_vals[1] == extra_c_args
