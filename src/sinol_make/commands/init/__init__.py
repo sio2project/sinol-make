@@ -37,9 +37,9 @@ class Command(BaseCommand):
         parser.add_argument('-v', '--verbose', action='store_true')
         return parser
 
-    def download_template(self):
-        template = self.template[0]
-        subdir = self.template[1] if len(self.template) > 1 else ''
+    def download_template(self, template_paths = [DEFAULT_TEMPLATE, DEFAULT_SUBDIR]):
+        template = template_paths[0]
+        subdir = template_paths[1] if len(template_paths) > 1 else ''
 
         self.used_tmpdir = tempfile.TemporaryDirectory()
         tmp_dir = self.used_tmpdir.name
@@ -95,7 +95,6 @@ class Command(BaseCommand):
     def run(self, args: argparse.Namespace):
         self.task_id = args.task_id
         self.force = args.force
-        self.template = args.template
         self.verbose = args.verbose
         destination = args.output or self.task_id
         if not os.path.isabs(destination):
@@ -108,7 +107,7 @@ class Command(BaseCommand):
                                      f"Provide a different task id or directory name, "
                                      f"or use the --force flag to overwrite.")
         try:
-            self.template_dir = self.download_template()
+            self.template_dir = self.download_template(args.template)
 
             os.chdir(destination)
 
