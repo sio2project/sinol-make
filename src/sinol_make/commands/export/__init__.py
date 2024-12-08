@@ -212,11 +212,18 @@ class Command(BaseCommand):
                     return obj
                 return ' '.join(obj)
 
+            # Only use extra_compilation_args for compiling solution files.
+            # One usecase of this is "reverse-library" problem packages,
+            # that provide a main.cpp file to be compiled with submissions.
+            # If extra args need to be passed to chk/ingen/inwer in the future,
+            # support for a new separate config option will have to be added.
+            extra_cxx_args = ""
+            extra_c_args = ""
             if 'extra_compilation_args' in config:
                 if 'cpp' in config['extra_compilation_args']:
-                    cxx_flags += ' ' + format_multiple_arguments(config['extra_compilation_args']['cpp'])
+                    extra_cxx_args = format_multiple_arguments(config['extra_compilation_args']['cpp'])
                 if 'c' in config['extra_compilation_args']:
-                    c_flags += ' ' + format_multiple_arguments(config['extra_compilation_args']['c'])
+                    extra_c_args = format_multiple_arguments(config['extra_compilation_args']['c'])
 
             tl = config.get('time_limit', None)
             if not tl:
@@ -232,7 +239,16 @@ class Command(BaseCommand):
                     f'OI_TIME = oiejq\n'
                     f'\n'
                     f'CXXFLAGS += {cxx_flags}\n'
-                    f'CFLAGS += {c_flags}\n')
+                    f'{self.task_id}chk.e: CXXFLAGS := $(CXXFLAGS)\n'
+                    f'{self.task_id}ingen.e: CXXFLAGS := $(CXXFLAGS)\n'
+                    f'{self.task_id}inwer.e: CXXFLAGS := $(CXXFLAGS)\n'
+                    f'CXXFLAGS += {extra_cxx_args}\n'
+                    f'\n'
+                    f'CFLAGS += {c_flags}\n'
+                    f'{self.task_id}chk.e: CFLAGS := $(CFLAGS)\n'
+                    f'{self.task_id}ingen.e: CFLAGS := $(CFLAGS)\n'
+                    f'{self.task_id}inwer.e: CFLAGS := $(CFLAGS)\n'
+                    f'CFLAGS += {extra_c_args}\n')
 
     def compress(self, target_dir):
         """
