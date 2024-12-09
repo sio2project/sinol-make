@@ -15,12 +15,15 @@ def test_init_clones_default_template(capsys, request, temp_workdir):
     args = ["init", "xyz"]
 
     # try to avoid connecting to github when cloning example_package
-    git_dir = os.path.join(request.config.rootdir, '.git')
+    rootdir = str(request.config.rootdir)
+    git_dir = os.path.join(rootdir, '.git')
     if os.path.exists(git_dir):
-        git_local_url = os.path.join('file://', request.config.rootdir)
+        git_local_url = os.path.join('file://', rootdir)
         args.extend(["-t", git_local_url, "example_package"])
-    # currently this does fallback on github if the local repo is not available
-    # if needed we could take a dependency on gitpython and mock up a repo
+    else:
+        # copy from root directory instead of cloning
+        # if needed we could take a dependency on gitpython and mock up a repo
+        args.extend(["-t", rootdir, "example_package"])
 
     args = parser.parse_args(args)
     command = Command()
