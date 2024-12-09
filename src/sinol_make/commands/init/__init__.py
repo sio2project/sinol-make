@@ -51,7 +51,7 @@ class Command(BaseCommand):
             path = os.path.join(tmpdir, subdir)
         else:
             path = os.path.join(tmpdir, 'template')
-            shutil.copytree(os.path.join(os.getcwd(), template, subdir), path)
+            shutil.copytree(os.path.join(template, subdir), path)
 
         if os.path.exists(os.path.join(path, '.git')):
             shutil.rmtree(os.path.join(path, '.git'))
@@ -70,9 +70,6 @@ class Command(BaseCommand):
                         raise
             for file in files:
                 dest_filename = file
-                # TODO: remove the old 'abc' template
-                if file[:3] == 'abc':
-                    dest_filename = self.task_id + file[3:]
                 if file[:len(self.TEMPLATE_ID)] == self.TEMPLATE_ID:
                     dest_filename = self.task_id + file[len(self.TEMPLATE_ID):]
                 shutil.move(os.path.join(root, file), os.path.join(mapping[root], dest_filename))
@@ -87,8 +84,6 @@ class Command(BaseCommand):
                     except UnicodeDecodeError:
                         # ignore non-text files
                         continue
-                # TODO: remove the old "abc" template
-                file_data = file_data.replace('abc', self.task_id)
                 file_data = file_data.replace(self.TEMPLATE_ID, self.task_id)
 
                 with open(path, 'w') as file:

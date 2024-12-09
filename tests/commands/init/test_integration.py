@@ -7,12 +7,22 @@ from tests.fixtures import temp_workdir
 
 
 @pytest.mark.parametrize("temp_workdir", [''], indirect=True)
-def test_simple(capsys, temp_workdir):
+def test_init_clones_default_template(capsys, request, temp_workdir):
     """
     Test `init` command.
     """
     parser = configure_parsers()
-    args = parser.parse_args(["init", "xyz"])
+    args = ["init", "xyz"]
+
+    # try to avoid connecting to github when cloning example_package
+    git_dir = os.path.join(request.config.rootdir, '.git')
+    if os.path.exists(git_dir):
+        git_local_url = os.path.join('file://', request.config.rootdir)
+        args.extend(["-t", git_local_url, "example_package"])
+    # currently this does fallback on github if the local repo is not available
+    # if needed we could take a dependency on gitpython and mock up a repo
+
+    args = parser.parse_args(args)
     command = Command()
     command.run(args)
     out = capsys.readouterr().out
@@ -23,7 +33,7 @@ def test_simple(capsys, temp_workdir):
 
     for file in expected_files:
         assert os.path.isfile(os.path.join(os.getcwd(), file))
-        
+
     # Check if task id is correctly set
     with open(os.path.join(os.getcwd(), 'config.yml')) as config_file:
         config_file_data = config_file.read()
