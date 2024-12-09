@@ -43,20 +43,20 @@ override_limits:
 # Each language can have different extra arguments.
 
 # extra_compilation_args:
-#   cpp: 'abclib.cpp'
+#   cpp: '__ID__lib.cpp'
 
 # The arguments can also be in an array:
 
 # extra_compilation_args:
 #   cpp:
-#     - 'abclib.cpp'
-#     - 'abclib2.cpp'
+#     - '__ID__lib.cpp'
+#     - '__ID__lib2.cpp'
 
 # Additional files used in compilation can be defined in `extra_compilation_files` key.
 # They are copied to the directory where the source code is compiled.
 # All languages have the same additional files.
 
-# extra_compilation_files: ['abclib.cpp', 'abclib.py']
+# extra_compilation_files: ['__ID__lib.cpp', '__ID__lib.py']
 
 
 ### Keys used by sinol-make:
@@ -65,7 +65,7 @@ override_limits:
 # The names of files in `prog/`, `doc/`, `in/` and `out/` directories have to start with this task id.
 # This key is only used by `sinol-make`: running `sinol-make export` creates
 # an archive with the proper name, which sio2 uses as the task id.
-sinol_task_id: abc
+sinol_task_id: __ID__
 
 # sinol-make can behave differently depending on the value of `sinol_contest_type` key.
 # Mainly, it affects how points are calculated.
@@ -76,7 +76,7 @@ sinol_contest_type: oi
 # You can specify which tests are static (handwritten). This allows sinol-make to differentiate between
 # old and handwritten tests. If this key is not present old tests won't be removed.
 # This key is optional and should be a list of tests.
-sinol_static_tests: ["abc0.in", "abc0a.in"]
+sinol_static_tests: ["__ID__0.in", "__ID__0a.in"]
 
 # sinol-make can check if the solutions run as expected when using `run` command.
 # Key `sinol_expected_scores` defines expected scores for each solution on each tests.
