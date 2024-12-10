@@ -9,7 +9,7 @@ prog_dir="$(realpath "$(dirname "$0")")"
 cache_dir="$prog_dir/../.cache"
 mkdir -p "$cache_dir"
 script_name="$(basename "$0")"
-task_id=${script_name:0:3}
+task_id=${script_name%ingen.sh}
 gen_exe="$cache_dir/${task_id}ingen"
 sol_exe="$cache_dir/${task_id}solution"
 slo_exe="$cache_dir/${task_id}slow"
