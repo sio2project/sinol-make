@@ -3,7 +3,7 @@
 using namespace std;
 
 // Change this function to generate one test for stresstesting.
-// The script prog/abcingen.sh in 10 seconds generates
+// The script prog/__ID__ingen.sh in 10 seconds generates
 // as much tests as possible and compares the outputs
 // of the model solution and brute solution.
 // The tests shouldn't be very big, but should be able to cover edge cases.
@@ -12,7 +12,7 @@ void generate_one_stresstest(oi::Random &rng) {
 }
 
 // Change this function to create a test with the given name.
-// The lists of tests to generate needs to be written in prog/abcingen.sh
+// The lists of tests to generate needs to be written in prog/__ID__ingen.sh
 void generate_proper_test(string test_name, oi::Random &rng) {
     if (test_name == "0a")
         cout << "0 1" << endl;
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     if (argc != 2) {
-        cerr << "Run prog/abcingen.sh to stresstest and create proper tests." << endl;
+        cerr << "Run prog/__ID__ingen.sh to stresstest and create proper tests." << endl;
         exit(1);
     }
     string test_name = argv[1];
