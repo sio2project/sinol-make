@@ -156,7 +156,7 @@ class BaseTaskType(RegisteredSubclassesBase):
         return self._parse_checker_output(output.decode('utf-8').split('\n'))
 
     def _run_diff(self, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str]:
-        same = util.file_diff(output_file_path, answer_file_path)
+        same = oicompare.compare(output_file_path, answer_file_path)
         if same:
             return True, Fraction(100, 1), ""
         else:

@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import subprocess
 
@@ -57,3 +58,60 @@ def check_and_download():
     download_oicomapare()
     if not check_installed():
         util.exit_with_error("Couldn't download oicompare. Please try again later or download it manually.")
+
+
+def _strip(s: str) -> str:
+    """
+    Replace all longest sequences of spaces with a single space.
+    """
+    return re.sub(r'[\s\0]+', ' ', s).strip()
+
+
+def compare(file1_path: str, file2_path: str) -> bool:
+    """
+    Compare two files in the same way as oicompare does. Returns True if the files are the same, False otherwise.
+    """
+    print("start")
+    with open(file1_path, "r") as file1, open(file2_path, "r") as file2:
+        eof1 = False
+        eof2 = False
+        while True:
+            try:
+                line1 = _strip(next(file1))
+            except StopIteration:
+                eof1 = True
+            try:
+                line2 = _strip(next(file2))
+            except StopIteration:
+                eof2 = True
+
+            print(eof1, eof2)
+            if eof1 and eof2:
+                return True
+            if eof1:
+                while line2 == "":
+                    try:
+                        line2 = _strip(next(file2))
+                    except StopIteration:
+                        eof2 = True
+                        print("xd")
+                        break
+            elif eof2:
+                while line1 == "":
+                    try:
+                        line1 = _strip(next(file1))
+                    except StopIteration:
+                        eof1 = True
+                        break
+                    if line1 != "":
+                        break
+
+            if eof1 and eof2:
+                return True
+            # print(f'"{line1}" "{line2}" {eof1=} {eof2=}')
+            if (eof1 and line2 == "") or (eof2 and line1 == ""):
+                continue
+            if (eof1 and line2 != "") or (eof2 and line1 != ""):
+                return False
+            if line1 != line2:
+                return False
