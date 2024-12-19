@@ -246,15 +246,6 @@ def lines_diff(lines1, lines2):
     return True
 
 
-def file_diff(file1_path, file2_path):
-    """
-    Function to compare two files.
-    Returns True if they are the same, False otherwise.
-    """
-    with open(file1_path) as file1, open(file2_path) as file2:
-        return lines_diff(file1.readlines(), file2.readlines())
-
-
 def get_terminal_size():
     """
     Function to get the size of the terminal.
