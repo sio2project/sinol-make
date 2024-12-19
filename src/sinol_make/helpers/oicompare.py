@@ -71,7 +71,6 @@ def compare(file1_path: str, file2_path: str) -> bool:
     """
     Compare two files in the same way as oicompare does. Returns True if the files are the same, False otherwise.
     """
-    print("start")
     with open(file1_path, "r") as file1, open(file2_path, "r") as file2:
         eof1 = False
         eof2 = False
@@ -85,7 +84,6 @@ def compare(file1_path: str, file2_path: str) -> bool:
             except StopIteration:
                 eof2 = True
 
-            print(eof1, eof2)
             if eof1 and eof2:
                 return True
             if eof1:
@@ -94,7 +92,6 @@ def compare(file1_path: str, file2_path: str) -> bool:
                         line2 = _strip(next(file2))
                     except StopIteration:
                         eof2 = True
-                        print("xd")
                         break
             elif eof2:
                 while line1 == "":
@@ -108,7 +105,6 @@ def compare(file1_path: str, file2_path: str) -> bool:
 
             if eof1 and eof2:
                 return True
-            # print(f'"{line1}" "{line2}" {eof1=} {eof2=}')
             if (eof1 and line2 == "") or (eof2 and line1 == ""):
                 continue
             if (eof1 and line2 != "") or (eof2 and line1 != ""):
