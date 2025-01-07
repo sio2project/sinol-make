@@ -29,6 +29,8 @@ class OIContest(DefaultContest):
         """
         if result.Status != 'OK':
             return 0
+        if result.Points == 0:
+            return 0
         elif result.Time <= time_limit / 2.0:
             return result.Points
         else:
