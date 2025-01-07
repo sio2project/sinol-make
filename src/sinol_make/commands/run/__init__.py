@@ -242,7 +242,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 for program in program_group:
                     lang = package_util.get_file_lang(program)
                     result = all_results[program][package_util.get_group(test, task_id)][test]
-                    if result.Points is not None:
+                    if result.Status != Status.PENDING:
                         print(colorize_points(int(result.Points), contest.min_score_per_test(),
                                               contest.max_score_per_test()).ljust(13), end="")
                     else:
