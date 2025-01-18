@@ -280,7 +280,7 @@ class Command(BaseCommand):
                 After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
         )
 
-        default_timetool = 'sio2jail' if sio2jail.sio2jail_supported() else 'time'
+        default_timetool = 'sio2jail' if util.is_linux() else 'time'
 
         parser.add_argument('-s', '--solutions', type=str, nargs='+',
                             help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
@@ -764,7 +764,7 @@ class Command(BaseCommand):
 
         def use_sio2jail():
             timetool_path = None
-            if not sio2jail.sio2jail_supported():
+            if not util.is_linux():
                 util.exit_with_error('As `sio2jail` works only on Linux-based operating systems,\n'
                                      'we do not recommend using operating systems such as macOS.\n'
                                      'Nevertheless, you can still run sinol-make by specifying\n'
@@ -789,12 +789,12 @@ class Command(BaseCommand):
 
         timetool_path, timetool_name = None, None
         preferred_timetool = self.contest.preferred_timetool()
-        if preferred_timetool == 'sio2jail' and sio2jail.sio2jail_supported():
+        if preferred_timetool == 'sio2jail' and util.is_linux():
             use_default_timetool = use_sio2jail
         elif preferred_timetool == 'time':
             use_default_timetool = use_time
         else:
-            use_default_timetool = use_sio2jail if sio2jail.sio2jail_supported() else use_time
+            use_default_timetool = use_sio2jail if util.is_linux() else use_time
 
         if args.time_tool is None and self.config.get('sinol_undocumented_time_tool', '') != '':
             if self.config.get('sinol_undocumented_time_tool', '') == 'sio2jail':
