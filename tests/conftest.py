@@ -7,7 +7,7 @@ import pytest
 import fnmatch
 import multiprocessing as mp
 
-from sinol_make import sio2jail, util
+from sinol_make import util
 from sinol_make.helpers import compile, paths, cache, oicompare
 from sinol_make.interfaces.Errors import CompilationError
 
@@ -99,7 +99,7 @@ def pytest_generate_tests(metafunc):
         time_tools = []
         if metafunc.config.getoption("time_tool") != []:
             time_tools = metafunc.config.getoption("time_tool")
-        elif sio2jail.sio2jail_supported():
+        elif util.is_linux():
             time_tools = ["sio2jail", "time"]
         else:
             time_tools = ["time"]
@@ -118,6 +118,6 @@ def pytest_collection_modifyitems(config, items: List[pytest.Item]):
 
     for item in items:
         if "sio2jail" in item.keywords:
-            if not sio2jail.sio2jail_supported() or config.getoption("--time-tool") == ["time"] or \
+            if not util.is_linux() or config.getoption("--time-tool") == ["time"] or \
                     config.getoption("--github-runner"):
                 item.add_marker(pytest.mark.skip(reason="sio2jail required"))

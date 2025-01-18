@@ -9,7 +9,7 @@ from sinol_make import sio2jail, util
 
 @pytest.mark.github_runner
 def test_install_sio2jail():
-    if not sio2jail.sio2jail_supported():
+    if sys.platform != 'linux':
         return
 
     try:
@@ -34,7 +34,7 @@ def test_install_sio2jail():
 
 @pytest.mark.github_runner
 def test_check_sio2jail():
-    if not sio2jail.sio2jail_supported():
+    if sys.platform != 'linux':
         return
 
     try:
@@ -59,7 +59,7 @@ def test_perf_counters_not_set():
     """
     Test `sio2jail.check_perf_counters_enabled` with perf counters disabled
     """
-    if not sio2jail.sio2jail_supported():
+    if sys.platform != 'linux':
         return
 
     sio2jail.install_sio2jail()
@@ -72,7 +72,7 @@ def test_perf_counters_set():
     """
     Test `sio2jail.check_perf_counters_enabled` with perf counters enabled
     """
-    if not sio2jail.sio2jail_supported():
+    if not util.is_linux():
         return
     sio2jail.check_perf_counters_enabled()
 
@@ -82,7 +82,7 @@ def test_updating():
     """
     Test updating sio2jail
     """
-    if not sio2jail.sio2jail_supported():
+    if sys.platform != 'linux':
         return
     try:
         os.remove(os.path.expanduser('~/.local/bin/oiejq'))
