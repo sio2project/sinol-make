@@ -93,6 +93,7 @@ def check_perf_counters_enabled():
         output = tmpfile.read().decode('utf-8')
         process.terminate()
 
+    print(f"Output: `{output}`")
     if output != "Test string\n":
         util.exit_with_error("To use the recommended tool for measuring time called `sio2jail`, please:\n"
                              "- execute `sudo sysctl kernel.perf_event_paranoid=-1` to make `sio2jail` work for\n"
