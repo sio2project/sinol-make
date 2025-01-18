@@ -86,6 +86,7 @@ def check_perf_counters_enabled():
 
     # subprocess.Pipe is not used, because than the code would hang on process.communicate()
     with tempfile.TemporaryFile() as tmpfile:
+        print(" ".join([sio2jail, '--mount-namespace', 'off', '--', python_executable, test_file]))
         process = subprocess.Popen([sio2jail, '--mount-namespace', 'off', '--', python_executable, test_file],
                                    stdout=tmpfile, stderr=subprocess.DEVNULL)
         process.wait()
