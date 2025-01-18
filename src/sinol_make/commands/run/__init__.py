@@ -773,7 +773,7 @@ class Command(BaseCommand):
                                      'See https://github.com/sio2project/sinol-make#why for more information about `sio2jail`.\n')
 
             sio2jail.check_perf_counters_enabled()
-            return
+            sys.exit(0)
             if 'sio2jail_path' in args and args.sio2jail_path is not None:
                 if not sio2jail.check_sio2jail(args.sio2jail_path):
                     util.exit_with_error('Invalid `sio2jail` path.')
