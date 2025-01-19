@@ -136,7 +136,7 @@ def check_perf_counters_enabled():
         opt_stdout_hint = f"\nCommand stdout (expected {repr(expected_output)}):\n---\n{output_str}" if output_str != expected_output else ""
         opt_stderr_hint = f"\nCommand stderr (expected none):\n---\n{error_str}" if error_str else ""
         opt_sio2jail_hint = f"\nsio2jail result:\n---\n{result_raw}" if result.Status != Status.OK else ""
-        util.exit_with_error("Failed sio2jail instruction counting test!"
+        util.exit_with_error("Failed sio2jail instruction counting self-check!"
             f"\n\nTest command:\n---\n{result.Cmdline}\n"
             f"{opt_stdout_hint}"
             f"{opt_stderr_hint}"
