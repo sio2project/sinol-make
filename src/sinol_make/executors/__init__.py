@@ -45,10 +45,12 @@ class BaseExecutor:
         """
 
         command = self._wrap_command(command, result_file_path, time_limit, memory_limit)
-        tle, mle, return_code, proc_stderr = self._execute(command, time_limit, hard_time_limit, memory_limit,
+        cmdline = " ".join(command)
+        tle, mle, return_code, proc_stderr = self._execute(cmdline, time_limit, hard_time_limit, memory_limit,
                                                            result_file_path, executable, execution_dir, stdin, stdout,
                                                            stderr, fds_to_close, *args, **kwargs)
         result = self._parse_result(tle, mle, return_code, result_file_path)
+        result.Cmdline = cmdline
         if not result.Stderr:
             result.Stderr = proc_stderr
         if tle:
