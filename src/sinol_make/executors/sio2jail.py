@@ -2,6 +2,7 @@ import os
 import signal
 import subprocess
 import sys
+import traceback
 from typing import List, Tuple, Union
 
 from sinol_make import util
@@ -22,7 +23,7 @@ class Sio2jailExecutor(BaseExecutor):
                 '--rtimelimit', f'{int(16 * time_limit + 1000)}ms', '--memory-limit', f'{int(memory_limit)}K',
                 '--output-limit', '51200K', '--output', 'oiaug', '--stderr', '--'] + command
 
-    def _execute(self, command: List[str], time_limit: int, hard_time_limit: int, memory_limit: int,
+    def _execute(self, cmdline: str, time_limit: int, hard_time_limit: int, memory_limit: int,
                  result_file_path: str, executable: str, execution_dir: str, stdin: int, stdout: int,
                  stderr: Union[None, int], fds_to_close: Union[None, List[int]],
                  *args, **kwargs) -> Tuple[bool, bool, int, List[str]]:
@@ -30,10 +31,10 @@ class Sio2jailExecutor(BaseExecutor):
         env['UNDER_SIO2JAIL'] = "1"
         with open(result_file_path, "w") as result_file:
             try:
-                process = subprocess.Popen(' '.join(command), *args, shell=True, stdin=stdin, stdout=stdout, env=env,
+                process = subprocess.Popen(cmdline, *args, shell=True, stdin=stdin, stdout=stdout, env=env,
                                            stderr=result_file, preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
             except TypeError as e:
-                print(util.error("Invalid command: " + str(command)))
+                print(util.error(f"Invalid command: `{cmdline}`"))
                 raise e
             if fds_to_close is not None:
                 for fd in fds_to_close:
@@ -55,12 +56,17 @@ class Sio2jailExecutor(BaseExecutor):
         with open(result_file_path, "r") as result_file:
             lines = result_file.readlines()
 
-        result.stderr = lines[:-2]
-
-        status, code, time_ms, _, memory_kb, _ = lines[-2].strip().split()
-        message = lines[-1].strip()
-        result.Time = int(time_ms)
-        result.Memory = int(memory_kb)
+        try:
+            result.stderr = lines[:-2]
+            status, code, time_ms, _, memory_kb, _ = lines[-2].strip().split()
+            message = lines[-1].strip()
+            result.Time = int(time_ms)
+            result.Memory = int(memory_kb)
+        except:
+            output = "".join(lines)
+            util.exit_with_error("Could not parse sio2jail output:"
+                f"\n---\n{output}"
+                f"\n---\n{traceback.format_exc()}")
 
         # ignoring `status` is weird, but sio2 does it this way
         if message == 'ok':

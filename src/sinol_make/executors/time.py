@@ -22,7 +22,7 @@ class TimeExecutor(BaseExecutor):
 
         return [f'{time_name}', '-f', '"%U\\n%M\\n%x"', '-o', result_file_path] + command
 
-    def _execute(self, command: List[str], time_limit: int, hard_time_limit: int, memory_limit: int,
+    def _execute(self, cmdline: str, time_limit: int, hard_time_limit: int, memory_limit: int,
                  result_file_path: str, executable: str, execution_dir: str, stdin: int, stdout: int,
                  stderr: Union[None, int], fds_to_close: Union[None, List[int]],
                  *args, **kwargs) -> Tuple[bool, bool, int, List[str]]:
@@ -30,7 +30,7 @@ class TimeExecutor(BaseExecutor):
         mem_limit_exceeded = False
         if stderr is None:
             stderr = subprocess.PIPE
-        process = subprocess.Popen(" ".join(command), shell=True, *args, stdin=stdin, stdout=stdout, stderr=stderr,
+        process = subprocess.Popen(cmdline, shell=True, *args, stdin=stdin, stdout=stdout, stderr=stderr,
                                    preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
         if fds_to_close is not None:
             for fd in fds_to_close:

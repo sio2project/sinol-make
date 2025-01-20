@@ -97,9 +97,11 @@ class ExecutionResult:
     Comment: str
     # Stderr of the program (used for checkers/interactors)
     Stderr: List[str]
+    # Original command line that was run
+    Cmdline: str
 
     def __init__(self, status=None, Time=None, Memory=None, Points=0, Error=None, Fail=False, ExitSignal=0, Comment="",
-                 Stderr=None):
+                 Stderr=None, Cmdline=None):
         self.Status = status
         self.Time = Time
         self.Memory = Memory
@@ -109,6 +111,7 @@ class ExecutionResult:
         self.ExitSignal = ExitSignal
         self.Comment = Comment
         self.Stderr = Stderr if Stderr is not None else []
+        self.Cmdline = Cmdline
 
     @staticmethod
     def from_dict(dict):
@@ -122,6 +125,7 @@ class ExecutionResult:
             ExitSignal=dict.get("ExitSignal", 0),
             Comment=dict.get("Comment", ""),
             Stderr=dict.get("Stderr", []),
+            Cmdline=dict.get("Cmdline", ""),
         )
 
     def to_dict(self):
@@ -135,4 +139,5 @@ class ExecutionResult:
             "ExitSignal": self.ExitSignal,
             "Comment": self.Comment,
             "Stderr": self.Stderr,
+            "Cmdline": self.Cmdline,
         }
