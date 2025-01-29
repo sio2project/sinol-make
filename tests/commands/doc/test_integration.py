@@ -95,3 +95,43 @@ def test_compilation_mode_2(capsys, create_package):
         expected="latex to dvi",
         not_expected="pdflatex"
     )
+
+
+@pytest.mark.parametrize("create_package", [util.get_doc_package_path()], indirect=True)
+def test_compilation_mode_3(capsys, create_package):
+    """
+    Test `doc` with compilation mode directly specified.
+    """
+    run_doc(
+        capsys=capsys,
+        command_args=["doc", "doc/doczad.tex", "--latex-compiler", "lualatex"],
+        expected="lualatex",
+        not_expected="pdflatex"
+    )
+
+
+@pytest.mark.parametrize("create_package", [util.get_luadoc_package_path()], indirect=True)
+def test_compilation_mode_config(capsys, create_package):
+    """
+    Test `doc` with compilation mode specified in the configuration file.
+    """
+    run_doc(
+        capsys=capsys,
+        command_args=["doc"],
+        expected="lualatex",
+        not_expected="pdflatex"
+    )
+
+
+@pytest.mark.parametrize("create_package", [util.get_luadoc_package_path()], indirect=True)
+def test_compilation_mode_config_override(capsys, create_package):
+    """
+    Test `doc` with compilation mode specified in the configuration file, and
+    then overridden on the command-line.
+    """
+    run_doc(
+        capsys=capsys,
+        command_args=["doc", "--latex-compiler", "pdflatex"],
+        expected="pdflatex",
+        not_expected="lualatex"
+    )

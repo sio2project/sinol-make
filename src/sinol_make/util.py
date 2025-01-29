@@ -91,6 +91,7 @@ def save_config(config):
         "title_en",
         "sinol_task_id",
         "sinol_contest_type",
+        "sinol_latex_compiler",
         "sinol_static_tests",
         "sinol_undocumented_time_tool",
         "sinol_undocumented_test_limits",

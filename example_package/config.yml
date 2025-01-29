@@ -73,6 +73,13 @@ sinol_task_id: __ID__
 # See README.md for more information.
 sinol_contest_type: oi
 
+# You can configure how sinol-make will compile the LaTeX in `doc/`. By default,
+# it will attempt to choose an option that makes sense based on the presence
+# of *.ps/*.eps figures. You can choose between `pdflatex`, `lualatex` and
+# `latex_dvi`.
+# This option can be overridden by passing `--latex_compiler` to `sinol-make doc`.
+sinol_latex_compiler: auto
+
 # You can specify which tests are static (handwritten). This allows sinol-make to differentiate between
 # old and handwritten tests. If this key is not present old tests won't be removed.
 # This key is optional and should be a list of tests.

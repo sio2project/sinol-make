@@ -108,6 +108,13 @@ def get_ps_doc_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "ps_doc")
 
 
+def get_luadoc_package_path():
+    """
+    Get path to package for testing `doc` command (version that requests lualatex in config.yml) (/test/packages/luadoc)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "luadoc")
+
+
 def get_long_name_package_path():
     """
     Get path to package with long name (/test/packages/long_package_name)
