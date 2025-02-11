@@ -106,7 +106,12 @@ class InteractiveTaskType(BaseTaskType):
         inter_sig = iresult.ExitSignal
 
         if interactor_output[0] != '':
-            if interactor_output[0] == "OK":
+            if sol_sig == signal.SIGPIPE:
+                result.Status = Status.WA
+                if interactor_output[1]:
+                    result.Comment = interactor_output[1]
+                result.Points = 0
+            else:
                 try:
                     ok, points, comment = self._parse_checker_output(interactor_output)
                 except CheckerException as e:
@@ -121,11 +126,6 @@ class InteractiveTaskType(BaseTaskType):
                 else:
                     result.Status = Status.WA
                 result.Error = None
-            elif sol_sig == signal.SIGPIPE:
-                result.Status = Status.WA
-                if interactor_output[1]:
-                    result.Comment = interactor_output[1]
-                result.Points = 0
         elif iresult.Status != Status.OK and iresult.Status != Status.TL and inter_sig != signal.SIGPIPE:
             result.Status = Status.RE
             result.Error = (f"Interactor got {iresult.Status}. This would cause SE on sio. "
@@ -224,6 +224,8 @@ class InteractiveTaskType(BaseTaskType):
                     result.Error = f"Solution {i} got an exception:\n" + str(proc.exception)
 
             for proc in processes:
+                if proc.exception:
+                    continue
                 if proc.result.Status != Status.OK:
                     result = proc.result
                     break
