@@ -183,7 +183,8 @@ class Command(BaseCommand):
                 shutil.copy(test[1], os.path.join(target_dir, test[0], os.path.basename(test[1])))
                 shutil.copy(test[1], os.path.join(cache_test_dir, test[0], os.path.basename(test[1])))
 
-        self.generate_output_files()
+        if self.task_type_cls.run_outgen():
+            self.generate_output_files()
         if self.args.export_ocen:
             self.create_ocen(target_dir)
 
@@ -267,6 +268,7 @@ class Command(BaseCommand):
         self.args = args
         self.task_id = package_util.get_task_id()
         self.export_name = self.task_id
+        self.task_type_cls = package_util.get_task_type_cls()
         package_util.validate_test_names(self.task_id)
         try:
             self.contest = contest_types.get_contest_type()
