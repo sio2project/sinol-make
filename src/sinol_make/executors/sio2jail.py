@@ -17,11 +17,12 @@ class Sio2jailExecutor(BaseExecutor):
 
     def _wrap_command(self, command: List[str], result_file_path: str, time_limit: int, memory_limit: int) -> List[str]:
         # see: https://github.com/sio2project/sioworkers/blob/738aa7a4e93216b0900ca128d6d48d40cd38bc1e/sio/workers/executors.py#L608
-        return [f'"{self.sio2jail_path}"', '--mount-namespace', 'off', '--pid-namespace', 'off', '--uts-namespace',
+        return [f'"{self.sio2jail_path}"', '-f', '3', '--mount-namespace', 'off', '--pid-namespace', 'off', '--uts-namespace',
                 'off', '--ipc-namespace', 'off', '--net-namespace', 'off', '--capability-drop', 'off',
                 '--user-namespace', 'off', '--instruction-count-limit', f'{int(2 * time_limit)}M',
                 '--rtimelimit', f'{int(16 * time_limit + 1000)}ms', '--memory-limit', f'{int(memory_limit)}K',
-                '--output-limit', '51200K', '--output', 'oiaug', '--stderr', '--'] + command
+                '--output-limit', '51200K', '--output', 'oiaug', '--stderr', '--'] + command + \
+                ['3>', f'"{result_file_path}"']
 
     def _execute(self, cmdline: str, time_limit: int, hard_time_limit: int, memory_limit: int,
                  result_file_path: str, executable: str, execution_dir: str, stdin: int, stdout: int,
@@ -29,17 +30,16 @@ class Sio2jailExecutor(BaseExecutor):
                  *args, **kwargs) -> Tuple[bool, bool, int, List[str]]:
         env = os.environ.copy()
         env['UNDER_SIO2JAIL'] = "1"
-        with open(result_file_path, "w") as result_file:
-            try:
-                process = subprocess.Popen(cmdline, *args, shell=True, stdin=stdin, stdout=stdout, env=env,
-                                           stderr=result_file, preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
-            except TypeError as e:
-                print(util.error(f"Invalid command: `{cmdline}`"))
-                raise e
-            if fds_to_close is not None:
-                for fd in fds_to_close:
-                    os.close(fd)
-            process.wait()
+        try:
+            process = subprocess.Popen(cmdline, *args, shell=True, stdin=stdin, stdout=stdout, env=env,
+                                        stderr=subprocess.DEVNULL, preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
+        except TypeError as e:
+            print(util.error(f"Invalid command: `{cmdline}`"))
+            raise e
+        if fds_to_close is not None:
+            for fd in fds_to_close:
+                os.close(fd)
+        process.wait()
 
         return False, False, 0, []
 

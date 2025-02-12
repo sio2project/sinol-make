@@ -105,12 +105,15 @@ class InteractiveTaskType(BaseTaskType):
         sol_sig = result.ExitSignal
         inter_sig = iresult.ExitSignal
 
-        if interactor_output[0] != '':
+        if result.Status is not None and result.Status != Status.OK and sol_sig != signal.SIGPIPE:
+            return
+        elif interactor_output[0] != '':
             if sol_sig == signal.SIGPIPE:
                 result.Status = Status.WA
                 if interactor_output[1]:
                     result.Comment = interactor_output[1]
                 result.Points = 0
+                result.Error = None
             else:
                 try:
                     ok, points, comment = self._parse_checker_output(interactor_output)
@@ -133,8 +136,6 @@ class InteractiveTaskType(BaseTaskType):
                             f"Interactor stderr: {iresult.Stderr}. "
                             f"Interactor output: {interactor_output}")
             result.Fail = True
-        elif result.Status is not None and result.Status != Status.OK and sol_sig != signal.SIGPIPE:
-            return
         elif inter_sig == signal.SIGPIPE:
             result.Status = Status.WA
             result.Comment = "Solution exited prematurely"
