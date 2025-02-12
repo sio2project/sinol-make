@@ -60,14 +60,16 @@ class DetailedExecutor(BaseExecutor):
         time_used = time.time() - start_time
         mem_used = mem_used // 1024
 
-        with open(result_file_path, "w") as result_file:
-            result_file.write(f"{time_used}\n{mem_used}\n{process.returncode}\n")
-
         if stderr == subprocess.PIPE:
             _, proc_stderr = process.communicate()
             proc_stderr = proc_stderr.decode('utf-8').split('\n')
         else:
             proc_stderr = []
+            process.communicate()
+
+        with open(result_file_path, "w") as result_file:
+            result_file.write(f"{time_used}\n{mem_used}\n{process.returncode}\n")
+
         return timeout, mem_used > memory_limit, 0, proc_stderr
 
     def _parse_result(self, tle, mle, return_code, result_file_path) -> ExecutionResult:
@@ -79,6 +81,8 @@ class DetailedExecutor(BaseExecutor):
             result.Time = float(lines[0].strip())
             result.Memory = float(lines[1].strip())
             program_exit_code = int(lines[2].strip())
+            if program_exit_code == -9 or program_exit_code == 9: # Process was killed, so probably TLE
+                program_exit_code = 0
         else:
             result.Status = Status.RE
             result.Error = "Unexpected output from execution:\n" + "".join(lines)
