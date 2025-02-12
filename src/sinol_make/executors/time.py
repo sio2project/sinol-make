@@ -20,7 +20,7 @@ class TimeExecutor(BaseExecutor):
         else:
             util.exit_with_error("Measuring time with GNU time on Windows is not supported.")
 
-        return [f'{time_name}', '-f', '"%U\\n%M\\n%x"', '-o', result_file_path] + command
+        return [f'{time_name}', '-f', '"%U\\n%M\\n%x"', '-o', f'"{result_file_path}"'] + command
 
     def _execute(self, cmdline: str, time_limit: int, hard_time_limit: int, memory_limit: int,
                  result_file_path: str, executable: str, execution_dir: str, stdin: int, stdout: int,
