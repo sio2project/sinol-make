@@ -1,5 +1,4 @@
 import subprocess
-import traceback
 from typing import List, Tuple, Union
 
 from sinol_make import util
@@ -54,7 +53,8 @@ class BaseExecutor:
                                                                stderr, fds_to_close, *args, **kwargs)
             result = self._parse_result(tle, mle, return_code, result_file_path)
         except Exception as e:
-            util.exit_with_error(f"Failed to run executor command:\n\t{cmdline}\n\n{traceback.format_exc()}")
+            print(util.error(f"Failed to run executor command:\n\t{cmdline}\n"))
+            raise
 
         result.Cmdline = cmdline
         if not result.Stderr:
