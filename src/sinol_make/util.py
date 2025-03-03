@@ -12,7 +12,7 @@ from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make.structs.status_structs import Status
-
+from sinol_make.sio3pack.package import Sio3Package
 
 @cache_result()
 def get_commands():
@@ -55,12 +55,20 @@ def find_and_chdir_package():
         return False
 
 
+def instantiate_package():
+    """
+    Function to instantiate package from current directory.
+    """
+    Sio3Package()
+
+
 def init_package_command(args):
     """
     Updates arguments with contest specific overrides for commands
     that require being in package directory
     """
     exit_if_not_package()
+    instantiate_package()
     contest = get_contest_type()
     contest.verify_config()
     return contest.argument_overrides(args)

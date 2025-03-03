@@ -6,6 +6,7 @@ import subprocess
 from sinol_make import util
 from sinol_make.helpers import package_util, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
+from sinol_make.sio3pack.package import Sio3Package
 
 
 class Command(BaseCommand):
@@ -92,7 +93,7 @@ class Command(BaseCommand):
         # when it is not provided by the user, instead of using the default
         # behavior of defaulting to None.
         if not hasattr(args, 'latex_compiler'):
-            config = package_util.get_config()
+            config = Sio3Package().get_config()
             args.latex_compiler = config.get('sinol_latex_compiler', 'auto')
 
         if args.latex_compiler == 'pdflatex':
@@ -104,13 +105,13 @@ class Command(BaseCommand):
         elif args.latex_compiler == 'auto':
             self.compilation_method = 'pdflatex'
             for extension in ['ps', 'eps']:
-                if glob.glob(os.path.join(os.getcwd(), 'doc', f'*.{extension}')) != []:
+                if glob.glob(os.path.join(os.getcwd(), 'doc', f'*.{extension}')): #TODO: SIO3Pack?
                     self.compilation_method = 'latex_dvi'
         else:
             util.exit_with_error("Unrecognized latex compiler")
 
         if args.files == []:
-            self.files = glob.glob(os.path.join(os.getcwd(), 'doc', '*.tex'))
+            self.files = glob.glob(os.path.join(os.getcwd(), 'doc', '*.tex')) #TODO: SIO3Pack?
         else:
             self.files = []
             for file in args.files:
