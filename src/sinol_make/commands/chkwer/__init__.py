@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import threading
@@ -7,9 +8,13 @@ import multiprocessing as mp
 from sinol_make import util, contest_types
 from sinol_make.commands.chkwer import chkwer_util
 from sinol_make.commands.outgen import outgen_util
-from sinol_make.helpers import package_util, parsers, compiler, compile, printer, paths
+from sinol_make.helpers import package_util, parsers, compiler, compile, printer, paths, loggers, mppool
+from sinol_make.helpers.mppool import mp_pool
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.structs.chkwer_structs import TestResult, ChkwerExecution, TableData, RunResult
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -55,11 +60,17 @@ class Command(BaseCommand):
         """
         Verifies a test and returns the result of chkwer on this test.
         """
+        loggers.setup_worker_logger('run-test', execution.in_test_name, 'chkwer-workers')
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Running chkwer for test {execution.in_test_name}")
         output_file = paths.get_chkwer_path(os.path.basename(execution.out_test_path))
         with open(execution.in_test_path, 'r') as inf, open(output_file, 'w') as outf:
+            logger.debug(f"Running proces with input from {execution.in_test_path} and output to {output_file}")
+            logger.debug(f"Process arguments: {[execution.model_exe]}")
             process = subprocess.Popen([execution.model_exe], stdin=inf, stdout=outf)
             process.wait()
         ok, points, comment = self.task_type.check_output(execution.in_test_path, output_file, execution.out_test_path)
+        logger.debug(f"Test {execution.in_test_name} finished with result: {ok}, {points}, {comment}")
 
         return RunResult(execution.in_test_path, ok, int(points), comment)
 
@@ -71,10 +82,13 @@ class Command(BaseCommand):
             results[test] = TestResult(test, self.task_id)
             executions.append(ChkwerExecution(test, results[test].test_name, package_util.get_out_from_in(test),
                                               self.checker_executable, self.model_executable))
+        logger.debug(f"Executions: {executions}")
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
+        has_terminal = False
         table_data = TableData(results, 0, self.task_id, self.contest_type.max_score_per_test())
         if has_terminal:
+            logger.debug("Running with printer thread")
             run_event = threading.Event()
             run_event.set()
             thr = threading.Thread(target=printer.printer_thread, args=(run_event, chkwer_util.print_view, table_data))
@@ -82,8 +96,9 @@ class Command(BaseCommand):
 
         keyboard_interrupt = False
         try:
-            with mp.Pool(self.cpus) as pool:
+            with mppool.mp_pool(self.cpus) as pool:
                 for i, result in enumerate(pool.imap(self.run_test, executions)):
+                    logger.debug(f"Got new result: {result}")
                     table_data.results[result.test_path].set_results(result.points, result.ok, result.comment)
                     table_data.i = i
         except KeyboardInterrupt:
@@ -100,15 +115,21 @@ class Command(BaseCommand):
 
     def run(self, args):
         args = util.init_package_command(args)
+        logger.debug(f"Arguments: {args}")
         self.task_id = package_util.get_task_id()
         self.task_type = package_util.get_task_type("time", None)
         self.contest_type = contest_types.get_contest_type()
+        logger.debug(f"Task id: {self.task_id}")
+        logger.debug(f"Task type: {self.task_type}")
+        logger.debug(f"Contest type: {self.contest_type}")
 
         if self.task_type.name() != "normal":
             util.exit_with_error("chkwer can be run only for normal tasks.")
 
         self.cpus = args.cpus or util.default_cpu_count()
+        logger.debug(f"Using {self.cpus} cpus")
         self.tests = package_util.get_tests(self.task_id, args.tests)
+        logger.debug(f"Running on tests: {self.tests}")
 
         if len(self.tests) == 0:
             util.exit_with_error("No tests found.")
@@ -117,6 +138,7 @@ class Command(BaseCommand):
         util.change_stack_size_to_unlimited()
 
         additional_files = self.task_type.additional_files_to_compile()
+        logger.debug(f"Additional files: {additional_files}")
         if len(additional_files) == 0:
             util.exit_with_error("Checker not found.")
         if len(additional_files) != 1:
@@ -130,6 +152,7 @@ class Command(BaseCommand):
         print()
 
         results = self.run_and_print_table()
+        logger.debug(f"Results: {results}")
         for result in results.values():
             if not result.ok or result.points != self.contest_type.max_score_per_test():
                 util.exit_with_error("Model solution didn't score maximum points.")

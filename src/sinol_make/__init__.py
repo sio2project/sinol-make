@@ -1,11 +1,12 @@
 # PYTHON_ARGCOMPLETE_OK
 import sys
+import logging
 import argparse
 import traceback
 import argcomplete
 
 from sinol_make import util, sio2jail
-from sinol_make.helpers import cache, oicompare
+from sinol_make.helpers import cache, oicompare, loggers
 
 # Required for side effects
 from sinol_make.task_type.normal import NormalTaskType # noqa
@@ -13,6 +14,7 @@ from sinol_make.task_type.interactive import InteractiveTaskType # noqa
 
 
 __version__ = "1.9.7"
+logger = logging.getLogger(__name__)
 
 
 def configure_parsers():
@@ -59,6 +61,9 @@ def main_exn():
     commands = util.get_commands()
     commands_dict = {command.get_name(): command for command in commands}
     commands_short_dict = {command.get_short_name(): command for command in commands if command.get_short_name()}
+    logger.debug(f"Commands: {commands_dict.keys()}")
+    logger.debug(f"Short commands: {commands_short_dict.keys()}")
+
     for arg in sys.argv[1:]:
         if arg in commands_dict.keys() and not (len(curr_args) > 0 and curr_args[0] == 'init'):
             if curr_args:
@@ -75,6 +80,7 @@ def main_exn():
     if not arguments:
         parser.print_help()
         exit(1)
+    logger.debug(f"Arguments: {arguments}")
     check_sio2jail()
     oicompare.check_and_download()
 
@@ -91,9 +97,13 @@ def main_exn():
 
 
 def main():
+    if '--verbose' in sys.argv:
+        sys.argv.remove('--verbose')
+        loggers.use_logging(__version__)
     new_version = None
     try:
         if util.is_dev(__version__):
+            logger.debug("Running development version of sinol-make.")
             print(util.warning('You are using a development version of sinol-make. '
                                'It may be unstable and contain bugs.'))
         new_version = util.check_for_updates(__version__)
@@ -104,6 +114,7 @@ def main():
         exit(err.code)
     except Exception:
         print(traceback.format_exc())
+        logger.debug("Finished with exception:\n" + traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'
                              'If that is a bug, please report it or submit a bugfix: '
                              'https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')

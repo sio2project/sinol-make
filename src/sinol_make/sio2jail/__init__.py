@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 import sys
@@ -10,6 +11,10 @@ from sinol_make import util
 from sinol_make.executors.sio2jail import Sio2jailExecutor
 from sinol_make.structs.status_structs import Status
 
+
+logger = logging.getLogger(__name__)
+
+
 def sio2jail_supported():
     return util.is_linux()
 
@@ -21,11 +26,14 @@ def get_default_sio2jail_path():
 def check_sio2jail(path=None):
     if path is None:
         path = get_default_sio2jail_path()
+    logger.debug(f"Checking sio2jail at {path}")
     try:
         sio2jail = subprocess.Popen([path, "--version"],
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, _ = sio2jail.communicate()
         out = out.decode(sys.stdout.encoding)
+        logger.debug(f"sio2jail output:\n{out}")
+        logger.debug(f"End of sio2jail output")
         if not out.startswith("SIO2jail v1.5.0 "):
             return False
     except FileNotFoundError:
@@ -39,6 +47,7 @@ def install_sio2jail(directory=None):
     """
     if directory is None:
         directory = os.path.expanduser('~/.local/bin')
+    logger.debug(f"Installing sio2jail to {directory}")
     path = os.path.join(directory, 'sio2jail')
     if os.path.exists(path) and check_sio2jail(path):
         return
@@ -50,9 +59,11 @@ def install_sio2jail(directory=None):
     url = 'https://oij.edu.pl/zawodnik/srodowisko/oiejq.tar.gz'
     try:
         request = requests.get(url)
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        logger.debug(f"Couldn't download sio2jail ({url} couldn't connect): {e}")
         util.exit_with_error('Couldn\'t download sio2jail ({url} couldn\'t connect)')
     if request.status_code != 200:
+        logger.debug(f"Couldn't download sio2jail ({url} returned status code: {request.status_code})")
         util.exit_with_error('Couldn\'t download sio2jail ({url} returned status code: ' + str(request.status_code) + ')')
 
     # oiejq is downloaded to a temporary directory and not to the `.cache` dir,

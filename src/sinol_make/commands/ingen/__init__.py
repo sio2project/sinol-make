@@ -1,11 +1,15 @@
 import argparse
 import glob
+import logging
 import os
 
 from sinol_make import util
 from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_ingen
 from sinol_make.helpers import parsers, package_util, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -36,12 +40,15 @@ class Command(BaseCommand):
         return parser
 
     def delete_dangling_files(self, dates):
+        logger.debug(f"Deleting dangling input files.")
         to_delete = set()
         for test in glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in")):
             basename = os.path.basename(test)
             if basename in dates and dates[basename] == os.path.getmtime(test):
                 to_delete.add(os.path.basename(test))
+                logger.debug(f"Found an unmodified test: {basename}")
         if to_delete:
+            logger.debug(f"Tests to delete: {to_delete}")
             config = package_util.get_config()
             if 'sinol_static_tests' not in config:
                 print(util.warning('Old input files won\'t be deleted, '
@@ -60,14 +67,18 @@ class Command(BaseCommand):
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)
+        logger.debug(f'Running ingen command with args: {args}')
 
         self.args = args
 
         self.task_id = package_util.get_task_id()
+        logger.debug(f"Task id: {self.task_id}")
         util.change_stack_size_to_unlimited()
         self.ingen = get_ingen(self.task_id, args.ingen_path)
+        logger.debug(f'Using ingen file {os.path.basename(self.ingen)}')
         print(f'Using ingen file {os.path.basename(self.ingen)}')
         self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode, self.args.fsanitize)
+        logger.debug(f"Ingen executable: {self.ingen_exe}")
 
         previous_tests = []
         try:
@@ -78,7 +89,9 @@ class Command(BaseCommand):
                         previous_tests.append(line)
         except FileNotFoundError:
             pass
+        logger.debug(f"List of previous tests: {previous_tests}")
         dates = {os.path.basename(test): os.path.getmtime(test) for test in previous_tests}
+        logger.debug(f"Modification dates: {dates}")
 
         if run_ingen(self.ingen_exe):
             print(util.info('Successfully generated input files.'))

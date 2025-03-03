@@ -1,4 +1,5 @@
 import glob, importlib, os, sys, requests, yaml
+import logging
 import math
 import platform
 import tarfile
@@ -9,9 +10,12 @@ from typing import Union
 from packaging.version import parse as parse_version
 
 from sinol_make.contest_types import get_contest_type
-from sinol_make.helpers import paths, cache
+from sinol_make.helpers import paths, cache, loggers
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make.structs.status_structs import Status
+
+
+logger = logging.getLogger(__name__)
 
 
 @cache_result()
@@ -206,24 +210,31 @@ def check_version():
     Writes the newest version to data/version file.
     """
     importlib = import_importlib_resources()
+    loggers.setup_worker_logger('check_version', 0)
+    logger = logging.getLogger(__name__)
 
     try:
         request = requests.get("https://pypi.python.org/pypi/sinol-make/json", timeout=1)
-    except requests.exceptions.RequestException:
+    except requests.exceptions.RequestException as e:
+        logger.debug(f'Failed to check for new version of sinol-make: {e}')
         return
 
     if request.status_code != 200:
+        logger.debug(f'Request status code != 200: {request.status_code}')
         return
 
     data = request.json()
     versions = list(data["releases"].keys())
     versions.sort(key=parse_version)
     latest_version = versions[-1]
+    logger.debug(f'Latest available version is {latest_version}')
 
     version_file = importlib.files("sinol_make").joinpath("data/version")
     try:
         version_file.write_text(latest_version)
     except PermissionError:
+        logger.debug("Can't write to version file in sinol-make installation directory. "
+                     "Writing version in .cache in package (if exists).")
         if find_and_chdir_package():
             try:
                 with open(paths.get_cache_path("sinol_make_version"), "w") as f:
@@ -421,6 +432,7 @@ def error(text):
 
 
 def exit_with_error(text, func=None):
+    logger.debug(f'Exit with error: "{text}"')
     print(error(text))
     try:
         func()

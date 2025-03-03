@@ -1,10 +1,14 @@
 import argparse
+import logging
 
 from sinol_make import util
 from sinol_make.commands.ingen import Command as IngenCommand
 from sinol_make.commands.outgen import Command as OutgenCommand
 from sinol_make.helpers import parsers, package_util
 from sinol_make.interfaces.BaseCommand import BaseCommand
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -43,6 +47,7 @@ class Command(BaseCommand):
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)
+        logger.debug(f"Running with arguments: {args}")
 
         self.args = args
         self.ins = args.only_inputs
@@ -54,13 +59,16 @@ class Command(BaseCommand):
             self.outs = True
 
         if self.ins:
+            logger.debug(f"Running ingen command.")
             command = IngenCommand()
             command.run(args)
 
         if not self.task_type.run_outgen():
+            logger.debug(f"Task type {self.task_type} does not support outgen.")
             print(util.warning("Outgen is not supported for this task type."))
             return
 
         if self.outs:
+            logger.debug(f"Running outgen command.")
             command = OutgenCommand()
             command.run(args)

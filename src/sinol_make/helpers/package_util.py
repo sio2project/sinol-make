@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import yaml
@@ -11,6 +12,9 @@ from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util, contest_types
 from sinol_make.helpers import paths
 from sinol_make.task_type import BaseTaskType
+
+
+logger = logging.getLogger(__name__)
 
 
 @cache_result(cwd=True)
@@ -283,6 +287,7 @@ def validate_test_names(task_id):
     """
     Checks if all files in the package have valid names.
     """
+    logger.debug("Validating test names.")
 
     def get_invalid_files(path, pattern):
         invalid_files = []
@@ -292,12 +297,16 @@ def validate_test_names(task_id):
         return invalid_files
 
     in_test_re = get_in_tests_re(task_id)
+    logger.debug(f"Input tests regex: {in_test_re}")
     invalid_in_tests = get_invalid_files(os.path.join("in", "*.in"), in_test_re)
+    logger.debug(f"Invalid input tests: {invalid_in_tests}")
     if len(invalid_in_tests) > 0:
         util.exit_with_error(f'Input tests with invalid names: {", ".join(invalid_in_tests)}.')
 
     out_test_re = get_out_tests_re(task_id)
+    logger.debug(f"Output tests regex: {out_test_re}")
     invalid_out_tests = get_invalid_files(os.path.join("out", "*.out"), out_test_re)
+    logger.debug(f"Invalid output tests: {invalid_out_tests}")
     if len(invalid_out_tests) > 0:
         util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')
 

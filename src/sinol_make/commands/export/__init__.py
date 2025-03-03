@@ -1,3 +1,4 @@
+import logging
 import os
 import glob
 import stat
@@ -13,6 +14,9 @@ from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.outgen import Command as OutgenCommand, compile_correct_solution, get_correct_solution
 from sinol_make.commands.doc import Command as DocCommand
 from sinol_make.interfaces.Errors import UnknownContestType
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -42,6 +46,7 @@ class Command(BaseCommand):
     def generate_input_tests(self):
         print('Generating tests...')
         temp_package = paths.get_cache_path('export', 'tests')
+        logger.debug(f"Generating tests. Temp package: {temp_package}")
         if os.path.exists(temp_package):
             shutil.rmtree(temp_package)
         os.makedirs(temp_package)
@@ -56,11 +61,13 @@ class Command(BaseCommand):
         if ingen_exists(self.task_id):
             ingen_path = get_ingen(self.task_id)
             ingen_path = os.path.join(prog_dir, os.path.basename(ingen_path))
+            logger.debug(f"Ingen found: {ingen_path}. Generating tests.")
             ingen_exe = compile_ingen(ingen_path, self.args, self.args.compile_mode)
             if not run_ingen(ingen_exe, in_dir):
                 util.exit_with_error('Failed to run ingen.')
 
     def generate_output_files(self):
+        logger.debug(f"Generating output files for example tests.")
         tests = paths.get_cache_path('export', 'tests')
         in_dir = os.path.join(tests, 'in')
         os.makedirs(in_dir, exist_ok=True)
@@ -73,7 +80,9 @@ class Command(BaseCommand):
         outputs = []
         for test in ocen_tests:
             outputs.append(os.path.join(out_dir, os.path.basename(test).replace('.in', '.out')))
+        logger.debug(f"Output files to generate: {outputs}")
         if len(outputs) > 0:
+            logger.debug(f"Generating output files with outgen command: {outputs}")
             outgen = OutgenCommand()
             correct_solution_exe = compile_correct_solution(get_correct_solution(self.task_id), self.args,
                                                             self.args.compile_mode)
@@ -98,6 +107,7 @@ class Command(BaseCommand):
         Creates ocen archive for sio2.
         :param target_dir: Path to exported package.
         """
+        logger.debug(f"Creating ocen archive")
         print('Generating ocen archive...')
         attachments_dir = os.path.join(target_dir, 'attachments')
         if not os.path.exists(attachments_dir):
@@ -107,6 +117,7 @@ class Command(BaseCommand):
         with tempfile.TemporaryDirectory() as tmpdir:
             ocen_dir = os.path.join(tmpdir, self.task_id)
             os.makedirs(ocen_dir)
+            logger.debug(f"Creating ocen archive in {ocen_dir}")
             in_dir = os.path.join(ocen_dir, 'in')
             os.makedirs(in_dir)
             out_dir = os.path.join(ocen_dir, 'out')
@@ -116,6 +127,7 @@ class Command(BaseCommand):
                 for test in glob.glob(os.path.join(tests_dir, ext, f'{self.task_id}0*.{ext}')) + \
                             glob.glob(os.path.join(tests_dir, ext, f'{self.task_id}*ocen.{ext}')):
                     shutil.copy(test, os.path.join(ocen_dir, ext, os.path.basename(test)))
+                    logger.debug(f"Copying {test} to {os.path.join(ocen_dir, ext)}")
                     num_tests += 1
 
             dlazaw_dir = os.path.join(os.getcwd(), 'dlazaw')
@@ -127,6 +139,7 @@ class Command(BaseCommand):
                 shutil.make_archive(os.path.join(attachments_dir, f'{self.task_id}ocen'), 'zip', tmpdir)
 
             if os.path.exists(dlazaw_dir):
+                logger.debug(f"dlazaw directory exists, adding it to attachements.")
                 print('Archiving dlazaw directory and adding to attachments.')
                 os.makedirs(os.path.join(tmpdir, 'dlazaw'), exist_ok=True)
                 shutil.copytree(dlazaw_dir, os.path.join(tmpdir, 'dlazaw', 'dlazaw'))
@@ -134,10 +147,12 @@ class Command(BaseCommand):
                                     os.path.join(tmpdir, 'dlazaw'))
 
     def compile_statement(self):
+        logger.debug(f"Compiling statements with doc command.")
         command = DocCommand()
         doc_args = argparse.Namespace()
         doc_args.files = [f'./doc/{self.task_id}zad.tex']
         command.run(doc_args)
+        logger.debug(f"========= End of doc command.")
         if not os.path.isfile(f'./doc/{self.task_id}zad.pdf') and not self.args.no_statement:
             util.exit_with_error('There is no pdf statements. If this intentional, export with flag "--no-statement". '
                                  'Otherwise create pdf before continuing.')
@@ -154,25 +169,32 @@ class Command(BaseCommand):
             file_path = os.path.join(os.getcwd(), file)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
+                    logger.debug(f"Copying directory: {file_path}")
                     shutil.copytree(file_path, os.path.join(target_dir, file))
                 else:
+                    logger.debug(f"Copying file: {file_path}")
                     shutil.copy(file_path, target_dir)
         shell_ingen = os.path.join(target_dir, 'prog', f'{self.task_id}ingen.sh')
         if os.path.exists(shell_ingen):
+            logger.debug(f"Setting executable flag for ingen shell script: {shell_ingen}")
             st = os.stat(shell_ingen)
             os.chmod(shell_ingen, st.st_mode | stat.S_IEXEC)
 
         print('Copying example tests...')
         for ext in ['in', 'out']:
             os.mkdir(os.path.join(target_dir, ext))
+            logger.debug(f"Copying example {ext} tests:")
             for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}0*.{ext}')):
+                logger.debug(f"Copying {test} to {os.path.join(target_dir, ext)}")
                 shutil.copy(test, os.path.join(target_dir, ext))
 
         generated_tests = self.get_generated_tests()
+        logger.debug(f"Tests generated by ingen: {generated_tests}")
         tests_to_copy = []
         for ext in ['in', 'out']:
             for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}*.{ext}')):
                 if package_util.extract_test_id(test, self.task_id) not in generated_tests:
+                    logger.debug(f"Found {ext} test not generated by ingen: {test}")
                     tests_to_copy.append((ext, test))
 
         cache_test_dir = paths.get_cache_path('export', 'tests')
@@ -180,6 +202,7 @@ class Command(BaseCommand):
             print(util.warning(f'Found {len(tests_to_copy)} tests that are not generated by ingen.'))
             for test in tests_to_copy:
                 print(util.warning(f'Copying {os.path.basename(test[1])}...'))
+                logger.debug(f"Copying {test[1]} to {os.path.join(target_dir, test[0])}")
                 shutil.copy(test[1], os.path.join(target_dir, test[0], os.path.basename(test[1])))
                 shutil.copy(test[1], os.path.join(cache_test_dir, test[0], os.path.basename(test[1])))
 
@@ -194,8 +217,10 @@ class Command(BaseCommand):
         :param target_dir: Directory to clear files from.
         """
         files_to_remove = ['doc/*~', 'doc/*.aux', 'doc/*.log', 'doc/*.dvi', 'doc/*.err', 'doc/*.inf']
+        logger.debug("Removing latex compilation logs from target directory.")
         for pattern in files_to_remove:
             for f in glob.glob(os.path.join(target_dir, pattern)):
+                logger.debug(f"Removing file: {f}")
                 os.remove(f)
 
     def create_makefile_in(self, target_dir: str, config: dict):
@@ -204,6 +229,7 @@ class Command(BaseCommand):
         :param target_dir: Directory to create files in.
         :param config: Config dictionary.
         """
+        logger.debug(f"Creating makefile.in")
         with open(os.path.join(target_dir, 'makefile.in'), 'w') as f:
             cxx_flags = '-std=c++20'
             c_flags = '-std=gnu99'
@@ -229,27 +255,30 @@ class Command(BaseCommand):
             tl = config.get('time_limit', None)
             if not tl:
                 tl = config['time_limits'][0]
-            f.write(f'MODE = wer\n'
-                    f'ID = {self.task_id}\n'
-                    f'SIG = sinolmake\n'
-                    f'\n'
-                    f'TIMELIMIT = {tl}\n'
-                    f'SLOW_TIMELIMIT = {4 * tl}\n'
-                    f'MEMLIMIT = {config["memory_limit"]}\n'
-                    f'\n'
-                    f'OI_TIME = oiejq\n'
-                    f'\n'
-                    f'CXXFLAGS += {cxx_flags}\n'
-                    f'{self.task_id}chk.e: CXXFLAGS := $(CXXFLAGS)\n'
-                    f'{self.task_id}ingen.e: CXXFLAGS := $(CXXFLAGS)\n'
-                    f'{self.task_id}inwer.e: CXXFLAGS := $(CXXFLAGS)\n'
-                    f'CXXFLAGS += {extra_cxx_args}\n'
-                    f'\n'
-                    f'CFLAGS += {c_flags}\n'
-                    f'{self.task_id}chk.e: CFLAGS := $(CFLAGS)\n'
-                    f'{self.task_id}ingen.e: CFLAGS := $(CFLAGS)\n'
-                    f'{self.task_id}inwer.e: CFLAGS := $(CFLAGS)\n'
-                    f'CFLAGS += {extra_c_args}\n')
+            contents = (f'MODE = wer\n'
+                        f'ID = {self.task_id}\n'
+                        f'SIG = sinolmake\n'
+                        f'\n'
+                        f'TIMELIMIT = {tl}\n'
+                        f'SLOW_TIMELIMIT = {4 * tl}\n'
+                        f'MEMLIMIT = {config["memory_limit"]}\n'
+                        f'\n'
+                        f'OI_TIME = oiejq\n'
+                        f'\n'
+                        f'CXXFLAGS += {cxx_flags}\n'
+                        f'{self.task_id}chk.e: CXXFLAGS := $(CXXFLAGS)\n'
+                        f'{self.task_id}ingen.e: CXXFLAGS := $(CXXFLAGS)\n'
+                        f'{self.task_id}inwer.e: CXXFLAGS := $(CXXFLAGS)\n'
+                        f'CXXFLAGS += {extra_cxx_args}\n'
+                        f'\n'
+                        f'CFLAGS += {c_flags}\n'
+                        f'{self.task_id}chk.e: CFLAGS := $(CFLAGS)\n'
+                        f'{self.task_id}ingen.e: CFLAGS := $(CFLAGS)\n'
+                        f'{self.task_id}inwer.e: CFLAGS := $(CFLAGS)\n'
+                        f'CFLAGS += {extra_c_args}\n')
+            f.write(contents)
+            logger.debug("Contents:")
+            logger.debug(contents)
 
     def compress(self, target_dir):
         """
@@ -257,23 +286,29 @@ class Command(BaseCommand):
         :param target_dir: Target directory path.
         :return: Path to archive.
         """
+        logger.debug(f"Creating .tar.gz archive.")
         archive = os.path.join(os.getcwd(), f'{self.export_name}.tgz')
         with tarfile.open(archive, "w:gz") as tar:
             tar.add(target_dir, arcname=os.path.basename(target_dir))
+        logger.debug(f"Archive created: {archive}")
         return archive
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)
+        logger.debug(f"Running with args: {args}")
 
         self.args = args
         self.task_id = package_util.get_task_id()
+        logger.debug(f"Task id: {self.task_id}")
         self.export_name = self.task_id
         self.task_type_cls = package_util.get_task_type_cls()
+        logger.debug(f"Task type: {self.task_type_cls}")
         package_util.validate_test_names(self.task_id)
         try:
             self.contest = contest_types.get_contest_type()
         except UnknownContestType as e:
             util.exit_with_error(str(e))
+        logger.debug(f"Contest type: {self.contest}")
 
         config = package_util.get_config()
 
@@ -281,6 +316,7 @@ class Command(BaseCommand):
         if os.path.exists(export_package_path):
             shutil.rmtree(export_package_path)
         os.makedirs(export_package_path)
+        logger.debug(f"Export package path: {export_package_path}")
 
         util.change_stack_size_to_unlimited()
         self.generate_input_tests()

@@ -1,3 +1,4 @@
+import logging
 import os
 import glob
 import argparse
@@ -6,6 +7,9 @@ import subprocess
 from sinol_make import util
 from sinol_make.helpers import package_util, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -23,15 +27,19 @@ class Command(BaseCommand):
     def compile_file_latex_div(self, file_path):
         print(f'Compiling {os.path.basename(file_path)} (latex to dvi)...')
         os.chdir(os.path.dirname(file_path))
+        logger.debug(f"Calling {['latex', file_path]}")
         subprocess.run(['latex', file_path])
         dvi_file = os.path.splitext(file_path)[0] + '.dvi'
         dvi_file_path = os.path.join(os.path.dirname(file_path), dvi_file)
         if not os.path.exists(dvi_file_path):
+            logger.debug(f"Dvi file {dvi_file_path} does not exist.")
             print(util.error('Compilation failed.'))
             return False
 
+        logger.debug(f"Calling {['dvipdf', dvi_file_path]}")
         process = subprocess.run(['dvipdf', dvi_file_path])
         if process.returncode != 0:
+            logger.debug(f"dvipdf failed with return code {process.returncode}")
             print(util.error('Compilation failed.'))
             return False
         print(util.info(f'Compilation successful for file {os.path.basename(file_path)}.'))
@@ -41,10 +49,12 @@ class Command(BaseCommand):
         print(f'Compiling {os.path.basename(file_path)} ({compiler})...')
         os.chdir(os.path.dirname(file_path))
         for _ in range(3):
+            logger.debug(f"Calling {[compiler, file_path]}")
             subprocess.run([compiler, file_path])
         pdf_file = os.path.splitext(file_path)[0] + '.pdf'
         pdf_file_path = os.path.join(os.path.dirname(file_path), pdf_file)
         if not os.path.exists(pdf_file_path):
+            logger.debug(f"Pdf file {pdf_file_path} does not exist.")
             print(util.error('Compilation failed.'))
             return False
         return True
@@ -56,6 +66,7 @@ class Command(BaseCommand):
         if self.compilation_method in ('pdflatex', 'lualatex'):
             return self.compile_pdf_latex(file_path, self.compilation_method)
         else:
+            logger.debug(f"Compiling {file_path} with latex and dvipdf two times.")
             if not self.compile_file_latex_div(file_path):
                 return False
             return self.compile_file_latex_div(file_path)
@@ -64,6 +75,7 @@ class Command(BaseCommand):
         output_dir = paths.get_cache_path('doc_logs')
         for pattern in self.LOG_PATTERNS:
             for file in glob.glob(os.path.join(os.getcwd(), 'doc', pattern)):
+                logger.debug(f"Moving {file} to {output_dir}")
                 os.rename(file, os.path.join(output_dir, os.path.basename(file)))
         print(f'Compilation log files can be found in {os.path.relpath(output_dir, os.getcwd())}')
 
@@ -84,6 +96,7 @@ class Command(BaseCommand):
 
     def run(self, args: argparse.Namespace):
         args = util.init_package_command(args)
+        logger.debug(f'Running command with args: {args}')
 
         # Note: when other commands call DocCommand as a subroutine, they provide
         # their own argparse.Namespace instead of going through the argparse
@@ -94,6 +107,7 @@ class Command(BaseCommand):
         if not hasattr(args, 'latex_compiler'):
             config = package_util.get_config()
             args.latex_compiler = config.get('sinol_latex_compiler', 'auto')
+            logger.debug(f'Using latex compiler from config: {args.latex_compiler}')
 
         if args.latex_compiler == 'pdflatex':
             self.compilation_method = 'pdflatex'
@@ -104,12 +118,13 @@ class Command(BaseCommand):
         elif args.latex_compiler == 'auto':
             self.compilation_method = 'pdflatex'
             for extension in ['ps', 'eps']:
-                if glob.glob(os.path.join(os.getcwd(), 'doc', f'*.{extension}')) != []:
+                if glob.glob(os.path.join(os.getcwd(), 'doc', f'*.{extension}')):
                     self.compilation_method = 'latex_dvi'
         else:
             util.exit_with_error("Unrecognized latex compiler")
+        logger.debug(f'Using compilation method {self.compilation_method}')
 
-        if args.files == []:
+        if not args.files:
             self.files = glob.glob(os.path.join(os.getcwd(), 'doc', '*.tex'))
         else:
             self.files = []
@@ -118,9 +133,10 @@ class Command(BaseCommand):
                     print(util.warning(f'File {file} does not exist.'))
                 else:
                     self.files.append(os.path.abspath(file))
-        if self.files == []:
+        if not self.files:
             print(util.warning('No files to compile.'))
             return
+        logger.debug(f'Files to compile: {self.files}')
 
         original_cwd = os.getcwd()
         failed = []
