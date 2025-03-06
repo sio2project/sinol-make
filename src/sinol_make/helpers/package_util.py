@@ -8,15 +8,23 @@ from enum import Enum
 from typing import List, Union, Dict, Any, Tuple, Type
 
 from sinol_make.helpers.func_cache import cache_result
-from sinol_make import util, contest_types
+from sinol_make import util, contest_types, SIO3Package
 from sinol_make.helpers import paths
-from sinol_make.sio3pack.package import Sio3Package
 from sinol_make.task_type import BaseTaskType
 
 
 @cache_result(cwd=True)
 def get_task_id() -> str:
-    return Sio3Package().get_task_id()
+    config = SIO3Package().get_config()
+    if "sinol_task_id" in config:
+        return config["sinol_task_id"]
+    else:
+        print(util.warning("sinol_task_id not specified in config.yml. Using task id from directory name."))
+        task_id = os.path.split(os.getcwd())[-1]
+        if len(task_id) == 3:
+            return task_id
+        else:
+            util.exit_with_error("Invalid task id. Task id should be 3 characters long.")
 
 
 def extract_test_id(test_path, task_id):
@@ -45,7 +53,14 @@ def get_test_key(test, task_id):
 
 
 def get_config():
-    return Sio3Package().get_config()
+    try:
+        with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
+            return yaml.load(config_file, Loader=yaml.FullLoader) or {}
+    except FileNotFoundError:
+        # Potentially redundant with util:exit_if_not_package
+        util.exit_with_error("You are not in a package directory (couldn't find config.yml in current directory).")
+    except yaml.YAMLError as e:
+        util.exit_with_error("config.yml is not a valid YAML. Fix it before continuing:\n" + str(e))
 
 
 def get_solutions_re(task_id: str) -> re.Pattern:

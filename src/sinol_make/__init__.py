@@ -6,10 +6,14 @@ import argcomplete
 
 from sinol_make import util, sio2jail
 from sinol_make.helpers import cache, oicompare
+from sinol_make.sio3pack.package import SIO3Package
 
 # Required for side effects
 from sinol_make.task_type.normal import NormalTaskType # noqa
 from sinol_make.task_type.interactive import InteractiveTaskType # noqa
+
+# SIO3Pack
+from sio3pack.exceptions import SIO3PackException
 
 
 __version__ = "2.0.0.dev1"
@@ -93,6 +97,7 @@ def main_exn():
 def main():
     new_version = None
     try:
+        SIO3Package().from_db(2137)
         if util.is_dev(__version__):
             print(util.warning('You are using a development version of sinol-make. '
                                'It may be unstable and contain bugs.'))
@@ -102,6 +107,11 @@ def main():
         util.exit_with_error(err)
     except SystemExit as err:
         exit(err.code)
+    except SIO3PackException as err:
+        print(traceback.format_exc())
+        util.exit_with_error(f'{err}\n'
+                             'If that is a bug, please report it or submit a bugfix: '
+                             'https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
     except Exception:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'

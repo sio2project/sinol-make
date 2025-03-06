@@ -5,12 +5,12 @@ from sinol_make.contest_types.oij import OIJContest
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make.helpers.package_util import get_config
 from sinol_make.interfaces.Errors import UnknownContestType
-from sinol_make.sio3pack.package import Sio3Package
+from sinol_make.sio3pack.package import SIO3Package
 
 
 @cache_result(cwd=True)
 def get_contest_type():
-    config = Sio3Package().get_config()
+    config = SIO3Package().get_config()
     contest_type = config.get("sinol_contest_type", "default").lower()
 
     if contest_type == "default":

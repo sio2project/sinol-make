@@ -12,7 +12,7 @@ from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make.structs.status_structs import Status
-from sinol_make.sio3pack.package import Sio3Package
+from sinol_make.sio3pack.package import SIO3Package
 
 @cache_result()
 def get_commands():
@@ -59,7 +59,7 @@ def instantiate_package():
     """
     Function to instantiate package from current directory.
     """
-    Sio3Package()
+    SIO3Package()
 
 
 def init_package_command(args):

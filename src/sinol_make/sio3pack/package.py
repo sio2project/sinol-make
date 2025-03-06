@@ -8,7 +8,7 @@ def _get_local_file():
     return LocalFile(os.getcwd())
 
 
-class Sio3Package:
+class SIO3Package:
     """
     Singleton class for package base class.
     """
