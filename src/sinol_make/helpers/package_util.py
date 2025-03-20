@@ -93,18 +93,16 @@ def get_matching_tests(tests: List[Test], patterns: List[str]) -> List[Test]:
         matched_to_pattern = set()
         for test in tests:
             # if absolute path is given, match it directly
-            if os.path.isabs(pattern) and fnmatch.fnmatch(test.test_file.path,
-                                                          pattern):  # TODO test.test_file.path is not a thing
+            if os.path.isabs(pattern) and fnmatch.fnmatch(test.in_file.path, pattern):
                 matched_to_pattern.add(test)
             else:
                 # if relative path is given, match it with current working directory
                 pattern_relative = os.path.join(os.getcwd(), pattern)
-                if fnmatch.fnmatch(test.test_file.path, pattern_relative):  # TODO test.test_file.path is not a thing
+                if fnmatch.fnmatch(test.in_file.path, pattern_relative):
                     matched_to_pattern.add(test)
                 else:
                     # if pattern is given, match it with tests filename
-                    if fnmatch.fnmatch(os.path.basename(test.test_file.path),
-                                       pattern):  # TODO test.test_file.path is not a thing
+                    if fnmatch.fnmatch(os.path.basename(test.in_file.path), pattern):
                         matched_to_pattern.add(test)
         if len(matched_to_pattern) == 0:
             util.exit_with_error("Test %s does not exist" % pattern)
@@ -151,10 +149,10 @@ def get_tests(arg_tests: Union[List[str], None] = None) -> List[Test]: #Zwracał
 
     tests = SIO3Package().get_tests()
     if arg_tests is None:
-        return sorted(tests, key=lambda test: test.group) #TODO test.group is not a thing
+        return sorted(tests, key=lambda test: test.group)
     else:
         matching_tests = get_matching_tests(tests, arg_tests)
-        return sorted(matching_tests, key=lambda test: test.group) #TODO test.group is not a thing
+        return sorted(matching_tests, key=lambda test: test.group)
 
 
 def get_solutions(args_solutions: Union[List[str], None] = None) -> List[File]:
@@ -175,7 +173,6 @@ def get_solutions(args_solutions: Union[List[str], None] = None) -> List[File]:
 def get_correct_solution() -> File:
     """
     Returns path to correct solution.
-    :param task_id: Task id.
     :return: Path to correct solution.
     """
 
@@ -282,7 +279,7 @@ def get_out_tests_re(task_id: str) -> re.Pattern:
     return re.compile(r'^%s(([0-9]+)([a-z]?[a-z0-9]*))\.out$' % re.escape(task_id))
 
 
-def validate_test_names(task_id):
+def validate_test_names():
     """
     Checks if all files in the package have valid names.
     """
@@ -294,28 +291,27 @@ def validate_test_names(task_id):
                 invalid_files.append(os.path.basename(file.path))
         return invalid_files
 
-    # TODO: Resume
+    tests = SIO3Package().get_tests()
+    task_id = SIO3Package().short_name
+    tests_ins = list(map(lambda test: test.in_file, tests))
+    tests_outs =  list(map(lambda test: test.out_file, tests))
     in_test_re = get_in_tests_re(task_id)
-    invalid_in_tests = get_invalid_files(os.path.join("in", "*.in"), in_test_re)
+    invalid_in_tests = get_invalid_files(tests_ins, in_test_re)
     if len(invalid_in_tests) > 0:
         util.exit_with_error(f'Input tests with invalid names: {", ".join(invalid_in_tests)}.')
 
     out_test_re = get_out_tests_re(task_id)
-    invalid_out_tests = get_invalid_files(os.path.join("out", "*.out"), out_test_re)
+    invalid_out_tests = get_invalid_files(tests_outs, out_test_re)
     if len(invalid_out_tests) > 0:
         util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')
 
 
-def get_all_code_files(task_id: str) -> List[str]:
+def get_all_code_files() -> List[File]:
     """
     Returns all code files in package.
-    :param task_id: Task id.
     :return: List of code files.
     """
-    result = glob.glob(os.path.join(os.getcwd(), "prog", f"{task_id}ingen.sh"))
-    for ext in ["c", "cpp", "py", "java"]:
-        result += glob.glob(os.path.join(os.getcwd(), f"prog/{task_id}*.{ext}"))
-    return result
+    return SIO3Package().model_solutions
 
 
 def get_files_matching_pattern(task_id: str, pattern: str) -> List[str]:
