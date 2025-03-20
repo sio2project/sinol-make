@@ -87,7 +87,6 @@ def get_matching_tests(tests: List[Test], patterns: List[str]) -> List[Test]:
     :param patterns: List of patterns to match.
     :return: List of tests with paths matching given path patterns.
     """
-
     matching_tests = set()
     for pattern in patterns:
         matched_to_pattern = set()
@@ -117,7 +116,6 @@ def get_matching_files(files: List[File], patterns: List[str]) -> List[File]:
     :param patterns: List of patterns to match.
     :return: List of files with paths matching given path patterns.
     """
-
     matching_files = set()
     for pattern in patterns:
         matched_to_pattern = set()
@@ -146,7 +144,6 @@ def get_tests(arg_tests: Union[List[str], None] = None) -> List[Test]: #Zwracał
     :param arg_tests: Tests specified in command line arguments. If None, all tests are returned.
     :return: List of tests to run.
     """
-
     tests = SIO3Package().get_tests()
     if arg_tests is None:
         return sorted(tests, key=lambda test: test.group)
@@ -175,7 +172,6 @@ def get_correct_solution() -> File:
     Returns path to correct solution.
     :return: Path to correct solution.
     """
-
     task_id = SIO3Package().short_name
     correct_solution = get_solutions([f'{task_id}.*'])
     if len(correct_solution) == 0:
@@ -283,7 +279,6 @@ def validate_test_names():
     """
     Checks if all files in the package have valid names.
     """
-
     def get_invalid_files(files: List[File], pattern):
         invalid_files = []
         for file in files:
@@ -314,25 +309,23 @@ def get_all_code_files() -> List[File]:
     return SIO3Package().model_solutions
 
 
-def get_files_matching_pattern(task_id: str, pattern: str) -> List[str]:
+def get_files_matching_pattern(pattern: str) -> List[File]:
     """
     Returns all files in package matching given pattern.
-    :param task_id: Task id.
     :param pattern: Pattern to match.
     :return: List of files matching the pattern.
     """
-    all_files = get_all_code_files(task_id)
-    return [file for file in all_files if fnmatch.fnmatch(os.path.basename(file), pattern)]
+    all_files = get_all_code_files()
+    return [file for file in all_files if fnmatch.fnmatch(os.path.basename(file.path), pattern)]
 
 
-def any_files_matching_pattern(task_id: str, pattern: str) -> bool:
+def any_files_matching_pattern(pattern: str) -> bool:
     """
     Returns True if any file in package matches given pattern.
-    :param task_id: Task id.
     :param pattern: Pattern to match.
     :return: True if any file in package matches given pattern.
     """
-    return len(get_files_matching_pattern(task_id, pattern)) > 0
+    return len(get_files_matching_pattern(pattern)) > 0
 
 
 def check_if_contest_type_changed(contest_type):
@@ -412,13 +405,8 @@ def validate_tests(tests: List[str], cpus: int, type: str = 'input'):
     print(util.info(f'All {type} tests are valid!'))
 
 
-def get_all_inputs(task_id):
-    in_test_re = get_in_tests_re(task_id)
-    inputs = []
-    for file in glob.glob(os.path.join(os.getcwd(), "in", "*.in")):
-        if in_test_re.match(os.path.basename(file)):
-            inputs.append(file)
-    return inputs
+def get_all_inputs() -> List[File]:
+    return [file.in_file for file in SIO3Package().get_tests()]
 
 
 def get_task_type_cls() -> Type[BaseTaskType]:
@@ -430,7 +418,7 @@ def get_task_type(timetool_name, timetool_path) -> BaseTaskType:
     return task_type_cls(timetool_name, timetool_path)
 
 
-def get_out_from_in(test) -> str:
+def get_out_from_in(test) -> str: #TODO not needed?
     """
     Returns path to output file corresponding to given input file.
     """
