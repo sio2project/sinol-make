@@ -195,7 +195,7 @@ class Command(BaseCommand):
         print(f'Verifying with inwer {util.bold(relative_path)}')
 
         self.cpus = args.cpus or util.default_cpu_count()
-        self.tests = package_util.get_tests(self.task_id, args.tests)
+        self.tests = package_util.get_tests(args.tests)
         self.contest_type = contest_types.get_contest_type()
 
         if len(self.tests) == 0:

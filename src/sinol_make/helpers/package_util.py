@@ -1,11 +1,13 @@
 import os
 import re
-import yaml
 import glob
 import fnmatch
 import multiprocessing as mp
 from enum import Enum
 from typing import List, Union, Dict, Any, Tuple, Type
+
+from sio3pack.files import File
+from sio3pack.test import Test
 
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util, contest_types, SIO3Package
@@ -15,16 +17,7 @@ from sinol_make.task_type import BaseTaskType
 
 @cache_result(cwd=True)
 def get_task_id() -> str:
-    config = SIO3Package().get_config()
-    if "sinol_task_id" in config:
-        return config["sinol_task_id"]
-    else:
-        print(util.warning("sinol_task_id not specified in config.yml. Using task id from directory name."))
-        task_id = os.path.split(os.getcwd())[-1]
-        if len(task_id) == 3:
-            return task_id
-        else:
-            util.exit_with_error("Invalid task id. Task id should be 3 characters long.")
+    return SIO3Package().short_name
 
 
 def extract_test_id(test_path, task_id):
@@ -53,14 +46,7 @@ def get_test_key(test, task_id):
 
 
 def get_config():
-    try:
-        with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
-            return yaml.load(config_file, Loader=yaml.FullLoader) or {}
-    except FileNotFoundError:
-        # Potentially redundant with util:exit_if_not_package
-        util.exit_with_error("You are not in a package directory (couldn't find config.yml in current directory).")
-    except yaml.YAMLError as e:
-        util.exit_with_error("config.yml is not a valid YAML. Fix it before continuing:\n" + str(e))
+    return SIO3Package().config
 
 
 def get_solutions_re(task_id: str) -> re.Pattern:
@@ -71,8 +57,8 @@ def get_solutions_re(task_id: str) -> re.Pattern:
     return re.compile(r"^%s[bs]?[0-9]*(_.*)?\.(c|cpp|cc|py)$" % task_id)
 
 
-def get_executable_key(executable, task_id):
-    name = get_file_name(executable)
+def get_executable_key(path_to_exe, task_id):
+    name = os.path.basename(path_to_exe)
     task_id_len = len(task_id)
     value = [0, 0]
     if name[task_id_len] == 's':
@@ -94,101 +80,118 @@ def get_executable_key(executable, task_id):
     return tuple(value)
 
 
-def get_files_matching(patterns: List[str], directory: str) -> List[str]:
+def get_matching_tests(tests: List[Test], patterns: List[str]) -> List[Test]:
     """
-    Returns list of files matching given patterns.
-    If pattern is absolute path, it is returned as is.
-    If pattern is relative path, it is searched in current directory and in directory specified as argument.
+    Returns list of tests matching given path patterns.
+    :param tests: List of all tests available.
     :param patterns: List of patterns to match.
-    :param directory: Directory to search in.
-    :return: List of files matching given patterns.
+    :return: List of tests with paths matching given path patterns.
     """
-    files_matching = set()
-    for solution in patterns:
-        if os.path.isabs(solution):
-            files_matching.add(solution)
-        else:
-            # If solution already has `<directory>/` prefix:
-            files_matching.update(glob.glob(os.path.join(os.getcwd(), solution)))
-            # If solution does not have `<directory>/` prefix:
-            files_matching.update(glob.glob(os.path.join(os.getcwd(), directory, solution)))
 
-    return list(files_matching)
+    matching_tests = set()
+    for pattern in patterns:
+        matched_to_pattern = set()
+        for test in tests:
+            # if absolute path is given, match it directly
+            if os.path.isabs(pattern) and fnmatch.fnmatch(test.test_file.path,
+                                                          pattern):  # TODO test.test_file.path is not a thing
+                matched_to_pattern.add(test)
+            else:
+                # if relative path is given, match it with current working directory
+                pattern_relative = os.path.join(os.getcwd(), pattern)
+                if fnmatch.fnmatch(test.test_file.path, pattern_relative):  # TODO test.test_file.path is not a thing
+                    matched_to_pattern.add(test)
+                else:
+                    # if pattern is given, match it with tests filename
+                    if fnmatch.fnmatch(os.path.basename(test.test_file.path),
+                                       pattern):  # TODO test.test_file.path is not a thing
+                        matched_to_pattern.add(test)
+        if len(matched_to_pattern) == 0:
+            util.exit_with_error("Test %s does not exist" % pattern)
+        matching_tests.update(matched_to_pattern)
 
+    return list(matching_tests)
 
-def get_tests(task_id: str, arg_tests: Union[List[str], None] = None) -> List[str]:
+def get_matching_files(files: List[File], patterns: List[str]) -> List[File]:
+    """
+    Returns list of files matching given path patterns.
+    :param files: List of all files available.
+    :param patterns: List of patterns to match.
+    :return: List of files with paths matching given path patterns.
+    """
+
+    matching_files = set()
+    for pattern in patterns:
+        matched_to_pattern = set()
+        for file in files:
+            # if absolute path is given, match it directly
+            if os.path.isabs(pattern) and fnmatch.fnmatch(file.path, pattern):
+                matched_to_pattern.add(file)
+            else:
+                # if relative path is given, match it with current working directory
+                pattern_relative = os.path.join(os.getcwd(), pattern)
+                if fnmatch.fnmatch(file.path, pattern_relative):
+                    matched_to_pattern.add(file)
+                else:
+                    # if pattern is given, match it with filename
+                    if fnmatch.fnmatch(os.path.basename(file.path), pattern):
+                        matched_to_pattern.add(file)
+        if len(matched_to_pattern) == 0:
+            util.exit_with_error("File %s does not exist" % pattern)
+        matching_files.update(matched_to_pattern)
+
+    return list(matching_files)
+
+def get_tests(arg_tests: Union[List[str], None] = None) -> List[Test]: #Zwracało iny
     """
     Returns list of tests to run.
-    :param task_id: Task id.
     :param arg_tests: Tests specified in command line arguments. If None, all tests are returned.
     :return: List of tests to run.
     """
+
+    tests = SIO3Package().get_tests()
     if arg_tests is None:
-        all_tests = ["in/%s" % test for test in os.listdir("in/")
-                     if test[-3:] == ".in"]
-        return sorted(all_tests, key=lambda test: get_test_key(test, task_id))
+        return sorted(tests, key=lambda test: test.group) #TODO test.group is not a thing
     else:
-        existing_tests = []
-        for test in get_files_matching(arg_tests, "in"):
-            if not os.path.isfile(test):
-                util.exit_with_error("Test %s does not exist" % test)
-            if os.path.splitext(test)[1] == ".in":
-                existing_tests.append(os.path.join("in", os.path.basename(test)))
-        return sorted(existing_tests, key=lambda test: get_test_key(test, task_id))
+        matching_tests = get_matching_tests(tests, arg_tests)
+        return sorted(matching_tests, key=lambda test: test.group) #TODO test.group is not a thing
 
 
-def get_solutions(task_id: str, args_solutions: Union[List[str], None] = None) -> List[str]:
+def get_solutions(args_solutions: Union[List[str], None] = None) -> List[File]:
     """
     Returns list of solutions to run.
-    :param task_id: Task id.
     :param args_solutions: Solutions specified in command line arguments. If None, all solutions are returned.
-    :return: List of solutions to run.
+    :return: List of paths of solutions to run.
     """
-    solutions_re = get_solutions_re(task_id)
+    task_id = SIO3Package().short_name
+    solutions = [s.get('file').path for s in SIO3Package().model_solutions]
     if args_solutions is None:
-        solutions = [solution for solution in os.listdir("prog/")
-                     if solutions_re.match(solution)]
-        return sorted(solutions, key=lambda solution: get_executable_key(solution, task_id))
+        return sorted(solutions, key=lambda path: get_executable_key(path, task_id))
     else:
-        solutions = []
-        for solution in get_files_matching(args_solutions, "prog"):
-            if not os.path.isfile(solution):
-                util.exit_with_error("Solution %s does not exist" % solution)
-            if solutions_re.match(os.path.basename(solution)) is not None:
-                solutions.append(os.path.basename(solution))
-
-        return sorted(solutions, key=lambda solution: get_executable_key(solution, task_id))
+        matching_solutions = get_matching_files(solutions, args_solutions)
+        return sorted(matching_solutions, key=lambda solution: get_executable_key(solution, task_id))
 
 
-def get_correct_solution(task_id: str) -> str:
+def get_correct_solution() -> File:
     """
     Returns path to correct solution.
     :param task_id: Task id.
     :return: Path to correct solution.
     """
-    correct_solution = get_solutions(task_id, [f'{task_id}.*'])
+
+    task_id = SIO3Package().short_name
+    correct_solution = get_solutions([f'{task_id}.*'])
     if len(correct_solution) == 0:
         raise FileNotFoundError("Correct solution not found.")
-    return os.path.join(os.getcwd(), "prog", correct_solution[0])
-
-
-def get_file_name(file_path):
-    return os.path.split(file_path)[1]
+    return correct_solution[0]
 
 
 def get_file_name_without_extension(file_path):
-    return os.path.splitext(get_file_name(file_path))[0]
+    return os.path.splitext(os.path.basename(file_path))[0]
 
 
 def get_executable(file_path):
     return os.path.basename(file_path) + ".e"
-
-
-def get_executable_path(solution: str) -> str:
-    """
-    Returns path to compiled executable for given solution.
-    """
-    return paths.get_executables_path(get_executable(solution))
 
 
 def get_file_lang(file_path):
@@ -284,13 +287,14 @@ def validate_test_names(task_id):
     Checks if all files in the package have valid names.
     """
 
-    def get_invalid_files(path, pattern):
+    def get_invalid_files(files: List[File], pattern):
         invalid_files = []
-        for file in glob.glob(os.path.join(os.getcwd(), path)):
-            if not pattern.match(os.path.basename(file)):
-                invalid_files.append(os.path.basename(file))
+        for file in files:
+            if not pattern.match(os.path.basename(file.path)):
+                invalid_files.append(os.path.basename(file.path))
         return invalid_files
 
+    # TODO: Resume
     in_test_re = get_in_tests_re(task_id)
     invalid_in_tests = get_invalid_files(os.path.join("in", "*.in"), in_test_re)
     if len(invalid_in_tests) > 0:

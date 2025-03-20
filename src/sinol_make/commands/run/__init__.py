@@ -337,13 +337,13 @@ class Command(BaseCommand):
         return compilation_results
 
     def compile(self, solution, dest=None, use_extras=False, clear_cache=False, name=None):
-        compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
+        compile_log_file = paths.get_compilation_log_path("%s.compile_log" % os.path.basename(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         if dest:
             output = dest
         else:
             output = paths.get_executables_path(package_util.get_executable(solution))
-        name = name or "file " + package_util.get_file_name(solution)
+        name = name or "file " + os.path.basename(solution)
 
         extra_compilation_args = []
         extra_compilation_files = []
@@ -515,7 +515,7 @@ class Command(BaseCommand):
         Returns a list of groups for which all tests were run.
         """
         group_sizes = {}
-        for test in package_util.get_tests(self.ID):
+        for test in package_util.get_tests():
             group = package_util.get_group(test, self.ID)
             if group not in group_sizes:
                 group_sizes[group] = 0
@@ -965,7 +965,7 @@ class Command(BaseCommand):
         lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0
 
-        self.tests = package_util.get_tests(self.ID, self.args.tests)
+        self.tests = package_util.get_tests(self.args.tests)
         self.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in self.tests}
         self.check_are_any_tests_to_run()
         self.set_scores()
