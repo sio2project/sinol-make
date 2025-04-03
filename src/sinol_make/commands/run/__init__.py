@@ -760,7 +760,7 @@ class Command(BaseCommand):
         self.SOLUTIONS_RE = package_util.get_solutions_re(self.ID)
 
     def validate_arguments(self, args):
-        compilers = compiler.verify_compilers(args, package_util.get_solutions(self.ID, None))
+        compilers = compiler.verify_compilers(args, [solution.path for solution in package_util.get_solutions()])
 
         def use_sio2jail():
             timetool_path = None
@@ -939,7 +939,7 @@ class Command(BaseCommand):
         args = util.init_package_command(args)
 
         self.set_constants()
-        package_util.validate_test_names(self.ID)
+        package_util.validate_test_names()
         self.args = args
         self.config = package_util.get_config()
         try:

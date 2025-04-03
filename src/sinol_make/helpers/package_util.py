@@ -19,30 +19,9 @@ from sinol_make.task_type import BaseTaskType
 def get_task_id() -> str:
     return SIO3Package().short_name
 
-
-def extract_test_id(test_path, task_id):
-    """
-    Extracts test group and number from test path.
-    For example for test abc1a.in it returns 1a.
-    :param test_path: Path to test file.
-    :param task_id: Task id.
-    :return: Test group and number.
-    """
-    return os.path.split(os.path.splitext(test_path)[0])[1][len(task_id):]
-
-
-def get_group(test_path, task_id):
-    if extract_test_id(test_path, task_id).endswith("ocen"):
-        return 0
-    return int("".join(re.search(r'\d+', extract_test_id(test_path, task_id)).group()))
-
-
-def get_groups(tests, task_id):
-    return sorted(list(set([get_group(test, task_id) for test in tests])))
-
-
-def get_test_key(test, task_id):
-    return get_group(test, task_id), test
+def get_groups():
+    tests = SIO3Package().get_tests()
+    return sorted([list(set(test.group)) for test in tests])
 
 
 def get_config():
@@ -57,9 +36,9 @@ def get_solutions_re(task_id: str) -> re.Pattern:
     return re.compile(r"^%s[bs]?[0-9]*(_.*)?\.(c|cpp|cc|py)$" % task_id)
 
 
-def get_executable_key(path_to_exe, task_id):
+def get_executable_key(path_to_exe):
     name = os.path.basename(path_to_exe)
-    task_id_len = len(task_id)
+    task_id_len = len(get_task_id())
     value = [0, 0]
     if name[task_id_len] == 's':
         value[0] = 1
@@ -158,7 +137,7 @@ def get_solutions(args_solutions: Union[List[str], None] = None) -> List[File]:
     :param args_solutions: Solutions specified in command line arguments. If None, all solutions are returned.
     :return: List of paths of solutions to run.
     """
-    task_id = SIO3Package().short_name
+    task_id = get_task_id()
     solutions = [s.get('file').path for s in SIO3Package().model_solutions]
     if args_solutions is None:
         return sorted(solutions, key=lambda path: get_executable_key(path, task_id))
@@ -172,7 +151,7 @@ def get_correct_solution() -> File:
     Returns path to correct solution.
     :return: Path to correct solution.
     """
-    task_id = SIO3Package().short_name
+    task_id = get_task_id()
     correct_solution = get_solutions([f'{task_id}.*'])
     if len(correct_solution) == 0:
         raise FileNotFoundError("Correct solution not found.")
@@ -196,7 +175,7 @@ class LimitTypes(Enum):
     MEMORY_LIMIT = 2
 
 
-def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: str, test_group: str, test_path: str,
+def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test: Test,
                          allow_test_limit: bool = False):
     if limit_type == LimitTypes.TIME_LIMIT:
         limit_name = "time_limit"
@@ -207,13 +186,15 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
     else:
         raise ValueError("Invalid limit type.")
 
+    test_id = test.test_id
+    test_group = test.group
     if plural_limit_name in dict:
         if test_id in dict[plural_limit_name] and test_id != "0":
             if allow_test_limit:
                 return dict[plural_limit_name][test_id]
             else:
                 util.exit_with_error(
-                    f'{os.path.basename(test_path)}: Specifying limit for a single test is not allowed in sinol-make.')
+                    f'{test.test_id}: Specifying limit for a single test is not allowed in sinol-make.')
         elif test_group in dict[plural_limit_name]:
             return dict[plural_limit_name][test_group]
     if limit_name in dict:
@@ -222,14 +203,12 @@ def _get_limit_from_dict(dict: Dict[str, Any], limit_type: LimitTypes, test_id: 
         return None
 
 
-def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], lang: str, task_id: str):
-    test_id = extract_test_id(test_path, task_id)
-    test_group = str(get_group(test_path, task_id))
+def _get_limit(limit_type: LimitTypes, test: Test, config: Dict[str, Any], lang: str):
     contest_type = contest_types.get_contest_type()
     allow_test_limit = config.get("sinol_undocumented_test_limits", False) or contest_type.allow_per_test_limits()
-    global_limit = _get_limit_from_dict(config, limit_type, test_id, test_group, test_path, allow_test_limit)
+    global_limit = _get_limit_from_dict(config, limit_type, test, allow_test_limit)
     override_limits_dict = config.get("override_limits", {}).get(lang, {})
-    overriden_limit = _get_limit_from_dict(override_limits_dict, limit_type, test_id, test_group, test_path,
+    overriden_limit = _get_limit_from_dict(override_limits_dict, limit_type, test,
                                            allow_test_limit)
     if overriden_limit is not None:
         return overriden_limit
@@ -239,13 +218,13 @@ def _get_limit(limit_type: LimitTypes, test_path: str, config: Dict[str, Any], l
         else:
             if limit_type == LimitTypes.TIME_LIMIT:
                 util.exit_with_error(
-                    f'Time limit was not defined for test {os.path.basename(test_path)} in config.yml.')
+                    f'Time limit was not defined for test {test.test_id} in config.yml.')
             elif limit_type == LimitTypes.MEMORY_LIMIT:
                 util.exit_with_error(
-                    f'Memory limit was not defined for test {os.path.basename(test_path)} in config.yml.')
+                    f'Memory limit was not defined for test {test.test_id} in config.yml.')
 
 
-def get_time_limit(test_path, config, lang, task_id, args=None):
+def get_time_limit(test_path, config, lang, args=None):
     """
     Returns time limit for given test.
     """
@@ -253,10 +232,10 @@ def get_time_limit(test_path, config, lang, task_id, args=None):
         return args.tl * 1000
 
     str_config = util.stringify_keys(config)
-    return _get_limit(LimitTypes.TIME_LIMIT, test_path, str_config, lang, task_id)
+    return _get_limit(LimitTypes.TIME_LIMIT, test_path, str_config, lang)
 
 
-def get_memory_limit(test_path, config, lang, task_id, args=None):
+def get_memory_limit(test_path, config, lang, args=None):
     """
     Returns memory limit for given test.
     """
@@ -264,7 +243,7 @@ def get_memory_limit(test_path, config, lang, task_id, args=None):
         return int(args.ml * 1024)
 
     str_config = util.stringify_keys(config)
-    return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang, task_id)
+    return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang)
 
 
 def get_in_tests_re(task_id: str) -> re.Pattern:
@@ -287,7 +266,7 @@ def validate_test_names():
         return invalid_files
 
     tests = SIO3Package().get_tests()
-    task_id = SIO3Package().short_name
+    task_id = get_task_id()
     tests_ins = list(map(lambda test: test.in_file, tests))
     tests_outs =  list(map(lambda test: test.out_file, tests))
     in_test_re = get_in_tests_re(task_id)
