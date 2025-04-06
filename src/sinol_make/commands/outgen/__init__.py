@@ -123,7 +123,8 @@ class Command(BaseCommand):
         else:
             self.clean_cache(from_inputs)
             self.correct_solution_exe = compile_correct_solution(self.correct_solution, self.args,
-                                                                 self.args.compile_mode)
+                                                                 self.args.compile_mode,
+                                                                 use_sanitizers=self.args.sanitizers)
             self.generate_outputs(outputs_to_generate)
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
                 yaml.dump(md5_sums, f)

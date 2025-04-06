@@ -42,7 +42,7 @@ class Command(BaseCommand):
         print(f'Compiling {name}... ', end='')
         compilers = compiler.verify_compilers(args, [file_path])
         exe, compile_log_path = compile.compile_file(file_path, exe_path, compilers, compilation_flags,
-                                                     use_fsanitize=False, use_extras=False)
+                                                     use_sanitizers=self.args.sanitize, use_extras=False)
         if exe is None:
             print(util.error('ERROR'))
             compile.print_compile_log(compile_log_path)
@@ -99,7 +99,7 @@ class Command(BaseCommand):
         return results
 
     def run(self, args):
-        args = util.init_package_command(args)
+        self.args = util.init_package_command(args)
         self.task_id = package_util.get_task_id()
         self.task_type = package_util.get_task_type("time", None)
         self.contest_type = contest_types.get_contest_type()

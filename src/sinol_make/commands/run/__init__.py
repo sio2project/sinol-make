@@ -365,7 +365,8 @@ class Command(BaseCommand):
         try:
             with open(compile_log_file, "w") as compile_log:
                 compile.compile(source_file, output, self.compilers, compile_log, self.args.compile_mode,
-                                extra_compilation_args, extra_compilation_files, clear_cache=clear_cache)
+                                extra_compilation_args, extra_compilation_files, clear_cache=clear_cache,
+                                use_sanitizers=self.args.sanitizers)
             print(util.info(f"Compilation of {name} was successful."))
             return True
         except CompilationError as e:

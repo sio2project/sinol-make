@@ -30,6 +30,12 @@ def add_compilation_arguments(parser: argparse.ArgumentParser):
                              ' oioioi / o - uses the same flags as oioioi:\n'
                              '    (-Wall -Wno-unused-result -Werror)'
                              ' weak / w - disable all warning flags during C and C++ compilation', default='default')
+    parser.add_argument('--sanitize', '-s', dest='sanitize', choices=['no', 'simple', 'full'],
+                        help='Use sanitizers for compilation. Available options:\n'
+                             ' no - no sanitizers\n'
+                             ' simple - use address and undefined sanitizer\n'
+                             ' full - use a lot of sanitizers, full list: https://codeforces.com/blog/entry/15547\n'
+                             'Sanitizers may fail on some systems. To fix this, run `sudo sysctl vm.mmap_rnd_bits = 28`.')
 
 
 def add_cpus_argument(parser: argparse.ArgumentParser, help: str):

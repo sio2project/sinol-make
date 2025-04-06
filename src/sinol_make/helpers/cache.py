@@ -34,7 +34,7 @@ def get_cache_file(solution_path: str) -> CacheFile:
         return CacheFile()
 
 
-def check_compiled(file_path: str, compilation_flags: str, sanitizers: bool) -> Union[str, None]:
+def check_compiled(file_path: str, compilation_flags: str, sanitizers: str) -> Union[str, None]:
     """
     Check if a file is compiled
     :param file_path: Path to the file

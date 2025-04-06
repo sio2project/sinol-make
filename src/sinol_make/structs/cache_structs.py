@@ -70,11 +70,15 @@ class CacheFile:
 
     @staticmethod
     def from_dict(dict) -> 'CacheFile':
+        # Backwards compatibility. Before v1.9.8, sanitizers were stored as a bool.
+        if type(dict.get("sanitizers", "no")) == bool:
+            dict["sanitizers"] = "simple" if dict["sanitizers"] else "no"
+
         return CacheFile(
             md5sum=dict.get("md5sum", ""),
             executable_path=dict.get("executable_path", ""),
             compilation_flags=dict.get("compilation_flags", "default"),
-            sanitizers=dict.get("sanitizers", False),
+            sanitizers=dict.get("sanitizers", 'no'),
             tests={k: CacheTest(
                 time_limit=v["time_limit"],
                 memory_limit=v["memory_limit"],
