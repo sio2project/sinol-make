@@ -76,7 +76,7 @@ class Command(BaseCommand):
         if len(outputs) > 0:
             outgen = OutgenCommand()
             correct_solution_exe = compile_correct_solution(get_correct_solution(self.task_id), self.args,
-                                                            self.args.compile_mode, use_sanitizers=self.args.sanitizers)
+                                                            self.args.compile_mode, use_sanitizers=self.args.sanitize)
             outgen.args = self.args
             outgen.correct_solution_exe = correct_solution_exe
             outgen.generate_outputs(outputs)

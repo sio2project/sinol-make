@@ -67,7 +67,7 @@ class Command(BaseCommand):
         self.ingen = get_ingen(self.task_id, args.ingen_path)
         print(f'Using ingen file {os.path.basename(self.ingen)}')
         self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode,
-                                       use_sanitizers=self.args.sanitizers)
+                                       use_sanitizers=self.args.sanitize)
 
         previous_tests = []
         try:

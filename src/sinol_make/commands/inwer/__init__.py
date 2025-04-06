@@ -204,7 +204,7 @@ class Command(BaseCommand):
 
         util.change_stack_size_to_unlimited()
         self.inwer_executable = inwer_util.compile_inwer(self.inwer, args, args.compile_mode,
-                                                         use_sanitizers=args.sanitizers)
+                                                         use_sanitizers=args.sanitize)
         results: Dict[str, TestResult] = self.verify_and_print_table()
         print('')
 
