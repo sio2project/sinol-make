@@ -57,11 +57,11 @@ class Command(BaseCommand):
         """
         output_file = paths.get_chkwer_path(os.path.basename(execution.out_test_path))
         with open(execution.in_test_path, 'r') as inf, open(output_file, 'w') as outf:
-            process = subprocess.Popen([execution.model_exe], stdin=inf, stdout=outf)
-            process.wait()
+            process = subprocess.Popen([execution.model_exe], stdin=inf, stdout=outf, stderr=subprocess.PIPE)
+            _, stderr = process.communicate()
         ok, points, comment = self.task_type.check_output(execution.in_test_path, output_file, execution.out_test_path)
 
-        return RunResult(execution.in_test_path, ok, int(points), comment)
+        return RunResult(execution.in_test_path, ok, int(points), comment, stderr.decode('utf-8'))
 
     def run_and_print_table(self) -> Dict[str, TestResult]:
         results = {}
@@ -84,7 +84,7 @@ class Command(BaseCommand):
         try:
             with mp.Pool(self.cpus) as pool:
                 for i, result in enumerate(pool.imap(self.run_test, executions)):
-                    table_data.results[result.test_path].set_results(result.points, result.ok, result.comment)
+                    table_data.results[result.test_path].set_results(result.points, result.ok, result.comment, result.stderr)
                     table_data.i = i
         except KeyboardInterrupt:
             keyboard_interrupt = True

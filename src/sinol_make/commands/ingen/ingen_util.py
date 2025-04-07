@@ -84,7 +84,7 @@ def run_ingen(ingen_exe, working_dir=None):
         os.chmod(ingen_exe, st.st_mode | stat.S_IEXEC)
 
     print(util.bold(' Ingen output '.center(util.get_terminal_size()[1], '=')))
-    process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                cwd=working_dir, shell=is_shell)
     whole_output = ''
     while process.poll() is None:
@@ -101,7 +101,7 @@ def run_ingen(ingen_exe, working_dir=None):
     stderr = process.stderr.read()
     if stderr:
         print(util.error('Ingen error output:'))
-        print(stderr.decode('utf-8'), end='')
+        print(stderr.decode('utf-8'), end='\n\n')
 
     if util.has_sanitizer_error(whole_output, exit_code):
         print(util.warning('Warning: if ingen failed due to sanitizer errors, you can either run '
