@@ -48,6 +48,7 @@ class Command(BaseCommand):
                             help='ignore expected scores from config.yml. When this flag is set, '
                                  'the expected scores are not compared with the actual scores. '
                                  'This flag will be passed to the run command.')
+        parsers.add_time_tool_argument(parser)
         parsers.add_compilation_arguments(parser)
 
     def correct_contest_type(self):
