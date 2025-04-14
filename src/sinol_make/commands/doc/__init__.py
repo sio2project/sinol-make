@@ -6,7 +6,6 @@ import subprocess
 from sinol_make import util
 from sinol_make.helpers import package_util, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
-from sinol_make.sio3pack.package import SIO3Package
 
 
 class Command(BaseCommand):
@@ -93,7 +92,7 @@ class Command(BaseCommand):
         # when it is not provided by the user, instead of using the default
         # behavior of defaulting to None.
         if not hasattr(args, 'latex_compiler'):
-            config = SIO3Package().get_config()
+            config = package_util.get_config()
             args.latex_compiler = config.get('sinol_latex_compiler', 'auto')
 
         if args.latex_compiler == 'pdflatex':

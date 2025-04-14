@@ -6,7 +6,7 @@ import tarfile
 import tempfile
 import argparse
 
-from sinol_make import util, contest_types, SIO3Package
+from sinol_make import util, contest_types
 from sinol_make.commands.ingen.ingen_util import get_ingen_path, compile_ingen, run_ingen, ingen_exists
 from sinol_make.helpers import package_util, parsers, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -75,7 +75,7 @@ class Command(BaseCommand):
             outputs.append(os.path.join(out_dir, os.path.basename(test).replace('.in', '.out')))
         if len(outputs) > 0:
             outgen = OutgenCommand()
-            correct_solution_exe = compile_correct_solution(SIO3Package().get_correct_solution(), self.args,
+            correct_solution_exe = compile_correct_solution(package_util.get_correct_solution(), self.args,
                                                             self.args.compile_mode)
             outgen.args = self.args
             outgen.correct_solution_exe = correct_solution_exe
