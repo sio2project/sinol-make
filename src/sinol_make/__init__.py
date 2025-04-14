@@ -11,8 +11,11 @@ from sinol_make.helpers import cache, oicompare
 from sinol_make.task_type.normal import NormalTaskType # noqa
 from sinol_make.task_type.interactive import InteractiveTaskType # noqa
 
+# SIO3Pack
+from sio3pack.exceptions import SIO3PackException
 
-__version__ = "1.9.7"
+
+__version__ = "2.0.0.dev1"
 
 
 def configure_parsers():
@@ -102,6 +105,11 @@ def main():
         util.exit_with_error(err)
     except SystemExit as err:
         exit(err.code)
+    except SIO3PackException as err:
+        print(traceback.format_exc())
+        util.exit_with_error(f'{err}\n'
+                             'If that is a bug, please report it or submit a bugfix: '
+                             'https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
     except Exception:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'

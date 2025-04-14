@@ -153,7 +153,7 @@ class Command(BaseCommand):
         print(util.bold(' Generating tests '.center(util.get_terminal_size()[1], '=')))
         gen = GenCommand()
         gen.run(self.prepare_args(gen))
-        self.verify_scores(package_util.get_groups(package_util.get_all_inputs(self.task_id), self.task_id))
+        self.verify_scores(package_util.get_groups())
 
         # Generate problem statements
         print(util.bold(' Generating problem statements '.center(util.get_terminal_size()[1], '=')))
@@ -161,7 +161,7 @@ class Command(BaseCommand):
         doc.run(self.prepare_args(doc))
 
         # Run inwer
-        if inwer_util.get_inwer_path(self.task_id) is None:
+        if inwer_util.get_inwer_path() is None:
             print(util.warning("Package doesn't have inwer."))
         else:
             print(util.bold(' Running inwer '.center(util.get_terminal_size()[1], '=')))

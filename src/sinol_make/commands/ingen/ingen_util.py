@@ -8,43 +8,43 @@ from sinol_make import util
 from sinol_make.helpers import package_util, compiler, compile
 
 
-def ingen_exists(task_id):
+def ingen_exists():
     """
     Checks if ingen source file exists.
-    :param task_id: task id, for example abc
     :return: True if exists, False otherwise
     """
-    return package_util.any_files_matching_pattern(task_id, f'{task_id}ingen.*')
+    task_id = package_util.get_task_id()
+    return package_util.any_files_matching_pattern(f'{task_id}ingen.*')
 
 
-def get_ingen(task_id, ingen_path=None):
+def get_ingen_path(ingen_path=None) -> str:
     """
     Find ingen source file in `prog/` directory.
     If `ingen_path` is specified, then it will be used (if exists).
-    :param task_id: task id, for example abc.
     :param ingen_path: path to ingen source file
     :return: path to ingen source file or None if not found
     """
 
+    task_id = package_util.get_task_id()
     if ingen_path is not None:
         if os.path.exists(ingen_path):
             return ingen_path
         else:
             util.exit_with_error(f'Ingen source file {ingen_path} does not exist.')
 
-    ingen = package_util.get_files_matching_pattern(task_id, f'{task_id}ingen.*')
+    ingen = package_util.get_files_matching_pattern(f'{task_id}ingen.*')
     if len(ingen) == 0:
         util.exit_with_error(f'Ingen source file for task {task_id} does not exist.')
 
     # Sio2 first chooses shell scripts, then non-shell source codes.
     correct_ingen = None
     for i in ingen:
-        if os.path.splitext(i)[1] == '.sh':
+        if os.path.splitext(i.path)[1] == '.sh':
             correct_ingen = i
             break
     if correct_ingen is None:
         correct_ingen = ingen[0]
-    return correct_ingen
+    return correct_ingen.path
 
 
 def compile_ingen(ingen_path: str, args: argparse.Namespace, compilation_flags='default', use_fsanitize=False):

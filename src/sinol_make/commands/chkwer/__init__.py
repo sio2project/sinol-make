@@ -108,7 +108,7 @@ class Command(BaseCommand):
             util.exit_with_error("chkwer can be run only for normal tasks.")
 
         self.cpus = args.cpus or util.default_cpu_count()
-        self.tests = package_util.get_tests(self.task_id, args.tests)
+        self.tests = package_util.get_tests(args.tests)
 
         if len(self.tests) == 0:
             util.exit_with_error("No tests found.")

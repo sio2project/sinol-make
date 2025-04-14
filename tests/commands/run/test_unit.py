@@ -35,7 +35,7 @@ def test_execution(create_package, time_tool):
     assert result == [True]
 
     create_ins_outs(package_path)
-    test = package_util.get_tests("abc", None)[0]
+    test = package_util.get_tests(None)[0]
 
     with open(os.path.join(package_path, "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
@@ -52,7 +52,7 @@ def test_run_solutions(create_package, time_tool):
     command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool, compile_mode='default',
                                       hide_memory=False)
     create_ins_outs(package_path)
-    command.tests = package_util.get_tests("abc", None)
+    command.tests = package_util.get_tests(None)
     command.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in command.tests}
     command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
     command.scores = command.config["scores"]
@@ -456,7 +456,7 @@ def test_get_valid_input_files(create_package):
     package_path = create_package
     command = get_command(package_path)
     create_ins_outs(package_path)
-    command.tests = package_util.get_tests(command.ID, None)
+    command.tests = package_util.get_tests(None)
 
     outputs = glob.glob(os.path.join(package_path, "out", "*.out"))
     os.unlink(outputs[0])

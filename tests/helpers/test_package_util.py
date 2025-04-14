@@ -34,7 +34,7 @@ def test_get_tests(create_package):
     os.chdir(create_package)
     task_id = package_util.get_task_id()
     create_ins(create_package, task_id)
-    tests = package_util.get_tests("abc", None)
+    tests = package_util.get_tests(None)
     assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -52,18 +52,14 @@ def test_get_tests(create_package):
         create_file("abc1b.in")
         create_file("abc2a.in")
 
-        assert set(package_util.get_tests("abc", None)) == \
+        assert set(package_util.get_tests(None)) == \
                {"in/abc0.in", "in/abc0a.in", "in/abc1a.in", "in/abc1b.in", "in/abc1ocen.in", "in/abc2a.in", "in/abc2ocen.in"}
-        assert package_util.get_tests("abc", ["in/abc1a.in"]) == ["in/abc1a.in"]
-        assert package_util.get_tests("abc", ["in/abc??.in"]) == \
+        assert package_util.get_tests(["in/abc1a.in"]) == ["in/abc1a.in"]
+        assert package_util.get_tests(["in/abc??.in"]) == \
                ["in/abc0a.in", "in/abc1a.in", "in/abc1b.in", "in/abc2a.in"]
-        assert package_util.get_tests("abc", ["abc1a.in"]) == ["in/abc1a.in"]
-        assert package_util.get_tests("abc", ["abc?ocen.in", "abc0.in"]) == ["in/abc0.in", "in/abc1ocen.in", "in/abc2ocen.in"]
-        assert package_util.get_tests("abc", [os.path.join(tmpdir, "in", "abc1a.in")]) == ["in/abc1a.in"]
-
-
-def test_extract_file_name():
-    assert package_util.get_file_name("in/abc1a.in") == "abc1a.in"
+        assert package_util.get_tests(["abc1a.in"]) == ["in/abc1a.in"]
+        assert package_util.get_tests(["abc?ocen.in", "abc0.in"]) == ["in/abc0.in", "in/abc1ocen.in", "in/abc2ocen.in"]
+        assert package_util.get_tests([os.path.join(tmpdir, "in", "abc1a.in")]) == ["in/abc1a.in"]
 
 
 def test_get_executable():

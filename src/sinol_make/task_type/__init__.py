@@ -97,10 +97,10 @@ class BaseTaskType(RegisteredSubclassesBase):
         """
         ret = []
         task_id = package_util.get_task_id()
-        checker = package_util.get_files_matching_pattern(task_id, f'{task_id}chk.*')
+        checker = package_util.get_files_matching_pattern(f'{task_id}chk.*')
         if len(checker) > 0:
             self.has_checker = True
-            checker = checker[0]
+            checker = checker[0].path
             checker_basename = os.path.basename(checker)
             self.checker_path = paths.get_executables_path(checker_basename + ".e")
             ret += [(checker, self.checker_path, "checker", True, True)]

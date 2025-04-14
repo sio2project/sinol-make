@@ -9,18 +9,6 @@ from sinol_make import util
 from sinol_make.helpers import package_util, compiler, compile
 
 
-def get_correct_solution(task_id):
-    """
-    Returns path to correct solution for given task.
-    :param task_id: task id, for example abc
-    :return: path to correct solution or None if not found
-    """
-    correct_solution = package_util.get_files_matching_pattern(task_id, f'{task_id}.*')
-    if len(correct_solution) == 0:
-        util.exit_with_error(f'Correct solution for task {task_id} does not exist.')
-    return correct_solution[0]
-
-
 def compile_correct_solution(solution_path: str, args: argparse.Namespace, compilation_flags='default'):
     """
     Compiles correct solution and returns path to compiled executable.

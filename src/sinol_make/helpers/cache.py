@@ -163,17 +163,16 @@ def has_file_changed(file_path: str) -> bool:
         return True
 
 
-def check_correct_solution(task_id: str):
+def check_correct_solution():
     """
     Checks if correct solution has changed. If it did, removes cache for input files.
-    :param task_id: Task id
     """
     try:
-        solution = package_util.get_correct_solution(task_id)
+        solution = package_util.get_correct_solution()
     except FileNotFoundError:
         return
 
-    if has_file_changed(solution) and os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
+    if has_file_changed(solution.path) and os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
         os.unlink(os.path.join(os.getcwd(), 'in', '.md5sums'))
 
 
