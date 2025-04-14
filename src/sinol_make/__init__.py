@@ -6,7 +6,6 @@ import argcomplete
 
 from sinol_make import util, sio2jail
 from sinol_make.helpers import cache, oicompare
-from sinol_make.sio3pack.package import SIO3Package
 
 # Required for side effects
 from sinol_make.task_type.normal import NormalTaskType # noqa
@@ -97,7 +96,6 @@ def main_exn():
 def main():
     new_version = None
     try:
-        SIO3Package().from_db(2137)
         if util.is_dev(__version__):
             print(util.warning('You are using a development version of sinol-make. '
                                'It may be unstable and contain bugs.'))

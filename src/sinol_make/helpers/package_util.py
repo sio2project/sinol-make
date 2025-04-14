@@ -10,9 +10,10 @@ from sio3pack.files import File
 from sio3pack.test import Test
 
 from sinol_make.helpers.func_cache import cache_result
-from sinol_make import util, contest_types, SIO3Package
+from sinol_make import util, contest_types
 from sinol_make.helpers import paths
 from sinol_make.task_type import BaseTaskType
+from sinol_make.sio3pack.package import SIO3Package
 
 
 @cache_result(cwd=True)

@@ -9,8 +9,8 @@ import multiprocessing as mp
 
 from sio3pack.test import Test
 
-from sinol_make import util, SIO3Package
-from sinol_make.commands.outgen.outgen_util import get_correct_solution, compile_correct_solution, generate_output
+from sinol_make import util
+from sinol_make.commands.outgen.outgen_util import compile_correct_solution, generate_output
 from sinol_make.structs.gen_structs import OutputGenerationArguments
 from sinol_make.helpers import parsers, package_util, cache, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -66,7 +66,7 @@ class Command(BaseCommand):
                  list of input tests based on which the output tests will be generated)
         """
         if tests is None:
-            tests = SIO3Package().get_tests()
+            tests = package_util.get_tests()
 
         old_md5_sums = None
         try:
