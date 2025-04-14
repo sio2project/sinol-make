@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from sio3pack.test.test import Test
 
 @dataclass
 class ExecutionData:
@@ -11,7 +12,7 @@ class ExecutionData:
     # Filename of the executable
     executable: str
     # Filename of the test
-    test: str
+    test: Test
     # Time limit for this test in milliseconds
     time_limit: int
     # Memory limit in KB

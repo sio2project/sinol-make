@@ -86,6 +86,7 @@ class Command(BaseCommand):
             util.exit_with_error('Failed to generate input files.')
 
         self.delete_dangling_files(dates)
+        package_util.reload_tests()
 
         with open(paths.get_cache_path("input_tests"), "w") as f:
             f.write("\n".join(glob.glob(os.path.join(os.getcwd(), "in", f"{self.task_id}*.in")))) # TODO: refactor

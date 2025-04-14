@@ -1,6 +1,5 @@
 import os
 import re
-import glob
 import fnmatch
 import multiprocessing as mp
 from enum import Enum
@@ -21,7 +20,7 @@ def get_task_id() -> str:
     return SIO3Package().short_name
 
 def get_groups():
-    tests = SIO3Package().get_tests()
+    tests = SIO3Package().tests
     return sorted([list(set(test.group)) for test in tests])
 
 
@@ -124,7 +123,7 @@ def get_tests(arg_tests: Union[List[str], None] = None) -> List[Test]: #Zwracał
     :param arg_tests: Tests specified in command line arguments. If None, all tests are returned.
     :return: List of tests to run.
     """
-    tests = SIO3Package().get_tests()
+    tests = SIO3Package().tests
     if arg_tests is None:
         return sorted(tests, key=lambda test: test.group)
     else:
@@ -138,13 +137,13 @@ def get_solutions(args_solutions: Union[List[str], None] = None) -> List[File]:
     :param args_solutions: Solutions specified in command line arguments. If None, all solutions are returned.
     :return: List of paths of solutions to run.
     """
-    task_id = get_task_id()
-    solutions = [s.get('file').path for s in SIO3Package().model_solutions]
+
+    solutions = [s.get('file') for s in SIO3Package().model_solutions]
     if args_solutions is None:
-        return sorted(solutions, key=lambda path: get_executable_key(path, task_id))
+        return sorted(solutions, key=lambda solution: get_executable_key(solution.path))
     else:
         matching_solutions = get_matching_files(solutions, args_solutions)
-        return sorted(matching_solutions, key=lambda solution: get_executable_key(solution, task_id))
+        return sorted(matching_solutions, key=lambda solution: get_executable_key(solution.path))
 
 
 def get_correct_solution() -> File:
@@ -262,14 +261,16 @@ def validate_test_names():
     def get_invalid_files(files: List[File], pattern):
         invalid_files = []
         for file in files:
+            if file is None:
+                continue
             if not pattern.match(os.path.basename(file.path)):
                 invalid_files.append(os.path.basename(file.path))
         return invalid_files
 
-    tests = SIO3Package().get_tests()
+    tests = SIO3Package().tests
     task_id = get_task_id()
-    tests_ins = list(map(lambda test: test.in_file, tests))
-    tests_outs =  list(map(lambda test: test.out_file, tests))
+    tests_ins = [test.in_file for test in tests]
+    tests_outs = [test.out_file for test in tests]
     in_test_re = get_in_tests_re(task_id)
     invalid_in_tests = get_invalid_files(tests_ins, in_test_re)
     if len(invalid_in_tests) > 0:
@@ -286,7 +287,7 @@ def get_all_code_files() -> List[File]:
     Returns all code files in package.
     :return: List of code files.
     """
-    return SIO3Package().model_solutions
+    return SIO3Package().get_additional_files()
 
 
 def get_files_matching_pattern(pattern: str) -> List[File]:
@@ -403,3 +404,9 @@ def get_out_from_in(test) -> str: #TODO not needed?
     Returns path to output file corresponding to given input file.
     """
     return os.path.join("out", os.path.splitext(os.path.basename(test))[0] + ".out")
+
+def reload_tests():
+    """
+    Reloads tests from package.
+    """
+    SIO3Package().reload_tests()
