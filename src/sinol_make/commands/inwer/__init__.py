@@ -40,7 +40,6 @@ class Command(BaseCommand):
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='test to verify, for example in/abc{0,1}*')
         parsers.add_cpus_argument(parser, 'number of cpus to use when verifying tests')
-        parsers.add_fsanitize_argument(parser)
         parsers.add_compilation_arguments(parser)
         return parser
 
@@ -204,7 +203,8 @@ class Command(BaseCommand):
             print('Verifying tests: ' + util.bold(', '.join(self.tests)))
 
         util.change_stack_size_to_unlimited()
-        self.inwer_executable = inwer_util.compile_inwer(self.inwer, args, args.compile_mode, args.fsanitize)
+        self.inwer_executable = inwer_util.compile_inwer(self.inwer, args, args.compile_mode,
+                                                         use_sanitizers=args.sanitize)
         results: Dict[str, TestResult] = self.verify_and_print_table()
         print('')
 

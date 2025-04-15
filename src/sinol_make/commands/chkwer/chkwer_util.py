@@ -59,7 +59,9 @@ def print_view(term_width, term_height, table_data: TableData):
 
         output = []
         if result.run:
-            if result.comment:
+            if result.stderr != "":
+                print(util.error("stderr:"), result.stderr, end=' | ')
+            elif result.comment:
                 print(result.comment)
             else:
                 print(util.color_gray("No comment"))

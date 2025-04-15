@@ -301,7 +301,9 @@ class Command(BaseCommand):
                             help='allow running the script without full outputs')
         parser.add_argument('-o', '--comments', dest='comments', action='store_true',
                             help="show checker's comments")
-        parsers.add_compilation_arguments(parser)
+        parsers.add_compilation_arguments(parser, custom_sanitize_help='When using sanitizers, make sure '
+                                          'that you are running with `time` tool for measuring time and memory. '
+                                          'Sio2jail does not support sanitizers.')
         return parser
 
     def extract_file_name(self, file_path):
@@ -362,7 +364,8 @@ class Command(BaseCommand):
         try:
             with open(compile_log_file, "w") as compile_log:
                 compile.compile(source_file, output, self.compilers, compile_log, self.args.compile_mode,
-                                extra_compilation_args, extra_compilation_files, clear_cache=clear_cache)
+                                extra_compilation_args, extra_compilation_files, clear_cache=clear_cache,
+                                use_sanitizers=self.args.sanitize)
             print(util.info(f"Compilation of {name} was successful."))
             return True
         except CompilationError as e:

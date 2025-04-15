@@ -37,7 +37,6 @@ class Command(BaseCommand):
         parsers.add_cpus_argument(parser, 'number of cpus to use to generate output files')
         parser.add_argument('-n', '--no-validate', default=False, action='store_true',
                             help='do not validate test contents')
-        parsers.add_fsanitize_argument(parser)
         parsers.add_compilation_arguments(parser)
         return parser
 

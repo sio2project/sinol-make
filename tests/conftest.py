@@ -21,7 +21,7 @@ def _compile(args):
     use_fsanitize = fnmatch.fnmatch(basename, "*ingen*") or fnmatch.fnmatch(basename, "*inwer*")
     try:
         with open(compile_log_path, "w") as compile_log:
-            compile.compile(file_path, output, compile_log=compile_log, use_fsanitize=use_fsanitize)
+            compile.compile(file_path, output, compile_log=compile_log, use_sanitizers=use_fsanitize)
     except CompilationError:
         compile.print_compile_log(compile_log_path)
         raise

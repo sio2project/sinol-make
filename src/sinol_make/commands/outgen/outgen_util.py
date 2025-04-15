@@ -21,13 +21,13 @@ def get_correct_solution(task_id):
     return correct_solution[0]
 
 
-def compile_correct_solution(solution_path: str, args: argparse.Namespace, compilation_flags='default'):
+def compile_correct_solution(solution_path: str, args: argparse.Namespace, compilation_flags='default', use_sanitizers='no'):
     """
     Compiles correct solution and returns path to compiled executable.
     """
     compilers = compiler.verify_compilers(args, [solution_path])
     correct_solution_exe, compile_log_path = compile.compile_file(solution_path, package_util.get_executable(solution_path), compilers,
-                                                                  compilation_flags)
+                                                                  compilation_flags, use_sanitizers=use_sanitizers)
     if correct_solution_exe is None:
         util.exit_with_error('Failed compilation of correct solution.',
                                   lambda: compile.print_compile_log(compile_log_path))
@@ -49,7 +49,7 @@ def generate_output(arguments):
 
     input_file = open(input_test, 'r')
     output_file = open(output_test, 'w')
-    process = subprocess.Popen([correct_solution_exe], stdin=input_file, stdout=output_file, preexec_fn=os.setsid)
+    process = subprocess.Popen([correct_solution_exe], stdin=input_file, stdout=output_file, stderr=subprocess.PIPE, preexec_fn=os.setsid)
     previous_sigint_handler = signal.getsignal(signal.SIGINT)
 
     def sigint_handler(signum, frame):
@@ -60,10 +60,10 @@ def generate_output(arguments):
         sys.exit(1)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    process.wait()
+    _, stderr = process.communicate()
     signal.signal(signal.SIGINT, previous_sigint_handler)
     exit_code = process.returncode
     input_file.close()
     output_file.close()
 
-    return exit_code == 0
+    return exit_code == 0, stderr
