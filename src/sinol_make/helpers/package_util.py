@@ -21,7 +21,7 @@ def get_task_id() -> str:
 
 def get_groups():
     tests = SIO3Package().tests
-    return sorted([list(set(test.group)) for test in tests])
+    return sorted(list(set([test.group for test in tests])))
 
 
 def get_config():
@@ -287,7 +287,7 @@ def get_all_code_files() -> List[File]:
     Returns all code files in package.
     :return: List of code files.
     """
-    return SIO3Package().get_additional_files()
+    return [sol["file"] for sol in SIO3Package().model_solutions] + SIO3Package().additional_files
 
 
 def get_files_matching_pattern(pattern: str) -> List[File]:

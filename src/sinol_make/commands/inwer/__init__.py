@@ -51,18 +51,18 @@ class Command(BaseCommand):
         """
         Verifies a test and returns the result of inwer on this test.
         """
-        output_dir = paths.get_executables_path(execution.test_name)
+        output_dir = paths.get_executables_path(execution.test.test_name)
         os.makedirs(output_dir, exist_ok=True)
 
-        command = [execution.inwer_exe_path, os.path.basename(execution.test_path)]
-        with open(execution.test_path, 'r') as test:
+        command = [execution.inwer_exe_path, os.path.basename(execution.test.test_name)]
+        with open(execution.test.in_file.path, 'r') as test:
             process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             process.wait()
         exit_code = process.returncode
         out, _ = process.communicate()
 
         return VerificationResult(
-            execution.test_path,
+            execution.test,
             exit_code == 0,
             out.decode('utf-8')
         )
@@ -76,10 +76,11 @@ class Command(BaseCommand):
         sorted_tests = sorted(self.tests, key=lambda test: test.group)
         executions: List[InwerExecution] = []
         for test in sorted_tests:
-            results[test] = TestResult(test)
-            executions.append(InwerExecution(test.in_file.path, results[test].test_name, self.inwer_executable))
+            results[test.test_name] = TestResult(test)
+            executions.append(InwerExecution(test, self.inwer_executable))
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
+        has_terminal = False
 
         table_data = TableData(results, 0)
         if has_terminal:
@@ -93,7 +94,7 @@ class Command(BaseCommand):
         try:
             with mp.Pool(self.cpus) as pool:
                 for i, result in enumerate(pool.imap(self.verify_test, executions)):
-                    table_data.results[result.test_path].set_results(result.valid, result.output)
+                    table_data.results[result.test.test_name].set_results(result.valid, result.output)
                     table_data.i = i
                     if util.has_sanitizer_error(result.output, 0 if result.valid else 1):
                         sanitizer_error = True
@@ -171,7 +172,7 @@ class Command(BaseCommand):
             last_id = None
             last_test = None
             for test in group_tests:
-                test_id = "".join(filter(not str.isdigit, test.test_id))
+                test_id = "".join([c for c in test.test_id if not c.isdigit()])
                 if last_id is not None and not is_next(last_id, test_id):
                     util.exit_with_error(f'Test {test.test_id} is in wrong order. '
                                          f'Last test was {last_test.test_id}.')
@@ -209,7 +210,7 @@ class Command(BaseCommand):
         failed_tests = []
         for result in results.values():
             if not result.valid:
-                failed_tests.append(result.test_name)
+                failed_tests.append(result.test.test_name)
 
         if len(failed_tests) > 0:
             util.exit_with_error(f'Verification failed for tests: {", ".join(failed_tests)}')

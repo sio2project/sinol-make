@@ -103,7 +103,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
     out = capsys.readouterr().out
     assert "Solutions were added:" in out
     assert "There was an unknown change in expected scores." not in out
-    solution = package_util.get_files_matching_pattern(command.ID, f"{command.ID}.*")[0]
+    solution = package_util.get_files_matching_pattern(f"{command.ID}.*")[0]
     assert os.path.basename(solution) in out
 
 
@@ -208,7 +208,7 @@ def test_flag_solutions(capsys, create_package, time_tool):
     create_ins_outs(package_path)
 
     task_id = package_util.get_task_id()
-    solutions = package_util.get_files_matching_pattern(task_id, f'{task_id}?.*')
+    solutions = package_util.get_files_matching_pattern(f'{task_id}?.*')
     parser = configure_parsers()
     args = parser.parse_args(["run", "--solutions", solutions[0], "--time-tool", time_tool])
     command = Command()
@@ -232,7 +232,7 @@ def test_flag_solutions_multiple(capsys, create_package, time_tool):
     task_id = package_util.get_task_id()
     solutions = [
         os.path.basename(file)
-        for file in package_util.get_files_matching_pattern(task_id, f'{task_id}?.*')
+        for file in package_util.get_files_matching_pattern(f'{task_id}?.*')
     ]
     parser = configure_parsers()
     args = parser.parse_args(["run", "--solutions", solutions[0], os.path.join("prog", solutions[1]),
@@ -645,7 +645,7 @@ def test_results_caching(create_package, time_tool):
     assert end_time - start_time < length / 2
 
     task_id = package_util.get_task_id()
-    solutions = package_util.get_solutions(task_id, None)
+    solutions = package_util.get_solutions()
     for solution in solutions:
         cache_file: CacheFile = cache.get_cache_file(solution)
         for test in command.tests:
@@ -682,7 +682,7 @@ def test_results_caching_checker_changed(create_package, time_tool):
     # Compile checker check if test results are removed.
     command.compile_additional_files()
     task_id = package_util.get_task_id()
-    solutions = package_util.get_solutions(task_id, None)
+    solutions = package_util.get_solutions()
     for solution in solutions:
         cache_file: CacheFile = cache.get_cache_file(solution)
         assert cache_file.tests == {}
@@ -717,7 +717,7 @@ def test_extra_compilation_files_change(create_package, time_tool):
         else:
             cache.process_extra_execution_files(command.config.get("extra_execution_files", {}), command.ID)
         task_id = package_util.get_task_id()
-        solutions = package_util.get_solutions(task_id, None)
+        solutions = package_util.get_solutions()
         for solution in solutions:
             if package_util.get_file_lang(solution) == lang:
                 print(file_to_change, solution)
@@ -761,7 +761,7 @@ def test_contest_type_change(create_package, time_tool):
         command.run(args)
 
     task_id = package_util.get_task_id()
-    solutions = package_util.get_solutions(task_id, None)
+    solutions = package_util.get_solutions()
     for solution in solutions:
         cache_file: CacheFile = cache.get_cache_file(solution)
         assert cache_file.tests == {}

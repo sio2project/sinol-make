@@ -17,19 +17,6 @@ def test_get_task_id(create_package):
         package_util.get_task_id()
 
 
-def test_extract_test_id():
-    assert package_util.extract_test_id("in/abc1a.in", "abc") == "1a"
-    assert package_util.extract_test_id("in/abc10a.in", "abc") == "10a"
-    assert package_util.extract_test_id("in/abc12ca.in", "abc") == "12ca"
-    assert package_util.extract_test_id("in/abc0ocen.in", "abc") == "0ocen"
-    assert package_util.extract_test_id("in/long_task_id2bc.in", "long_task_id") == "2bc"
-
-
-def test_get_group():
-    assert package_util.get_group("in/abc1a.in", "abc") == 1
-    assert package_util.get_group("in/long_name2ocen.in", "long_name") == 0
-
-
 def test_get_tests(create_package):
     os.chdir(create_package)
     task_id = package_util.get_task_id()
@@ -218,18 +205,18 @@ def test_validate_files(create_package, capsys):
     util.create_ins_outs(package_path)
     task_id = package_util.get_task_id()
     assert task_id == "abc"
-    package_util.validate_test_names(task_id)
+    package_util.validate_test_names()
 
     os.rename(os.path.join(package_path, "in", "abc1a.in"), os.path.join(package_path, "in", "def1a.in"))
     with pytest.raises(SystemExit):
-        package_util.validate_test_names(task_id)
+        package_util.validate_test_names()
     out = capsys.readouterr().out
     assert "def1a.in" in out
 
     os.rename(os.path.join(package_path, "in", "def1a.in"), os.path.join(package_path, "in", "abc1a.in"))
     os.rename(os.path.join(package_path, "out", "abc1a.out"), os.path.join(package_path, "out", "def1a.out"))
     with pytest.raises(SystemExit):
-        package_util.validate_test_names(task_id)
+        package_util.validate_test_names()
     out = capsys.readouterr().out
     assert "def1a.out" in out
 
@@ -249,9 +236,9 @@ def test_get_executable_key():
 def test_get_solutions():
     os.chdir(get_simple_package_path())
 
-    solutions = package_util.get_solutions("abc", None)
+    solutions = package_util.get_solutions()
     assert solutions == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abc3.cpp", "abc4.cpp"]
-    solutions = package_util.get_solutions("abc", ["prog/abc.cpp"])
+    solutions = package_util.get_solutions(["prog/abc.cpp"])
     assert solutions == ["abc.cpp"]
     assert "abc1.cpp" not in solutions
 
@@ -269,14 +256,14 @@ def test_get_solutions():
         create_file("abcs1.cpp")
         create_file("abcs2.cpp")
 
-        assert package_util.get_solutions("abc", None) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
-        assert package_util.get_solutions("abc", ["prog/abc.cpp"]) == ["abc.cpp"]
-        assert package_util.get_solutions("abc", ["abc.cpp"]) == ["abc.cpp"]
-        assert package_util.get_solutions("abc", [os.path.join(tmpdir, "prog", "abc.cpp")]) == ["abc.cpp"]
-        assert package_util.get_solutions("abc", ["prog/abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
-        assert package_util.get_solutions("abc", ["abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
-        assert package_util.get_solutions("abc", ["prog/abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
-        assert package_util.get_solutions("abc", ["abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
-        assert package_util.get_solutions("abc", ["prog/abc.cpp", "abc1.cpp"]) == ["abc.cpp", "abc1.cpp"]
-        assert package_util.get_solutions("abc", ["prog/abc.cpp", "abc?.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp"]
-        assert package_util.get_solutions("abc", ["abc.cpp", "abc2.cpp", "abcs2.cpp"]) == ["abc.cpp", "abc2.cpp", "abcs2.cpp"]
+        assert package_util.get_solutions(None) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert package_util.get_solutions(["prog/abc.cpp"]) == ["abc.cpp"]
+        assert package_util.get_solutions(["abc.cpp"]) == ["abc.cpp"]
+        assert package_util.get_solutions([os.path.join(tmpdir, "prog", "abc.cpp")]) == ["abc.cpp"]
+        assert package_util.get_solutions(["prog/abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
+        assert package_util.get_solutions(["abc?.cpp"]) == ["abc1.cpp", "abc2.cpp"]
+        assert package_util.get_solutions(["prog/abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert package_util.get_solutions(["abc*.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp", "abcs1.cpp", "abcs2.cpp"]
+        assert package_util.get_solutions(["prog/abc.cpp", "abc1.cpp"]) == ["abc.cpp", "abc1.cpp"]
+        assert package_util.get_solutions(["prog/abc.cpp", "abc?.cpp"]) == ["abc.cpp", "abc1.cpp", "abc2.cpp"]
+        assert package_util.get_solutions(["abc.cpp", "abc2.cpp", "abcs2.cpp"]) == ["abc.cpp", "abc2.cpp", "abcs2.cpp"]

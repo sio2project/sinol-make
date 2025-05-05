@@ -68,8 +68,8 @@ def print_view(term_width, term_height, table_data: TableData):
     column_lengths = [0, len('Group') + 1, len('Status') + 1, 0]
     tests = []
     for result in results.values():
-        column_lengths[0] = max(column_lengths[0], len(result.test_name))
-        column_lengths[1] = max(column_lengths[1], len(result.test_group))
+        column_lengths[0] = max(column_lengths[0], len(result.test.test_name))
+        column_lengths[1] = max(column_lengths[1], len(result.test.group))
         tests.append(result.test)
     tests = sort_tests(tests)
 
@@ -90,13 +90,13 @@ def print_view(term_width, term_height, table_data: TableData):
     print_line_separator()
 
     last_group = None
-    for test_path in tests:
-        result = results[test_path]
-        if last_group is not None and last_group != result.test_group:
+    for test in tests:
+        result = results[test.test_name]
+        if last_group is not None and last_group != result.test.group:
             print_line_separator()
-        last_group = result.test_group
-        print(margin + result.test_name.ljust(column_lengths[0]) + " | ", end='')
-        print(result.test_group.ljust(column_lengths[1] - 1) + " | ", end='')
+        last_group = result.test.group
+        print(margin + test.test_name.ljust(column_lengths[0]) + " | ", end='')
+        print(result.test.group.ljust(column_lengths[1] - 1) + " | ", end='')
 
         if result.verified:
             if result.valid:

@@ -14,8 +14,8 @@ def test_get_inwer_path():
     """
     os.chdir(util.get_inwer_package_path())
     task_id = package_util.get_task_id()
-    assert inwer_util.get_inwer_path(task_id) is not None
-    assert inwer_util.get_inwer_path(task_id, 'prog/werinwer2.cpp') == os.path.join(os.getcwd(), 'prog', 'werinwer2.cpp')
+    assert inwer_util.get_inwer_path() is not None
+    assert inwer_util.get_inwer_path('prog/werinwer2.cpp') == os.path.join(os.getcwd(), 'prog', 'werinwer2.cpp')
 
 
 @pytest.mark.parametrize("create_package", [util.get_inwer_package_path()], indirect=True)
@@ -24,7 +24,7 @@ def test_compile_inwer(create_package):
     Test compilation of inwer.
     """
     task_id = package_util.get_task_id()
-    inwer_path = inwer_util.get_inwer_path(task_id)
+    inwer_path = inwer_util.get_inwer_path()
     args = compiler.get_default_compilers()
     executable = inwer_util.compile_inwer(inwer_path, args)
     assert os.path.exists(executable)
@@ -63,12 +63,12 @@ def test_asserting_inwer(create_package):
 
 def test_tests_comparator():
     for ti in ["abc", "long_task_id", ""]:
-        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in"], ti) == [f"{ti}1a.in", f"{ti}2a.in"]
-        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in"], ti) == \
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in"]) == [f"{ti}1a.in", f"{ti}2a.in"]
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in"]) == \
                [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in"]
-        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in"], ti) == \
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in"]) == \
                 [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in"]
-        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in", f"{ti}10b.in"], ti) == \
+        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in", f"{ti}10b.in"]) == \
                 [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in", f"{ti}10b.in"]
 
 

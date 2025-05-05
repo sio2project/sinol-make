@@ -13,6 +13,7 @@ from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.outgen import Command as OutgenCommand, compile_correct_solution
 from sinol_make.commands.doc import Command as DocCommand
 from sinol_make.interfaces.Errors import UnknownContestType
+from sinol_make.sio3pack.package import SIO3Package
 
 
 class Command(BaseCommand):
@@ -53,8 +54,8 @@ class Command(BaseCommand):
         if os.path.exists(os.path.join(os.getcwd(), 'prog')):
             shutil.copytree(os.path.join(os.getcwd(), 'prog'), prog_dir)
 
-        if ingen_exists(self.task_id):
-            ingen_path = get_ingen_path(self.task_id)
+        if ingen_exists():
+            ingen_path = get_ingen_path()
             ingen_path = os.path.join(prog_dir, os.path.basename(ingen_path))
             ingen_exe = compile_ingen(ingen_path, self.args, self.args.compile_mode)
             if not run_ingen(ingen_exe, in_dir):
@@ -75,7 +76,7 @@ class Command(BaseCommand):
             outputs.append(os.path.join(out_dir, os.path.basename(test).replace('.in', '.out')))
         if len(outputs) > 0:
             outgen = OutgenCommand()
-            correct_solution_exe = compile_correct_solution(package_util.get_correct_solution(), self.args,
+            correct_solution_exe = compile_correct_solution(package_util.get_correct_solution().path, self.args,
                                                             self.args.compile_mode)
             outgen.args = self.args
             outgen.correct_solution_exe = correct_solution_exe
@@ -86,12 +87,12 @@ class Command(BaseCommand):
         Returns list of generated tests.
         Executes ingen to check what tests are generated.
         """
-        if not ingen_exists(self.task_id):
+        if not ingen_exists():
             return []
 
         in_dir = paths.get_cache_path('export', 'tests', 'in')
         tests = glob.glob(os.path.join(in_dir, f'{self.task_id}*.in'))
-        return [package_util.extract_test_id(test, self.task_id) for test in tests]
+        return [SIO3Package().get_test_id_from_filename(os.path.basename(test)) for test in tests]
 
     def create_ocen(self, target_dir: str):
         """
@@ -172,7 +173,7 @@ class Command(BaseCommand):
         tests_to_copy = []
         for ext in ['in', 'out']:
             for test in glob.glob(os.path.join(os.getcwd(), ext, f'{self.task_id}*.{ext}')):
-                if package_util.extract_test_id(test, self.task_id) not in generated_tests:
+                if SIO3Package().get_test_id_from_filename(os.path.basename(test)) not in generated_tests:
                     tests_to_copy.append((ext, test))
 
         cache_test_dir = paths.get_cache_path('export', 'tests')
@@ -269,7 +270,7 @@ class Command(BaseCommand):
         self.task_id = package_util.get_task_id()
         self.export_name = self.task_id
         self.task_type_cls = package_util.get_task_type_cls()
-        package_util.validate_test_names(self.task_id)
+        package_util.validate_test_names()
         try:
             self.contest = contest_types.get_contest_type()
         except UnknownContestType as e:

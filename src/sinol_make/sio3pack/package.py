@@ -19,4 +19,3 @@ class SIO3Package:
         if cls._instance is None:
             cls._instance = Package.from_file(_get_local_file())
         return cls._instance
-

@@ -81,7 +81,7 @@ class InteractiveTaskType(BaseTaskType):
     def additional_files_to_compile(self) -> List[Tuple[str, str, str, bool, bool]]:
         ret = []
         task_id = package_util.get_task_id()
-        interactor = package_util.get_files_matching_pattern(task_id, f'{task_id}soc.*')
+        interactor = package_util.get_files_matching_pattern(f'{task_id}soc.*')
         if len(interactor) > 0:
             interactor = interactor[0]
             interactor_basename = os.path.basename(interactor)

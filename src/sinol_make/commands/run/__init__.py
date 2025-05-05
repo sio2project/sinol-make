@@ -328,7 +328,7 @@ class Command(BaseCommand):
 
     def compile_solutions(self, solutions):
         print("Compiling %d solutions..." % len(solutions))
-        args = [(solution.name, None, True, False, None) for solution in solutions]
+        args = [(solution.filename, None, True, False, None) for solution in solutions]
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.starmap(self.compile, args)
         return compilation_results
@@ -376,7 +376,7 @@ class Command(BaseCommand):
         """
 
         (file, executable, test, time_limit, memory_limit, timetool_path, execution_dir) = data_for_execution
-        name = file.name
+        name = file.filename
         file_no_ext = paths.get_executions_path(name, test.test_id)
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
@@ -432,7 +432,7 @@ class Command(BaseCommand):
         print_data = PrintData(0)
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
-        has_terminal = False
+        # has_terminal = False
 
         if has_terminal:
             run_event = threading.Event()
@@ -896,7 +896,7 @@ class Command(BaseCommand):
             for group in results[solution]:
                 for test in results[solution][group]:
                     if results[solution][group][test].Error is not None:
-                        error_msg += (f'Solution {solution.name} had an error on test {test.test_id}: '
+                        error_msg += (f'Solution {solution.filename} had an error on test {test.test_id}: '
                                       f'{results[solution][group][test].Error}')
                         if results[solution][group][test].Stderr != ['']:
                             error_msg += f' Stderr:\n{results[solution][group][test].Stderr}'

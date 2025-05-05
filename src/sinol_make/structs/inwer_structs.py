@@ -9,16 +9,13 @@ from sinol_make.helpers import package_util
 
 @dataclass
 class TestResult:
-    test_path: str
-    test_name: str
-    test_group: str
+    test: Test
     verified: bool
     valid: bool
     output: str
 
     def __init__(self, test: Test):
         self.test = test
-        self.test_name = os.path.split(self.test_path)[-1]
 
         self.verified = False
         self.valid = False
@@ -43,12 +40,11 @@ class TableData:
 
 @dataclass
 class InwerExecution:
-    test_path: str
-    test_name: str
+    test: Test
     inwer_exe_path: str
 
 @dataclass
 class VerificationResult:
-    test_path: str
+    test: Test
     valid: bool
     output: str

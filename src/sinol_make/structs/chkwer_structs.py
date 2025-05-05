@@ -2,23 +2,19 @@ import os
 from dataclasses import dataclass
 from typing import Dict
 
-from sinol_make.helpers import package_util
+from sio3pack.test import Test
 
 
 @dataclass
 class TestResult:
-    test_path: str
-    test_name: str
-    test_group: str
+    test: Test
     run: bool
     points: int
     ok: bool
     comment: str
 
-    def __init__(self, test_path, task_id):
-        self.test_path = test_path
-        self.test_name = os.path.split(test_path)[-1]
-        self.test_group = str(package_util.get_group(self.test_path, task_id))
+    def __init__(self, test: Test):
+        self.test = test
 
         self.comment = ""
         self.points = 0
@@ -53,16 +49,14 @@ class TableData:
 
 @dataclass
 class ChkwerExecution:
-    in_test_path: str
-    in_test_name: str
-    out_test_path: str
+    test: Test
     checker_exe: str
     model_exe: str
 
 
 @dataclass
 class RunResult:
-    test_path: str
+    test: Test
     ok: bool
     points: int
     comment: str

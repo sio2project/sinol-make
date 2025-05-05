@@ -18,7 +18,7 @@ def test_get_output_file():
 def test_compile_solutions(create_package):
     package_path = create_package
     command = get_command(package_path)
-    solutions = package_util.get_solutions("abc", None)
+    solutions = package_util.get_solutions()
     result = command.compile_solutions(solutions)
     assert result == [True for _ in solutions]
 

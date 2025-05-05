@@ -1,4 +1,6 @@
 import pytest, tempfile, os, shutil
+
+from sinol_make.sio3pack.package import SIO3Package
 from .util import get_simple_package_path
 
 
@@ -18,6 +20,9 @@ def create_package(request):
     package_path = os.path.join(tmpdir.name, task_id)
     shutil.copytree(path, package_path)
     os.chdir(package_path)
+
+    # Without this pytest is trolling.
+    SIO3Package._instance = None
 
     yield package_path
 
