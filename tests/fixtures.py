@@ -22,7 +22,7 @@ def create_package(request):
     os.chdir(package_path)
 
     # Without this pytest is trolling.
-    SIO3Package._instance = None
+    SIO3Package.reset()
 
     yield package_path
 

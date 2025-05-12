@@ -5,7 +5,7 @@ import multiprocessing as mp
 from enum import Enum
 from typing import List, Union, Dict, Any, Tuple, Type
 
-from sio3pack.files import File
+from sio3pack import LocalFile
 from sio3pack.test import Test
 
 from sinol_make.helpers.func_cache import cache_result
@@ -88,7 +88,7 @@ def get_matching_tests(tests: List[Test], patterns: List[str]) -> List[Test]:
 
     return list(matching_tests)
 
-def get_matching_files(files: List[File], patterns: List[str]) -> List[File]:
+def get_matching_files(files: List[LocalFile], patterns: List[str]) -> List[LocalFile]:
     """
     Returns list of files matching given path patterns.
     :param files: List of all files available.
@@ -131,7 +131,7 @@ def get_tests(arg_tests: Union[List[str], None] = None) -> List[Test]: #Zwracał
         return sorted(matching_tests, key=lambda test: test.group)
 
 
-def get_solutions(args_solutions: Union[List[str], None] = None) -> List[File]:
+def get_solutions(args_solutions: Union[List[str], None] = None) -> List[LocalFile]:
     """
     Returns list of solutions to run.
     :param args_solutions: Solutions specified in command line arguments. If None, all solutions are returned.
@@ -146,7 +146,7 @@ def get_solutions(args_solutions: Union[List[str], None] = None) -> List[File]:
         return sorted(matching_solutions, key=lambda solution: get_executable_key(solution.path))
 
 
-def get_correct_solution() -> File:
+def get_correct_solution() -> LocalFile:
     """
     Returns path to correct solution.
     :return: Path to correct solution.
@@ -258,7 +258,7 @@ def validate_test_names():
     """
     Checks if all files in the package have valid names.
     """
-    def get_invalid_files(files: List[File], pattern):
+    def get_invalid_files(files: List[LocalFile], pattern):
         invalid_files = []
         for file in files:
             if file is None:
@@ -282,7 +282,7 @@ def validate_test_names():
         util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')
 
 
-def get_all_code_files() -> List[File]:
+def get_all_code_files() -> List[LocalFile]:
     """
     Returns all code files in package.
     :return: List of code files.
@@ -290,7 +290,7 @@ def get_all_code_files() -> List[File]:
     return [sol["file"] for sol in SIO3Package().model_solutions] + SIO3Package().additional_files
 
 
-def get_files_matching_pattern(pattern: str) -> List[File]:
+def get_files_matching_pattern(pattern: str) -> List[LocalFile]:
     """
     Returns all files in package matching given pattern.
     :param pattern: Pattern to match.
@@ -386,7 +386,7 @@ def validate_tests(tests: List[str], cpus: int, type: str = 'input'):
     print(util.info(f'All {type} tests are valid!'))
 
 
-def get_all_inputs() -> List[File]:
+def get_all_inputs() -> List[LocalFile]:
     return [file.in_file for file in SIO3Package().get_tests()]
 
 

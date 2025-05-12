@@ -15,8 +15,9 @@ def test_get_ingen():
     simple_package_path = util.get_simple_package_path()
     gen_package_path = util.get_shell_ingen_pack_path()
     with tempfile.TemporaryDirectory() as tmpdir:
-        shutil.copytree(simple_package_path, os.path.join(tmpdir, 'simple'))
-        os.chdir(os.path.join(tmpdir, 'simple'))
+        SIO3Package.reset()
+        shutil.copytree(simple_package_path, os.path.join(tmpdir, 'abc'))
+        os.chdir(os.path.join(tmpdir, 'abc'))
 
         ingen_path = get_ingen_path()
         assert os.path.basename(ingen_path) == "abcingen.cpp"
@@ -29,6 +30,7 @@ def test_get_ingen():
         assert e.type == SystemExit
         assert e.value.code == 1
 
+        SIO3Package.reset()
         shutil.copytree(gen_package_path, os.path.join(tmpdir, 'gen'))
         os.chdir(os.path.join(tmpdir, 'gen'))
 

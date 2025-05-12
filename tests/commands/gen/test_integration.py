@@ -154,6 +154,7 @@ def test_only_outputs_flag(create_package):
     in1 = ins[0]
     for file in ins[1:]:
         os.unlink(file)
+    package_util.reload_tests()
     assert len(outs) == 0
     def in_to_out(file):
         return os.path.join(create_package, "out", os.path.basename(file).replace(".in", ".out"))
@@ -178,6 +179,7 @@ def test_outgen(create_package):
     in1 = ins[0]
     for file in ins[1:]:
         os.unlink(file)
+    package_util.reload_tests()
     assert len(outs) == 0
     def in_to_out(file):
         return os.path.join(create_package, "out", os.path.basename(file).replace(".in", ".out"))

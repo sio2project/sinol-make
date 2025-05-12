@@ -91,8 +91,8 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
     program_memory = collections.defaultdict(lambda: (-1, 0))
 
     time_sum = 0
-    for solution in names:
-        lang = package_util.get_file_lang(solution.path)
+    for name in names:
+        lang = package_util.get_file_lang(name)
         for test in tests:
             time_sum += package_util.get_time_limit(test, config, lang, args)
 
@@ -116,7 +116,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
         print_table_end()
 
         print(margin + "groups", end=" | ")
-        next_row = {solution: os.path.basename(solution.path) for solution in program_group}
+        next_row = {solution: solution for solution in program_group}
         first = True
         while next_row != {}:
             if first:
@@ -144,7 +144,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
         for group in groups:
             print(margin + "%6s" % group, end=" | ")
             for program in program_group:
-                lang = package_util.get_file_lang(program.path)
+                lang = package_util.get_file_lang(program)
                 results = all_results[program][group]
                 group_status = Status.OK
                 test_scores = []
@@ -231,7 +231,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
 
             print(margin + "%6s" % test.test_id, end=" | ")
             for program in program_group:
-                lang = package_util.get_file_lang(program.path)
+                lang = package_util.get_file_lang(program)
                 result = all_results[program][test.group][test]
                 status = result.Status
                 if status == Status.PENDING: print(13 * ' ', end=" | ")
@@ -243,7 +243,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
             if not hide_memory:
                 print(8*" ", end=" | ")
                 for program in program_group:
-                    lang = package_util.get_file_lang(program.path)
+                    lang = package_util.get_file_lang(program)
                     result = all_results[program][test.group][test]
                     if result.Status != Status.PENDING:
                         print(colorize_points(int(result.Points), contest.min_score_per_test(),
@@ -403,29 +403,29 @@ class Command(BaseCommand):
             shutil.copy(file, executables_dir)
 
         for (file, executable, result) in compiled_commands:
-            name = os.path.basename(file.path)
+            name = file.filename
             lang = package_util.get_file_lang(name)
             solution_cache = cache.get_cache_file(os.path.join(os.getcwd(), "prog", name))
-            all_cache_files[file] = solution_cache
+            all_cache_files[name] = solution_cache
 
             if result:
                 for test in self.tests:
                     test_time_limit = package_util.get_time_limit(test, self.config, lang, self.args)
                     test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.args)
 
-                    test_result: CacheTest = solution_cache.tests.get(self.test_md5sums[os.path.basename(test.in_file.path)], None)
+                    test_result: CacheTest = solution_cache.tests.get(self.test_md5sums[test.in_file.filename], None)
                     if test_result is not None and test_result.time_limit == test_time_limit and \
                             test_result.memory_limit == test_memory_limit and \
                             test_result.time_tool == self.timetool_name:
-                        all_results[file][test.group][test] = test_result.result
+                        all_results[name][test.group][test] = test_result.result
                     else:
                         executions.append((file, executable, test, test_time_limit, test_memory_limit,
                                            self.timetool_path, os.path.dirname(executable)))
-                        all_results[file][test.group][test] = ExecutionResult(Status.PENDING)
+                        all_results[name][test.group][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
                 for test in self.tests:
-                    all_results[file][test.group][test] = ExecutionResult(Status.CE)
+                    all_results[name][test.group][test] = ExecutionResult(Status.CE)
         print()
         executions.sort(key = lambda x: (package_util.get_executable_key(x[1]), x[2].test_name))
         program_groups_scores = collections.defaultdict(dict)
@@ -448,16 +448,17 @@ class Command(BaseCommand):
         try:
             for i, result in enumerate(pool.imap(self.run_solution, executions)):
                 (file, executable, test, time_limit, memory_limit) = executions[i][:5]
+                name = file.filename
                 contest_points = self.contest.get_test_score(result, time_limit, memory_limit)
                 result.Points = contest_points
-                all_results[file][test.group][test] = result
+                all_results[name][test.group][test] = result
                 print_data.i = i
 
                 # We store the result in dictionary to write it to cache files later.
                 lang = package_util.get_file_lang(file.path)
                 test_time_limit = package_util.get_time_limit(test, self.config, lang, self.args)
                 test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.args)
-                all_cache_files[file].tests[self.test_md5sums[os.path.basename(test.in_file.path)]] = CacheTest(
+                all_cache_files[name].tests[self.test_md5sums[test.in_file.filename]] = CacheTest(
                     time_limit=test_time_limit,
                     memory_limit=test_memory_limit,
                     time_tool=self.timetool_name,
@@ -477,8 +478,7 @@ class Command(BaseCommand):
                                    self.cpus, self.args.hide_memory, self.config, self.contest, self.args)[0]))
 
         # Write cache files.
-        for solution, cache_data in all_cache_files.items():
-            name = os.path.basename(solution.path)
+        for name, cache_data in all_cache_files.items():
             cache_data.save(os.path.join(os.getcwd(), "prog", name))
 
         if keyboard_interrupt:
@@ -493,7 +493,7 @@ class Command(BaseCommand):
                 self.failed_compilations.append(solutions[i])
         executables = [paths.get_executables_path(package_util.get_executable(solution.path)) for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
-        names = solutions
+        names = [solution.filename for solution in solutions]
         return self.run_solutions(compiled_commands, names, solutions, paths.get_executables_path())
 
     def convert_status_to_string(self, dictionary):
@@ -614,7 +614,7 @@ class Command(BaseCommand):
             if type == "add":
                 if field == '': # Solutions were added
                     for solution in change:
-                        added_solutions.add(solution[0].name)
+                        added_solutions.add(solution[0].filename)
                 elif field[1] == "expected": # Groups were added
                     for group in change:
                         added_groups.add(group[0])
@@ -622,7 +622,7 @@ class Command(BaseCommand):
                 # We check whether a solution was removed only when sinol_make was run on all of them
                 if field == '' and self.args.solutions == None and config_expected_scores:
                     for solution in change:
-                        removed_solutions.add(solution[0])
+                        removed_solutions.add(solution[0].filename)
                 # We check whether a group was removed only when sinol_make was run on all of them
                 elif field[1] == "expected" and self.args.tests == None and config_expected_scores:
                     for group in change:
@@ -854,7 +854,7 @@ class Command(BaseCommand):
         valid_input_files = self.get_valid_tests()
         if len(valid_input_files) != len(self.tests):
             missing_tests = list(set(self.tests) - set(valid_input_files))
-            missing_tests.sort()
+            missing_tests.sort(key=lambda test: test.group)
 
             print(util.warning('Missing output files for tests: ' + ', '.join(
                 [test.test_name for test in missing_tests])))
@@ -896,7 +896,7 @@ class Command(BaseCommand):
             for group in results[solution]:
                 for test in results[solution][group]:
                     if results[solution][group][test].Error is not None:
-                        error_msg += (f'Solution {solution.filename} had an error on test {test.test_id}: '
+                        error_msg += (f'Solution {solution} had an error on test {test.test_id}: '
                                       f'{results[solution][group][test].Error}')
                         if results[solution][group][test].Stderr != ['']:
                             error_msg += f' Stderr:\n{results[solution][group][test].Stderr}'

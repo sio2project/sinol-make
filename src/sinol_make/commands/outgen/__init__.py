@@ -129,6 +129,7 @@ class Command(BaseCommand):
             self.correct_solution_exe = compile_correct_solution(self.correct_solution.path, self.args,
                                                                  self.args.compile_mode)
             self.generate_outputs(outputs_to_generate)
+            package_util.reload_tests()
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
                 yaml.dump(md5_sums, f)
 

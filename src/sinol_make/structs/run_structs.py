@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from sio3pack import LocalFile
 from sio3pack.test.test import Test
 
 @dataclass
@@ -7,8 +8,8 @@ class ExecutionData:
     """
     Represents data for execution of a solution on a specified test.
     """
-    # Name of the solution
-    name: str
+    # The solution
+    solution: LocalFile
     # Filename of the executable
     executable: str
     # Filename of the test
