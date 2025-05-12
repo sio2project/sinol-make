@@ -16,6 +16,7 @@ def get_command(path = None):
     """
     if path is None:
         path = get_simple_package_path()
+    SIO3Package.reset()
     command = Command()
     command.set_constants()
     command.cpus = mp.cpu_count()

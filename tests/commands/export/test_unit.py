@@ -2,12 +2,14 @@ import yaml
 import shutil
 import tempfile
 
+from sinol_make.sio3pack.package import SIO3Package
 from tests import util
 from .util import *
 
 
 def _create_package(tmpdir, path):
     package_path = os.path.join(tmpdir, os.path.basename(path))
+    SIO3Package.reset()
     shutil.copytree(path, package_path)
     os.chdir(package_path)
     command = get_command()
@@ -71,6 +73,7 @@ def test_create_makefile_in():
     """
 
     def _create_package(path):
+        SIO3Package.reset()
         os.chdir(path)
         with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
             config = yaml.load(config_file, Loader=yaml.FullLoader)

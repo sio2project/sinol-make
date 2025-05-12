@@ -1,8 +1,13 @@
 import os
 import glob
+import re
 import subprocess
 
 from sinol_make.helpers import compile, paths, package_util
+from sinol_make.sio3pack.package import SIO3Package
+
+from sio3pack.files import LocalFile
+from sio3pack.test import Test
 
 
 def get_simple_package_path():
@@ -213,6 +218,7 @@ def create_ins(package_path, task_id):
     os.chdir(os.path.join(package_path, "in"))
     os.system("../.cache/executables/ingen.e")
     os.chdir(package_path)
+    SIO3Package().reload_tests()
 
 
 def create_outs(package_path, task_id):
@@ -229,12 +235,14 @@ def create_outs(package_path, task_id):
             subprocess.Popen([os.path.join(package_path, ".cache", "executables", "solution.e")],
                              stdin=in_file, stdout=out_file).wait()
     os.chdir(package_path)
+    SIO3Package().reload_tests()
 
 
 def create_ins_outs(package_path):
     """
     Create .in and .out files for package.
     """
+    SIO3Package.reset()
     os.chdir(package_path)
     task_id = package_util.get_task_id()
     task_type = package_util.get_task_type_cls()
@@ -242,3 +250,19 @@ def create_ins_outs(package_path):
     has_lib = package_util.any_files_matching_pattern(f"{task_id}lib.*")
     if not has_lib and task_type.run_outgen():
         create_outs(package_path, task_id)
+
+
+def from_test_names(task_id: str, names: list[str]):
+    def create_test(name: str):
+        test_id = name.removeprefix(task_id)
+        gr_match = re.match(r"^\d+", test_id)
+        if gr_match:
+            group = gr_match.group(0)
+        else:
+            group = None
+        return Test(name, test_id, LocalFile(os.path.join(task_id, "in", name + ".in"), False), LocalFile(os.path.join(task_id, "out", name + ".out"), False), group)
+
+    tests = []
+    for name in names:
+        tests.append(create_test(name))
+    return tests

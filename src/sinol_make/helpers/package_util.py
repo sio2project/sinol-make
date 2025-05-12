@@ -19,9 +19,9 @@ from sinol_make.sio3pack.package import SIO3Package
 def get_task_id() -> str:
     return SIO3Package().short_name
 
-def get_groups():
-    tests = SIO3Package().tests
-    return sorted(list(set([test.group for test in tests])))
+def get_groups(tests: List[Test] = None):
+    tests = tests or SIO3Package().tests
+    return sorted(list(set([int(test.group) for test in tests])))
 
 
 def get_config():
@@ -125,10 +125,10 @@ def get_tests(arg_tests: Union[List[str], None] = None) -> List[Test]: #Zwracał
     """
     tests = SIO3Package().tests
     if arg_tests is None:
-        return sorted(tests, key=lambda test: test.group)
+        return sorted(tests, key=lambda test: int(test.group))
     else:
         matching_tests = get_matching_tests(tests, arg_tests)
-        return sorted(matching_tests, key=lambda test: test.group)
+        return sorted(matching_tests, key=lambda test: int(test.group))
 
 
 def get_solutions(args_solutions: Union[List[str], None] = None) -> List[LocalFile]:
@@ -224,7 +224,7 @@ def _get_limit(limit_type: LimitTypes, test: Test, config: Dict[str, Any], lang:
                     f'Memory limit was not defined for test {test.test_id} in config.yml.')
 
 
-def get_time_limit(test_path, config, lang, args=None):
+def get_time_limit(test: Test, config, lang, args=None):
     """
     Returns time limit for given test.
     """
@@ -232,10 +232,10 @@ def get_time_limit(test_path, config, lang, args=None):
         return args.tl * 1000
 
     str_config = util.stringify_keys(config)
-    return _get_limit(LimitTypes.TIME_LIMIT, test_path, str_config, lang)
+    return _get_limit(LimitTypes.TIME_LIMIT, test, str_config, lang)
 
 
-def get_memory_limit(test_path, config, lang, args=None):
+def get_memory_limit(test: Test, config, lang, args=None):
     """
     Returns memory limit for given test.
     """
@@ -243,7 +243,7 @@ def get_memory_limit(test_path, config, lang, args=None):
         return int(args.ml * 1024)
 
     str_config = util.stringify_keys(config)
-    return _get_limit(LimitTypes.MEMORY_LIMIT, test_path, str_config, lang)
+    return _get_limit(LimitTypes.MEMORY_LIMIT, test, str_config, lang)
 
 
 def get_in_tests_re(task_id: str) -> re.Pattern:

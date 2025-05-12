@@ -51,7 +51,7 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace, compilation_flags='
 
 def sort_tests(tests: List[Test]) -> List[Test]:
     # First sort by group, then by test name.
-    tests.sort(key=lambda test: [test.group, test.test_id])
+    tests.sort(key=lambda test: [int(test.group), test.test_id])
     return tests
 
 

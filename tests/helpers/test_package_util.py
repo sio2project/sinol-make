@@ -6,22 +6,11 @@ from tests import util
 from sinol_make.helpers import package_util, func_cache
 
 
-@pytest.mark.parametrize("create_package", [util.get_long_name_package_path()], indirect=True)
-def test_get_task_id(create_package):
-    package_path = create_package
-    assert package_util.get_task_id() == "lpn"
-    with open(os.path.join(package_path, "config.yml"), "w") as config_file:
-        config_file.write("title: Long package name\n")
-    func_cache.clear_cache()
-    with pytest.raises(SystemExit):
-        package_util.get_task_id()
-
-
 def test_get_tests(create_package):
     os.chdir(create_package)
     task_id = package_util.get_task_id()
     create_ins(create_package, task_id)
-    tests = package_util.get_tests(None)
+    tests = package_util.get_tests()
     assert tests == ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -39,7 +28,7 @@ def test_get_tests(create_package):
         create_file("abc1b.in")
         create_file("abc2a.in")
 
-        assert set(package_util.get_tests(None)) == \
+        assert set(package_util.get_tests()) == \
                {"in/abc0.in", "in/abc0a.in", "in/abc1a.in", "in/abc1b.in", "in/abc1ocen.in", "in/abc2a.in", "in/abc2ocen.in"}
         assert package_util.get_tests(["in/abc1a.in"]) == ["in/abc1a.in"]
         assert package_util.get_tests(["in/abc??.in"]) == \

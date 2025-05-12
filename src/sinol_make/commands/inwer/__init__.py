@@ -54,7 +54,7 @@ class Command(BaseCommand):
         output_dir = paths.get_executables_path(execution.test.test_name)
         os.makedirs(output_dir, exist_ok=True)
 
-        command = [execution.inwer_exe_path, os.path.basename(execution.test.test_name)]
+        command = [execution.inwer_exe_path, execution.test.in_file.filename]
         with open(execution.test.in_file.path, 'r') as test:
             process = subprocess.Popen(command, stdin=test, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             process.wait()
@@ -122,7 +122,7 @@ class Command(BaseCommand):
         """
 
         ocen = sorted([test for test in self.tests if test.in_file.path.endswith('ocen.in')],
-                      key=lambda test: test.test_id)
+                      key=lambda test: int(test.group))
         tests = list(set(self.tests) - set(ocen))
         last_id = None
         last_test = None
@@ -165,8 +165,8 @@ class Command(BaseCommand):
             return 1
 
         groups = {}
-        for group in package_util.get_groups():
-            groups[group] = sorted([test for test in tests if test.group == group],
+        for group in package_util.get_groups(self.tests):
+            groups[group] = sorted([test for test in tests if int(test.group) == group],
                                    key=cmp_to_key(compare_id))
         for group, group_tests in groups.items():
             last_id = None
@@ -200,7 +200,7 @@ class Command(BaseCommand):
         if len(self.tests) == 0:
             util.exit_with_error('No tests found.')
         else:
-            print('Verifying tests: ' + util.bold(', '.join([test.test_id for test in self.tests])))
+            print('Verifying tests: ' + util.bold(', '.join([test.in_file.filename for test in self.tests])))
 
         util.change_stack_size_to_unlimited()
         self.inwer_executable = inwer_util.compile_inwer(self.inwer, args, args.compile_mode, args.fsanitize)
@@ -210,7 +210,7 @@ class Command(BaseCommand):
         failed_tests = []
         for result in results.values():
             if not result.valid:
-                failed_tests.append(result.test.test_name)
+                failed_tests.append(result.test.in_file.filename)
 
         if len(failed_tests) > 0:
             util.exit_with_error(f'Verification failed for tests: {", ".join(failed_tests)}')

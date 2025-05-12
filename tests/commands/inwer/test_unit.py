@@ -7,6 +7,8 @@ from sinol_make.helpers import package_util, compiler
 from sinol_make.commands.inwer import inwer_util, InwerExecution
 from sinol_make.commands.inwer import Command
 
+from sio3pack.files import LocalFile
+from sio3pack.test import Test
 
 def test_get_inwer_path():
     """
@@ -49,8 +51,7 @@ def test_asserting_inwer(create_package):
 
     execution = InwerExecution(
         inwer_exe_path=executable,
-        test_name='wer2a.in',
-        test_path=os.path.join(os.getcwd(), 'in', 'wer2a.in'),
+        test=Test('wer2a', '2a', LocalFile(os.path.join(os.getcwd(), 'in', 'wer2a.in')), None, '2'),
     )
 
     res = Command.verify_test(execution)
@@ -63,51 +64,51 @@ def test_asserting_inwer(create_package):
 
 def test_tests_comparator():
     for ti in ["abc", "long_task_id", ""]:
-        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in"]) == [f"{ti}1a.in", f"{ti}2a.in"]
-        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in"]) == \
-               [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in"]
-        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in"]) == \
-                [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in"]
-        assert inwer_util.sort_tests([f"{ti}2a.in", f"{ti}1a.in", f"{ti}1b.in", f"{ti}10a.in", f"{ti}10b.in"]) == \
-                [f"{ti}1a.in", f"{ti}1b.in", f"{ti}2a.in", f"{ti}10a.in", f"{ti}10b.in"]
+        assert [test.test_name for test in inwer_util.sort_tests(util.from_test_names(ti, [f"{ti}2a", f"{ti}1a"]))] == [f"{ti}1a", f"{ti}2a"]
+        assert [test.test_name for test in inwer_util.sort_tests(util.from_test_names(ti, [f"{ti}2a", f"{ti}1a", f"{ti}1b"]))] == \
+               [f"{ti}1a", f"{ti}1b", f"{ti}2a"]
+        assert [test.test_name for test in inwer_util.sort_tests(util.from_test_names(ti, [f"{ti}2a", f"{ti}1a", f"{ti}1b", f"{ti}10a"]))] == \
+                [f"{ti}1a", f"{ti}1b", f"{ti}2a", f"{ti}10a"]
+        assert [test.test_name for test in inwer_util.sort_tests(util.from_test_names(ti, [f"{ti}2a", f"{ti}1a", f"{ti}1b", f"{ti}10a", f"{ti}10b"]))] == \
+                [f"{ti}1a", f"{ti}1b", f"{ti}2a", f"{ti}10a", f"{ti}10b"]
 
 
 def test_verify_tests_order():
     command = Command()
     command.task_id = "abc"
-    command.tests = ["abc1ocen.in", "abc2ocen.in", "abc3ocen.in",
-                     "abc1a.in", "abc1b.in", "abc1c.in", "abc1d.in",
-                     "abc2z.in", "abc2aa.in", "abc2ab.in", "abc2ac.in"]
+    command.tests = util.from_test_names("abc", ["abc1ocen", "abc2ocen", "abc3ocen",
+                     "abc1a", "abc1b", "abc1c", "abc1d",
+                     "abc2z", "abc2aa", "abc2ab", "abc2ac"])
     command.verify_tests_order()
 
-    command.tests.remove("abc2ocen.in")
+    command.tests = util.from_test_names("abc", ["abc1ocen", "abc3ocen",
+                     "abc1a", "abc1b", "abc1c", "abc1d",
+                     "abc2z", "abc2aa", "abc2ab", "abc2ac"])
     with pytest.raises(SystemExit):
         command.verify_tests_order()
 
-    command.tests.append("abc2ocen.in")
-    command.tests.remove("abc1c.in")
+    command.tests = util.from_test_names("abc", ["abc1ocen", "abc2ocen", "abc3ocen",
+                     "abc1a", "abc1b", "abc1d",
+                     "abc2z", "abc2aa", "abc2ab", "abc2ac"])
     with pytest.raises(SystemExit):
         command.verify_tests_order()
 
-    command.tests.append("abc1c.in")
-    command.tests.remove("abc2aa.in")
+    command.tests = util.from_test_names("abc", ["abc1ocen", "abc2ocen", "abc3ocen",
+                     "abc1a", "abc1b", "abc1c", "abc1d",
+                     "abc2z", "abc2ab", "abc2ac"])
     with pytest.raises(SystemExit):
         command.verify_tests_order()
 
-    command.tests.append("abc2aa.in")
-    command.tests.remove("abc1ocen.in")
-    command.tests.remove("abc2ocen.in")
-    command.tests.remove("abc3ocen.in")
-    command.tests.append("abc9ocen.in")
-    command.tests.append("abc10ocen.in")
-    command.tests.append("abc11ocen.in")
-
+    command.tests = util.from_test_names("abc", ["abc9ocen", "abc10ocen", "abc11ocen",
+                     "abc1a", "abc1b", "abc1c", "abc1d",
+                     "abc2z", "abc2aa", "abc2ab", "abc2ac"])
     command.verify_tests_order()
 
-    command.tests = ["abc0.in", "abc0a.in", "abc0b.in",
-                     "abc1.in", "abc1a.in", "abc1b.in"]
+    command.tests = util.from_test_names("abc", ["abc0", "abc0a", "abc0b",
+                     "abc1", "abc1a", "abc1b"])
     command.verify_tests_order()
 
-    command.tests.remove("abc0a.in")
+    command.tests = util.from_test_names("abc", ["abc0", "abc0b",
+                     "abc1", "abc1a", "abc1b"])
     with pytest.raises(SystemExit):
         command.verify_tests_order()

@@ -90,6 +90,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
     del config["sinol_expected_scores"]
     with open(config_path, "w") as config_file:
         config_file.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", time_tool])
@@ -104,7 +105,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
     assert "Solutions were added:" in out
     assert "There was an unknown change in expected scores." not in out
     solution = package_util.get_files_matching_pattern(f"{command.ID}.*")[0]
-    assert os.path.basename(solution) in out
+    assert solution.filename in out
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
@@ -129,6 +130,7 @@ def test_apply_suggestions(create_package, time_tool, capsys):
     del config["sinol_expected_scores"]
     with open(config_path, "w") as config_file:
         config_file.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--apply-suggestions", "--time-tool", time_tool])
@@ -136,7 +138,7 @@ def test_apply_suggestions(create_package, time_tool, capsys):
     command.run(args)
 
     out = capsys.readouterr().out
-    assert "There was an unknown change in expected scores."
+    assert "There was an unknown change in expected scores." not in out
     with open(config_path, "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
     assert config["sinol_expected_scores"] == expected_scores
@@ -158,6 +160,7 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
     config["sinol_expected_scores"]["abc.cpp"]["points"] = 75
     with open(config_path, "w") as config_file:
         config_file.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", time_tool])
@@ -194,7 +197,7 @@ def test_flag_tests(create_package, time_tool):
     except SystemExit:
         pass
 
-    assert command.tests == [os.path.join("in", os.path.basename(test))]
+    assert [test.in_file.path for test in command.tests] == [test]
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
@@ -210,14 +213,14 @@ def test_flag_solutions(capsys, create_package, time_tool):
     task_id = package_util.get_task_id()
     solutions = package_util.get_files_matching_pattern(f'{task_id}?.*')
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--solutions", solutions[0], "--time-tool", time_tool])
+    args = parser.parse_args(["run", "--solutions", solutions[0].filename, "--time-tool", time_tool])
     command = Command()
     command.run(args)
 
     out = capsys.readouterr().out
 
-    assert os.path.basename(solutions[0]) in out
-    assert os.path.basename(solutions[1]) not in out
+    assert solutions[0].filename in out
+    assert solutions[1].filename not in out
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
@@ -230,21 +233,18 @@ def test_flag_solutions_multiple(capsys, create_package, time_tool):
     create_ins_outs(package_path)
 
     task_id = package_util.get_task_id()
-    solutions = [
-        os.path.basename(file)
-        for file in package_util.get_files_matching_pattern(f'{task_id}?.*')
-    ]
+    solutions = package_util.get_files_matching_pattern(f'{task_id}?.*')
     parser = configure_parsers()
-    args = parser.parse_args(["run", "--solutions", solutions[0], os.path.join("prog", solutions[1]),
+    args = parser.parse_args(["run", "--solutions", solutions[0].filename, os.path.join("prog", solutions[1].filename),
                               "--time-tool", time_tool])
     command = Command()
     command.run(args)
 
     out = capsys.readouterr().out
 
-    assert os.path.basename(solutions[0]) in out
-    assert os.path.basename(solutions[1]) in out
-    assert os.path.basename(solutions[2]) not in out
+    assert solutions[0].filename in out
+    assert solutions[1].filename in out
+    assert solutions[2].filename not in out
 
 
 @pytest.mark.parametrize("create_package", [get_weak_compilation_flags_package_path()], indirect=True)
@@ -302,6 +302,7 @@ def test_no_scores(capsys, create_package, time_tool):
     del config["scores"]
     with open(config_path, "w") as config_file:
         config_file.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", time_tool])
@@ -325,8 +326,9 @@ def test_missing_output_files(capsys, create_package):
     outs.sort()
     os.unlink(outs[0])
     os.unlink(outs[1])
-    out1 = command.extract_file_name(outs[0]).replace(".out", ".in")
-    out2 = command.extract_file_name(outs[1]).replace(".out", ".in")
+    SIO3Package().reload_tests()
+    out1 = os.path.basename(outs[0]).replace(".out", ".in")
+    out2 = os.path.basename(outs[1]).replace(".out", ".in")
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", "time"])
@@ -383,6 +385,7 @@ def test_no_limits_in_config(capsys, create_package, time_tool):
     del config["memory_limits"]
     with open(config_path, "w") as config_file:
         config_file.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", time_tool])
@@ -452,6 +455,7 @@ def test_override_limits(create_package, time_tool):
     del config["override_limits"]
     with open(config_file_path, "w") as config_file:
         config_file.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--apply-suggestions", "--time-tool", time_tool])
@@ -475,6 +479,7 @@ def test_override_limits(create_package, time_tool):
     config["memory_limit"] = 256
     with open(config_file_path, "w") as config_file:
         config_file.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     command = Command()
     command.run(args)
@@ -557,6 +562,7 @@ def test_undocumented_test_limits_option(create_package, capsys):
     del config["sinol_undocumented_test_limits"]
     with open(os.path.join(os.getcwd(), "config.yml"), "w") as config_file:
         config_file.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     command = Command()
     with pytest.raises(SystemExit) as e:
@@ -644,14 +650,13 @@ def test_results_caching(create_package, time_tool):
     end_time = time.time() - start_time
     assert end_time - start_time < length / 2
 
-    task_id = package_util.get_task_id()
     solutions = package_util.get_solutions()
     for solution in solutions:
-        cache_file: CacheFile = cache.get_cache_file(solution)
+        cache_file: CacheFile = cache.get_cache_file(solution.filename)
         for test in command.tests:
-            assert util.get_file_md5(test) in cache_file.tests
-            test_cache = cache_file.tests[util.get_file_md5(test)]
-            lang = package_util.get_file_lang(solution)
+            assert util.get_file_md5(test.in_file.path) in cache_file.tests
+            test_cache = cache_file.tests[util.get_file_md5(test.in_file.path)]
+            lang = package_util.get_file_lang(solution.filename)
             assert test_cache.time_limit == package_util.get_time_limit(test, command.config, lang, command.ID)
             assert test_cache.memory_limit == package_util.get_memory_limit(test, command.config, lang, command.ID)
         assert cache_file is not None
@@ -681,10 +686,9 @@ def test_results_caching_checker_changed(create_package, time_tool):
 
     # Compile checker check if test results are removed.
     command.compile_additional_files()
-    task_id = package_util.get_task_id()
     solutions = package_util.get_solutions()
     for solution in solutions:
-        cache_file: CacheFile = cache.get_cache_file(solution)
+        cache_file: CacheFile = cache.get_cache_file(solution.filename)
         assert cache_file.tests == {}
 
 
@@ -716,13 +720,12 @@ def test_extra_compilation_files_change(create_package, time_tool):
             cache.process_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
         else:
             cache.process_extra_execution_files(command.config.get("extra_execution_files", {}), command.ID)
-        task_id = package_util.get_task_id()
         solutions = package_util.get_solutions()
         for solution in solutions:
-            if package_util.get_file_lang(solution) == lang:
+            if package_util.get_file_lang(solution.filename) == lang:
                 print(file_to_change, solution)
-                assert not os.path.exists(paths.get_cache_path("md5sums", solution))
-                info = cache.get_cache_file(solution)
+                assert not os.path.exists(paths.get_cache_path("md5sums", solution.filename))
+                info = cache.get_cache_file(solution.filename)
                 assert info == CacheFile()
 
     test("liblib.cpp", "cpp", "//")
@@ -751,19 +754,20 @@ def test_contest_type_change(create_package, time_tool):
     config["sinol_contest_type"] = "oi"
     with open(config_path, "w") as f:
         f.write(yaml.dump(config))
+    SIO3Package().reload_config()
 
     # Compile checker check if test results are removed.
     command = Command()
     # We remove tests, so that `run()` exits before creating new cached test results.
     for test in glob.glob("in/*.in"):
         os.unlink(test)
+    SIO3Package().reload_tests()
     with pytest.raises(SystemExit):
         command.run(args)
 
-    task_id = package_util.get_task_id()
     solutions = package_util.get_solutions()
     for solution in solutions:
-        cache_file: CacheFile = cache.get_cache_file(solution)
+        cache_file: CacheFile = cache.get_cache_file(solution.filename)
         assert cache_file.tests == {}
 
 

@@ -17,6 +17,7 @@ from sio3pack.files import LocalFile
 from sio3pack.test import Test
 
 from sinol_make import contest_types, util, sio2jail
+from sinol_make.sio3pack.package import SIO3Package
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -223,7 +224,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
 
         last_group = None
         for test in tests:
-            group = test.group
+            group = int(test.group)
             if last_group != group:
                 if last_group is not None:
                     print_group_seperator()
@@ -232,7 +233,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
             print(margin + "%6s" % test.test_id, end=" | ")
             for program in program_group:
                 lang = package_util.get_file_lang(program)
-                result = all_results[program][test.group][test]
+                result = all_results[program][int(test.group)][test]
                 status = result.Status
                 if status == Status.PENDING: print(13 * ' ', end=" | ")
                 else:
@@ -244,7 +245,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 print(8*" ", end=" | ")
                 for program in program_group:
                     lang = package_util.get_file_lang(program)
-                    result = all_results[program][test.group][test]
+                    result = all_results[program][int(test.group)][test]
                     if result.Status != Status.PENDING:
                         print(colorize_points(int(result.Points), contest.min_score_per_test(),
                                               contest.max_score_per_test()).ljust(13), end="")
@@ -323,9 +324,6 @@ class Command(BaseCommand):
             possible_score += self.scores[group]
         return possible_score
 
-    def get_groups(self, tests):
-        return sorted(list(set([test.group for test in tests])))
-
     def compile_solutions(self, solutions):
         print("Compiling %d solutions..." % len(solutions))
         args = [(solution.filename, None, True, False, None) for solution in solutions]
@@ -383,7 +381,7 @@ class Command(BaseCommand):
         hard_time_limit = math.ceil(2 * time_limit / 1000.0)
 
         return self.task_type.run(time_limit, hard_time_limit, memory_limit, test.in_file.path, output_file,
-                                  test.out_file.path, result_file, executable, execution_dir)
+                                  getattr(test.out_file, "path", ""), result_file, executable, execution_dir)
 
     def run_solutions(self, compiled_commands, names, solutions, executables_dir):
         """
@@ -417,15 +415,15 @@ class Command(BaseCommand):
                     if test_result is not None and test_result.time_limit == test_time_limit and \
                             test_result.memory_limit == test_memory_limit and \
                             test_result.time_tool == self.timetool_name:
-                        all_results[name][test.group][test] = test_result.result
+                        all_results[name][int(test.group)][test] = test_result.result
                     else:
                         executions.append((file, executable, test, test_time_limit, test_memory_limit,
                                            self.timetool_path, os.path.dirname(executable)))
-                        all_results[name][test.group][test] = ExecutionResult(Status.PENDING)
+                        all_results[name][int(test.group)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
                 for test in self.tests:
-                    all_results[name][test.group][test] = ExecutionResult(Status.CE)
+                    all_results[name][int(test.group)][test] = ExecutionResult(Status.CE)
         print()
         executions.sort(key = lambda x: (package_util.get_executable_key(x[1]), x[2].test_name))
         program_groups_scores = collections.defaultdict(dict)
@@ -451,7 +449,7 @@ class Command(BaseCommand):
                 name = file.filename
                 contest_points = self.contest.get_test_score(result, time_limit, memory_limit)
                 result.Points = contest_points
-                all_results[name][test.group][test] = result
+                all_results[name][int(test.group)][test] = result
                 print_data.i = i
 
                 # We store the result in dictionary to write it to cache files later.
@@ -491,7 +489,7 @@ class Command(BaseCommand):
         for i in range(len(solutions)):
             if not compilation_results[i]:
                 self.failed_compilations.append(solutions[i])
-        executables = [paths.get_executables_path(package_util.get_executable(solution.path)) for solution in solutions]
+        executables = [paths.get_executables_path(package_util.get_executable(solution.filename)) for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
         names = [solution.filename for solution in solutions]
         return self.run_solutions(compiled_commands, names, solutions, paths.get_executables_path())
@@ -517,14 +515,14 @@ class Command(BaseCommand):
         """
         group_sizes = {}
         for test in package_util.get_tests():
-            group = test.group
+            group = int(test.group)
             if group not in group_sizes:
                 group_sizes[group] = 0
             group_sizes[group] += 1
 
         run_group_sizes = {}
         for test in self.tests:
-            group = test.group
+            group = int(test.group)
             if group not in run_group_sizes:
                 run_group_sizes[group] = 0
             run_group_sizes[group] += 1
@@ -614,7 +612,7 @@ class Command(BaseCommand):
             if type == "add":
                 if field == '': # Solutions were added
                     for solution in change:
-                        added_solutions.add(solution[0].filename)
+                        added_solutions.add(solution[0])
                 elif field[1] == "expected": # Groups were added
                     for group in change:
                         added_groups.add(group[0])
@@ -622,7 +620,7 @@ class Command(BaseCommand):
                 # We check whether a solution was removed only when sinol_make was run on all of them
                 if field == '' and self.args.solutions == None and config_expected_scores:
                     for solution in change:
-                        removed_solutions.add(solution[0].filename)
+                        removed_solutions.add(solution[0])
                 # We check whether a group was removed only when sinol_make was run on all of them
                 elif field[1] == "expected" and self.args.tests == None and config_expected_scores:
                     for group in change:
@@ -820,7 +818,7 @@ class Command(BaseCommand):
                 cnt=len(self.failed_compilations), letter='' if len(self.failed_compilations) == 1 else 's'))
 
     def set_scores(self):
-        self.groups = self.get_groups(self.tests)
+        self.groups = package_util.get_groups(self.tests)
         self.scores = collections.defaultdict(int)
 
         if 'scores' not in self.config.keys():
@@ -842,7 +840,7 @@ class Command(BaseCommand):
         Returns list of input files that have corresponding output file.
         """
         valid_tests = []
-        for test in self.tests:
+        for test in SIO3Package().get_tests_with_inputs():
             if test.in_file and test.out_file:
                 valid_tests.append(test)
         return valid_tests
@@ -854,16 +852,16 @@ class Command(BaseCommand):
         valid_input_files = self.get_valid_tests()
         if len(valid_input_files) != len(self.tests):
             missing_tests = list(set(self.tests) - set(valid_input_files))
-            missing_tests.sort(key=lambda test: test.group)
+            missing_tests.sort(key=lambda test: int(test.group))
 
             print(util.warning('Missing output files for tests: ' + ', '.join(
-                [test.test_name for test in missing_tests])))
+                [test.in_file.filename for test in missing_tests])))
             if not self.args.allow_no_outputs:
                 util.exit_with_error('There are tests without outputs. \n'
                                      'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.')
             print(util.warning('Running only on tests with output files.'))
             self.tests = valid_input_files
-            self.groups = self.get_groups(self.tests)
+            self.groups = package_util.get_groups(self.tests)
             if len(self.groups) < 1:
                 util.exit_with_error('No tests with valid outputs.')
 
@@ -875,7 +873,7 @@ class Command(BaseCommand):
         if len(self.tests) > 0:
             print(util.bold('Tests that will be run:'), ' '.join([test.test_name for test in self.tests]))
 
-            example_tests = [test for test in self.tests if test.group == 0]
+            example_tests = [test for test in self.tests if int(test.group) == 0]
             if len(example_tests) == len(self.tests):
                 print(util.warning('Running only on example tests.'))
 
@@ -965,7 +963,7 @@ class Command(BaseCommand):
         self.has_lib = len(lib) != 0
 
         self.tests = package_util.get_tests(self.args.tests)
-        self.test_md5sums = {os.path.basename(test.in_file.path): util.get_file_md5(test.in_file.path) for test in self.tests}
+        self.test_md5sums = {os.path.basename(test.in_file.path): util.get_file_md5(test.in_file.path) for test in self.tests if test.in_file}
         self.check_are_any_tests_to_run()
         self.set_scores()
         self.failed_compilations = []

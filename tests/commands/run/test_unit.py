@@ -29,18 +29,18 @@ def test_execution(create_package, time_tool):
     command.args.time_tool = time_tool
     command.timetool_name = time_tool
     command.task_type = NormalTaskType(timetool=time_tool, sio2jail_path=sio2jail.get_default_sio2jail_path())
-    solution = "abc.cpp"
-    executable = package_util.get_executable(solution)
+    solution = LocalFile(os.path.join(package_path, "prog", "abc.cpp"))
+    executable = package_util.get_executable(solution.filename)
     result = command.compile_solutions([solution])
     assert result == [True]
 
     create_ins_outs(package_path)
-    test = package_util.get_tests(None)[0]
+    test = package_util.get_tests()[0]
 
     with open(os.path.join(package_path, "config.yml"), "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-    os.makedirs(paths.get_executions_path(solution), exist_ok=True)
+    os.makedirs(paths.get_executions_path(solution.filename), exist_ok=True)
     result = command.run_solution((solution, paths.get_executables_path(executable), test, config['time_limit'],
                                    config['memory_limit'], sio2jail.get_default_sio2jail_path(), paths.get_executions_path()))
     assert result.Status == Status.OK
@@ -52,9 +52,9 @@ def test_run_solutions(create_package, time_tool):
     command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool, compile_mode='default',
                                       hide_memory=False)
     create_ins_outs(package_path)
-    command.tests = package_util.get_tests(None)
-    command.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in command.tests}
-    command.groups = list(sorted(set([command.get_group(test) for test in command.tests])))
+    command.tests = package_util.get_tests()
+    command.test_md5sums = {test.in_file.filename: util.get_file_md5(test.in_file.path) for test in command.tests}
+    command.groups = package_util.get_groups(command.tests)
     command.scores = command.config["scores"]
     command.possible_score = command.get_possible_score(command.groups)
     command.memory_limit = command.config["memory_limit"]
@@ -69,8 +69,10 @@ def test_run_solutions(create_package, time_tool):
                                          for group, group_result in results[solution].items())
         return new_results
 
-    assert flatten_results(command.compile_and_run(["abc.cpp"])[0]) == {"abc.cpp": {1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK}}
-    assert flatten_results(command.compile_and_run(["abc.cpp", "abc4.cpp"])[0]) == {
+    solutions = [LocalFile(os.path.join(package_path, "prog", "abc.cpp"))]
+    assert flatten_results(command.compile_and_run(solutions)[0]) == {"abc.cpp": {1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK}}
+    solutions = [LocalFile(os.path.join(package_path, "prog", "abc.cpp")), LocalFile(os.path.join(package_path, "prog", "abc4.cpp"))]
+    assert flatten_results(command.compile_and_run(solutions)[0]) == {
         "abc.cpp": {1: Status.OK, 2: Status.OK, 3: Status.OK, 4: Status.OK},
         "abc4.cpp": {1: Status.OK, 2: Status.OK, 3: "WA", 4: "RE"}
     }
@@ -80,8 +82,8 @@ def test_validate_expected_scores_success():
     os.chdir(get_simple_package_path())
     command = get_command()
     command.scores = command.config["scores"]
-    command.tests = ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
-    command.groups = command.get_groups(command.tests)
+    command.tests = from_test_names("abc", ["abc1a", "abc2a", "abc3a", "abc4a"])
+    command.groups = package_util.get_groups(command.tests)
     command.possible_score = command.contest.get_possible_score(command.groups, command.scores)
 
     # Test with correct expected scores.
@@ -433,8 +435,8 @@ def test_set_scores(create_package):
     """
     package_path = create_package
     command = get_command(package_path)
-    command.tests = ["in/abc0a.in", "in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in",
-                     "in/abc5a.in", "in/abc6a.in"]
+    command.tests = from_test_names("abc", ["abc0a", "abc1a", "abc2a", "abc3a", "abc4a",
+                     "abc5a", "abc6a"])
     del command.config["scores"]
     command.set_scores()
     assert command.scores == {
@@ -446,24 +448,6 @@ def test_set_scores(create_package):
         5: 16,
         6: 20
     }
-
-
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path()], indirect=True)
-def test_get_valid_input_files(create_package):
-    """
-    Test get_valid_input_files function.
-    """
-    package_path = create_package
-    command = get_command(package_path)
-    create_ins_outs(package_path)
-    command.tests = package_util.get_tests(None)
-
-    outputs = glob.glob(os.path.join(package_path, "out", "*.out"))
-    os.unlink(outputs[0])
-    valid_inputs = command.get_valid_input_files()
-    assert len(valid_inputs) == len(outputs) - 1
-    assert "in/" + os.path.basename(outputs[0].replace(".out", ".in")) not in valid_inputs
-    assert "in/" + os.path.basename(outputs[1].replace(".out", ".in")) in valid_inputs
 
 
 def test_update_group_status():
