@@ -218,7 +218,7 @@ def create_ins(package_path, task_id):
     os.chdir(os.path.join(package_path, "in"))
     os.system("../.cache/executables/ingen.e")
     os.chdir(package_path)
-    SIO3Package().reload_tests()
+    package_util.reload_tests()
 
 
 def create_outs(package_path, task_id):
@@ -235,7 +235,7 @@ def create_outs(package_path, task_id):
             subprocess.Popen([os.path.join(package_path, ".cache", "executables", "solution.e")],
                              stdin=in_file, stdout=out_file).wait()
     os.chdir(package_path)
-    SIO3Package().reload_tests()
+    package_util.reload_tests()
 
 
 def create_ins_outs(package_path):

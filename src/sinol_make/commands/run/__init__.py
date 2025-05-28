@@ -95,7 +95,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
     for name in names:
         lang = package_util.get_file_lang(name)
         for test in tests:
-            time_sum += package_util.get_time_limit(test, config, lang, args)
+            time_sum += package_util.get_time_limit(test, lang, args)
 
     time_remaining = (len(executions) - print_data.i - 1) * 2 * time_sum / cpus / 1000.0
     title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
@@ -155,18 +155,16 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                     status = results[test].Status
                     if results[test].Time is not None:
                         if program_times[program][0] < results[test].Time:
-                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, config,
-                                                                                                      lang, args))
+                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, lang, args))
                     elif status == Status.TL:
-                        program_times[program] = (2 * package_util.get_time_limit(test, config, lang, args),
-                                                  package_util.get_time_limit(test, config, lang, args))
+                        program_times[program] = (2 * package_util.get_time_limit(test, lang, args),
+                                                  package_util.get_time_limit(test, lang, args))
                     if results[test].Memory is not None:
                         if program_memory[program][0] < results[test].Memory:
-                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config,
-                                                                                                           lang, args))
+                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, lang, args))
                     elif status == Status.ML:
-                        program_memory[program] = (2 * package_util.get_memory_limit(test, config, lang, args),
-                                                   package_util.get_memory_limit(test, config, lang, args))
+                        program_memory[program] = (2 * package_util.get_memory_limit(test, lang, args),
+                                                   package_util.get_memory_limit(test, lang, args))
                     if status == Status.PENDING:
                         group_status = Status.PENDING
                     else:
@@ -238,7 +236,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 if status == Status.PENDING: print(13 * ' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
-                         ("%20s" % color_time(result.Time, package_util.get_time_limit(test, config, lang, args)))
+                         ("%20s" % color_time(result.Time, package_util.get_time_limit(test, lang, args)))
                          if result.Time is not None else 10*" ", end=" | ")
             print()
             if not hide_memory:
@@ -251,7 +249,7 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                                               contest.max_score_per_test()).ljust(13), end="")
                     else:
                         print(3*" ", end="")
-                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, args)))
+                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, lang, args)))
                           if result.Memory is not None else 10*" ", end=" | ")
                 print()
 
@@ -408,8 +406,8 @@ class Command(BaseCommand):
 
             if result:
                 for test in self.tests:
-                    test_time_limit = package_util.get_time_limit(test, self.config, lang, self.args)
-                    test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.args)
+                    test_time_limit = package_util.get_time_limit(test, lang, self.args)
+                    test_memory_limit = package_util.get_memory_limit(test, lang, self.args)
 
                     test_result: CacheTest = solution_cache.tests.get(self.test_md5sums[test.in_file.filename], None)
                     if test_result is not None and test_result.time_limit == test_time_limit and \
@@ -444,6 +442,7 @@ class Command(BaseCommand):
         pool = mp.Pool(self.cpus)
         keyboard_interrupt = False
         try:
+            print(executions)
             for i, result in enumerate(pool.imap(self.run_solution, executions)):
                 (file, executable, test, time_limit, memory_limit) = executions[i][:5]
                 name = file.filename
@@ -452,10 +451,12 @@ class Command(BaseCommand):
                 all_results[name][int(test.group)][test] = result
                 print_data.i = i
 
+                print(name, test)
+
                 # We store the result in dictionary to write it to cache files later.
                 lang = package_util.get_file_lang(file.path)
-                test_time_limit = package_util.get_time_limit(test, self.config, lang, self.args)
-                test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.args)
+                test_time_limit = package_util.get_time_limit(test, lang, self.args)
+                test_memory_limit = package_util.get_memory_limit(test, lang, self.args)
                 all_cache_files[name].tests[self.test_md5sums[test.in_file.filename]] = CacheTest(
                     time_limit=test_time_limit,
                     memory_limit=test_memory_limit,
@@ -840,7 +841,7 @@ class Command(BaseCommand):
         Returns list of input files that have corresponding output file.
         """
         valid_tests = []
-        for test in SIO3Package().get_tests_with_inputs():
+        for test in SIO3Package().get_tests_with_inputs(self.tests):
             if test.in_file and test.out_file:
                 valid_tests.append(test)
         return valid_tests
@@ -855,7 +856,7 @@ class Command(BaseCommand):
             missing_tests.sort(key=lambda test: int(test.group))
 
             print(util.warning('Missing output files for tests: ' + ', '.join(
-                [test.in_file.filename for test in missing_tests])))
+                [(test.in_file or test.out_file).filename for test in missing_tests])))
             if not self.args.allow_no_outputs:
                 util.exit_with_error('There are tests without outputs. \n'
                                      'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.')
@@ -974,8 +975,9 @@ class Command(BaseCommand):
             lang = package_util.get_file_lang(solution.path)
             for test in self.tests:
                 # The functions will exit if the limits are not set
-                _ = package_util.get_time_limit(test, self.config, lang, self.args)
-                _ = package_util.get_memory_limit(test, self.config, lang, self.args)
+                _ = package_util.get_time_limit(test, lang, self.args)
+                _ = package_util.get_memory_limit(test, lang, self.args)
+
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)

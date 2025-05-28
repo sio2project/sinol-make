@@ -326,7 +326,7 @@ def test_missing_output_files(capsys, create_package):
     outs.sort()
     os.unlink(outs[0])
     os.unlink(outs[1])
-    SIO3Package().reload_tests()
+    package_util.reload_tests()
     out1 = os.path.basename(outs[0]).replace(".out", ".in")
     out2 = os.path.basename(outs[1]).replace(".out", ".in")
 
@@ -355,6 +355,7 @@ def test_missing_output_files_allow_missing(capsys, create_package):
     outs = glob.glob(os.path.join(package_path, "out", "*.out"))
     for i in outs:
         os.unlink(i)
+    package_util.reload_tests()
 
     parser = configure_parsers()
     args = parser.parse_args(["run", "--time-tool", "time", "--no-outputs"])
@@ -657,8 +658,8 @@ def test_results_caching(create_package, time_tool):
             assert util.get_file_md5(test.in_file.path) in cache_file.tests
             test_cache = cache_file.tests[util.get_file_md5(test.in_file.path)]
             lang = package_util.get_file_lang(solution.filename)
-            assert test_cache.time_limit == package_util.get_time_limit(test, command.config, lang, command.ID)
-            assert test_cache.memory_limit == package_util.get_memory_limit(test, command.config, lang, command.ID)
+            assert test_cache.time_limit == package_util.get_time_limit(test, lang)
+            assert test_cache.memory_limit == package_util.get_memory_limit(test, lang)
         assert cache_file is not None
         assert cache_file.tests != {}
 
@@ -761,7 +762,7 @@ def test_contest_type_change(create_package, time_tool):
     # We remove tests, so that `run()` exits before creating new cached test results.
     for test in glob.glob("in/*.in"):
         os.unlink(test)
-    SIO3Package().reload_tests()
+    package_util.reload_tests()
     with pytest.raises(SystemExit):
         command.run(args)
 

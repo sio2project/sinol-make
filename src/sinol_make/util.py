@@ -145,6 +145,7 @@ def save_config(config):
             print(warning("Found unknown fields in config.yml: " + ", ".join([str(x) for x in config])))
             # All remaining non-considered fields are appended to the end of the file.
             yaml.dump(config, config_file, allow_unicode=True)
+    SIO3Package().reload_config()
 
 
 def import_importlib_resources():

@@ -14,8 +14,8 @@ def test_get_inwer_path():
     """
     Test getting default and custom inwer.
     """
+    SIO3Package.reset()
     os.chdir(util.get_inwer_package_path())
-    task_id = package_util.get_task_id()
     assert inwer_util.get_inwer_path() is not None
     assert inwer_util.get_inwer_path('prog/werinwer2.cpp') == os.path.join(os.getcwd(), 'prog', 'werinwer2.cpp')
 
