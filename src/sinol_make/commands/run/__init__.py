@@ -17,6 +17,7 @@ from sio3pack.files import LocalFile
 from sio3pack.test import Test
 
 from sinol_make import contest_types, util, sio2jail
+from sinol_make.commands.inwer.inwer_util import sort_tests
 from sinol_make.sio3pack.package import SIO3Package
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
@@ -853,7 +854,7 @@ class Command(BaseCommand):
         valid_input_files = self.get_valid_tests()
         if len(valid_input_files) != len(self.tests):
             missing_tests = list(set(self.tests) - set(valid_input_files))
-            missing_tests.sort(key=lambda test: int(test.group))
+            missing_tests = sort_tests(missing_tests)
 
             print(util.warning('Missing output files for tests: ' + ', '.join(
                 [(test.in_file or test.out_file).filename for test in missing_tests])))

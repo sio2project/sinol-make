@@ -8,6 +8,7 @@ from typing import List, Union, Dict, Any, Tuple, Type
 from sio3pack import LocalFile
 from sio3pack.test import Test
 
+from sinol_make.commands.inwer.inwer_util import sort_tests
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make import util, contest_types
 from sinol_make.helpers import paths
@@ -125,10 +126,10 @@ def get_tests(arg_tests: Union[List[str], None] = None) -> List[Test]: #Zwracał
     """
     tests = SIO3Package().tests
     if arg_tests is None:
-        return sorted(tests, key=lambda test: int(test.group))
+        return sort_tests(tests)
     else:
         matching_tests = get_matching_tests(tests, arg_tests)
-        return sorted(matching_tests, key=lambda test: (int(test.group), test.test_name))
+        return sort_tests(matching_tests)
 
 
 def get_solutions(args_solutions: Union[List[str], None] = None) -> List[LocalFile]:
