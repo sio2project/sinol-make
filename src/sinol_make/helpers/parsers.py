@@ -1,7 +1,7 @@
 import sys
 import argparse
 
-from sinol_make import util
+from sinol_make import util, sio2jail
 from sinol_make.helpers import compiler
 
 
@@ -43,3 +43,9 @@ def add_fsanitize_argument(parser: argparse.ArgumentParser):
     parser.add_argument('-f', '--fsanitize', default=False, action='store_true',
                         help='Use -fsanitize=address,undefined for compilation. Warning: this may fail on some '
                              'systems. Tof fix this, run `sudo sysctl vm.mmap_rnd_bits = 28`.')
+
+
+def add_time_tool_argument(parser: argparse.ArgumentParser):
+    default_timetool = 'sio2jail' if sio2jail.sio2jail_supported() else 'time'
+    parser.add_argument('-T', '--time-tool', dest='time_tool', choices=['sio2jail', 'time'],
+                        help=f'tool to measure time and memory usage (default: {default_timetool})')

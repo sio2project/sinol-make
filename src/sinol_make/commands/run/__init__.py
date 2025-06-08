@@ -283,8 +283,6 @@ class Command(BaseCommand):
                 After running the solutions, it compares the solutions\' scores with the ones saved in config.yml.'
         )
 
-        default_timetool = 'sio2jail' if sio2jail.sio2jail_supported() else 'time'
-
         parser.add_argument('-s', '--solutions', type=str, nargs='+',
                             help='solutions to be run, for example prog/abc{b,s}*.{cpp,py}')
         parser.add_argument('-t', '--tests', type=str, nargs='+',
@@ -294,8 +292,7 @@ class Command(BaseCommand):
         parser.add_argument('--ml', type=float, help='memory limit for all tests (in MB)')
         parser.add_argument('--hide-memory', dest='hide_memory', action='store_true',
                             help='hide memory usage in report')
-        parser.add_argument('-T', '--time-tool', dest='time_tool', choices=['sio2jail', 'time'],
-                            help=f'tool to measure time and memory usage (default: {default_timetool})')
+        parsers.add_time_tool_argument(parser)
         parser.add_argument('--sio2jail-path', dest='sio2jail_path', type=str,
                             help='path to sio2jail executable (default: `~/.local/bin/sio2jail`)')
         parser.add_argument('-a', '--apply-suggestions', dest='apply_suggestions', action='store_true',
