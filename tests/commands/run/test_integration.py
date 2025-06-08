@@ -571,7 +571,7 @@ def test_undocumented_test_limits_option(create_package, capsys):
 
     assert e.value.code == 1
     out = capsys.readouterr().out
-    assert "und1a.in: Specifying limit for a single test is not allowed in sinol-make." in out
+    assert "und1b: Specifying limit for a single test is not allowed for OI packages." in out
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path(), get_example_tests_package_path()], indirect=True)

@@ -116,7 +116,6 @@ class Command(BaseCommand):
         self.task_type = package_util.get_task_type_cls()
         if not self.task_type.run_outgen():
             util.exit_with_error('Output generation is not supported for this task type.')
-        package_util.validate_test_names()
         util.change_stack_size_to_unlimited()
         cache.check_correct_solution()
         self.correct_solution = package_util.get_correct_solution()

@@ -270,7 +270,6 @@ class Command(BaseCommand):
         self.task_id = package_util.get_task_id()
         self.export_name = self.task_id
         self.task_type_cls = package_util.get_task_type_cls()
-        package_util.validate_test_names()
         try:
             self.contest = contest_types.get_contest_type()
         except UnknownContestType as e:

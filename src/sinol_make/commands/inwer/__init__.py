@@ -80,7 +80,6 @@ class Command(BaseCommand):
             executions.append(InwerExecution(test, self.inwer_executable))
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
-        has_terminal = False
 
         table_data = TableData(results, 0)
         if has_terminal:
@@ -183,7 +182,6 @@ class Command(BaseCommand):
         args = util.init_package_command(args)
 
         self.task_id = package_util.get_task_id()
-        package_util.validate_test_names()
         self.inwer = inwer_util.get_inwer_path(args.inwer_path)
         if self.inwer is None:
             if args.inwer_path is None:

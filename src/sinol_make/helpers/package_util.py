@@ -2,15 +2,13 @@ import os
 import re
 import fnmatch
 import multiprocessing as mp
-from enum import Enum
-from typing import List, Union, Dict, Any, Tuple, Type
+from typing import List, Union, Tuple, Type
 
-from sio3pack import LocalFile
+from sio3pack.files import LocalFile
 from sio3pack.test import Test
 
 from sinol_make.commands.inwer.inwer_util import sort_tests
-from sinol_make.helpers.func_cache import cache_result
-from sinol_make import util, contest_types
+from sinol_make import util
 from sinol_make.helpers import paths
 from sinol_make.task_type import BaseTaskType
 from sinol_make.sio3pack.package import SIO3Package
@@ -197,34 +195,6 @@ def get_in_tests_re(task_id: str) -> re.Pattern:
 
 def get_out_tests_re(task_id: str) -> re.Pattern:
     return re.compile(r'^%s(([0-9]+)([a-z]?[a-z0-9]*))\.out$' % re.escape(task_id))
-
-
-def validate_test_names():
-    """
-    Checks if all files in the package have valid names.
-    """
-    def get_invalid_files(files: List[LocalFile], pattern):
-        invalid_files = []
-        for file in files:
-            if file is None:
-                continue
-            if not pattern.match(os.path.basename(file.path)):
-                invalid_files.append(os.path.basename(file.path))
-        return invalid_files
-
-    tests = SIO3Package().tests
-    task_id = get_task_id()
-    tests_ins = [test.in_file for test in tests]
-    tests_outs = [test.out_file for test in tests]
-    in_test_re = get_in_tests_re(task_id)
-    invalid_in_tests = get_invalid_files(tests_ins, in_test_re)
-    if len(invalid_in_tests) > 0:
-        util.exit_with_error(f'Input tests with invalid names: {", ".join(invalid_in_tests)}.')
-
-    out_test_re = get_out_tests_re(task_id)
-    invalid_out_tests = get_invalid_files(tests_outs, out_test_re)
-    if len(invalid_out_tests) > 0:
-        util.exit_with_error(f'Output tests with invalid names: {", ".join(invalid_out_tests)}.')
 
 
 def get_all_code_files() -> List[LocalFile]:

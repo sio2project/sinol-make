@@ -1,4 +1,4 @@
-import pytest
+from sio3pack.exceptions import ProcessPackageError
 
 from ..commands.run.util import create_ins
 from ..fixtures import *
@@ -54,22 +54,18 @@ def test_validate_files(create_package, capsys):
     util.create_ins_outs(package_path)
     task_id = package_util.get_task_id()
     assert task_id == "abc"
-    package_util.validate_test_names()
 
     os.rename(os.path.join(package_path, "in", "abc1a.in"), os.path.join(package_path, "in", "def1a.in"))
-    package_util.reload_tests()
-    with pytest.raises(SystemExit):
-        package_util.validate_test_names()
-    out = capsys.readouterr().out
-    assert "def1a.in" in out
+
+    with pytest.raises(ProcessPackageError) as e:
+        package_util.reload_tests()
+    assert "def1a.in" in e.value.full_message
 
     os.rename(os.path.join(package_path, "in", "def1a.in"), os.path.join(package_path, "in", "abc1a.in"))
     os.rename(os.path.join(package_path, "out", "abc1a.out"), os.path.join(package_path, "out", "def1a.out"))
-    package_util.reload_tests()
-    with pytest.raises(SystemExit):
-        package_util.validate_test_names()
-    out = capsys.readouterr().out
-    assert "def1a.out" in out
+    with pytest.raises(ProcessPackageError) as e:
+        package_util.reload_tests()
+    assert "def1a.out" in e.value.full_message
 
 
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
