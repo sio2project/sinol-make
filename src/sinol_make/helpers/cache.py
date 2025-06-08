@@ -6,8 +6,6 @@ from sinol_make import util
 from sinol_make.structs.cache_structs import CacheFile
 from sinol_make.helpers import paths, package_util
 
-from sio3pack import LocalFile
-
 
 def get_cache_file(solution_path: str) -> CacheFile:
     """

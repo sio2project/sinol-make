@@ -2,6 +2,7 @@ import argparse
 
 from sinol_make import util
 from sinol_make.helpers import package_util
+from sinol_make.sio3pack.package import SIO3Package
 from sinol_make.structs.status_structs import ExecutionResult
 from sinol_make.contest_types.default import DefaultContest
 
@@ -52,3 +53,20 @@ class OIContest(DefaultContest):
 
     def verify_tests_order(self):
         return True
+
+    def verify_config(self):
+        """
+        Checks if all tests in groups have the same time limits, unless
+        `sinol_undocumented_test_limits` is set to True in config.
+        """
+        config = package_util.get_config()
+        if 'sinol_undocumented_test_limits' in config and config['sinol_undocumented_test_limits']:
+            return
+
+        time_limits = {}
+        for test in SIO3Package().tests:
+            tl = SIO3Package().get_time_limit_for_test(test, "cpp")
+            if test.group in time_limits and time_limits[test.group] != tl:
+                util.exit_with_error(f"{test.test_name}: Specifying limit for a single test is not allowed for OI packages.")
+            if test.group not in time_limits:
+                time_limits[test.group] = tl

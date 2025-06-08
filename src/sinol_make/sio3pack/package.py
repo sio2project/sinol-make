@@ -1,7 +1,8 @@
 import os
 
-from sio3pack import Package
-from sio3pack import LocalFile
+from sio3pack.packages.sinolpack import Sinolpack
+from sio3pack.packages.package import Package
+from sio3pack.files import LocalFile
 
 
 def _get_local_file():
@@ -15,7 +16,7 @@ class SIO3Package:
 
     _instance = None
 
-    def __new__(cls) -> Package:
+    def __new__(cls) -> Sinolpack:
         if cls._instance is None:
             cls._instance = Package.from_file(_get_local_file())
         return cls._instance

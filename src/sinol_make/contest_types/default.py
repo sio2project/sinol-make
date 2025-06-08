@@ -109,7 +109,7 @@ class DefaultContest:
 
     def verify_config(self):
         """
-        Used for verifing contest specific config.yml settings
+        Used for verifying contest specific config.yml settings
         """
         pass
 

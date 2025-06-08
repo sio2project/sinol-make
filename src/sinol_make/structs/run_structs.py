@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from sio3pack import LocalFile
-from sio3pack.test.test import Test
+from sio3pack.files import LocalFile
+from sio3pack.test import Test
 
 @dataclass
 class ExecutionData:
