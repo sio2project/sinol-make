@@ -5,7 +5,7 @@ import traceback
 import argcomplete
 
 from sinol_make import util, sio2jail
-from sinol_make.helpers import cache, oicompare
+from sinol_make.helpers import cache, oicompare, paths
 
 # Required for side effects
 from sinol_make.task_type.normal import NormalTaskType # noqa
@@ -106,10 +106,15 @@ def main():
     except SystemExit as err:
         exit(err.code)
     except SIO3PackException as err:
-        print(traceback.format_exc())
-        util.exit_with_error(f'{err}\n'
-                             'If that is a bug, please report it or submit a bugfix: '
-                             'https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
+        print(util.color_red("Short description of the error:"))
+        print(err.message)
+        print()
+        print(util.color_red("Full description:"))
+        print(err.full_message)
+        print()
+        with open(paths.get_cache_path('traceback'), 'w') as f:
+            traceback.print_exc(file=f)
+        print(util.warning('Full traceback saved to .cache/traceback'))
     except Exception:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'
