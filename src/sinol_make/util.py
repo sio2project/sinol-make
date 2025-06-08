@@ -110,6 +110,7 @@ def save_config(config):
         "time_limits",
         "override_limits",
         "scores",
+        "extra_files",
         {
             "key": "extra_compilation_files",
             "default_flow_style": None
