@@ -11,7 +11,12 @@ from sinol_make.executors.sio2jail import Sio2jailExecutor
 from sinol_make.structs.status_structs import Status
 
 def sio2jail_supported():
-    return util.is_linux()
+    if not util.is_linux():
+        return False
+    try:
+        check_perf_counters_enabled()
+    except:
+        return False
 
 
 def get_default_sio2jail_path():
