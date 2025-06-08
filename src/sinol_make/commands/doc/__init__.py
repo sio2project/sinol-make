@@ -93,7 +93,6 @@ class Command(BaseCommand):
         # behavior of defaulting to None.
         if not hasattr(args, 'latex_compiler'):
             config = package_util.get_config()
-            print(config.get('sinol_latex_compiler', 'auto'))
             args.latex_compiler = config.get('sinol_latex_compiler', 'auto')
 
         if args.latex_compiler == 'pdflatex':
