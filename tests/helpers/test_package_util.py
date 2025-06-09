@@ -1,3 +1,5 @@
+import os.path
+
 from sio3pack.exceptions import ProcessPackageError
 
 from ..commands.run.util import create_ins
@@ -15,6 +17,7 @@ def test_get_tests(create_package):
     assert list(map(lambda t: t.test_name, tests)) == ["abc1a", "abc2a", "abc3a", "abc4a"]
 
     with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = os.path.realpath(tmpdir)
         def create_file(name):
             with open(os.path.join(tmpdir, "in", name), "w") as f:
                 f.write("")
@@ -97,6 +100,7 @@ def test_get_solutions():
     assert "abc1.cpp" not in solutions
 
     with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = os.path.realpath(tmpdir)
         def create_file(name):
             with open(os.path.join(tmpdir, "prog", name), "w") as f:
                 f.write("")
