@@ -12,7 +12,7 @@ from sinol_make.contest_types import get_contest_type
 from sinol_make.helpers import paths, cache
 from sinol_make.helpers.func_cache import cache_result
 from sinol_make.structs.status_structs import Status
-
+from sinol_make.sio3pack.package import SIO3Package
 
 @cache_result()
 def get_commands():
@@ -55,12 +55,20 @@ def find_and_chdir_package():
         return False
 
 
+def instantiate_package():
+    """
+    Function to instantiate package from current directory.
+    """
+    SIO3Package()
+
+
 def init_package_command(args):
     """
     Updates arguments with contest specific overrides for commands
     that require being in package directory
     """
     exit_if_not_package()
+    instantiate_package()
     contest = get_contest_type()
     contest.verify_config()
     return contest.argument_overrides(args)
@@ -102,6 +110,7 @@ def save_config(config):
         "time_limits",
         "override_limits",
         "scores",
+        "extra_files",
         {
             "key": "extra_compilation_files",
             "default_flow_style": None
@@ -137,6 +146,7 @@ def save_config(config):
             print(warning("Found unknown fields in config.yml: " + ", ".join([str(x) for x in config])))
             # All remaining non-considered fields are appended to the end of the file.
             yaml.dump(config, config_file, allow_unicode=True)
+    SIO3Package().reload_config()
 
 
 def import_importlib_resources():

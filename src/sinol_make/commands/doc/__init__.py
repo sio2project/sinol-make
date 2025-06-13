@@ -104,13 +104,13 @@ class Command(BaseCommand):
         elif args.latex_compiler == 'auto':
             self.compilation_method = 'pdflatex'
             for extension in ['ps', 'eps']:
-                if glob.glob(os.path.join(os.getcwd(), 'doc', f'*.{extension}')) != []:
+                if glob.glob(os.path.join(os.getcwd(), 'doc', f'*.{extension}')): #TODO: SIO3Pack?
                     self.compilation_method = 'latex_dvi'
         else:
             util.exit_with_error("Unrecognized latex compiler")
 
         if args.files == []:
-            self.files = glob.glob(os.path.join(os.getcwd(), 'doc', '*.tex'))
+            self.files = glob.glob(os.path.join(os.getcwd(), 'doc', '*.tex')) #TODO: SIO3Pack?
         else:
             self.files = []
             for file in args.files:

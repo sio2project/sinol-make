@@ -7,7 +7,7 @@ from sinol_make import configure_parsers
 from sinol_make import util as sm_util
 from sinol_make.commands.gen import Command
 from sinol_make.commands.ingen import Command as IngenCommand
-from sinol_make.commands.ingen.ingen_util import get_ingen
+from sinol_make.commands.ingen.ingen_util import get_ingen_path
 from sinol_make.commands.outgen import Command as OutgenCommand
 from sinol_make.commands.run import Command as RunCommand
 from sinol_make.helpers import package_util, paths, cache
@@ -58,9 +58,8 @@ def test_correct_inputs(capsys, create_package):
     """
     Test `ingen` command with all unchanged inputs.
     """
-    task_id = package_util.get_task_id()
-    correct_solution = package_util.get_correct_solution(task_id)
-    cache.save_compiled(correct_solution, "exe", "default", False)
+    correct_solution = package_util.get_correct_solution()
+    cache.save_compiled(correct_solution.path, "exe", "default", False)
     simple_run()
     md5_sums = get_md5_sums(create_package)
 
@@ -77,9 +76,8 @@ def test_changed_inputs(capsys, create_package):
     """
     Test `ingen` command with changed inputs.
     """
-    task_id = package_util.get_task_id()
-    correct_solution = package_util.get_correct_solution(task_id)
-    cache.save_compiled(correct_solution, "exe", "default", False)
+    correct_solution = package_util.get_correct_solution()
+    cache.save_compiled(correct_solution.path, "exe", "default", False)
     simple_run()
     md5_sums = get_md5_sums(create_package)
     correct_md5 = md5_sums.copy()
@@ -109,7 +107,7 @@ def test_shell_ingen_unchanged(create_package):
     """
     package_path = create_package
     task_id = package_util.get_task_id()
-    shell_ingen_path = get_ingen(task_id)
+    shell_ingen_path = get_ingen_path()
     assert os.path.splitext(shell_ingen_path)[1] == ".sh"
     edited_time = os.path.getmtime(shell_ingen_path)
     simple_run()
@@ -156,6 +154,7 @@ def test_only_outputs_flag(create_package):
     in1 = ins[0]
     for file in ins[1:]:
         os.unlink(file)
+    package_util.reload_tests()
     assert len(outs) == 0
     def in_to_out(file):
         return os.path.join(create_package, "out", os.path.basename(file).replace(".in", ".out"))
@@ -180,6 +179,7 @@ def test_outgen(create_package):
     in1 = ins[0]
     for file in ins[1:]:
         os.unlink(file)
+    package_util.reload_tests()
     assert len(outs) == 0
     def in_to_out(file):
         return os.path.join(create_package, "out", os.path.basename(file).replace(".in", ".out"))
@@ -218,7 +218,6 @@ def test_correct_solution_changed(create_package):
     Test if `.md5sums` is deleted when correct solution is changed.
     """
     package_path = create_package
-    task_id = package_util.get_task_id()
     md5sums = os.path.join(package_path, "in", ".md5sums")
     simple_run()
     assert os.path.exists(md5sums)
@@ -226,10 +225,10 @@ def test_correct_solution_changed(create_package):
     for output in glob.glob(os.path.join(package_path, "out", "*.out")):
         outputs[os.path.basename(output)] = sm_util.get_file_md5(output)
 
-    solution = package_util.get_correct_solution(task_id)
-    with open(os.path.join(solution), "w") as f:
+    solution = package_util.get_correct_solution()
+    with open(os.path.join(solution.path), "w") as f:
         f.write("int main() {}")
-    cache.check_correct_solution(task_id)
+    cache.check_correct_solution()
     assert not os.path.exists(md5sums)
     simple_run()
     assert os.path.exists(md5sums)

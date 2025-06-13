@@ -13,7 +13,12 @@ import multiprocessing as mp
 from io import StringIO
 from typing import Dict
 
+from sio3pack.files import LocalFile
+from sio3pack.test import Test
+
 from sinol_make import contest_types, util, sio2jail
+from sinol_make.commands.inwer.inwer_util import sort_tests
+from sinol_make.sio3pack.package import SIO3Package
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
 from sinol_make.interfaces.BaseCommand import BaseCommand
@@ -88,10 +93,10 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
     program_memory = collections.defaultdict(lambda: (-1, 0))
 
     time_sum = 0
-    for solution in names:
-        lang = package_util.get_file_lang(solution)
+    for name in names:
+        lang = package_util.get_file_lang(name)
         for test in tests:
-            time_sum += package_util.get_time_limit(test, config, lang, task_id, args)
+            time_sum += package_util.get_time_limit(test, lang, args)
 
     time_remaining = (len(executions) - print_data.i - 1) * 2 * time_sum / cpus / 1000.0
     title = 'Done %4d/%4d. Time remaining (in the worst case): %5d seconds.' \
@@ -151,18 +156,16 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                     status = results[test].Status
                     if results[test].Time is not None:
                         if program_times[program][0] < results[test].Time:
-                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, config,
-                                                                                                      lang, task_id, args))
+                            program_times[program] = (results[test].Time, package_util.get_time_limit(test, lang, args))
                     elif status == Status.TL:
-                        program_times[program] = (2 * package_util.get_time_limit(test, config, lang, task_id, args),
-                                                  package_util.get_time_limit(test, config, lang, task_id, args))
+                        program_times[program] = (2 * package_util.get_time_limit(test, lang, args),
+                                                  package_util.get_time_limit(test, lang, args))
                     if results[test].Memory is not None:
                         if program_memory[program][0] < results[test].Memory:
-                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, config,
-                                                                                                           lang, task_id, args))
+                            program_memory[program] = (results[test].Memory, package_util.get_memory_limit(test, lang, args))
                     elif status == Status.ML:
-                        program_memory[program] = (2 * package_util.get_memory_limit(test, config, lang, task_id, args),
-                                                   package_util.get_memory_limit(test, config, lang, task_id, args))
+                        program_memory[program] = (2 * package_util.get_memory_limit(test, lang, args),
+                                                   package_util.get_memory_limit(test, lang, args))
                     if status == Status.PENDING:
                         group_status = Status.PENDING
                     else:
@@ -220,34 +223,34 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
 
         last_group = None
         for test in tests:
-            group = package_util.get_group(test, task_id)
+            group = int(test.group)
             if last_group != group:
                 if last_group is not None:
                     print_group_seperator()
                 last_group = group
 
-            print(margin + "%6s" % package_util.extract_test_id(test, task_id), end=" | ")
+            print(margin + "%6s" % test.test_id, end=" | ")
             for program in program_group:
                 lang = package_util.get_file_lang(program)
-                result = all_results[program][package_util.get_group(test, task_id)][test]
+                result = all_results[program][int(test.group)][test]
                 status = result.Status
                 if status == Status.PENDING: print(13 * ' ', end=" | ")
                 else:
                     print("%3s" % colorize_status(status),
-                         ("%20s" % color_time(result.Time, package_util.get_time_limit(test, config, lang, task_id, args)))
+                         ("%20s" % color_time(result.Time, package_util.get_time_limit(test, lang, args)))
                          if result.Time is not None else 10*" ", end=" | ")
             print()
             if not hide_memory:
                 print(8*" ", end=" | ")
                 for program in program_group:
                     lang = package_util.get_file_lang(program)
-                    result = all_results[program][package_util.get_group(test, task_id)][test]
+                    result = all_results[program][int(test.group)][test]
                     if result.Status != Status.PENDING:
                         print(colorize_points(int(result.Points), contest.min_score_per_test(),
                                               contest.max_score_per_test()).ljust(13), end="")
                     else:
                         print(3*" ", end="")
-                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, config, lang, task_id, args)))
+                    print(("%20s" % color_memory(result.Memory, package_util.get_memory_limit(test, lang, args)))
                           if result.Memory is not None else 10*" ", end=" | ")
                 print()
 
@@ -304,12 +307,6 @@ class Command(BaseCommand):
         parsers.add_compilation_arguments(parser)
         return parser
 
-    def extract_file_name(self, file_path):
-        return os.path.split(file_path)[1]
-
-    def get_group(self, test_path):
-        return package_util.get_group(test_path, self.ID)
-
     def get_solution_from_exe(self, executable):
         file = os.path.splitext(executable)[0]
         for ext in self.SOURCE_EXTENSIONS:
@@ -323,24 +320,21 @@ class Command(BaseCommand):
             possible_score += self.scores[group]
         return possible_score
 
-    def get_groups(self, tests):
-        return sorted(list(set([self.get_group(test) for test in tests])))
-
     def compile_solutions(self, solutions):
         print("Compiling %d solutions..." % len(solutions))
-        args = [(solution, None, True, False, None) for solution in solutions]
+        args = [(solution.filename, None, True, False, None) for solution in solutions]
         with mp.Pool(self.cpus) as pool:
             compilation_results = pool.starmap(self.compile, args)
         return compilation_results
 
     def compile(self, solution, dest=None, use_extras=False, clear_cache=False, name=None):
-        compile_log_file = paths.get_compilation_log_path("%s.compile_log" % package_util.get_file_name(solution))
+        compile_log_file = paths.get_compilation_log_path("%s.compile_log" % os.path.basename(solution))
         source_file = os.path.join(os.getcwd(), "prog", self.get_solution_from_exe(solution))
         if dest:
             output = dest
         else:
             output = paths.get_executables_path(package_util.get_executable(solution))
-        name = name or "file " + package_util.get_file_name(solution)
+        name = name or "file " + os.path.basename(solution)
 
         extra_compilation_args = []
         extra_compilation_files = []
@@ -375,14 +369,15 @@ class Command(BaseCommand):
         Run an execution and return the result as ExecutionResult object.
         """
 
-        (name, executable, test, time_limit, memory_limit, timetool_path, execution_dir) = data_for_execution
-        file_no_ext = paths.get_executions_path(name, package_util.extract_test_id(test, self.ID))
+        (file, executable, test, time_limit, memory_limit, timetool_path, execution_dir) = data_for_execution
+        name = file.filename
+        file_no_ext = paths.get_executions_path(name, test.test_id)
         output_file = file_no_ext + ".out"
         result_file = file_no_ext + ".res"
         hard_time_limit = math.ceil(2 * time_limit / 1000.0)
 
-        return self.task_type.run(time_limit, hard_time_limit, memory_limit, test, output_file,
-                                  package_util.get_out_from_in(test), result_file, executable, execution_dir)
+        return self.task_type.run(time_limit, hard_time_limit, memory_limit, test.in_file.path, output_file,
+                                  getattr(test.out_file, "path", ""), result_file, executable, execution_dir)
 
     def run_solutions(self, compiled_commands, names, solutions, executables_dir):
         """
@@ -401,35 +396,37 @@ class Command(BaseCommand):
         for file in glob.glob(os.path.join(os.getcwd(), "prog", f"_{self.ID}lib.so")):
             shutil.copy(file, executables_dir)
 
-        for (name, executable, result) in compiled_commands:
+        for (file, executable, result) in compiled_commands:
+            name = file.filename
             lang = package_util.get_file_lang(name)
             solution_cache = cache.get_cache_file(os.path.join(os.getcwd(), "prog", name))
             all_cache_files[name] = solution_cache
 
             if result:
                 for test in self.tests:
-                    test_time_limit = package_util.get_time_limit(test, self.config, lang, self.ID, self.args)
-                    test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.ID, self.args)
+                    test_time_limit = package_util.get_time_limit(test, lang, self.args)
+                    test_memory_limit = package_util.get_memory_limit(test, lang, self.args)
 
-                    test_result: CacheTest = solution_cache.tests.get(self.test_md5sums[os.path.basename(test)], None)
+                    test_result: CacheTest = solution_cache.tests.get(self.test_md5sums[test.in_file.filename], None)
                     if test_result is not None and test_result.time_limit == test_time_limit and \
                             test_result.memory_limit == test_memory_limit and \
                             test_result.time_tool == self.timetool_name:
-                        all_results[name][self.get_group(test)][test] = test_result.result
+                        all_results[name][int(test.group)][test] = test_result.result
                     else:
-                        executions.append((name, executable, test, test_time_limit, test_memory_limit,
+                        executions.append((file, executable, test, test_time_limit, test_memory_limit,
                                            self.timetool_path, os.path.dirname(executable)))
-                        all_results[name][self.get_group(test)][test] = ExecutionResult(Status.PENDING)
+                        all_results[name][int(test.group)][test] = ExecutionResult(Status.PENDING)
                 os.makedirs(paths.get_executions_path(name), exist_ok=True)
             else:
                 for test in self.tests:
-                    all_results[name][self.get_group(test)][test] = ExecutionResult(Status.CE)
+                    all_results[name][int(test.group)][test] = ExecutionResult(Status.CE)
         print()
-        executions.sort(key = lambda x: (package_util.get_executable_key(x[1], self.ID), x[2]))
+        executions.sort(key = lambda x: (package_util.get_executable_key(x[1]), x[2].test_name))
         program_groups_scores = collections.defaultdict(dict)
         print_data = PrintData(0)
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
+        # has_terminal = False
 
         if has_terminal:
             run_event = threading.Event()
@@ -443,18 +440,22 @@ class Command(BaseCommand):
         pool = mp.Pool(self.cpus)
         keyboard_interrupt = False
         try:
+            print(executions)
             for i, result in enumerate(pool.imap(self.run_solution, executions)):
-                (name, executable, test, time_limit, memory_limit) = executions[i][:5]
+                (file, executable, test, time_limit, memory_limit) = executions[i][:5]
+                name = file.filename
                 contest_points = self.contest.get_test_score(result, time_limit, memory_limit)
                 result.Points = contest_points
-                all_results[name][self.get_group(test)][test] = result
+                all_results[name][int(test.group)][test] = result
                 print_data.i = i
 
+                print(name, test)
+
                 # We store the result in dictionary to write it to cache files later.
-                lang = package_util.get_file_lang(name)
-                test_time_limit = package_util.get_time_limit(test, self.config, lang, self.ID, self.args)
-                test_memory_limit = package_util.get_memory_limit(test, self.config, lang, self.ID, self.args)
-                all_cache_files[name].tests[self.test_md5sums[os.path.basename(test)]] = CacheTest(
+                lang = package_util.get_file_lang(file.path)
+                test_time_limit = package_util.get_time_limit(test, lang, self.args)
+                test_memory_limit = package_util.get_memory_limit(test, lang, self.args)
+                all_cache_files[name].tests[self.test_md5sums[test.in_file.filename]] = CacheTest(
                     time_limit=test_time_limit,
                     memory_limit=test_memory_limit,
                     time_tool=self.timetool_name,
@@ -474,8 +475,8 @@ class Command(BaseCommand):
                                    self.cpus, self.args.hide_memory, self.config, self.contest, self.args)[0]))
 
         # Write cache files.
-        for solution, cache_data in all_cache_files.items():
-            cache_data.save(os.path.join(os.getcwd(), "prog", solution))
+        for name, cache_data in all_cache_files.items():
+            cache_data.save(os.path.join(os.getcwd(), "prog", name))
 
         if keyboard_interrupt:
             util.exit_with_error("Stopped due to keyboard interrupt.")
@@ -487,9 +488,9 @@ class Command(BaseCommand):
         for i in range(len(solutions)):
             if not compilation_results[i]:
                 self.failed_compilations.append(solutions[i])
-        executables = [paths.get_executables_path(package_util.get_executable(solution)) for solution in solutions]
+        executables = [paths.get_executables_path(package_util.get_executable(solution.filename)) for solution in solutions]
         compiled_commands = zip(solutions, executables, compilation_results)
-        names = solutions
+        names = [solution.filename for solution in solutions]
         return self.run_solutions(compiled_commands, names, solutions, paths.get_executables_path())
 
     def convert_status_to_string(self, dictionary):
@@ -512,15 +513,15 @@ class Command(BaseCommand):
         Returns a list of groups for which all tests were run.
         """
         group_sizes = {}
-        for test in package_util.get_tests(self.ID):
-            group = package_util.get_group(test, self.ID)
+        for test in package_util.get_tests():
+            group = int(test.group)
             if group not in group_sizes:
                 group_sizes[group] = 0
             group_sizes[group] += 1
 
         run_group_sizes = {}
         for test in self.tests:
-            group = package_util.get_group(test, self.ID)
+            group = int(test.group)
             if group not in run_group_sizes:
                 run_group_sizes[group] = 0
             run_group_sizes[group] += 1
@@ -757,7 +758,7 @@ class Command(BaseCommand):
         self.SOLUTIONS_RE = package_util.get_solutions_re(self.ID)
 
     def validate_arguments(self, args):
-        compilers = compiler.verify_compilers(args, package_util.get_solutions(self.ID, None))
+        compilers = compiler.verify_compilers(args, [solution.path for solution in package_util.get_solutions()])
 
         def use_sio2jail():
             timetool_path = None
@@ -816,7 +817,7 @@ class Command(BaseCommand):
                 cnt=len(self.failed_compilations), letter='' if len(self.failed_compilations) == 1 else 's'))
 
     def set_scores(self):
-        self.groups = self.get_groups(self.tests)
+        self.groups = package_util.get_groups(self.tests)
         self.scores = collections.defaultdict(int)
 
         if 'scores' not in self.config.keys():
@@ -833,35 +834,33 @@ class Command(BaseCommand):
 
         self.possible_score = self.contest.get_possible_score(self.groups, self.scores)
 
-    def get_valid_input_files(self):
+    def get_valid_tests(self):
         """
         Returns list of input files that have corresponding output file.
         """
-        output_tests = glob.glob(os.path.join(os.getcwd(), "out", "*.out"))
-        output_tests_ids = [package_util.extract_test_id(test, self.ID) for test in output_tests]
-        valid_input_files = []
-        for test in self.tests:
-            if package_util.extract_test_id(test, self.ID) in output_tests_ids:
-                valid_input_files.append(test)
-        return valid_input_files
+        valid_tests = []
+        for test in SIO3Package().get_tests_with_inputs(self.tests):
+            if test.in_file and test.out_file:
+                valid_tests.append(test)
+        return valid_tests
 
     def validate_existence_of_outputs(self):
         """
         Checks if all input files have corresponding output files.
         """
-        valid_input_files = self.get_valid_input_files()
+        valid_input_files = self.get_valid_tests()
         if len(valid_input_files) != len(self.tests):
             missing_tests = list(set(self.tests) - set(valid_input_files))
-            missing_tests.sort()
+            missing_tests = sort_tests(missing_tests)
 
             print(util.warning('Missing output files for tests: ' + ', '.join(
-                [self.extract_file_name(test) for test in missing_tests])))
+                [(test.in_file or test.out_file).filename for test in missing_tests])))
             if not self.args.allow_no_outputs:
                 util.exit_with_error('There are tests without outputs. \n'
                                      'Run outgen to fix this issue or add the --no-outputs flag to ignore the issue.')
             print(util.warning('Running only on tests with output files.'))
             self.tests = valid_input_files
-            self.groups = self.get_groups(self.tests)
+            self.groups = package_util.get_groups(self.tests)
             if len(self.groups) < 1:
                 util.exit_with_error('No tests with valid outputs.')
 
@@ -871,9 +870,9 @@ class Command(BaseCommand):
         if all input files have corresponding output files.
         """
         if len(self.tests) > 0:
-            print(util.bold('Tests that will be run:'), ' '.join([self.extract_file_name(test) for test in self.tests]))
+            print(util.bold('Tests that will be run:'), ' '.join([test.test_name for test in self.tests]))
 
-            example_tests = [test for test in self.tests if self.get_group(test) == 0]
+            example_tests = [test for test in self.tests if int(test.group) == 0]
             if len(example_tests) == len(self.tests):
                 print(util.warning('Running only on example tests.'))
 
@@ -882,7 +881,7 @@ class Command(BaseCommand):
         else:
             util.exit_with_error('There are no tests to run.')
 
-    def check_errors(self, results: Dict[str, Dict[str, Dict[str, ExecutionResult]]]):
+    def check_errors(self, results: Dict[LocalFile, Dict[str, Dict[Test, ExecutionResult]]]):
         """
         Checks if there were any errors during execution and exits if there were.
         :param results: Dictionary of results.
@@ -894,7 +893,7 @@ class Command(BaseCommand):
             for group in results[solution]:
                 for test in results[solution][group]:
                     if results[solution][group][test].Error is not None:
-                        error_msg += (f'Solution {solution} had an error on test {test}: '
+                        error_msg += (f'Solution {solution} had an error on test {test.test_id}: '
                                       f'{results[solution][group][test].Error}')
                         if results[solution][group][test].Stderr != ['']:
                             error_msg += f' Stderr:\n{results[solution][group][test].Stderr}'
@@ -936,7 +935,6 @@ class Command(BaseCommand):
         args = util.init_package_command(args)
 
         self.set_constants()
-        package_util.validate_test_names(self.ID)
         self.args = args
         self.config = package_util.get_config()
         try:
@@ -959,23 +957,24 @@ class Command(BaseCommand):
         self.set_task_type(self.timetool_name, self.timetool_path)
         self.compile_additional_files()
 
-        lib = package_util.get_files_matching_pattern(self.ID, f'{self.ID}lib.*')
+        lib = package_util.get_files_matching_pattern(f'{self.ID}lib.*')
         self.has_lib = len(lib) != 0
 
-        self.tests = package_util.get_tests(self.ID, self.args.tests)
-        self.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in self.tests}
+        self.tests = package_util.get_tests(self.args.tests)
+        self.test_md5sums = {os.path.basename(test.in_file.path): util.get_file_md5(test.in_file.path) for test in self.tests if test.in_file}
         self.check_are_any_tests_to_run()
         self.set_scores()
         self.failed_compilations = []
-        solutions = package_util.get_solutions(self.ID, self.args.solutions)
+        solutions = package_util.get_solutions(self.args.solutions)
 
         util.change_stack_size_to_unlimited()
         for solution in solutions:
-            lang = package_util.get_file_lang(solution)
+            lang = package_util.get_file_lang(solution.path)
             for test in self.tests:
                 # The functions will exit if the limits are not set
-                _ = package_util.get_time_limit(test, self.config, lang, self.ID, self.args)
-                _ = package_util.get_memory_limit(test, self.config, lang, self.ID, self.args)
+                _ = package_util.get_time_limit(test, lang, self.args)
+                _ = package_util.get_memory_limit(test, lang, self.args)
+
 
         results, all_results = self.compile_and_run(solutions)
         self.check_errors(all_results)

@@ -114,6 +114,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
+        print("Saving", program)
         save_compiled(program, output, compilation_flags, use_fsanitize, clear_cache)
         return True
 

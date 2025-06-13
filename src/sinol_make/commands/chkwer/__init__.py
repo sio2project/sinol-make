@@ -55,22 +55,21 @@ class Command(BaseCommand):
         """
         Verifies a test and returns the result of chkwer on this test.
         """
-        output_file = paths.get_chkwer_path(os.path.basename(execution.out_test_path))
-        with open(execution.in_test_path, 'r') as inf, open(output_file, 'w') as outf:
+        output_file = paths.get_chkwer_path(os.path.basename(execution.test.out_file.path))
+        with open(execution.test.in_file.path, 'r') as inf, open(output_file, 'w') as outf:
             process = subprocess.Popen([execution.model_exe], stdin=inf, stdout=outf)
             process.wait()
-        ok, points, comment = self.task_type.check_output(execution.in_test_path, output_file, execution.out_test_path)
+        ok, points, comment = self.task_type.check_output(execution.test.in_file.path, output_file, execution.test.out_file.path)
 
-        return RunResult(execution.in_test_path, ok, int(points), comment)
+        return RunResult(execution.test, ok, int(points), comment)
 
     def run_and_print_table(self) -> Dict[str, TestResult]:
         results = {}
-        sorted_tests = sorted(self.tests, key=lambda test: package_util.get_group(test, self.task_id))
+        sorted_tests = sorted(self.tests, key=lambda test: test.group)
         executions: List[ChkwerExecution] = []
         for test in sorted_tests:
-            results[test] = TestResult(test, self.task_id)
-            executions.append(ChkwerExecution(test, results[test].test_name, package_util.get_out_from_in(test),
-                                              self.checker_executable, self.model_executable))
+            results[test.test_name] = TestResult(test)
+            executions.append(ChkwerExecution(test, self.checker_executable, self.model_executable))
 
         has_terminal, terminal_width, terminal_height = util.get_terminal_size()
         table_data = TableData(results, 0, self.task_id, self.contest_type.max_score_per_test())
@@ -84,7 +83,7 @@ class Command(BaseCommand):
         try:
             with mp.Pool(self.cpus) as pool:
                 for i, result in enumerate(pool.imap(self.run_test, executions)):
-                    table_data.results[result.test_path].set_results(result.points, result.ok, result.comment)
+                    table_data.results[result.test.test_name].set_results(result.points, result.ok, result.comment)
                     table_data.i = i
         except KeyboardInterrupt:
             keyboard_interrupt = True
@@ -108,12 +107,12 @@ class Command(BaseCommand):
             util.exit_with_error("chkwer can be run only for normal tasks.")
 
         self.cpus = args.cpus or util.default_cpu_count()
-        self.tests = package_util.get_tests(self.task_id, args.tests)
+        self.tests = package_util.get_tests(args.tests)
 
         if len(self.tests) == 0:
             util.exit_with_error("No tests found.")
         else:
-            print('Will run on tests: ' + util.bold(', '.join(self.tests)))
+            print('Will run on tests: ' + util.bold(', '.join([test.test_name for test in self.tests])))
         util.change_stack_size_to_unlimited()
 
         additional_files = self.task_type.additional_files_to_compile()
@@ -122,10 +121,10 @@ class Command(BaseCommand):
         if len(additional_files) != 1:
             util.exit_with_error("More than one file to compile found. How is that possible?")
         checker_info = additional_files[0]
-        model_solution = outgen_util.get_correct_solution(self.task_id)
+        model_solution = package_util.get_correct_solution()
         self.checker_executable = self.compile(checker_info[0], checker_info[1], args, "checker",
                                                args.compile_mode)
-        self.model_executable = self.compile(model_solution, package_util.get_executable(model_solution), args,
+        self.model_executable = self.compile(model_solution.path, package_util.get_executable(model_solution.path), args,
                                              "model solution", args.compile_mode)
         print()
 

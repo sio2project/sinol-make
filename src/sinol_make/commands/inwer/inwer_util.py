@@ -2,9 +2,11 @@ import glob
 import os
 import sys
 from io import StringIO
-from typing import Union
+from typing import Union, List
 
 import argparse
+
+from sio3pack.test import Test
 
 from sinol_make import util
 from sinol_make.commands.inwer import TestResult, TableData
@@ -13,15 +15,16 @@ from sinol_make.helpers import compiler
 from sinol_make.interfaces.Errors import CompilationError
 
 
-def get_inwer_path(task_id: str, path=None) -> Union[str, None]:
+def get_inwer_path(path=None) -> Union[str, None]:
     """
     Returns path to inwer executable for given task or None if no inwer was found.
     """
+    task_id = package_util.get_task_id()
     if path is None:
-        inwers = package_util.get_files_matching_pattern(task_id, f'{task_id}inwer.*')
+        inwers = package_util.get_files_matching_pattern(f'{task_id}inwer.*')
         if len(inwers) == 0:
             return None
-        return inwers[0]
+        return inwers[0].path
     else:
         inwer = os.path.join(os.getcwd(), path)
         if os.path.exists(inwer):
@@ -46,9 +49,9 @@ def compile_inwer(inwer_path: str, args: argparse.Namespace, compilation_flags='
     return inwer_exe
 
 
-def sort_tests(tests, task_id):
+def sort_tests(tests: List[Test]) -> List[Test]:
     # First sort by group, then by test name.
-    tests.sort(key=lambda test: [package_util.get_group(test, task_id), test])
+    tests.sort(key=lambda test: [int(test.group), test.test_id])
     return tests
 
 
@@ -65,10 +68,10 @@ def print_view(term_width, term_height, table_data: TableData):
     column_lengths = [0, len('Group') + 1, len('Status') + 1, 0]
     tests = []
     for result in results.values():
-        column_lengths[0] = max(column_lengths[0], len(result.test_name))
-        column_lengths[1] = max(column_lengths[1], len(result.test_group))
-        tests.append(result.test_path)
-    tests = sort_tests(tests, table_data.task_id)
+        column_lengths[0] = max(column_lengths[0], len(result.test.test_name))
+        column_lengths[1] = max(column_lengths[1], len(result.test.group))
+        tests.append(result.test)
+    tests = sort_tests(tests)
 
     column_lengths[3] = max(10, term_width - column_lengths[0] - column_lengths[1] - column_lengths[
         2] - 9 - 3)  # 9 is for " | " between columns, 3 for margin.
@@ -87,13 +90,13 @@ def print_view(term_width, term_height, table_data: TableData):
     print_line_separator()
 
     last_group = None
-    for test_path in tests:
-        result = results[test_path]
-        if last_group is not None and last_group != result.test_group:
+    for test in tests:
+        result = results[test.test_name]
+        if last_group is not None and last_group != result.test.group:
             print_line_separator()
-        last_group = result.test_group
-        print(margin + result.test_name.ljust(column_lengths[0]) + " | ", end='')
-        print(result.test_group.ljust(column_lengths[1] - 1) + " | ", end='')
+        last_group = result.test.group
+        print(margin + test.test_name.ljust(column_lengths[0]) + " | ", end='')
+        print(result.test.group.ljust(column_lengths[1] - 1) + " | ", end='')
 
         if result.verified:
             if result.valid:

@@ -19,9 +19,9 @@ def print_view(term_width, term_height, table_data: TableData):
     column_lengths = [0, len('Points') + 1, 0]
     tests = []
     for result in results.values():
-        column_lengths[0] = max(column_lengths[0], len(result.test_name))
-        tests.append(result.test_path)
-    tests = sort_tests(tests, table_data.task_id)
+        column_lengths[0] = max(column_lengths[0], len(result.test.test_name))
+        tests.append(result.test)
+    tests = sort_tests(tests)
 
     # 6 is for " | " between columns, 3 for margin.
     column_lengths[2] = max(10, term_width - column_lengths[0] - column_lengths[1] - 6 - 3)
@@ -38,12 +38,12 @@ def print_view(term_width, term_height, table_data: TableData):
     print_line_separator()
 
     last_group = None
-    for test_path in tests:
-        result = results[test_path]
-        if last_group is not None and last_group != result.test_group:
+    for test in tests:
+        result = results[test.test_name]
+        if last_group is not None and last_group != result.test.group:
             print_line_separator()
-        last_group = result.test_group
-        print(margin + result.test_name.ljust(column_lengths[0]) + " | ", end='')
+        last_group = result.test.group
+        print(margin + test.test_name.ljust(column_lengths[0]) + " | ", end='')
 
         if result.run:
             if result.ok:

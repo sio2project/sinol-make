@@ -1,8 +1,13 @@
 import os
 import glob
+import re
 import subprocess
 
 from sinol_make.helpers import compile, paths, package_util
+from sinol_make.sio3pack.package import SIO3Package
+
+from sio3pack.files import LocalFile
+from sio3pack.test import Test
 
 
 def get_simple_package_path():
@@ -203,42 +208,61 @@ def create_ins(package_path, task_id):
     """
     Create .in files for package.
     """
-    all_ingens = package_util.get_files_matching_pattern(task_id, f'{task_id}ingen.*')
+    all_ingens = package_util.get_files_matching_pattern(f'{task_id}ingen.*')
     if len(all_ingens) == 0:
         return
     ingen = all_ingens[0]
     ingen_executable = paths.get_executables_path("ingen.e")
     os.makedirs(paths.get_executables_path(), exist_ok=True)
-    assert compile.compile(ingen, ingen_executable)
+    assert compile.compile(ingen.path, ingen_executable)
     os.chdir(os.path.join(package_path, "in"))
     os.system("../.cache/executables/ingen.e")
     os.chdir(package_path)
+    package_util.reload_tests()
 
 
 def create_outs(package_path, task_id):
     """
     Create .out files for package.
     """
-    solution = package_util.get_files_matching_pattern(task_id, f'{task_id}.*')[0]
+    solution = package_util.get_files_matching_pattern(f'{task_id}.*')[0]
     solution_executable = paths.get_executables_path("solution.e")
     os.makedirs(paths.get_executables_path(), exist_ok=True)
-    assert compile.compile(solution, solution_executable)
+    assert compile.compile(solution.path, solution_executable)
     os.chdir(os.path.join(package_path, "in"))
     for file in glob.glob("*.in"):
         with open(file, "r") as in_file, open(os.path.join("../out", file.replace(".in", ".out")), "w") as out_file:
             subprocess.Popen([os.path.join(package_path, ".cache", "executables", "solution.e")],
                              stdin=in_file, stdout=out_file).wait()
     os.chdir(package_path)
+    package_util.reload_tests()
 
 
 def create_ins_outs(package_path):
     """
     Create .in and .out files for package.
     """
+    SIO3Package.reset()
     os.chdir(package_path)
     task_id = package_util.get_task_id()
     task_type = package_util.get_task_type_cls()
     create_ins(package_path, task_id)
-    has_lib = package_util.any_files_matching_pattern(task_id, f"{task_id}lib.*")
+    has_lib = package_util.any_files_matching_pattern(f"{task_id}lib.*")
     if not has_lib and task_type.run_outgen():
         create_outs(package_path, task_id)
+
+
+def from_test_names(task_id: str, names: list[str]):
+    def create_test(name: str):
+        test_id = name.removeprefix(task_id)
+        gr_match = re.match(r"^\d+", test_id)
+        if gr_match:
+            group = gr_match.group(0)
+        else:
+            group = None
+        return Test(name, test_id, LocalFile(os.path.join(task_id, "in", name + ".in"), False), LocalFile(os.path.join(task_id, "out", name + ".out"), False), group)
+
+    tests = []
+    for name in names:
+        tests.append(create_test(name))
+    return tests
