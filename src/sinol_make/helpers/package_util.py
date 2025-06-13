@@ -69,7 +69,6 @@ def get_matching_tests(tests: List[Test], patterns: List[str]) -> List[Test]:
     for pattern in patterns:
         matched_to_pattern = set()
         for test in tests:
-            print(test.in_file.path)
             # if absolute path is given, match it directly
             if os.path.isabs(pattern) and fnmatch.fnmatch(test.in_file.path, pattern):
                 matched_to_pattern.add(test)
