@@ -78,9 +78,6 @@ class Sio2jailExecutor(BaseExecutor):
             result.Error = message
         elif message == 'memory limit exceeded':
             result.Status = Status.ML
-            # TODO: sinol-make does not support "OLE"
-            result.Status = Status.RE
-            result.Error = message
         elif message.startswith('intercepted forbidden syscall'):
             # TODO: sinol-make does not support "RV"
             result.Status = Status.RE
