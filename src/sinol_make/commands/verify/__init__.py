@@ -50,6 +50,12 @@ class Command(BaseCommand):
                                  'This flag will be passed to the run command.')
         parsers.add_time_tool_argument(parser)
         parsers.add_compilation_arguments(parser)
+        parser.add_argument('--no-gen', action='store_true', default=False,
+                            help='do not generate tests')
+        parser.add_argument('--no-ingen', action='store_true', default=False,
+                            help='do not generate input tests')
+        parser.add_argument('--no-outgen', action='store_true', default=False,
+                            help='do not generate output tests')
 
     def correct_contest_type(self):
         if self.args.expected_contest_type is not None:
@@ -151,10 +157,16 @@ class Command(BaseCommand):
         self.run_stresstests()
 
         # Generate tests
-        print(util.bold(' Generating tests '.center(util.get_terminal_size()[1], '=')))
-        gen = GenCommand()
-        gen.run(self.prepare_args(gen))
-        self.verify_scores(package_util.get_groups(package_util.get_all_inputs(self.task_id), self.task_id))
+        if not self.args.no_gen and (not self.args.no_ingen or not self.args.no_outgen):
+            print(util.bold(' Generating tests '.center(util.get_terminal_size()[1], '=')))
+            gen = GenCommand()
+            args = self.prepare_args(gen)
+            if self.args.no_ingen:
+                args.only_outputs = True
+            if self.args.no_outgen:
+                args.only_inputs = True
+            gen.run(args)
+            self.verify_scores(package_util.get_groups(package_util.get_all_inputs(self.task_id), self.task_id))
 
         # Generate problem statements
         print(util.bold(' Generating problem statements '.center(util.get_terminal_size()[1], '=')))
