@@ -332,6 +332,17 @@ def test_dangling_inputs(create_package, capsys):
     for f in ["gen1.in", "gen2.in"]:
         assert os.path.exists(os.path.join(create_package, "in", f))
 
+    # Test if globbing works correctly
+    config = package_util.get_config()
+    config["sinol_static_tests"] = ["gen?.in"]
+    sm_util.save_config(config)
+    simple_run(["prog/geningen5.cpp"], command="ingen")
+    for f in ["gen1.in", "gen2.in"]:
+        assert os.path.exists(os.path.join(create_package, "in", f))
+    simple_run(["prog/geningen7.cpp"], command="ingen")
+    for f in ["gen1.in", "gen2.in"]:
+        assert os.path.exists(os.path.join(create_package, "in", f))
+
 
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
 def test_outgen_cache_cleaning(create_package, capsys):
