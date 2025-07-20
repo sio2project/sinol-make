@@ -148,3 +148,29 @@ def test_expected_contest_and_no_scores(capsys, create_package):
         assert e.value.code == 1
         out = capsys.readouterr().out
         assert "Scores are not defined in config.yml." in out
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
+def test_no_gen_parameters(capsys, create_package):
+    """
+    Test if --no-gen, --no-ingen and --no-outgen flags work correctly.
+    """
+    with pytest.raises(SystemExit) as e:
+        run(["--no-gen"])
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "There are no tests to run." in out
+    assert not os.path.exists(os.path.join(create_package, "in", "abc2a.in"))
+    assert not os.path.exists(os.path.join(create_package, "out", "abc2a.out"))
+
+    with pytest.raises(SystemExit) as e:
+        run(["--no-outgen"])
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "There are tests without outputs." in out
+    assert os.path.exists(os.path.join(create_package, "in", "abc2a.in"))
+    assert not os.path.exists(os.path.join(create_package, "out", "abc2a.out"))
+
+    run(["--no-ingen"])
+    assert os.path.exists(os.path.join(create_package, "in", "abc2a.in"))
+    assert os.path.exists(os.path.join(create_package, "out", "abc2a.out"))
