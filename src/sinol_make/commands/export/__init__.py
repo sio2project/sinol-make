@@ -162,6 +162,11 @@ class Command(BaseCommand):
             st = os.stat(shell_ingen)
             os.chmod(shell_ingen, st.st_mode | stat.S_IEXEC)
 
+        # Remove '.e' files from prog directory
+        prog_dir = os.path.join(target_dir, 'prog')
+        for file in glob.glob(os.path.join(prog_dir, f'{self.task_id}*.e')):
+            os.remove(file)
+
         print('Copying example tests...')
         for ext in ['in', 'out']:
             os.mkdir(os.path.join(target_dir, ext))

@@ -279,3 +279,28 @@ def test_dlazaw_ocen(create_package):
 
             assert not os.path.exists(os.path.join(tmpdir, task_id, "attachments", f"{task_id}ocen.zip"))
             assert os.path.join(tmpdir, task_id, "attachments", f"dlazaw.zip")
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
+def test_e_files_removal(create_package):
+    """
+    Test if .e files are removed from the prog directory in the archive.
+    """
+    package_path = create_package
+    task_id = package_util.get_task_id()
+    prog_path = os.path.join(package_path, "prog")
+    e_file = os.path.join(prog_path, f"{task_id}e.e")
+    with open(e_file, "w") as f:
+        f.write("This is a test e file.")
+
+    parser = configure_parsers()
+    args = parser.parse_args(["export", "--no-statement"])
+    command = Command()
+    command.run(args)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f'{task_id}.tgz', "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+
+        extracted = os.path.join(tmpdir, task_id)
+        assert not os.path.exists(os.path.join(extracted, "prog", f"{task_id}e.e"))
