@@ -51,8 +51,11 @@ class Command(BaseCommand):
                 static_files = config['sinol_static_tests']
                 if isinstance(static_files, str):
                     static_files = [static_files]
-                static_files = set([os.path.basename(test) for test in static_files])
-                to_delete = to_delete - static_files
+                found_static_files = set()
+                for static in static_files:
+                    files = [os.path.basename(f) for f in glob.glob(os.path.join(os.getcwd(), "in", static))]
+                    found_static_files.update(files)
+                to_delete = to_delete - found_static_files
                 if to_delete:
                     print('Cleaning up old input files.')
                     for test in to_delete:
