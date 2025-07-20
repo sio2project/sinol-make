@@ -82,7 +82,8 @@ sinol_latex_compiler: auto
 
 # You can specify which tests are static (handwritten). This allows sinol-make to differentiate between
 # old and handwritten tests. If this key is not present old tests won't be removed. The values can be
-# either a list of test names (e.g. `["__ID__0.in", "__ID__1.in"]`) or a glob pattern (e.g. `"__ID__*.in"`).
+# either a list of test names (e.g. `["__ID__0.in", "__ID__1.in"]`) or glob patterns
+# (e.g. [`"__ID__*.in"`, "__ID__2?.in"]).
 # This key is optional and should be a list of tests.
 sinol_static_tests: ["__ID__0.in", "__ID__0a.in"]
 
