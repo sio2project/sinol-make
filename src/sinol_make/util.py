@@ -431,3 +431,18 @@ def exit_with_error(text, func=None):
 
 def has_sanitizer_error(output, exit_code):
     return ('ELF_ET_DYN_BASE' in output or 'ASan' in output) and exit_code != 0
+
+
+def is_running_in_virtualenv():
+    return (
+        hasattr(sys, 'real_prefix') or
+        (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
+    )
+
+def is_probably_installed_by_pipx():
+    if not is_running_in_virtualenv():
+        return False
+
+    # Pipx installs into ~/.local/pipx/venvs/
+    venv_path = sys.prefix
+    return 'pipx' in venv_path or 'pipx' in os.path.abspath(venv_path)
