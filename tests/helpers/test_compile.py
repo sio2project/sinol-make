@@ -17,10 +17,10 @@ def test_compilation_caching():
         with open(os.path.join(os.getcwd(), "test.e"), "w") as f:
             f.write("")
 
-        assert check_compiled(os.path.join(os.getcwd(), "test.txt"), "default", False) is None
+        assert check_compiled(os.path.join(os.getcwd(), "test.txt"), "default", "no") is None
         save_compiled(os.path.join(os.getcwd(), "test.txt"),
-                      os.path.join(os.getcwd(), "test.e"), "default", False)
-        assert check_compiled(os.path.join(os.getcwd(), "test.txt"), "default", False) == \
+                      os.path.join(os.getcwd(), "test.e"), "default", "no")
+        assert check_compiled(os.path.join(os.getcwd(), "test.txt"), "default", "no") == \
                os.path.join(os.getcwd(), "test.e")
 
 

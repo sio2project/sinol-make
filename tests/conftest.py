@@ -18,7 +18,7 @@ def _compile(args):
     output = paths.get_executables_path(os.path.splitext(os.path.basename(file_path))[0] + ".e")
     compile_log_path = paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log")
     basename = os.path.basename(file_path)
-    use_fsanitize = fnmatch.fnmatch(basename, "*ingen*") or fnmatch.fnmatch(basename, "*inwer*")
+    use_fsanitize = 'simple' if fnmatch.fnmatch(basename, "*ingen*") or fnmatch.fnmatch(basename, "*inwer*") else 'no'
     try:
         with open(compile_log_path, "w") as compile_log:
             compile.compile(file_path, output, compile_log=compile_log, use_sanitizers=use_fsanitize)
