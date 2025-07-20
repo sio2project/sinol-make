@@ -45,12 +45,12 @@ class CacheFile:
     executable_path: str
     # Compilation flags used
     compilation_flags: str
-    # Whether -fsanitize=undefined,address was used
-    sanitizers: bool
+    # What sanitizers were used
+    sanitizers: str
     # Test results
     tests: Dict[str, CacheTest]
 
-    def __init__(self, md5sum="", executable_path="", compilation_flags="default", sanitizers=False, tests=None):
+    def __init__(self, md5sum="", executable_path="", compilation_flags="default", sanitizers="no", tests=None):
         if tests is None:
             tests = {}
         self.md5sum = md5sum

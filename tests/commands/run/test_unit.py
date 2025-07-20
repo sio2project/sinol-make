@@ -50,7 +50,7 @@ def test_run_solutions(create_package, time_tool):
     package_path = create_package
     command = get_command(package_path)
     command.args = argparse.Namespace(solutions_report=False, time_tool=time_tool, compile_mode='default',
-                                      hide_memory=False)
+                                      hide_memory=False, sanitize='no')
     create_ins_outs(package_path)
     command.tests = package_util.get_tests("abc", None)
     command.test_md5sums = {os.path.basename(test): util.get_file_md5(test) for test in command.tests}
