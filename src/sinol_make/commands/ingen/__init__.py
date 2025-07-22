@@ -31,7 +31,6 @@ class Command(BaseCommand):
         parser.add_argument('-n', '--no-validate', default=False, action='store_true',
                             help='do not validate test contents')
         parsers.add_cpus_argument(parser, 'number of cpus used for validating tests')
-        parsers.add_fsanitize_argument(parser)
         parsers.add_compilation_arguments(parser)
         return parser
 
@@ -70,7 +69,8 @@ class Command(BaseCommand):
         util.change_stack_size_to_unlimited()
         self.ingen = get_ingen(self.task_id, args.ingen_path)
         print(f'Using ingen file {os.path.basename(self.ingen)}')
-        self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode, self.args.fsanitize)
+        self.ingen_exe = compile_ingen(self.ingen, self.args, self.args.compile_mode,
+                                       use_sanitizers=self.args.sanitize)
 
         previous_tests = []
         try:

@@ -14,7 +14,7 @@ from sinol_make.structs.compiler_structs import Compilers
 
 
 def compile(program, output, compilers: Compilers = None, compile_log=None, compilation_flags='default',
-            extra_compilation_args=None, extra_compilation_files=None, clear_cache=False, use_fsanitize=False):
+            extra_compilation_args=None, extra_compilation_files=None, clear_cache=False, use_sanitizers='no'):
     """
     Compile a program.
     :param program: Path to the program to compile
@@ -25,7 +25,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     :param extra_compilation_args: Extra compilation arguments
     :param extra_compilation_files: Extra compilation files
     :param clear_cache: Set to True if you want to delete all cached test results.
-    :param use_fsanitize: Whether to use fsanitize when compiling C/C++ programs. Sanitizes address and undefined behavior.
+    :param use_sanitizers: Whether to use sanitizers for C / C++ programs. Check flag --sanitize for available options.
     """
     if extra_compilation_args is None:
         extra_compilation_args = []
@@ -34,8 +34,8 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     assert isinstance(extra_compilation_args, list) and all(isinstance(arg, str) for arg in extra_compilation_args)
 
     # Address and undefined sanitizer is not yet supported on Apple Silicon.
-    if use_fsanitize and util.is_macos_arm():
-        use_fsanitize = False
+    if use_sanitizers and util.is_macos_arm():
+        use_sanitizers = 'no'
 
     if compilation_flags == 'w':
         compilation_flags = 'weak'
@@ -47,7 +47,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if extra_compilation_files is None:
         extra_compilation_files = []
 
-    compiled_exe = check_compiled(program, compilation_flags, use_fsanitize)
+    compiled_exe = check_compiled(program, compilation_flags, use_sanitizers)
     if compiled_exe is not None:
         if compile_log is not None:
             compile_log.write(f'Using cached executable {compiled_exe}\n')
@@ -77,14 +77,10 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
         arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
                     f'--std=c++20 -O3 -lm{gcc_compilation_flags} -fdiagnostics-color'.split(' ')
-        if use_fsanitize and compilation_flags != 'weak':
-            arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
     elif ext == '.c':
         arguments = [compilers.c_compiler_path or compiler.get_c_compiler_path(), program] + \
                     extra_compilation_args + ['-o', output] + \
                     f'--std=gnu99 -O3 -lm{gcc_compilation_flags} -fdiagnostics-color'.split(' ')
-        if use_fsanitize and compilation_flags != 'weak':
-            arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
     elif ext == '.py':
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             # TODO: Make this work on Windows
@@ -103,6 +99,17 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     else:
         raise CompilationError('Unknown file extension: ' + ext)
 
+    if use_sanitizers != 'no' and compilation_flags != 'weak':
+        if use_sanitizers == 'simple':
+            arguments += ['-fsanitize=address,undefined', '-fno-sanitize-recover']
+        elif use_sanitizers == 'full' and ext == '.cpp':
+            arguments = [compilers.cpp_compiler_path or compiler.get_cpp_compiler_path(), program] + \
+                        extra_compilation_args + ['-o', output, '-fdiagnostics-color']
+            arguments += ['-Wall', '-Wextra', '-pedantic', '-std=c++20', '-O2', '-Wshadow', '-Wformat=2', '-Wfloat-equal',
+                         '-Wconversion', '-Wlogical-op', '-Wshift-overflow=2', '-Wduplicated-cond', '-Wcast-qual',
+                         '-Wcast-align', '-D_GLIBCXX_DEBUG', '-D_GLIBCXX_DEBUG_PEDANTIC', '-D_FORTIFY_SOURCE=2',
+                         '-fsanitize=address', '-fsanitize=undefined', '-fno-sanitize-recover', '-fstack-protector']
+
     process = subprocess.Popen(arguments, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = process.communicate()
     if compile_log is not None:
@@ -114,12 +121,12 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
-        save_compiled(program, output, compilation_flags, use_fsanitize, clear_cache)
+        save_compiled(program, output, compilation_flags, use_sanitizers, clear_cache)
         return True
 
 
 def compile_file(file_path: str, name: str, compilers: Compilers, compilation_flags='default',
-                 use_fsanitize=False, additional_flags=None, use_extras=True) \
+                 use_sanitizers='no', additional_flags=None, use_extras=True) \
         -> Tuple[Union[str, None], str]:
     """
     Compile a file
@@ -127,7 +134,7 @@ def compile_file(file_path: str, name: str, compilers: Compilers, compilation_fl
     :param name: Name of the executable
     :param compilers: Compilers object
     :param compilation_flags: Group of compilation flags to use
-    :param use_fsanitize: Whether to use fsanitize when compiling C/C++ programs. Sanitizes address and undefined behavior.
+    :param use_sanitizers: Whether to use sanitizers for C / C++ programs. Check flag --sanitize for available options.
     :param additional_flags: Additional flags for c / c++ compiler.
     :param use_extras: Whether to use extra compilation files and arguments from config
     :return: Tuple of (executable path or None if compilation failed, log path)
@@ -158,7 +165,7 @@ def compile_file(file_path: str, name: str, compilers: Compilers, compilation_fl
     with open(compile_log_path, 'w') as compile_log:
         try:
             if compile(file_path, output, compilers, compile_log, compilation_flags, extra_compilation_args,
-                       extra_compilation_files, use_fsanitize=use_fsanitize):
+                       extra_compilation_files, use_sanitizers=use_sanitizers):
                 return output, compile_log_path
         except CompilationError:
             pass

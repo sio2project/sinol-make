@@ -45,12 +45,12 @@ class CacheFile:
     executable_path: str
     # Compilation flags used
     compilation_flags: str
-    # Whether -fsanitize=undefined,address was used
-    sanitizers: bool
+    # What sanitizers were used
+    sanitizers: str
     # Test results
     tests: Dict[str, CacheTest]
 
-    def __init__(self, md5sum="", executable_path="", compilation_flags="default", sanitizers=False, tests=None):
+    def __init__(self, md5sum="", executable_path="", compilation_flags="default", sanitizers="no", tests=None):
         if tests is None:
             tests = {}
         self.md5sum = md5sum
@@ -70,11 +70,15 @@ class CacheFile:
 
     @staticmethod
     def from_dict(dict) -> 'CacheFile':
+        # Backwards compatibility. Before v1.9.8, sanitizers were stored as a bool.
+        if type(dict.get("sanitizers", "no")) == bool:
+            dict["sanitizers"] = "simple" if dict["sanitizers"] else "no"
+
         return CacheFile(
             md5sum=dict.get("md5sum", ""),
             executable_path=dict.get("executable_path", ""),
             compilation_flags=dict.get("compilation_flags", "default"),
-            sanitizers=dict.get("sanitizers", False),
+            sanitizers=dict.get("sanitizers", 'no'),
             tests={k: CacheTest(
                 time_limit=v["time_limit"],
                 memory_limit=v["memory_limit"],

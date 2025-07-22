@@ -43,12 +43,16 @@ class Command(BaseCommand):
 
         with mp.Pool(self.args.cpus) as pool:
             results = []
-            for i, result in enumerate(pool.imap(generate_output, arguments)):
+            for i, (result, stderr) in enumerate(pool.imap(generate_output, arguments)):
                 results.append(result)
+                output_file = os.path.basename(arguments[i].output_test)
+                if stderr:
+                    print(util.error(f'Outgen stderr on {output_file}:'))
+                    print(stderr.decode('utf-8'), end='\n\n')
                 if result:
-                    print(f'Successfully generated output file {os.path.basename(arguments[i].output_test)}')
+                    print(f'Successfully generated output file {output_file}')
                 else:
-                    print(util.error(f'Failed to generate output file {os.path.basename(arguments[i].output_test)}'))
+                    print(util.error(f'Failed to generate output file {output_file}'))
 
             if not all(results):
                 util.exit_with_error('Failed to generate some output files.')
@@ -123,7 +127,8 @@ class Command(BaseCommand):
         else:
             self.clean_cache(from_inputs)
             self.correct_solution_exe = compile_correct_solution(self.correct_solution, self.args,
-                                                                 self.args.compile_mode)
+                                                                 self.args.compile_mode,
+                                                                 use_sanitizers=self.args.sanitize)
             self.generate_outputs(outputs_to_generate)
             with open(os.path.join(os.getcwd(), 'in', '.md5sums'), 'w') as f:
                 yaml.dump(md5_sums, f)

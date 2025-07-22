@@ -14,33 +14,33 @@ def test_compilation_caching():
         program = os.path.join(tmpdir, 'program.cpp')
         open(program, 'w').write('int main() { return 0; }')
 
-        assert cache.check_compiled(program, "default", False) is None
+        assert cache.check_compiled(program, "default", "no") is None
 
         assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
-        exe_path = cache.check_compiled(program, "default", False)
+        exe_path = cache.check_compiled(program, "default", "no")
         assert exe_path is not None
 
         assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
-        exe_path2 = cache.check_compiled(program, "default", False)
+        exe_path2 = cache.check_compiled(program, "default", "no")
         assert exe_path2 == exe_path
 
         open(program, 'w').write('int main() { return 1; }')
-        assert cache.check_compiled(program, "default", False) is None
+        assert cache.check_compiled(program, "default", "no") is None
         assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
-        assert cache.check_compiled(program, "default", False) is not None
+        assert cache.check_compiled(program, "default", "no") is not None
 
         open(program, 'w').write('int main() { return 0; }')
-        assert cache.check_compiled(program, "default", False) is None
+        assert cache.check_compiled(program, "default", "no") is None
         assert compile.compile(program, os.path.join(tmpdir, 'program'), compile_log=None)
-        assert cache.check_compiled(program, "default", False) is not None
+        assert cache.check_compiled(program, "default", "no") is not None
 
-        assert cache.check_compiled(program, "default", True) is None
-        cache.save_compiled(program, exe_path, "default", True)
-        assert cache.check_compiled(program, "default", True) is not None
+        assert cache.check_compiled(program, "default", "simple") is None
+        cache.save_compiled(program, exe_path, "default", "simple")
+        assert cache.check_compiled(program, "default", "simple") is not None
 
-        assert cache.check_compiled(program, "oioioi", True) is None
-        cache.save_compiled(program, exe_path, "oioioi", True)
-        assert cache.check_compiled(program, "oioioi", True) is not None
+        assert cache.check_compiled(program, "oioioi", "simple") is None
+        cache.save_compiled(program, exe_path, "oioioi", "simple")
+        assert cache.check_compiled(program, "oioioi", "simple") is not None
 
 
 def test_cache():
@@ -52,6 +52,7 @@ def test_cache():
         cache_file = CacheFile(
             md5sum="md5sum",
             executable_path="abc.e",
+            sanitizers='no',
             tests={
                 "md5sum1": CacheTest(
                     time_limit=1000,
