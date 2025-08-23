@@ -210,7 +210,7 @@ class Command(BaseCommand):
         :param config: Config dictionary.
         """
         with open(os.path.join(target_dir, 'makefile.in'), 'w') as f:
-            cxx_flags = '-std=c++20'
+            cxx_flags = '-std=c++23'
             c_flags = '-std=gnu99'
 
             def format_multiple_arguments(obj):

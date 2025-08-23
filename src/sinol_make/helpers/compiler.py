@@ -54,8 +54,8 @@ def get_cpp_compiler_path():
         else:
             return 'g++'
     elif sys.platform == 'darwin':
-        if check_if_installed('g++-12'):  # g++12 is currently the default compiler on sio.
-            return 'g++-12'
+        if check_if_installed('g++-14'):  # g++14 is currently the default compiler on sio.
+            return 'g++-14'
         for i in [9, 10, 11, 13, 14]:
             compiler = 'g++-' + str(i)
             if check_if_installed(compiler):
@@ -70,9 +70,9 @@ def get_python_interpreter_path():
     Get the Python interpreter
     """
 
-    if check_if_installed('python3.11'):  # python3.11 is currently the default interpreter on sio.
-        return 'python3.11'
-    for ver in ['3.9', '3.8', '3.7', '3']:
+    if check_if_installed('python3.13'):  # python3.13 is currently the default interpreter on sio.
+        return 'python3.13'
+    for ver in ['3.12', '3.11', '3.10', '3.9', '3']:
         if check_if_installed('python' + ver):
             return 'python' + ver
     return None
