@@ -56,7 +56,7 @@ def assert_makefile_in(lines, task_id, config):
     assert _get_value_from_key("SLOW_TIMELIMIT", "=") == str(4 * config["time_limit"])
     assert _get_value_from_key("MEMLIMIT", "=") == str(config["memory_limit"])
 
-    cxx_flags = '-std=c++20'
+    cxx_flags = '-std=c++23'
     c_flags = '-std=gnu99'
     def format_multiple_arguments(obj):
         if isinstance(obj, str):

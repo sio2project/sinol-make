@@ -7,8 +7,8 @@ from sinol_make.helpers import compiler
 
 def add_compilation_arguments(parser: argparse.ArgumentParser):
     if sys.platform == 'darwin':
-        gcc_versions = 'gcc-9, gcc-10, gcc-11'
-        gpp_versions = 'g++-9, g++-10, g++-11'
+        gcc_versions = 'gcc-10, gcc-11, gcc-12, gcc-13, gcc-14'
+        gpp_versions = 'g++-10, g++-11, g++-12, g++-13, g++-14'
     else:
         gcc_versions = 'gcc'
         gpp_versions = 'g++'

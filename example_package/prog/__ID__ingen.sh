@@ -15,7 +15,7 @@ sol_exe="$cache_dir/${task_id}solution"
 slo_exe="$cache_dir/${task_id}slow"
 stresstest_seconds=10
 function compile_cpp {
-	g++ -std=c++20 -O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal "$1" -o "$2" \
+	g++ -std=c++23 -O3 -lm -Werror -Wall -Wextra -Wshadow -Wconversion -Wno-unused-result -Wfloat-equal "$1" -o "$2" \
 		|| exit 1
 }
 
