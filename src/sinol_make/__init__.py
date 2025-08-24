@@ -109,17 +109,18 @@ def main():
                              'https://github.com/sio2project/sinol-make/#reporting-bugs-and-contributing-code')
     finally:
         if new_version is not None:
-            install_method = 'pipx' if util.is_probably_installed_by_pipx() else 'pip'
+            install_method = 'pipx upgrade sinol-make' if util.is_probably_installed_by_pipx() \
+                else 'pip install sinol-make --upgrade'
             if not util.is_dev(new_version):
                 print(util.warning(
                     f'New version of sinol-make is available (your version: {__version__}, available version: '
                     f'{new_version}).\n'
                     f'Changelog can be found at https://github.com/sio2project/sinol-make/releases.\n'
-                    f'You can update sinol-make by running `{install_method} install sinol-make --upgrade`.'))
+                    f'You can update sinol-make by running `{install_method}`.'))
             elif util.is_dev(new_version):
                 print(util.warning(
                     f'New development version of sinol-make is available (your version: {__version__}, available '
                     f'version: {new_version}).\n'
                     f'Changelog can be found at https://github.com/sio2project/sinol-make/releases.\n'
-                    f'You can update sinol-make by running `{install_method} install sinol-make --pre --upgrade`.'
+                    f'You can update sinol-make by running `{install_method} --pre`.'
                 ))
