@@ -16,6 +16,10 @@ scores:
   1: 40
   2: 60
 
+# Total score of the task is defined in `total_score` key.
+# If this key is not specified, then this defaults to 100.
+total_score: 100
+
 # Time limit for all tests is defined in `time_limit` key.
 # More precise time limit for each group or test can be defined in `time_limits` key.
 # The more precise time limit has higher priority (first group, then global time limit).
