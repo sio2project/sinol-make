@@ -827,8 +827,10 @@ class Command(BaseCommand):
                 self.scores[group] = self.config["scores"][group]
                 total_score += self.scores[group]
 
-            if total_score != 100:
-                print(util.warning("WARN: Scores sum up to %d instead of 100." % total_score))
+            total_score_config = 100 if 'total_score' not in self.config.keys() else self.config['total_score']
+
+            if total_score != total_score_config:
+                print(util.warning("WARN: Scores sum up to %d instead of %d." % (total_score, total_score_config)))
                 print()
 
         self.possible_score = self.contest.get_possible_score(self.groups, self.scores)
