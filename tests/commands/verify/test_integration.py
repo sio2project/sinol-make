@@ -174,3 +174,37 @@ def test_no_gen_parameters(capsys, create_package):
     run(["--no-ingen"])
     assert os.path.exists(os.path.join(create_package, "in", "abc2a.in"))
     assert os.path.exists(os.path.join(create_package, "out", "abc2a.out"))
+
+@pytest.mark.parametrize("create_package", [util.get_score_package()], indirect=True)
+def test_total_score_in_config(capsys, create_package):
+    """
+    Test if total_score overwrites default 100 for verification if contest type is OIJ.
+    """
+    run()
+
+    if os.path.exists(paths.get_cache_path()):
+        shutil.rmtree(paths.get_cache_path())
+        cache.create_cache_dirs()
+    config = package_util.get_config()
+    config["total_score"] = 25
+    sm_util.save_config(config)
+    with pytest.raises(SystemExit) as e:
+        run()
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "Total score in config is 40, but should be 25." in out
+
+
+@pytest.mark.parametrize("create_package", [util.get_score_package()], indirect=True)
+def test_total_score_in_config_oi(capsys, create_package):
+    """
+    Test if total_score does not overwrite default 100 for verification if contest type is OI.
+    """
+    config = package_util.get_config()
+    config["sinol_contest_type"] = "oi"
+    sm_util.save_config(config)
+    with pytest.raises(SystemExit) as e:
+        run()
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "Total score in config is 40, but should be 100." in out

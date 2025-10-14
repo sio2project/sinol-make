@@ -1,0 +1,19 @@
+title: Package for testing total_score configuration
+sinol_task_id: score
+sinol_contest_type: oij
+memory_limit: 16000
+time_limit: 1000
+total_score: 40
+scores:
+  1: 10
+  2: 10
+  3: 10
+  4: 10
+sinol_expected_scores:
+  score.cpp:
+    expected:
+      1: {points: 10, status: OK}
+      2: {points: 10, status: OK}
+      3: {points: 10, status: OK}
+      4: {points: 10, status: OK}
+    points: 40
