@@ -178,7 +178,7 @@ def test_no_gen_parameters(capsys, create_package):
 @pytest.mark.parametrize("create_package", [util.get_score_package()], indirect=True)
 def test_total_score_in_config(capsys, create_package):
     """
-    Test if total_score overwrites default 100 for verification if contest type is OIJ.
+    Test if total score overwrites default 100 for verification if contest type is OIJ.
     """
     run()
 
@@ -186,7 +186,7 @@ def test_total_score_in_config(capsys, create_package):
         shutil.rmtree(paths.get_cache_path())
         cache.create_cache_dirs()
     config = package_util.get_config()
-    config["total_score"] = 25
+    config["sinol_total_score"] = 25
     sm_util.save_config(config)
     with pytest.raises(SystemExit) as e:
         run()

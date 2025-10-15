@@ -200,7 +200,7 @@ def get_two_interactive_package():
 
 def get_score_package():
     """
-    Get path to package with custom total_score (/tests/packages/score)
+    Get path to package with custom sinol_total_score (/tests/packages/score)
     """
     return os.path.join(os.path.dirname(__file__), "packages", "score")
 

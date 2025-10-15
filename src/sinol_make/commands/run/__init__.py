@@ -827,7 +827,7 @@ class Command(BaseCommand):
                 self.scores[group] = self.config["scores"][group]
                 total_score += self.scores[group]
 
-            total_score_config = 100 if 'total_score' not in self.config.keys() else self.config['total_score']
+            total_score_config = 100 if 'sinol_total_score' not in self.config.keys() else self.config['sinol_total_score']
 
             if total_score != total_score_config:
                 print(util.warning("WARN: Scores sum up to %d instead of %d." % (total_score, total_score_config)))

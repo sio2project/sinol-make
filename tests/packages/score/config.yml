@@ -1,9 +1,9 @@
-title: Package for testing total_score configuration
+title: Package for testing sinol_total_score configuration
 sinol_task_id: score
 sinol_contest_type: oij
 memory_limit: 16000
 time_limit: 1000
-total_score: 40
+sinol_total_score: 40
 scores:
   1: 10
   2: 10

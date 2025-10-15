@@ -28,7 +28,7 @@ class OIJContest(DefaultContest):
         if 'scores' not in config:
             util.exit_with_error("Scores are not defined in config.yml.")
         total_score = sum(config['scores'].values())
-        total_score_config = 100 if 'total_score' not in config else config['total_score']
+        total_score_config = 100 if 'sinol_total_score' not in config else config['sinol_total_score']
 
         if total_score != total_score_config:
             util.exit_with_error(f"Total score in config is {total_score}, but should be {total_score_config}.")
