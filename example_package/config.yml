@@ -87,6 +87,10 @@ sinol_latex_compiler: auto
 # This key is optional and should be a list of tests.
 sinol_static_tests: ["__ID__0.in", "__ID__0a.in"]
 
+# Total score of the task is defined in `sinol_total_score` key.
+# If this key is not specified, then this defaults to 100.
+sinol_total_score: 100
+
 # sinol-make can check if the solutions run as expected when using `run` command.
 # Key `sinol_expected_scores` defines expected scores for each solution on each tests.
 # There should be no reason to change this key manually.

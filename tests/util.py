@@ -198,6 +198,11 @@ def get_two_interactive_package():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "two_interactive")
 
+def get_score_package():
+    """
+    Get path to package with custom sinol_total_score (/tests/packages/score)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "score")
 
 def create_ins(package_path, task_id):
     """

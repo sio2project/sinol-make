@@ -22,14 +22,16 @@ class OIJContest(DefaultContest):
 
     def verify_pre_gen(self):
         """
-        Verify if scores sum up to 100.
+        Verify if scores sum up correctly.
         """
         config = package_util.get_config()
         if 'scores' not in config:
             util.exit_with_error("Scores are not defined in config.yml.")
         total_score = sum(config['scores'].values())
-        if total_score != 100:
-            util.exit_with_error(f"Total score in config is {total_score}, but should be 100.")
+        total_score_config = 100 if 'sinol_total_score' not in config else config['sinol_total_score']
+
+        if total_score != total_score_config:
+            util.exit_with_error(f"Total score in config is {total_score}, but should be {total_score_config}.")
 
     def verify_tests_order(self):
         return True
