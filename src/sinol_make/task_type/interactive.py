@@ -116,7 +116,7 @@ class InteractiveTaskType(BaseTaskType):
                 result.Error = None
             else:
                 try:
-                    ok, points, comment = self._parse_checker_output(interactor_output)
+                    ok, points, comment = self._parse_checker_output(interactor_output, '')
                 except CheckerException as e:
                     result.Status = Status.RE
                     result.Error = str(e)

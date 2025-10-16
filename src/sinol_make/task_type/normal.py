@@ -25,7 +25,7 @@ class NormalTaskType(BaseTaskType):
             result.Status = Status.ML
         elif result.Status == Status.OK:
             try:
-                correct, points, comment, stderr = self.check_output(input_file_path, output_file_path, answer_file_path)
+                correct, points, comment, _ = self.check_output(input_file_path, output_file_path, answer_file_path)
                 result.Points = float(points)
                 result.Comment = comment
                 if not correct:
