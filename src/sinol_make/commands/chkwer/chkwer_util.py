@@ -5,8 +5,7 @@ from sinol_make import util
 from sinol_make.commands.inwer.inwer_util import sort_tests
 from sinol_make.structs.chkwer_structs import TableData
 
-
-def print_view(term_width, term_height, table_data: TableData):
+def print_view(term_width, term_height, table_data: TableData, args):
     """
     Prints current results of test verification.
     """
@@ -65,6 +64,11 @@ def print_view(term_width, term_height, table_data: TableData):
                 print(util.color_gray("No comment"))
 
     print_line_separator()
+
+    if args.cerr:
+        for test_path in tests:
+            result = results[test_path]
+            print(util.bold(f"Stderr on {result.test_name}: ") + result.stderr)
     print()
     print()
 

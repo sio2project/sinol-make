@@ -34,6 +34,7 @@ class Command(BaseCommand):
         )
         parser.add_argument('-t', '--tests', type=str, nargs='+',
                             help='test to run, for example in/abc{0,1}*')
+        parser.add_argument('--cerr', action='store_true', help='capture cerr output')
         parsers.add_cpus_argument(parser, 'number of cpus to use when verifying tests')
         parsers.add_compilation_arguments(parser)
         return parser
@@ -59,11 +60,11 @@ class Command(BaseCommand):
         with open(execution.in_test_path, 'r') as inf, open(output_file, 'w') as outf:
             process = subprocess.Popen([execution.model_exe], stdin=inf, stdout=outf)
             process.wait()
-        ok, points, comment = self.task_type.check_output(execution.in_test_path, output_file, execution.out_test_path)
+        ok, points, comment, stderr = self.task_type.check_output(execution.in_test_path, output_file, execution.out_test_path)
 
-        return RunResult(execution.in_test_path, ok, int(points), comment)
+        return RunResult(execution.in_test_path, ok, int(points), comment, stderr)
 
-    def run_and_print_table(self) -> Dict[str, TestResult]:
+    def run_and_print_table(self, args) -> Dict[str, TestResult]:
         results = {}
         sorted_tests = sorted(self.tests, key=lambda test: package_util.get_group(test, self.task_id))
         executions: List[ChkwerExecution] = []
@@ -77,14 +78,14 @@ class Command(BaseCommand):
         if has_terminal:
             run_event = threading.Event()
             run_event.set()
-            thr = threading.Thread(target=printer.printer_thread, args=(run_event, chkwer_util.print_view, table_data))
+            thr = threading.Thread(target=printer.printer_thread, args=(run_event, chkwer_util.print_view, table_data, args))
             thr.start()
 
         keyboard_interrupt = False
         try:
             with mp.Pool(self.cpus) as pool:
                 for i, result in enumerate(pool.imap(self.run_test, executions)):
-                    table_data.results[result.test_path].set_results(result.points, result.ok, result.comment)
+                    table_data.results[result.test_path].set_results(result.points, result.ok, result.comment, result.stderr)
                     table_data.i = i
         except KeyboardInterrupt:
             keyboard_interrupt = True
@@ -93,7 +94,7 @@ class Command(BaseCommand):
             run_event.clear()
             thr.join()
 
-        print("\n".join(chkwer_util.print_view(terminal_width, terminal_height, table_data)[0]))
+        print("\n".join(chkwer_util.print_view(terminal_width, terminal_height, table_data, args)[0]))
         if keyboard_interrupt:
             util.exit_with_error("Keyboard interrupt.")
         return results
@@ -129,7 +130,7 @@ class Command(BaseCommand):
                                              "model solution", args.compile_mode)
         print()
 
-        results = self.run_and_print_table()
+        results = self.run_and_print_table(args)
         for result in results.values():
             if not result.ok or result.points != self.contest_type.max_score_per_test():
                 util.exit_with_error("Model solution didn't score maximum points.")

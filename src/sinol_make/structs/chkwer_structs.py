@@ -14,6 +14,7 @@ class TestResult:
     points: int
     ok: bool
     comment: str
+    stderr: str
 
     def __init__(self, test_path, task_id):
         self.test_path = test_path
@@ -24,12 +25,14 @@ class TestResult:
         self.points = 0
         self.ok = False
         self.run = False
+        self.stderr = ""
 
-    def set_results(self, points, ok, output):
+    def set_results(self, points, ok, output, stderr):
         self.run = True
         self.points = points
         self.ok = ok
         self.comment = output
+        self.stderr = stderr
 
 
 @dataclass
@@ -66,3 +69,4 @@ class RunResult:
     ok: bool
     points: int
     comment: str
+    stderr: str
