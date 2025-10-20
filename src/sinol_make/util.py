@@ -101,6 +101,7 @@ def save_config(config):
         "time_limit",
         "time_limits",
         "override_limits",
+        "sinol_total_score",
         "scores",
         {
             "key": "extra_compilation_files",
