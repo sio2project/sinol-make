@@ -135,17 +135,17 @@ class BaseTaskType(RegisteredSubclassesBase):
         except TypeError:
             raise CheckerException(f'Invalid checker output "{output_str}"')
 
-    def _parse_checker_output(self, output: List[str]) -> Tuple[bool, Fraction, str]:
+    def _parse_checker_output(self, output: List[str], stderr: str) -> Tuple[bool, Fraction, str, str]:
         while len(output) < 3:
             output.append('')
 
         if output[0].strip() == "OK":
             points = self._output_to_fraction(output[2])
-            return True, points, output[1].strip()
+            return True, points, output[1].strip(), stderr
         else:
-            return False, Fraction(0, 1), output[1].strip()
+            return False, Fraction(0, 1), output[1].strip(), stderr
 
-    def _run_checker(self, input_file_path, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str]:
+    def _run_checker(self, input_file_path, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str, str]:
         proc = subprocess.Popen([self.checker_path, input_file_path, output_file_path, answer_file_path],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
@@ -153,25 +153,25 @@ class BaseTaskType(RegisteredSubclassesBase):
         if proc.returncode > 2:
             return False, Fraction(0, 1), (f"Checker returned with code {proc.returncode}, "
                                            f"stderr: '{stderr.decode('utf-8')}'")
-        return self._parse_checker_output(output.decode('utf-8').split('\n'))
+        return self._parse_checker_output(output.decode('utf-8').split('\n'), stderr.decode('utf-8'))
 
-    def _run_diff(self, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str]:
+    def _run_diff(self, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str, str]:
         same = oicompare.compare(output_file_path, answer_file_path)
         if same:
-            return True, Fraction(100, 1), ""
+            return True, Fraction(100, 1), "", ""
         else:
-            return False, Fraction(0, 1), ""
+            return False, Fraction(0, 1), "", ""
 
-    def _run_oicompare(self, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str]:
+    def _run_oicompare(self, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str, str]:
         path = oicompare.get_path()
         proc = subprocess.Popen([path, output_file_path, answer_file_path, 'english_abbreviated'],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
         output, stderr = proc.communicate()
         if proc.returncode == 0:
-            return True, Fraction(100, 1), ""
+            return True, Fraction(100, 1), "", ""
         elif proc.returncode == 1:
-            return False, Fraction(0, 1), output.decode('utf-8').strip()
+            return False, Fraction(0, 1), output.decode('utf-8').strip(), stderr.decode('utf-8')
         else:
             raise CheckerException(f"!!! oicompare failed with code {proc.returncode}. This is a huge bug, please report"
                                    f" it here https://github.com/sio2project/sinol-make/issues/new/choose and provide "
@@ -179,7 +179,7 @@ class BaseTaskType(RegisteredSubclassesBase):
                                    f"Output: {output.decode('utf-8').strip()}\n"
                                    f"Stderr: {stderr.decode('utf-8').strip()}")
 
-    def check_output(self, input_file_path, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str]:
+    def check_output(self, input_file_path, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str, str]:
         """
         Runs the checker (or runs diff) and returns a tuple of three values:
         - bool: whether the solution is correct
