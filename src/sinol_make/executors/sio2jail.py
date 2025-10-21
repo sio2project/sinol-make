@@ -2,7 +2,6 @@ import os
 import signal
 import subprocess
 import sys
-import traceback
 from typing import List, Tuple, Union
 
 from sinol_make import util
@@ -54,19 +53,17 @@ class Sio2jailExecutor(BaseExecutor):
     def _parse_result(self, _, mle, return_code, result_file_path) -> ExecutionResult:
         result = ExecutionResult()
         with open(result_file_path, "r") as result_file:
-            lines = result_file.readlines()
-
+            output_lines = result_file.readlines()
         try:
-            result.stderr = lines[:-2]
-            status, code, time_ms, _, memory_kb, _ = lines[-2].strip().split()
-            message = lines[-1].strip()
+            result.stderr = output_lines[-2]
+            status, code, time_ms, _, memory_kb, _ = output_lines[-2].strip().split()
+            message = output_lines[-1].strip()
             result.Time = int(time_ms)
             result.Memory = int(memory_kb)
-        except:
-            output = "".join(lines)
-            util.exit_with_error("Could not parse sio2jail output:"
-                f"\n---\n{output}"
-                f"\n---\n{traceback.format_exc()}")
+        except Exception as e:
+            output = "\t" + "\t".join(output_lines)
+            raise Exception(f"Failed to parse sio2jail output:\n{output}") from e
+
 
         # ignoring `status` is weird, but sio2 does it this way
         if message == 'ok':
