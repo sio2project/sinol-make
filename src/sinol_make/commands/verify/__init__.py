@@ -77,7 +77,7 @@ class Command(BaseCommand):
 
     def check_extra_files(self):
         """
-        Checks if extra_compilation_files and extra_execution_files exist.
+        Checks if extra_compilation_files, extra_execution_files and testrun_soc exist.
         """
         extra_compilation_files = self.config.get('extra_compilation_files', [])
         for file in extra_compilation_files:
@@ -95,6 +95,12 @@ class Command(BaseCommand):
                                          f"It should be in `prog` directory.")
         if extra_execution_files:
             print(util.info("All extra execution files exist."))
+
+        testrun_soc = self.config.get('testrun_soc', None)
+        if testrun_soc is not None:
+            if not os.path.exists(os.path.join(os.getcwd(), "prog", testrun_soc)):
+                util.exit_with_error(f"Testrun interactor file `{testrun_soc}` does not exist. "
+                                     f"It should be in `prog` directory.")
 
     def verify_scores(self, scored_groups):
         config_scores = self.config.get('scores', {})
