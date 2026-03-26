@@ -51,16 +51,16 @@ class Command(BaseCommand):
         return True
 
     def compile_latexmk(self, file_path, compiler):
-        option = "-pdf" if compiler=='pdflatex' else ("-lualatex" if compiler=='lualatex' else "")
-        display = option if option else 'to dvi'
-        print(f'Compiling {os.path.basename(file_path)} (latexmk {option})...')
+        option = "-pdf" if compiler=='pdflatex' else ("-lualatex" if compiler=='lualatex' else "-dvi")
+        display = "latex to dvi" if option=="-dvi" else compiler
+        print(f'Compiling {os.path.basename(file_path)} (latexmk / {display})...')
         output_dir = paths.get_cache_path('doc_logs')
         os.chdir(os.path.dirname(file_path))
         args = ['latexmk', file_path, "-outdir=" + output_dir] + ([option] if option else [])
         subprocess.run(args)
         target_pdf = os.path.splitext(file_path)[0] + '.pdf'
         file_name = os.path.splitext(os.path.basename(file_path))[0]
-        if option:
+        if option != "-dvi":
             pdf_file = os.path.join(output_dir, file_name + '.pdf')
             if not os.path.exists(pdf_file):
                 print(util.error('Compilation failed.'))
