@@ -288,6 +288,12 @@ class Command(BaseCommand):
         config = package_util.get_config()
         package_util.validate_fake_time(config)
 
+        testrun_soc = config.get('testrun_soc', None)
+        if testrun_soc is not None:
+            if not os.path.exists(os.path.join(os.getcwd(), "prog", testrun_soc)):
+                util.exit_with_error(f"Testrun interactor file `{testrun_soc}` does not exist. "
+                                     f"It should be in `prog` directory.")
+
         export_package_path = paths.get_cache_path('export', self.task_id)
         if os.path.exists(export_package_path):
             shutil.rmtree(export_package_path)

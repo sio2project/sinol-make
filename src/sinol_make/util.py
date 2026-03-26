@@ -96,6 +96,7 @@ def save_config(config):
         "sinol_undocumented_time_tool",
         "sinol_undocumented_test_limits",
         "fake_time",
+        "testrun_soc",
         "num_processes",
         "memory_limit",
         "memory_limits",
