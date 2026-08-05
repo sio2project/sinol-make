@@ -7,8 +7,8 @@ import subprocess
 
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
-from sinol_make.helpers import paths
-from sinol_make.helpers.cache import check_compiled, save_compiled, package_util
+from sinol_make.helpers import paths, package_util
+from sinol_make.helpers.cache import check_compiled, save_compiled
 from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.structs.compiler_structs import Compilers
 
@@ -47,7 +47,16 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if extra_compilation_files is None:
         extra_compilation_files = []
 
-    compiled_exe = check_compiled(program, compilation_flags, use_sanitizers)
+    # Extra compilation files are copied even when the executable is cached, so that
+    # the executables directory always contains their current versions.
+    for file in extra_compilation_files:
+        dest = os.path.join(os.path.dirname(output), os.path.basename(file))
+        if not os.path.exists(dest) or util.get_file_md5(dest) != util.get_file_md5(file):
+            shutil.copy(file, dest)
+
+    extra_compilation_hash = package_util.get_extra_compilation_hash(
+        package_util.get_file_lang(program), extra_compilation_args, extra_compilation_files)
+    compiled_exe = check_compiled(program, compilation_flags, use_sanitizers, extra_compilation_hash)
     if compiled_exe is not None:
         if compile_log is not None:
             compile_log.write(f'Using cached executable {compiled_exe}\n')
@@ -55,9 +64,6 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
         if os.path.abspath(compiled_exe) != os.path.abspath(output):
             shutil.copy(compiled_exe, output)
         return True
-
-    for file in extra_compilation_files:
-        shutil.copy(file, os.path.join(os.path.dirname(output), os.path.basename(file)))
 
     gcc_compilation_flags = ''
     if compilation_flags == 'weak':
@@ -126,7 +132,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
-        save_compiled(program, output, compilation_flags, use_sanitizers, clear_cache)
+        save_compiled(program, output, compilation_flags, use_sanitizers, extra_compilation_hash, clear_cache)
         return True
 
 
@@ -149,19 +155,9 @@ def compile_file(file_path: str, name: str, compilers: Compilers, compilation_fl
     extra_compilation_args = []
     extra_compilation_files = []
     if use_extras:
-        lang = os.path.splitext(file_path)[1][1:]
-        args = config.get("extra_compilation_args", {}).get(lang, [])
-        if isinstance(args, str):
-            args = [args]
-        for arg in args:
-            path = os.path.join(os.getcwd(), "prog", arg)
-            if os.path.exists(path):
-                extra_compilation_args.append(path)
-            else:
-                extra_compilation_args.append(arg)
-
-        for file in config.get("extra_compilation_files", []):
-            extra_compilation_files.append(os.path.join(os.getcwd(), "prog", file))
+        lang = package_util.get_file_lang(file_path)
+        extra_compilation_args = package_util.get_extra_compilation_args(lang, config)
+        extra_compilation_files = package_util.get_extra_compilation_files(config)
     if additional_flags is not None:
         extra_compilation_args.append(additional_flags)
 

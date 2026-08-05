@@ -3,6 +3,7 @@ import re
 import yaml
 import glob
 import fnmatch
+import hashlib
 import multiprocessing as mp
 from enum import Enum
 from typing import List, Union, Dict, Any, Tuple, Type
@@ -61,6 +62,82 @@ def get_config():
         util.exit_with_error("You are not in a package directory (couldn't find config.yml in current directory).")
     except yaml.YAMLError as e:
         util.exit_with_error("config.yml is not a valid YAML. Fix it before continuing:\n" + str(e))
+
+
+def get_extra_compilation_args(lang: str, config=None) -> List[str]:
+    """
+    Returns extra compilation arguments for given language.
+    Arguments which are files in `prog/` are converted to absolute paths,
+    the rest is passed to the compiler as-is.
+    :param lang: Language (file extension without the dot), for example `cpp`.
+    :param config: Config dict. If None, it is read from `config.yml`.
+    """
+    if config is None:
+        config = get_config()
+    args = config.get("extra_compilation_args", {}).get(lang, [])
+    if isinstance(args, str):
+        args = [args]
+
+    extra_compilation_args = []
+    for arg in args:
+        path = os.path.join(os.getcwd(), "prog", arg)
+        if os.path.exists(path):
+            extra_compilation_args.append(path)
+        else:
+            extra_compilation_args.append(arg)
+    return extra_compilation_args
+
+
+def get_extra_compilation_files(config=None) -> List[str]:
+    """
+    Returns absolute paths to extra compilation files.
+    :param config: Config dict. If None, it is read from `config.yml`.
+    """
+    if config is None:
+        config = get_config()
+    return [os.path.join(os.getcwd(), "prog", file) for file in config.get("extra_compilation_files", [])]
+
+
+# Languages which are compiled together, so that a change to any of them affects
+# compilation of the others (for example a header file used by a C++ solution).
+COMPILATION_LANG_FAMILIES = {'c': 'cpp', 'cc': 'cpp', 'cpp': 'cpp', 'h': 'cpp', 'hpp': 'cpp'}
+
+
+def get_extra_compilation_hash(lang: str, extra_compilation_args=None, extra_compilation_files=None) -> str:
+    """
+    Returns a hash of everything that affects compilation apart from the compiled file itself:
+    extra compilation arguments and contents of extra compilation files.
+    Thanks to this, changing a library or a compilation flag invalidates the compilation cache.
+    :param lang: Language of the compiled file (file extension without the dot), for example `cpp`.
+                 Extra compilation files in other languages are ignored.
+    :param extra_compilation_args: Extra compilation arguments (as returned by `get_extra_compilation_args`).
+    :param extra_compilation_files: Extra compilation files (as returned by `get_extra_compilation_files`).
+    :return: Hash of the arguments and files or an empty string if there are none. Empty string is
+             returned so that cache created by older versions of sinol-make stays valid for packages
+             which don't use them.
+    """
+    family = COMPILATION_LANG_FAMILIES.get(lang, lang)
+    files = [file for file in extra_compilation_files or []
+             if COMPILATION_LANG_FAMILIES.get(get_file_lang(file), get_file_lang(file)) == family]
+    if not extra_compilation_args and not files:
+        return ""
+
+    # Only basenames are used, so that moving the package doesn't invalidate the cache.
+    parts = []
+    # Order of arguments matters for the compiler, so they are not sorted.
+    for arg in extra_compilation_args or []:
+        if os.path.isfile(arg):
+            parts.append(f'{os.path.basename(arg)}:{util.get_file_md5(arg)}')
+        else:
+            # The argument is a compilation flag, not a file.
+            parts.append(arg)
+    # Order of files doesn't matter, but it has to be stable.
+    for file in sorted(files, key=os.path.basename):
+        if os.path.isfile(file):
+            parts.append(f'{os.path.basename(file)}:{util.get_file_md5(file)}')
+        else:
+            parts.append(f'{os.path.basename(file)}:missing')
+    return hashlib.md5('\n'.join(parts).encode('utf-8')).hexdigest()
 
 
 def get_solutions_re(task_id: str) -> re.Pattern:

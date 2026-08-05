@@ -58,6 +58,9 @@ override_limits:
 
 # extra_compilation_files: ['__ID__lib.cpp', '__ID__lib.py']
 
+# Changing `extra_compilation_args` or the contents of any of the `extra_compilation_files`
+# invalidates the compilation cache, so everything using them is compiled again.
+
 # Alternative interactor used for running test runs in interactive via IO tasks. Not required. If not provided and
 # the task is interactive via IO (and has test runs configured), then the default interactor will be used.
 testrun_soc: __ID__soc_testrun.soc
