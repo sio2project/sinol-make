@@ -59,7 +59,8 @@ def _set_contest_type(contest_type):
 
 @pytest.mark.parametrize("create_package", [util.get_simple_package_path(), util.get_library_package_path(),
                                             util.get_library_string_args_package_path(),
-                                            util.get_shell_ingen_pack_path(), util.get_handwritten_package_path()],
+                                            util.get_shell_ingen_pack_path(), util.get_handwritten_package_path(),
+                                            util.get_dependencies_package_path()],
                          indirect=True)
 def test_simple(create_package, capsys):
     """

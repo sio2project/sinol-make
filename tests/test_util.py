@@ -109,3 +109,24 @@ def test_saving_config_with_unicode(create_package):
     assert config['title'] == polish_title
     util.save_config(config)
     assert read_config_lines()[0] == polish_title_yaml
+
+
+def test_saving_config_with_subtask_dependencies(create_package, capsys):
+    """
+    Test that `subtask_dependencies` is a known config key and is saved next to `scores`.
+    """
+    config_path = os.path.join(create_package, "config.yml")
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
+    config["subtask_dependencies"] = {2: [1], 3: [1, 2]}
+    util.save_config(config)
+
+    assert "Found unknown fields in config.yml" not in capsys.readouterr().out
+    with open(config_path, "r") as config_file:
+        lines = config_file.read().split('\n')
+    assert "subtask_dependencies:" in lines
+    assert lines[lines.index("subtask_dependencies:") + 1] == "  2: [1]"
+
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
+    assert config["subtask_dependencies"] == {2: [1], 3: [1, 2]}

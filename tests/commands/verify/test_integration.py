@@ -208,3 +208,35 @@ def test_total_score_in_config_oi(capsys, create_package):
     assert e.value.code == 1
     out = capsys.readouterr().out
     assert "Total score in config is 40, but should be 100." in out
+
+
+@pytest.mark.parametrize("create_package", [util.get_simple_package_path()], indirect=True)
+def test_invalid_subtask_dependencies(capsys, create_package):
+    """
+    Test if invalid subtask dependencies will cause the verify command to fail.
+    """
+    config = package_util.get_config()
+
+    config["subtask_dependencies"] = {2: [20]}
+    sm_util.save_config(config)
+    with pytest.raises(SystemExit) as e:
+        run()
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "prerequisite group '20' is not a valid scored group" in out
+
+    config["subtask_dependencies"] = {2: [3], 3: [2]}
+    sm_util.save_config(config)
+    with pytest.raises(SystemExit) as e:
+        run()
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "circular dependency detected" in out
+
+    config["subtask_dependencies"] = {0: [1]}
+    sm_util.save_config(config)
+    with pytest.raises(SystemExit) as e:
+        run()
+    assert e.value.code == 1
+    out = capsys.readouterr().out
+    assert "cannot be used in dependencies" in out

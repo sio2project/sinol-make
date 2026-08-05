@@ -190,6 +190,13 @@ def get_stresstest_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "stresstest")
 
 
+def get_dependencies_package_path():
+    """
+    Get path to package with subtask dependencies (/tests/packages/dep)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "dep")
+
+
 def get_simple_interactive_package():
     """
     Get path to package with simple interactive task (/tests/packages/simple_interactive)

@@ -16,7 +16,7 @@ from sinol_make import configure_parsers, util, sio2jail
                                             get_library_string_args_package_path(), get_limits_package_path(),
                                             get_override_limits_package_path(), get_icpc_package_path(),
                                             get_long_solution_names_package(), get_large_output_package_path(),
-                                            get_rust_package_path()],
+                                            get_rust_package_path(), get_dependencies_package_path()],
                          indirect=True)
 def test_simple(create_package, time_tool):
     """
@@ -923,3 +923,68 @@ def test_valid_fake_time(create_package, fake_time_value):
     args = parser.parse_args(["run", "--time-tool", "time"])
     command = Command()
     command.run(args)
+
+
+@pytest.mark.parametrize("create_package", [get_dependencies_package_path()], indirect=True)
+def test_subtask_dependencies(create_package, time_tool, capsys):
+    """
+    Test that groups are scored as if the tests of the groups they depend on were a part of them.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+
+    out = capsys.readouterr().out
+    # Groups 2 and 3 of dep1.cpp and group 3 of dep2.cpp are lowered because of dependencies.
+    assert "the score of this group was lowered" in out
+
+
+@pytest.mark.parametrize("create_package", [get_dependencies_package_path()], indirect=True)
+def test_subtask_dependencies_not_run(create_package, time_tool, capsys):
+    """
+    Test that expected scores of a group whose dependencies weren't run are not checked.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+
+    args = parser.parse_args(["run", "--time-tool", time_tool, "--tests", "in/dep2a.in", "--apply-suggestions"])
+    command = Command()
+    command.run(args)
+
+    out = capsys.readouterr().out
+    assert "Group 2 depends on group(s) 1, which weren't fully run." in out
+
+    # The expected scores must be left untouched.
+    with open(os.path.join(os.getcwd(), "config.yml"), "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    assert config["sinol_expected_scores"]["dep1.cpp"]["expected"][2] == {"points": 0, "status": "WA"}
+
+
+@pytest.mark.parametrize("create_package", [get_dependencies_package_path()], indirect=True)
+def test_invalid_subtask_dependencies(create_package, time_tool, capsys):
+    """
+    Test that a circular dependency in config.yml is rejected.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+
+    config_path = os.path.join(package_path, "config.yml")
+    with open(config_path, "r") as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    config["subtask_dependencies"] = {2: [3], 3: [2]}
+    with open(config_path, "w") as config_file:
+        config_file.write(yaml.dump(config))
+
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    with pytest.raises(SystemExit):
+        command.run(args)
+
+    out = capsys.readouterr().out
+    assert "circular dependency detected" in out

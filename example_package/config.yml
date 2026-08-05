@@ -16,6 +16,20 @@ scores:
   1: 40
   2: 60
 
+# Groups often depend on each other, for example when the constraints of one group
+# are a subset of the constraints of another one. Such dependencies can be defined
+# in the `subtask_dependencies` key, which maps a group to the list of groups it
+# depends on. A group is then scored as if the tests of the groups it depends on
+# were a part of it, so there is no need to duplicate tests between groups.
+# Dependencies can only lower the score of a group, never raise it.
+# Dependencies are NOT transitive: if group 3 depends on group 2, which depends on
+# group 1, then group 3 has to list group 1 explicitly to depend on it.
+# Group 0 (example tests) cannot be used in dependencies.
+
+# subtask_dependencies:
+#   2: [1]
+#   3: [1, 2]
+
 # Time limit for all tests is defined in `time_limit` key.
 # More precise time limit for each group or test can be defined in `time_limits` key.
 # The more precise time limit has higher priority (first group, then global time limit).
