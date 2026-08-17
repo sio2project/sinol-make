@@ -33,7 +33,7 @@ def add_compilation_arguments(parser: argparse.ArgumentParser, custom_sanitize_h
                              ' oioioi / o - uses the same flags as oioioi:\n'
                              '    (-Wall -Wno-unused-result -Werror)'
                              ' weak / w - disable all warning flags during C and C++ compilation', default='default')
-    parser.add_argument('--sanitize', dest='sanitize', choices=['no', 'simple', 'full'],
+    parser.add_argument('--sanitize', dest='sanitize', choices=['no', 'simple', 'full'], default='no',
                         help='Use sanitizers for compilation. Available options:\n'
                              ' no - no sanitizers\n'
                              ' simple - use address and undefined sanitizer\n'
