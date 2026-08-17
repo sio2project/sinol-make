@@ -434,6 +434,83 @@ def validate_fake_time(config):
                 f'Allowed values: {", ".join(allowed)}.')
 
 
+def _parse_group_id(group, what):
+    """
+    Converts a group id from config.yml to an int.
+    YAML may parse group ids as either ints or strings, both are accepted.
+    """
+    try:
+        return int(group)
+    except (TypeError, ValueError):
+        util.exit_with_error(f'subtask_dependencies: {what} \'{group}\' is not a valid group number.')
+
+
+def get_subtask_dependencies(config) -> Dict[int, List[int]]:
+    """
+    Returns the `subtask_dependencies` entry from config.yml as a dictionary
+    mapping a group to the list of groups it depends on.
+    Returns an empty dictionary if the key is not present.
+    """
+    dependencies = config.get('subtask_dependencies', None)
+    if not dependencies:
+        return {}
+    if not isinstance(dependencies, dict):
+        util.exit_with_error(f'subtask_dependencies must be a mapping, got {type(dependencies).__name__}.')
+
+    parsed = {}
+    for group, prerequisites in dependencies.items():
+        if not isinstance(prerequisites, list):
+            util.exit_with_error(f'subtask_dependencies: value for group \'{group}\' must be a list, '
+                                 f'got {type(prerequisites).__name__}. Use [{prerequisites}] instead of {prerequisites}.')
+        parsed[_parse_group_id(group, 'group')] = [_parse_group_id(prerequisite, 'prerequisite group')
+                                                   for prerequisite in prerequisites]
+    return parsed
+
+
+def validate_subtask_dependencies(config, scored_groups=None):
+    """
+    Validates the `subtask_dependencies` entry in config.yml.
+    Checks that group 0 is not used, that there are no circular dependencies and,
+    if `scored_groups` is provided, that all referenced groups exist.
+    :param config: Config dictionary.
+    :param scored_groups: List of groups that have points assigned. If None, group existence is not checked.
+    """
+    dependencies = get_subtask_dependencies(config)
+    if not dependencies:
+        return
+
+    if scored_groups is not None:
+        scored_groups = sorted(set(int(group) for group in scored_groups))
+
+    for group, prerequisites in dependencies.items():
+        for name, checked in [('group', group)] + [('prerequisite group', p) for p in prerequisites]:
+            if checked == 0:
+                util.exit_with_error(f'subtask_dependencies: {name} \'0\' cannot be used in dependencies, '
+                                     f'as group 0 (example tests) is not scored.')
+            if scored_groups is not None and checked not in scored_groups:
+                util.exit_with_error(f'subtask_dependencies: {name} \'{checked}\' is not a valid scored group. '
+                                     f'Valid groups: {scored_groups}.')
+
+    # Detect cycles using DFS.
+    visiting = set()
+    visited = set()
+
+    def dfs(node):
+        visiting.add(node)
+        for neighbour in dependencies.get(node, []):
+            if neighbour in visiting:
+                util.exit_with_error(f'subtask_dependencies: circular dependency detected '
+                                     f'involving group \'{neighbour}\'.')
+            if neighbour not in visited:
+                dfs(neighbour)
+        visiting.discard(node)
+        visited.add(node)
+
+    for node in dependencies:
+        if node not in visited:
+            dfs(node)
+
+
 def get_task_type(timetool_name, timetool_path, fake_time=None) -> BaseTaskType:
     task_type_cls = get_task_type_cls()
     return task_type_cls(timetool_name, timetool_path, fake_time)

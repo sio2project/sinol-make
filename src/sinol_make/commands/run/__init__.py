@@ -67,6 +67,42 @@ def update_group_status(group_status, new_status):
     return group_status
 
 
+def calculate_group_result(contest, own_results, prerequisite_results, group_max_score):
+    """
+    Calculates the result of a single group, taking subtask dependencies into account.
+    A group with dependencies is scored as if the tests of its prerequisite groups
+    were part of it. Dependencies can only lower the score, never raise it, and the
+    status is replaced only when the score was actually lowered. This mirrors the
+    `apply_subtask_dependencies` handler in oioioi.
+    :param contest: Contest type.
+    :param own_results: Dictionary: {"<test>": ExecutionResult} with the group's own tests.
+    :param prerequisite_results: Dictionary: {"<test>": ExecutionResult} with the tests of all
+                                 prerequisite groups.
+    :param group_max_score: Maximum score for the group.
+    :return: Tuple (points, status, lowered), where `lowered` tells whether the score
+             was lowered because of a dependency.
+    """
+    def calculate(results):
+        status = Status.OK
+        for test in results:
+            if results[test].Status == Status.PENDING:
+                status = Status.PENDING
+            else:
+                status = update_group_status(status, results[test].Status)
+        points = contest.get_group_score([results[test].Points for test in results], group_max_score)
+        return points, status
+
+    points, status = calculate(own_results)
+    if not prerequisite_results:
+        return points, status, False
+
+    combined_points, combined_status = calculate({**own_results, **prerequisite_results})
+    if combined_points >= points:
+        # Dependencies can only lower the score, never raise it.
+        return points, status, False
+    return combined_points, combined_status, True
+
+
 def print_view(term_width, term_height, task_id, program_groups_scores, all_results, print_data: PrintData, names, executions,
                groups, scores, tests, possible_score, cpus, hide_memory, config, contest, args):
     width = term_width - 11  # First column has 6 characters, the " | " separator has 3 characters and 2 for margin
@@ -86,6 +122,9 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
     # time/memory usage.
     program_times = collections.defaultdict(lambda: (-1, 0))
     program_memory = collections.defaultdict(lambda: (-1, 0))
+
+    dependencies = package_util.get_subtask_dependencies(config)
+    any_group_lowered = False
 
     time_sum = 0
     for solution in names:
@@ -143,11 +182,12 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
             for program in program_group:
                 lang = package_util.get_file_lang(program)
                 results = all_results[program][group]
-                group_status = Status.OK
-                test_scores = []
+                # Tests of the groups this group depends on. Groups that were not run are skipped.
+                prerequisite_results = {}
+                for prerequisite in dependencies.get(group, []):
+                    prerequisite_results.update(all_results[program].get(prerequisite, {}))
 
                 for test in results:
-                    test_scores.append(results[test].Points)
                     status = results[test].Status
                     if results[test].Time is not None:
                         if program_times[program][0] < results[test].Time:
@@ -163,20 +203,22 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                     elif status == Status.ML:
                         program_memory[program] = (2 * package_util.get_memory_limit(test, config, lang, task_id, args),
                                                    package_util.get_memory_limit(test, config, lang, task_id, args))
-                    if status == Status.PENDING:
-                        group_status = Status.PENDING
-                    else:
-                        group_status = update_group_status(group_status, status)
 
-                points = contest.get_group_score(test_scores, scores[group])
-                if any([results[test].Status == Status.PENDING for test in results]):
+                points, group_status, lowered = calculate_group_result(contest, results, prerequisite_results,
+                                                                       scores[group])
+                if lowered:
+                    any_group_lowered = True
+                if any(result.Status == Status.PENDING
+                       for result in list(results.values()) + list(prerequisite_results.values())):
                     print(" " * 6 + ("?" * len(str(scores[group]))).rjust(3) +
                           f'/{str(scores[group]).rjust(3)}', end=' | ')
                 else:
+                    # A group whose score was lowered by a dependency is marked with an asterisk.
+                    status_str = (group_status + "*" if lowered else group_status).ljust(6)
                     if group_status == Status.OK:
-                        status_text = util.bold(util.color_green(group_status.ljust(6)))
+                        status_text = util.bold(util.color_green(status_str))
                     else:
-                        status_text = util.bold(util.color_red(group_status.ljust(6)))
+                        status_text = util.bold(util.color_red(status_str))
                     print(f"{status_text}{str(int(points)).rjust(3)}/{str(scores[group]).rjust(3)}", end=' | ')
                 program_groups_scores[program][group] = {"status": group_status, "points": points}
             print()
@@ -252,6 +294,11 @@ def print_view(term_width, term_height, task_id, program_groups_scores, all_resu
                 print()
 
         print_table_end()
+        print()
+
+    if any_group_lowered:
+        print(util.warning("* the score of this group was lowered, because a group it depends on "
+                           "(see `subtask_dependencies` in config.yml) didn't score maximum points."))
         print()
 
     sys.stdout = previous_stdout
@@ -532,7 +579,21 @@ class Command(BaseCommand):
         for group in group_sizes.keys():
             if group in run_group_sizes and group_sizes[group] == run_group_sizes[group]:
                 whole_groups.append(group)
-        return whole_groups
+
+        # A group which depends on other groups is scored using their tests, so its score is
+        # known only if all of them were run as well.
+        dependencies = package_util.get_subtask_dependencies(self.config)
+        valid_groups = []
+        for group in whole_groups:
+            missing = [prerequisite for prerequisite in dependencies.get(group, [])
+                       if prerequisite not in whole_groups]
+            if missing:
+                print(util.warning(f'Group {group} depends on group(s) '
+                                   f'{", ".join(str(prerequisite) for prerequisite in missing)}, '
+                                   f'which weren\'t fully run. Skipping checking expected scores for this group.'))
+            else:
+                valid_groups.append(group)
+        return valid_groups
 
     def validate_expected_scores(self, results):
         new_expected_scores = {} # Expected scores based on results
@@ -952,6 +1013,7 @@ class Command(BaseCommand):
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')
         package_util.validate_fake_time(self.config)
+        package_util.validate_subtask_dependencies(self.config)
 
         self.compilers, self.timetool_path, self.timetool_name = self.validate_arguments(args)
 

@@ -1,0 +1,31 @@
+title: Package for testing subtask dependencies
+sinol_task_id: dep
+sinol_contest_type: oij
+memory_limit: 16000
+time_limit: 1000
+scores:
+  1: 30
+  2: 30
+  3: 40
+subtask_dependencies:
+  2: [1]
+  3: [1, 2]
+sinol_expected_scores:
+  dep.cpp:
+    expected:
+      1: {points: 30, status: OK}
+      2: {points: 30, status: OK}
+      3: {points: 40, status: OK}
+    points: 100
+  dep1.cpp:
+    expected:
+      1: {points: 0, status: WA}
+      2: {points: 0, status: WA}
+      3: {points: 0, status: WA}
+    points: 0
+  dep2.cpp:
+    expected:
+      1: {points: 30, status: OK}
+      2: {points: 0, status: WA}
+      3: {points: 0, status: WA}
+    points: 30

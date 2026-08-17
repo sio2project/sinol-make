@@ -126,6 +126,12 @@ class Command(BaseCommand):
 
         print(util.info("All scores are provided for all groups."))
 
+    def verify_subtask_dependencies(self, scored_groups):
+        if not self.config.get('subtask_dependencies', None):
+            return
+        package_util.validate_subtask_dependencies(self.config, scored_groups)
+        print(util.info("Subtask dependencies are valid."))
+
     def prepare_args(self, command):
         parser = argparse.ArgumentParser()
         subparser = parser.add_subparsers(dest='command')
@@ -176,7 +182,9 @@ class Command(BaseCommand):
             if self.args.no_outgen:
                 args.only_inputs = True
             gen.run(args)
-            self.verify_scores(package_util.get_groups(package_util.get_all_inputs(self.task_id), self.task_id))
+            scored_groups = package_util.get_groups(package_util.get_all_inputs(self.task_id), self.task_id)
+            self.verify_scores(scored_groups)
+            self.verify_subtask_dependencies(scored_groups)
 
         # Generate problem statements
         print(util.bold(' Generating problem statements '.center(util.get_terminal_size()[1], '=')))

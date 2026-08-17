@@ -301,3 +301,58 @@ def test_validate_fake_time():
     for value in ('on', 'invalid', '', 'Off', 'ZERO'):
         with pytest.raises(SystemExit):
             package_util.validate_fake_time({'fake_time': value})
+
+
+def test_get_subtask_dependencies():
+    """
+    Test that subtask dependencies are correctly parsed from config.yml.
+    """
+    assert package_util.get_subtask_dependencies({}) == {}
+    assert package_util.get_subtask_dependencies({'subtask_dependencies': None}) == {}
+    assert package_util.get_subtask_dependencies({'subtask_dependencies': {}}) == {}
+    assert package_util.get_subtask_dependencies({'subtask_dependencies': {2: [1], 3: [1, 2]}}) == {2: [1], 3: [1, 2]}
+    # Groups may be written as strings.
+    assert package_util.get_subtask_dependencies({'subtask_dependencies': {'2': ['1']}}) == {2: [1]}
+    assert package_util.get_subtask_dependencies({'subtask_dependencies': {2: []}}) == {2: []}
+
+    # Not a mapping.
+    for value in ([1, 2], '2: [1]'):
+        with pytest.raises(SystemExit):
+            package_util.get_subtask_dependencies({'subtask_dependencies': value})
+
+    # Dependencies of a group must be a list.
+    with pytest.raises(SystemExit):
+        package_util.get_subtask_dependencies({'subtask_dependencies': {2: 1}})
+
+    # Groups must be numbers.
+    with pytest.raises(SystemExit):
+        package_util.get_subtask_dependencies({'subtask_dependencies': {'abc': [1]}})
+    with pytest.raises(SystemExit):
+        package_util.get_subtask_dependencies({'subtask_dependencies': {2: ['abc']}})
+
+
+def test_validate_subtask_dependencies():
+    """
+    Test that valid subtask dependencies are accepted and invalid ones are rejected.
+    """
+    package_util.validate_subtask_dependencies({})
+    package_util.validate_subtask_dependencies({'subtask_dependencies': {2: [1], 3: [1, 2]}}, [1, 2, 3])
+    package_util.validate_subtask_dependencies({'subtask_dependencies': {2: []}}, [1, 2])
+    # Group existence isn't checked when scored groups aren't provided.
+    package_util.validate_subtask_dependencies({'subtask_dependencies': {2: [1]}})
+
+    # Group 0 can't be used, as it's not scored.
+    for dependencies in ({0: [1]}, {2: [0]}):
+        with pytest.raises(SystemExit):
+            package_util.validate_subtask_dependencies({'subtask_dependencies': dependencies}, [1, 2])
+
+    # Groups which don't exist can't be used.
+    with pytest.raises(SystemExit):
+        package_util.validate_subtask_dependencies({'subtask_dependencies': {99: [1]}}, [1, 2])
+    with pytest.raises(SystemExit):
+        package_util.validate_subtask_dependencies({'subtask_dependencies': {2: [99]}}, [1, 2])
+
+    # Circular dependencies are not allowed.
+    for dependencies in ({2: [2]}, {2: [3], 3: [2]}, {1: [3], 2: [1], 3: [2]}):
+        with pytest.raises(SystemExit):
+            package_util.validate_subtask_dependencies({'subtask_dependencies': dependencies}, [1, 2, 3])

@@ -106,6 +106,10 @@ def save_config(config):
         "sinol_total_score",
         "scores",
         {
+            "key": "subtask_dependencies",
+            "default_flow_style": None
+        },
+        {
             "key": "extra_compilation_files",
             "default_flow_style": None
         },

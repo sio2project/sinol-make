@@ -287,6 +287,7 @@ class Command(BaseCommand):
 
         config = package_util.get_config()
         package_util.validate_fake_time(config)
+        package_util.validate_subtask_dependencies(config)
 
         testrun_soc = config.get('testrun_soc', None)
         if testrun_soc is not None:

@@ -5,6 +5,9 @@ from sinol_make.structs.status_structs import Status, ResultChange, ValidationRe
 from sinol_make.helpers import package_util
 from sinol_make.task_type.normal import NormalTaskType
 from sinol_make.executors.sio2jail import Sio2jailExecutor
+from sinol_make.contest_types.icpc import ICPCContest
+from sinol_make.contest_types.oij import OIJContest
+from sinol_make.structs.status_structs import ExecutionResult
 
 from .util import *
 from ...util import *
@@ -474,6 +477,91 @@ def test_update_group_status():
     assert update_group_status(Status.PENDING, Status.WA) == Status.WA
     assert update_group_status(Status.WA, Status.CE) == Status.CE
     assert update_group_status(Status.CE, Status.WA) == Status.CE
+
+
+def _result(points, status=Status.OK):
+    return ExecutionResult(status=status, Points=points)
+
+
+def _results(*points_and_statuses):
+    return {f'test{i}': _result(*args) for i, args in enumerate(points_and_statuses)}
+
+
+def test_calculate_group_result_without_dependencies():
+    """
+    Test that a group without dependencies is scored exactly as before.
+    """
+    from sinol_make.commands.run import calculate_group_result
+    contest = OIJContest()
+
+    assert calculate_group_result(contest, _results((100,)), {}, 20) == (20, Status.OK, False)
+    assert calculate_group_result(contest, _results((100,), (0, Status.WA)), {}, 20) == (0, Status.WA, False)
+    assert calculate_group_result(contest, _results((100,), (50, Status.OK)), {}, 20) == (10, Status.OK, False)
+
+
+def test_calculate_group_result_dependencies_passing():
+    """
+    Test that dependencies don't change the result when the group they depend on passes.
+    """
+    from sinol_make.commands.run import calculate_group_result
+    contest = OIJContest()
+
+    assert calculate_group_result(contest, _results((100,)), _results((100,)), 20) == (20, Status.OK, False)
+    # Dependencies can only lower the score, never raise it.
+    assert calculate_group_result(contest, _results((0, Status.WA)), _results((100,)), 20) == (0, Status.WA, False)
+
+
+def test_calculate_group_result_dependencies_failing():
+    """
+    Test that a group is scored as if the tests of the groups it depends on were a part of it.
+    """
+    from sinol_make.commands.run import calculate_group_result
+    contest = OIJContest()
+
+    # A failing test in a group we depend on zeroes the score.
+    assert calculate_group_result(contest, _results((100,)), _results((0, Status.WA)), 20) == (0, Status.WA, True)
+    # A partially scored test in a group we depend on lowers the score proportionally.
+    assert calculate_group_result(contest, _results((100,)), _results((50, Status.OK)), 20) == (10, Status.OK, True)
+    # The worst test of all groups decides, no matter which group it belongs to.
+    assert calculate_group_result(contest, _results((100,)), _results((30, Status.OK), (0, Status.TL)),
+                                  20) == (0, Status.TL, True)
+
+
+def test_calculate_group_result_empty_dependencies():
+    """
+    Test that an empty list of dependencies changes nothing.
+    """
+    from sinol_make.commands.run import calculate_group_result
+    contest = OIJContest()
+
+    assert calculate_group_result(contest, _results((100,)), {}, 20) == (20, Status.OK, False)
+
+
+def test_calculate_group_result_icpc():
+    """
+    Test that dependencies work for contest types with a different scale of points.
+    """
+    from sinol_make.commands.run import calculate_group_result
+    contest = ICPCContest()
+
+    assert calculate_group_result(contest, _results((1,)), _results((1,)), 1) == (1, Status.OK, False)
+    assert calculate_group_result(contest, _results((1,)), _results((0, Status.WA)), 1) == (0, Status.WA, True)
+
+
+def test_get_whole_groups_with_dependencies(create_package):
+    """
+    Test that a group whose dependencies weren't fully run is not checked.
+    """
+    package_path = create_package
+    create_ins(package_path, "abc")
+    command = get_command(package_path)
+    command.config["subtask_dependencies"] = {2: [1], 3: [1, 2]}
+    command.tests = ["in/abc1a.in", "in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
+    assert sorted(command.get_whole_groups()) == [1, 2, 3, 4]
+
+    # Group 2 and 3 depend on group 1, which wasn't run.
+    command.tests = ["in/abc2a.in", "in/abc3a.in", "in/abc4a.in"]
+    assert sorted(command.get_whole_groups()) == [4]
 
 
 def test_sio2jail_wrap_command_fake_time():
