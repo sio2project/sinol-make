@@ -39,16 +39,22 @@ def get_cache_file(solution_path: str) -> CacheFile:
         return CacheFile()
 
 
-def check_compiled(file_path: str, compilation_flags: str, sanitizers: str) -> Union[str, None]:
+def check_compiled(file_path: str, compilation_flags: str, sanitizers: str,
+                   extra_compilation_hash: str = "") -> Union[str, None]:
     """
     Check if a file is compiled
     :param file_path: Path to the file
+    :param compilation_flags: Group of compilation flags used
+    :param sanitizers: What sanitizers were used for compilation (if any).
+    :param extra_compilation_hash: Hash of extra compilation arguments and files
+                                   (as returned by `package_util.get_extra_compilation_hash`).
     :return: executable path if compiled, None otherwise
     """
     md5sum = util.get_file_md5(file_path)
     try:
         info = get_cache_file(file_path)
-        if info.md5sum == md5sum and info.compilation_flags == compilation_flags and info.sanitizers == sanitizers:
+        if info.md5sum == md5sum and info.compilation_flags == compilation_flags and \
+                info.sanitizers == sanitizers and info.extra_compilation_hash == extra_compilation_hash:
             exe_path = info.executable_path
             if os.path.exists(exe_path):
                 return exe_path
@@ -57,7 +63,8 @@ def check_compiled(file_path: str, compilation_flags: str, sanitizers: str) -> U
         return None
 
 
-def save_compiled(file_path: str, exe_path: str, compilation_flags: str, sanitizers: str, clear_cache: bool = False):
+def save_compiled(file_path: str, exe_path: str, compilation_flags: str, sanitizers: str,
+                  extra_compilation_hash: str = "", clear_cache: bool = False):
     """
     Save the compiled executable path to cache in `.cache/md5sums/<basename of file_path>`,
     which contains the md5sum of the file and the path to the executable.
@@ -65,9 +72,11 @@ def save_compiled(file_path: str, exe_path: str, compilation_flags: str, sanitiz
     :param exe_path: Path to the compiled executable
     :param compilation_flags: Compilation flags used
     :param sanitizers: What sanitizers were used for compilation (if any).
+    :param extra_compilation_hash: Hash of extra compilation arguments and files
+                                   (as returned by `package_util.get_extra_compilation_hash`).
     :param clear_cache: Set to True if you want to delete all cached test results.
     """
-    info = CacheFile(util.get_file_md5(file_path), exe_path, compilation_flags, sanitizers)
+    info = CacheFile(util.get_file_md5(file_path), exe_path, compilation_flags, sanitizers, extra_compilation_hash)
     info.save(file_path)
     if clear_cache:
         remove_results_cache()
@@ -87,24 +96,6 @@ def _check_file_changed(file_path, lang, task_id):
 
     info.md5sum = md5sum
     info.save(file_path)
-
-
-def process_extra_compilation_files(extra_compilation_files, task_id):
-    """
-    Checks if extra compilation files have changed and saves them to cache.
-    If they have, removes all cached solutions that use them.
-    :param extra_compilation_files: List of extra compilation files
-    :param task_id: Task id
-    """
-    for file in extra_compilation_files:
-        file_path = os.path.join(os.getcwd(), "prog", file)
-        if not os.path.exists(file_path):
-            continue
-        md5sum = util.get_file_md5(file_path)
-        lang = package_util.get_file_lang(file)
-        if lang == 'h':
-            lang = 'cpp'
-        _check_file_changed(file_path, lang, task_id)
 
 
 def process_extra_execution_files(extra_execution_files, task_id):
@@ -155,15 +146,19 @@ def check_can_access_cache():
                              "`sinol-make` needs to be able to write to this directory.")
 
 
-def has_file_changed(file_path: str) -> bool:
+def has_file_changed(file_path: str, extra_compilation_hash: Union[str, None] = None) -> bool:
     """
     Checks if file has changed since last compilation.
     :param file_path: Path to the file
+    :param extra_compilation_hash: If set, the file is also considered changed when it was
+                                   compiled with different extra compilation arguments or files.
     :return: True if file has changed, False otherwise
     """
     try:
         info = get_cache_file(file_path)
-        return info.md5sum != util.get_file_md5(file_path)
+        if info.md5sum != util.get_file_md5(file_path):
+            return True
+        return extra_compilation_hash is not None and info.extra_compilation_hash != extra_compilation_hash
     except FileNotFoundError:
         return True
 
@@ -178,7 +173,14 @@ def check_correct_solution(task_id: str):
     except FileNotFoundError:
         return
 
-    if has_file_changed(solution) and os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
+    config = package_util.get_config()
+    lang = package_util.get_file_lang(solution)
+    extra_compilation_hash = package_util.get_extra_compilation_hash(
+        lang, package_util.get_extra_compilation_args(lang, config),
+        package_util.get_extra_compilation_files(config))
+
+    if has_file_changed(solution, extra_compilation_hash) and \
+            os.path.exists(os.path.join(os.getcwd(), 'in', '.md5sums')):
         os.unlink(os.path.join(os.getcwd(), 'in', '.md5sums'))
 
 

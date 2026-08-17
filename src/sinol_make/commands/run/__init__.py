@@ -394,19 +394,9 @@ class Command(BaseCommand):
         extra_compilation_args = []
         extra_compilation_files = []
         if use_extras:
-            lang = os.path.splitext(source_file)[1][1:]
-            args = self.config.get("extra_compilation_args", {}).get(lang, [])
-            if isinstance(args, str):
-                args = [args]
-            for arg in args:
-                path = os.path.join(os.getcwd(), "prog", arg)
-                if os.path.exists(path):
-                    extra_compilation_args.append(path)
-                else:
-                    extra_compilation_args.append(arg)
-
-            for file in self.config.get("extra_compilation_files", []):
-                extra_compilation_files.append(os.path.join(os.getcwd(), "prog", file))
+            lang = package_util.get_file_lang(source_file)
+            extra_compilation_args = package_util.get_extra_compilation_args(lang, self.config)
+            extra_compilation_files = package_util.get_extra_compilation_files(self.config)
 
         try:
             with open(compile_log_file, "w") as compile_log:
@@ -1020,7 +1010,6 @@ class Command(BaseCommand):
         title = self.config["title"]
         print("Task: %s (tag: %s)" % (title, self.ID))
         self.cpus = args.cpus or util.default_cpu_count()
-        cache.process_extra_compilation_files(self.config.get("extra_compilation_files", []), self.ID)
         cache.process_extra_execution_files(self.config.get("extra_execution_files", {}), self.ID)
         cache.remove_results_if_contest_type_changed(self.config.get("sinol_contest_type", "default"))
 

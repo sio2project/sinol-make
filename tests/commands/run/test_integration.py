@@ -706,17 +706,39 @@ def test_extra_compilation_files_change(create_package, time_tool):
         with open(file, "w") as f:
             f.write(f"{comment_character} Changed source code.\n" + source)
 
-    def test(file_to_change, lang, comment_character, extra_compilation_files=True):
-        # First run to cache test results.
+    def test_compilation_file(file_to_change, lang, comment_character):
+        # First run to compile solutions and cache test results.
         command.run(args)
 
         # Change file
         change_file(os.path.join(os.getcwd(), "prog", file_to_change), comment_character)
 
-        if extra_compilation_files:
-            cache.process_extra_compilation_files(command.config.get("extra_compilation_files", []), command.ID)
-        else:
-            cache.process_extra_execution_files(command.config.get("extra_execution_files", {}), command.ID)
+        # Changing an extra compilation file invalidates the compilation cache on its own,
+        # no command has to clean the cache up beforehand.
+        task_id = package_util.get_task_id()
+        solutions = package_util.get_solutions(task_id, None)
+        for solution in solutions:
+            solution_lang = package_util.get_file_lang(solution)
+            extra_compilation_hash = package_util.get_extra_compilation_hash(
+                solution_lang, package_util.get_extra_compilation_args(solution_lang, command.config),
+                package_util.get_extra_compilation_files(command.config))
+            compiled = cache.check_compiled(os.path.join(os.getcwd(), "prog", solution), "default", "no",
+                                            extra_compilation_hash)
+            print(file_to_change, solution)
+            if solution_lang == lang:
+                assert compiled is None
+            else:
+                # Solutions in other languages don't use the changed file.
+                assert compiled is not None
+
+    def test_execution_file(file_to_change, lang, comment_character):
+        # First run to compile solutions and cache test results.
+        command.run(args)
+
+        # Change file
+        change_file(os.path.join(os.getcwd(), "prog", file_to_change), comment_character)
+
+        cache.process_extra_execution_files(command.config.get("extra_execution_files", {}), command.ID)
         task_id = package_util.get_task_id()
         solutions = package_util.get_solutions(task_id, None)
         for solution in solutions:
@@ -726,9 +748,47 @@ def test_extra_compilation_files_change(create_package, time_tool):
                 info = cache.get_cache_file(solution)
                 assert info == CacheFile()
 
-    test("liblib.cpp", "cpp", "//")
-    test("liblib.h", "cpp", "//")
-    test("liblib.py", "py", "#", False)
+    test_compilation_file("liblib.cpp", "cpp", "//")
+    test_compilation_file("liblib.h", "cpp", "//")
+    test_execution_file("liblib.py", "py", "#")
+
+
+@pytest.mark.parametrize("create_package", [get_library_package_path()], indirect=True)
+def test_extra_compilation_args_change(create_package, time_tool):
+    """
+    Test if after changing extra compilation arguments solutions are compiled again.
+    """
+    package_path = create_package
+    create_ins_outs(package_path)
+    parser = configure_parsers()
+    args = parser.parse_args(["run", "--time-tool", time_tool])
+    command = Command()
+    command.run(args)
+
+    task_id = package_util.get_task_id()
+    solutions = package_util.get_solutions(task_id, None)
+
+    def check_compiled(config):
+        compiled = {}
+        for solution in solutions:
+            lang = package_util.get_file_lang(solution)
+            extra_compilation_hash = package_util.get_extra_compilation_hash(
+                lang, package_util.get_extra_compilation_args(lang, config),
+                package_util.get_extra_compilation_files(config))
+            compiled[solution] = cache.check_compiled(os.path.join(os.getcwd(), "prog", solution), "default", "no",
+                                                      extra_compilation_hash) is not None
+        return compiled
+
+    assert all(check_compiled(command.config).values())
+
+    config = package_util.get_config()
+    config["extra_compilation_args"]["cpp"].append("-DSINOL_MAKE_TEST")
+    util.save_config(config)
+
+    compiled = check_compiled(package_util.get_config())
+    for solution, is_compiled in compiled.items():
+        # Only C++ solutions use the changed arguments.
+        assert is_compiled == (package_util.get_file_lang(solution) != "cpp")
 
 
 @pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)

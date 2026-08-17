@@ -47,16 +47,20 @@ class CacheFile:
     compilation_flags: str
     # What sanitizers were used
     sanitizers: str
+    # Hash of extra compilation arguments and files used during compilation
+    extra_compilation_hash: str
     # Test results
     tests: Dict[str, CacheTest]
 
-    def __init__(self, md5sum="", executable_path="", compilation_flags="default", sanitizers="no", tests=None):
+    def __init__(self, md5sum="", executable_path="", compilation_flags="default", sanitizers="no",
+                 extra_compilation_hash="", tests=None):
         if tests is None:
             tests = {}
         self.md5sum = md5sum
         self.executable_path = executable_path
         self.compilation_flags = compilation_flags
         self.sanitizers = sanitizers
+        self.extra_compilation_hash = extra_compilation_hash
         self.tests = tests
 
     def to_dict(self) -> Dict:
@@ -65,6 +69,7 @@ class CacheFile:
             "executable_path": self.executable_path,
             "compilation_flags": self.compilation_flags,
             "sanitizers": self.sanitizers,
+            "extra_compilation_hash": self.extra_compilation_hash,
             "tests": {k: v.to_dict() for k, v in self.tests.items()}
         }
 
@@ -79,6 +84,9 @@ class CacheFile:
             executable_path=dict.get("executable_path", ""),
             compilation_flags=dict.get("compilation_flags", "default"),
             sanitizers=dict.get("sanitizers", 'no'),
+            # Older versions of sinol-make didn't store the hash. Empty string means that
+            # the package didn't use extra compilation arguments or files.
+            extra_compilation_hash=dict.get("extra_compilation_hash", ""),
             tests={k: CacheTest(
                 time_limit=v["time_limit"],
                 memory_limit=v["memory_limit"],
