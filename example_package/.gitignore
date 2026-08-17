@@ -2,6 +2,7 @@
 .cache
 cache
 in/.md5sums
+out/.md5sums
 
 # Tests
 in/*.in

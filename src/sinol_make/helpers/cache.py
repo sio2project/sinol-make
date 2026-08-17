@@ -194,6 +194,7 @@ def create_cache_dirs():
         paths.get_compilation_log_path(),
         paths.get_executions_path(),
         paths.get_chkwer_path(),
+        paths.get_outgen_path(),
         paths.get_cache_path('md5sums'),
         paths.get_cache_path('doc_logs'),
     ]:
