@@ -2,6 +2,8 @@ from lsalib import *
 
 
 def main():
+    init()
+
     a, b = 0, 100
 
     while a <= b:

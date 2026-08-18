@@ -41,7 +41,10 @@ def generate_output(arguments):
     """
     Generates output file for given input file.
     :param arguments: arguments for output generation (type OutputGenerationArguments)
-    :return: True if the output was successfully generated, False otherwise
+    :return: tuple of three values:
+             - bool: True if the output was successfully generated, False otherwise
+             - bytes: stderr of the model solution
+             - str: md5 sum of the generated output file or None if the generation failed
     """
     input_test = arguments.input_test
     output_test = arguments.output_test
@@ -66,4 +69,6 @@ def generate_output(arguments):
     input_file.close()
     output_file.close()
 
-    return exit_code == 0, stderr
+    if exit_code != 0:
+        return False, stderr, None
+    return True, stderr, util.get_file_md5(output_test)

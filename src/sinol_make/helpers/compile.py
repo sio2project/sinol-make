@@ -93,8 +93,11 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
             print(util.error('Python is not supported on Windows'))
             pass
         else:
+            # The same interpreter which the file is compiled with is used to run it, as the one
+            # under `/usr/bin/python3` may be a different (or much slower) version, if it exists at all.
+            interpreter = shutil.which(compilers.python_interpreter_path or 'python3') or '/usr/bin/python3'
             with open(output, 'w') as output_file, open(program, 'r') as program_file:
-                output_file.write('#!/usr/bin/python3\n')
+                output_file.write(f'#!{interpreter}\n')
                 output_file.write(program_file.read())
 
             st = os.stat(output)

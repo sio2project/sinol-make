@@ -360,6 +360,19 @@ class Command(BaseCommand):
         return package_util.get_group(test_path, self.ID)
 
     def get_solution_from_exe(self, executable):
+        """
+        Returns the source file for the given executable. Solutions are compiled by passing
+        the source file itself here, so a name which already is a source file is returned
+        unchanged. Otherwise only one extension is stripped (executables are named
+        `<source file>.e`) and, as a last resort, the extension is guessed. Without this
+        solutions which differ only in the extension (`abc.cpp` and `abc.py`) would be mixed up,
+        as the first matching extension would be used for both of them.
+        """
+        for file in (executable, os.path.splitext(executable)[0]):
+            if os.path.splitext(file)[1] in self.SOURCE_EXTENSIONS and \
+                    os.path.isfile(os.path.join(os.getcwd(), "prog", file)):
+                return file
+
         file = os.path.splitext(executable)[0]
         for ext in self.SOURCE_EXTENSIONS:
             if os.path.isfile(os.path.join(os.getcwd(), "prog", file + ext)):

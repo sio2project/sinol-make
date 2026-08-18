@@ -3,6 +3,7 @@ import glob
 from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_ingen
 from sinol_make.commands.outgen.outgen_util import get_correct_solution, compile_correct_solution, generate_output
 from sinol_make.structs.gen_structs import OutputGenerationArguments
+from sinol_make import util as sm_util
 from sinol_make.helpers import package_util, compiler
 from tests import util
 from tests.fixtures import *
@@ -111,7 +112,9 @@ def test_generate_output(create_package):
     correct_sol_exe = compile_correct_solution(correct_solution, args)
 
     run_ingen(ingen_exe)
-    assert generate_output(OutputGenerationArguments(correct_sol_exe, "in/abc1a.in", "out/abc1a.out"))
+    ok, _, md5_sum = generate_output(OutputGenerationArguments(correct_sol_exe, "in/abc1a.in", "out/abc1a.out"))
+    assert ok
+    assert md5_sum == sm_util.get_file_md5(os.path.join(package_path, "out", "abc1a.out"))
     assert os.path.exists(os.path.join(package_path, "out", "abc1a.out"))
 
 
