@@ -105,6 +105,12 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
                      '-o', output, '-O', '--edition=2024',
                      '-C', 'target-feature=+crt-static', '-C', 'strip=debuginfo', '-C', 'strip=symbols'] + \
                     extra_compilation_args
+    elif ext == '.dmf':
+        # Duckling stores its source in `.dmf` files and is compiled with `duckc`.
+        # The `duckc compile <files/options>` subcommand produces an executable
+        # in a similar fashion to g++.
+        arguments = [compilers.duck_compiler_path or compiler.get_duck_compiler_path(), 'compile', program] + \
+                    extra_compilation_args + ['-o', output]
     elif ext == '.java':
         raise NotImplementedError('Java compilation is not implemented')
     else:

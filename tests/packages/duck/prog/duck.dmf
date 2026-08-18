@@ -1,0 +1,11 @@
+// Duckling stores its source in `.dmf` files. For testing purposes this mock
+// `.dmf` file contains plain C++ source, which the mock `duckc` compiler
+// forwards to g++.
+#include <iostream>
+
+int main() {
+    int a, b;
+    std::cin >> a >> b;
+    std::cout << a + b << std::endl;
+    return 0;
+}
