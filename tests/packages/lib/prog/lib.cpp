@@ -1,4 +1,3 @@
-#include <bits/stdc++.h>
 #include "liblib.h"
 
 using namespace std;

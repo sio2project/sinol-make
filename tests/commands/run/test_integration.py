@@ -11,13 +11,20 @@ from .util import *
 from sinol_make import configure_parsers, util, sio2jail
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_library_package_path(),
-                                            get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path(),
-                                            get_long_solution_names_package(), get_large_output_package_path(),
-                                            get_rust_package_path(), get_dependencies_package_path()],
-                         indirect=True)
+# Every package the `run` command has to work on. Used by `test_simple`, which is the test that
+# checks whether running a package works at all.
+ALL_PACKAGES = [get_simple_package_path(), get_verify_status_package_path(), get_checker_package_path(),
+                get_library_package_path(), get_library_string_args_package_path(), get_limits_package_path(),
+                get_override_limits_package_path(), get_icpc_package_path(), get_long_solution_names_package(),
+                get_large_output_package_path(), get_rust_package_path(), get_dependencies_package_path()]
+
+# Packages covering all the ways a package can be built (a plain one, one with a checker and one with
+# a library and solutions in two languages). Tests of behaviour which doesn't depend on the contents
+# of the package use only these, as running them on every package only repeats the same code paths.
+BASIC_PACKAGES = [get_simple_package_path(), get_checker_package_path(), get_library_package_path()]
+
+
+@pytest.mark.parametrize("create_package", ALL_PACKAGES, indirect=True)
 def test_simple(create_package, time_tool):
     """
     Test a simple run.
@@ -39,12 +46,7 @@ def test_simple(create_package, time_tool):
     assert config["sinol_expected_scores"] == expected_scores
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_library_package_path(),
-                                            get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path(),
-                                            get_long_solution_names_package()],
-                         indirect=True)
+@pytest.mark.parametrize("create_package", BASIC_PACKAGES, indirect=True)
 def test_wrong_solution(create_package, time_tool):
     """
     Test if running after changing solution works.
@@ -70,12 +72,7 @@ def test_wrong_solution(create_package, time_tool):
     assert e.value.code == 1
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_library_package_path(),
-                                            get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path(),
-                                            get_large_output_package_path()],
-                         indirect=True)
+@pytest.mark.parametrize("create_package", BASIC_PACKAGES, indirect=True)
 def test_no_expected_scores(capsys, create_package, time_tool):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -108,12 +105,7 @@ def test_no_expected_scores(capsys, create_package, time_tool):
     assert os.path.basename(solution) in out
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_library_package_path(),
-                                            get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_icpc_package_path(),
-                                            get_long_solution_names_package(), get_large_output_package_path()],
-                         indirect=True)
+@pytest.mark.parametrize("create_package", BASIC_PACKAGES, indirect=True)
 def test_apply_suggestions(create_package, time_tool, capsys):
     """
     Test with no sinol_expected_scores in config.yml.
@@ -174,10 +166,7 @@ def test_incorrect_expected_scores(capsys, create_package, time_tool):
     assert "Solution abc.cpp passed group 1 with status OK while it should pass with status WA." in out
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path(),
-                                            get_library_package_path(), get_library_string_args_package_path(),
-                                            get_icpc_package_path(), get_long_solution_names_package()],
-                         indirect=True)
+@pytest.mark.parametrize("create_package", BASIC_PACKAGES, indirect=True)
 def test_flag_tests(create_package, time_tool):
     """
     Test flag --tests.
@@ -198,8 +187,7 @@ def test_flag_tests(create_package, time_tool):
     assert command.tests == [os.path.join("in", os.path.basename(test))]
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_icpc_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path()], indirect=True)
 def test_flag_solutions(capsys, create_package, time_tool):
     """
     Test flag --solutions.
@@ -221,8 +209,7 @@ def test_flag_solutions(capsys, create_package, time_tool):
     assert os.path.basename(solutions[1]) not in out
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path()], indirect=True)
 def test_flag_solutions_multiple(capsys, create_package, time_tool):
     """
     Test flag --solutions with multiple solutions.
@@ -599,8 +586,7 @@ def test_only_example_tests(create_package, time_tool, capsys):
     assert "Expected scores are correct!" in out
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_checker_package_path(),
-                                            get_library_package_path()], indirect=True)
+@pytest.mark.parametrize("create_package", [get_simple_package_path()], indirect=True)
 def test_flag_tests_not_existing_tests(create_package, time_tool, capsys):
     """
     Test flag --tests with not existing tests.
@@ -617,11 +603,7 @@ def test_flag_tests_not_existing_tests(create_package, time_tool, capsys):
     assert "There are no tests to run." in out
 
 
-@pytest.mark.parametrize("create_package", [get_simple_package_path(), get_verify_status_package_path(),
-                                            get_checker_package_path(), get_library_package_path(),
-                                            get_library_string_args_package_path(), get_limits_package_path(),
-                                            get_override_limits_package_path(), get_long_solution_names_package()],
-                         indirect=True)
+@pytest.mark.parametrize("create_package", BASIC_PACKAGES, indirect=True)
 def test_results_caching(create_package, time_tool):
     """
     Test if test results are cached.

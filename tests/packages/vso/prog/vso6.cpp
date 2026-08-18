@@ -5,7 +5,9 @@
 // fifth test is OK.
 // Group status should be ML.
 
-#include <bits/stdc++.h>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 

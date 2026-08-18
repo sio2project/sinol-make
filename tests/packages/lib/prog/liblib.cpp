@@ -1,4 +1,5 @@
-#include <bits/stdc++.h>
+#include <cstdlib>
+#include <iostream>
 #include "liblib.h"
 
 using namespace std;

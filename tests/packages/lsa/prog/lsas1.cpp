@@ -1,4 +1,3 @@
-#include <bits/stdc++.h>
 #include "lsalib.h"
 
 using namespace std;

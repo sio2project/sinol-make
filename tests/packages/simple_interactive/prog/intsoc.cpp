@@ -1,4 +1,7 @@
-#include <bits/stdc++.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
 #include <assert.h>
 
 using namespace std;

@@ -1,5 +1,6 @@
 // Fails with -fsanitize=address
-#include <bits/stdc++.h>
+#include <cstdlib>
+#include <iostream>
 
 using namespace std;
 

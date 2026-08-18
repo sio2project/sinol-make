@@ -1,8 +1,15 @@
 import os
 import glob
+import hashlib
+import shutil
 import subprocess
+import tempfile
 
 from sinol_make.helpers import compile, paths, package_util
+
+# Name of the environment variable holding the directory in which tests generated for packages
+# are kept. It is set by `tests/conftest.py` for the whole pytest session.
+GENERATED_TESTS_DIR_ENV = "SINOL_MAKE_GENERATED_TESTS_DIR"
 
 
 def get_simple_package_path():
@@ -216,6 +223,63 @@ def get_score_package():
     """
     return os.path.join(os.path.dirname(__file__), "packages", "score")
 
+def _get_generated_tests_dir():
+    """
+    Get path to the directory in which tests generated for packages are kept.
+    """
+    path = os.environ.get(GENERATED_TESTS_DIR_ENV,
+                          os.path.join(tempfile.gettempdir(), "sinol-make-generated-tests"))
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _package_hash(package_path, *extra_globs):
+    """
+    Calculate a hash of everything in the package which can change the generated tests.
+    """
+    md5 = hashlib.md5()
+    files = glob.glob(os.path.join(package_path, "prog", "**"), recursive=True)
+    for pattern in extra_globs:
+        files += glob.glob(os.path.join(package_path, pattern))
+    for file in sorted(files):
+        if not os.path.isfile(file):
+            continue
+        md5.update(os.path.relpath(file, package_path).encode())
+        with open(file, "rb") as f:
+            md5.update(f.read())
+    return md5.hexdigest()
+
+
+def _restore_generated(key, directory):
+    """
+    Copy tests generated previously for `key` into `directory`.
+    :return: False if nothing was generated for `key` yet, True otherwise.
+    """
+    generated = os.path.join(_get_generated_tests_dir(), key)
+    if not os.path.exists(generated):
+        return False
+    shutil.copytree(generated, directory, dirs_exist_ok=True)
+    return True
+
+
+def _save_generated(key, directory):
+    """
+    Save tests generated in `directory`, so that other tests using the same package can reuse them.
+    """
+    generated_tests_dir = _get_generated_tests_dir()
+    tmpdir = tempfile.mkdtemp(dir=generated_tests_dir)
+    try:
+        copied = os.path.join(tmpdir, "tests")
+        shutil.copytree(directory, copied)
+        try:
+            os.rename(copied, os.path.join(generated_tests_dir, key))
+        except OSError:
+            # Another process saved the same tests first, which is fine.
+            pass
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 def create_ins(package_path, task_id):
     """
     Create .in files for package.
@@ -224,18 +288,31 @@ def create_ins(package_path, task_id):
     if len(all_ingens) == 0:
         return
     ingen = all_ingens[0]
+    in_dir = os.path.join(package_path, "in")
+    key = f'{task_id}-in-{_package_hash(package_path, os.path.join("in", "*"))}'
+    if _restore_generated(key, in_dir):
+        return
+
     ingen_executable = paths.get_executables_path("ingen.e")
     os.makedirs(paths.get_executables_path(), exist_ok=True)
-    assert compile.compile(ingen, ingen_executable)
-    os.chdir(os.path.join(package_path, "in"))
+    # `sinol-make` compiles ingens with this flag, so it is used here as well to reuse the executable
+    # compiled when the tests were started.
+    assert compile.compile(ingen, ingen_executable, extra_compilation_args=['-D_INGEN'])
+    os.chdir(in_dir)
     os.system("../.cache/executables/ingen.e")
     os.chdir(package_path)
+    _save_generated(key, in_dir)
 
 
 def create_outs(package_path, task_id):
     """
     Create .out files for package.
     """
+    out_dir = os.path.join(package_path, "out")
+    key = f'{task_id}-out-{_package_hash(package_path, os.path.join("in", "*"))}'
+    if _restore_generated(key, out_dir):
+        return
+
     solution = package_util.get_files_matching_pattern(task_id, f'{task_id}.*')[0]
     solution_executable = paths.get_executables_path("solution.e")
     os.makedirs(paths.get_executables_path(), exist_ok=True)
@@ -246,6 +323,7 @@ def create_outs(package_path, task_id):
             subprocess.Popen([os.path.join(package_path, ".cache", "executables", "solution.e")],
                              stdin=in_file, stdout=out_file).wait()
     os.chdir(package_path)
+    _save_generated(key, out_dir)
 
 
 def create_ins_outs(package_path):

@@ -3,7 +3,7 @@
 // other OK.
 // Group should have status RE.
 
-#include <bits/stdc++.h>
+#include <iostream>
 
 using namespace std;
 
