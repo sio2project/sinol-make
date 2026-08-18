@@ -2,7 +2,7 @@
 // other OK.
 // Group should have status WA.
 
-#include <bits/stdc++.h>
+#include <iostream>
 
 using namespace std;
 

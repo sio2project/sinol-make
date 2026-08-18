@@ -3,6 +3,8 @@ import sys
 import glob
 import yaml
 import os
+import shutil
+import tempfile
 import pytest
 import fnmatch
 import multiprocessing as mp
@@ -10,6 +12,7 @@ import multiprocessing as mp
 from sinol_make import sio2jail, util
 from sinol_make.helpers import compile, paths, cache, oicompare
 from sinol_make.interfaces.Errors import CompilationError
+from tests import util as testing_util
 
 
 def _compile(args):
@@ -18,10 +21,19 @@ def _compile(args):
     output = paths.get_executables_path(os.path.splitext(os.path.basename(file_path))[0] + ".e")
     compile_log_path = paths.get_compilation_log_path(os.path.basename(file_path) + ".compile_log")
     basename = os.path.basename(file_path)
-    use_fsanitize = 'simple' if fnmatch.fnmatch(basename, "*ingen*") or fnmatch.fnmatch(basename, "*inwer*") else 'no'
+    # Compiled executables are only reused if they were compiled with the same arguments, so the
+    # arguments used by `sinol-make` for ingens and inwers have to be used here as well. Sanitizers
+    # are not used, because no command uses them by default.
+    if fnmatch.fnmatch(basename, "*ingen*"):
+        extra_compilation_args = ['-D_INGEN']
+    elif fnmatch.fnmatch(basename, "*inwer*"):
+        extra_compilation_args = ['-D_INWER']
+    else:
+        extra_compilation_args = []
     try:
         with open(compile_log_path, "w") as compile_log:
-            compile.compile(file_path, output, compile_log=compile_log, use_sanitizers=use_fsanitize)
+            compile.compile(file_path, output, compile_log=compile_log,
+                            extra_compilation_args=extra_compilation_args)
     except CompilationError:
         compile.print_compile_log(compile_log_path)
         raise
@@ -42,6 +54,16 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
+    if hasattr(config, "workerinput"):
+        # With pytest-xdist this function is called by every worker, but everything below is already
+        # done by the controlling process before the workers are started. Repeating it would not only
+        # waste time, but also modify the packages while other workers are already copying them.
+        return
+
+    # Tests generated for a package are shared by all tests using it. The directory is created here,
+    # so that the workers (which inherit the environment) use the same one.
+    os.environ[testing_util.GENERATED_TESTS_DIR_ENV] = tempfile.mkdtemp(prefix="sinol-make-tests-")
+
     packages = glob.glob(os.path.join(os.path.dirname(__file__), "packages", "*"))
     if not config.getoption("--no-precompile"):
         print("Collecting solutions...")
@@ -92,6 +114,14 @@ def pytest_configure(config):
                 pass
 
     oicompare.check_and_download()
+
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        return
+    generated_tests_dir = os.environ.pop(testing_util.GENERATED_TESTS_DIR_ENV, None)
+    if generated_tests_dir is not None:
+        shutil.rmtree(generated_tests_dir, ignore_errors=True)
 
 
 def pytest_generate_tests(metafunc):

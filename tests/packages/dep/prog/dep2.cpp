@@ -1,6 +1,6 @@
 // Wrong answer on group 2. Group 3 depends on group 2, so it should score
 // 0 points as well.
-#include <bits/stdc++.h>
+#include <iostream>
 
 using namespace std;
 

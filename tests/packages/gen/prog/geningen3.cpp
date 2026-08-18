@@ -1,5 +1,5 @@
 // Fails with -fsanitize=undefined
-#include <bits/stdc++.h>
+#include <iostream>
 
 using namespace std;
 

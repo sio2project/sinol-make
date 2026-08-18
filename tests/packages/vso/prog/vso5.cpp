@@ -5,7 +5,7 @@
 // fifth test is WA.
 // Group status should be RE.
 
-#include <bits/stdc++.h>
+#include <iostream>
 
 using namespace std;
 
