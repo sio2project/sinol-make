@@ -164,7 +164,8 @@ class BaseTaskType(RegisteredSubclassesBase):
 
     def _run_oicompare(self, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str, str]:
         path = oicompare.get_path()
-        proc = subprocess.Popen([path, output_file_path, answer_file_path, 'english_abbreviated'],
+        # oicompare expects the correct answer as the first argument and the contestant's output as the second one.
+        proc = subprocess.Popen([path, answer_file_path, output_file_path, 'english_abbreviated'],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
         output, stderr = proc.communicate()
