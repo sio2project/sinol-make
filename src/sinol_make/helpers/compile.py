@@ -106,10 +106,8 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
                      '-C', 'target-feature=+crt-static', '-C', 'strip=debuginfo', '-C', 'strip=symbols'] + \
                     extra_compilation_args
     elif ext == '.dmf':
-        # Duckling stores its source in `.dmf` files and is compiled with `duckc`.
-        # The `duckc compile <files/options>` subcommand produces an executable
-        # in a similar fashion to g++.
-        arguments = [compilers.duck_compiler_path or compiler.get_duck_compiler_path(), 'compile', program] + \
+        arguments = [compilers.duck_compiler_path or compiler.get_duck_compiler_path(), 
+                     'compile_modules', program, "-n", "package_llvm", "--no-incremental", "-O", "3"] + \
                     extra_compilation_args + ['-o', output]
     elif ext == '.java':
         raise NotImplementedError('Java compilation is not implemented')
@@ -138,6 +136,12 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
+        # Hot fix to run the second command:        
+        if ext == '.dmf':
+            # rename ./duck_build/package_llvm.exe to output:
+            import shutil
+            shutil.move('./duck_build/package_llvm.exe', output)
+            
         save_compiled(program, output, compilation_flags, use_sanitizers, extra_compilation_hash, clear_cache)
         return True
 
