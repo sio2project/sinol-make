@@ -108,7 +108,7 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
                     extra_compilation_args
     elif ext == '.dmf':
         arguments = [compilers.duck_compiler_path or compiler.get_duck_compiler_path(), 
-                     'compile_modules', program, "-n", "package_llvm", "--no-incremental", "-O", "3"] + \
+                     'compile_modules', "-n", "package_llvm", program, "--no-incremental", "-O", "3", "--additional-link-options", "\"-static\""] + \
                     extra_compilation_args + ['-o', output]
     elif ext == '.java':
         raise NotImplementedError('Java compilation is not implemented')
@@ -137,11 +137,6 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
     if process.returncode != 0:
         raise CompilationError('Compilation failed')
     else:
-        # Hot fix to run the second command:        
-        if ext == '.dmf':
-            # rename ./duck_build/package_llvm.exe to output:
-            shutil.move('./duck_build/package_llvm.exe', output)
-
         save_compiled(program, output, compilation_flags, use_sanitizers, extra_compilation_hash, clear_cache)
         return True
 
