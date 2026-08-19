@@ -5,6 +5,7 @@ import shutil
 import stat
 import subprocess
 
+
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
 from sinol_make.helpers import paths, package_util
@@ -139,9 +140,8 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
         # Hot fix to run the second command:        
         if ext == '.dmf':
             # rename ./duck_build/package_llvm.exe to output:
-            import shutil
             shutil.move('./duck_build/package_llvm.exe', output)
-            
+
         save_compiled(program, output, compilation_flags, use_sanitizers, extra_compilation_hash, clear_cache)
         return True
 
