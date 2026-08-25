@@ -2,6 +2,7 @@ import stat
 import subprocess
 
 import argparse
+import glob
 import os
 
 from sinol_make import util
@@ -56,6 +57,7 @@ def compile_ingen(ingen_path: str, args: argparse.Namespace, compilation_flags='
         return ingen_path
 
     compilers = compiler.verify_compilers(args, [ingen_path])
+    print_config_for_ingen(prog_path=os.path.dirname(ingen_path))
     ingen_exe, compile_log_path = compile.compile_file(ingen_path, package_util.get_executable(ingen_path),
                                                        compilers, compilation_flags, use_sanitizers=use_sanitizers,
                                                        additional_flags='-D_INGEN', use_extras=False)
@@ -67,6 +69,37 @@ def compile_ingen(ingen_path: str, args: argparse.Namespace, compilation_flags='
         print(util.info('Successfully compiled ingen.'))
     return ingen_exe
 
+
+def find_static_tests(config=None):
+    if config == None: 
+        config = package_util.get_config()
+    
+    found_static_files = set()
+    if 'sinol_static_tests' not in config:
+        return set()
+    
+    static_patterns = config['sinol_static_tests']
+    if isinstance(static_patterns, str):
+        static_patterns = [static_patterns]
+    for static_pattern in static_patterns:
+        files = [os.path.basename(f) for f in glob.glob(os.path.join(os.getcwd(), "in", static_pattern))]
+        found_static_files.update(files)
+    return found_static_files
+
+def format_string_list_for_cpp(list):
+    return ",\n".join([f'"{element}"' for element in list])
+
+def print_config_for_ingen(prog_path, config=None):
+    if config == None: 
+        config = package_util.get_config()
+
+    config_for_ingen = open(os.path.join(prog_path, "config.hpp"), "w")
+    config_for_ingen.write("""\
+#include <unordered_set>
+const std::unordered_set<std::string> static_test_names = {
+""" + format_string_list_for_cpp(find_static_tests()) + """
+};
+""")
 
 def run_ingen(ingen_exe, working_dir=None):
     """
@@ -82,7 +115,7 @@ def run_ingen(ingen_exe, working_dir=None):
     if is_shell:
         st = os.stat(ingen_exe)
         os.chmod(ingen_exe, st.st_mode | stat.S_IEXEC)
-
+    
     print(util.bold(' Ingen output '.center(util.get_terminal_size()[1], '=')))
     process = subprocess.Popen([ingen_exe], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                cwd=working_dir, shell=is_shell)

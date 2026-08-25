@@ -3,7 +3,7 @@ import glob
 import os
 
 from sinol_make import util
-from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_ingen
+from sinol_make.commands.ingen.ingen_util import get_ingen, compile_ingen, run_ingen, find_static_tests
 from sinol_make.helpers import parsers, package_util, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
 
@@ -47,14 +47,7 @@ class Command(BaseCommand):
                                    'because static tests are not defined. '
                                    'You can define them in config.yml with `sinol_static_tests` key.'))
             else:
-                static_files = config['sinol_static_tests']
-                if isinstance(static_files, str):
-                    static_files = [static_files]
-                found_static_files = set()
-                for static in static_files:
-                    files = [os.path.basename(f) for f in glob.glob(os.path.join(os.getcwd(), "in", static))]
-                    found_static_files.update(files)
-                to_delete = to_delete - found_static_files
+                to_delete = to_delete - find_static_tests(config)
                 if to_delete:
                     print('Cleaning up old input files.')
                     for test in to_delete:

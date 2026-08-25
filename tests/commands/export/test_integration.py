@@ -77,6 +77,43 @@ def test_simple(create_package, capsys):
     _test_archive(package_path, out, f'{task_id}.tgz')
 
 
+@pytest.mark.parametrize("create_package", [util.get_static_tests_package_path()], indirect=True)
+def test_static_test_export_interaction(create_package):
+    """
+    Test if export preserves a static test in the archive.
+    """
+    stt1a = os.path.join(create_package, "in", "stt1a.in")
+    stt1a_mtime = os.path.getmtime(stt1a)
+
+    stt2 = os.path.join(create_package, "in", "stt2.in")
+    stt2_mtime = os.path.getmtime(stt2)
+
+    config = package_util.get_config()
+    config["sinol_static_tests"] = ["stt1a.in", "stt2.in"]
+    with open(os.path.join(create_package, "config.yml"), "w") as f:
+        yaml.dump(config, f)
+
+    parser = configure_parsers()
+    args = parser.parse_args(["export", "--no-statement"])
+    command = Command()
+    command.run(args)
+
+    assert stt1a_mtime == os.path.getmtime(stt1a)
+    assert stt2_mtime == os.path.getmtime(stt2)
+
+    task_id = package_util.get_task_id()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with tarfile.open(f"{task_id}.tgz", "r") as tar:
+            sinol_util.extract_tar(tar, tmpdir)
+
+        extracted = os.path.join(tmpdir, task_id)
+        assert not os.path.exists(os.path.join(extracted, "in", "stt1.in"))
+        assert not os.path.exists(os.path.join(extracted, "in", "stt1b.in"))
+
+        assert os.path.exists(os.path.join(extracted, "in", "stt1a.in"))
+        assert os.path.exists(os.path.join(extracted, "in", "stt2.in"))
+
+
 @pytest.mark.parametrize("create_package", [util.get_doc_package_path()], indirect=True)
 def test_doc_cleared(create_package):
     """
