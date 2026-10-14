@@ -152,7 +152,7 @@ class BaseTaskType(RegisteredSubclassesBase):
         output, stderr = proc.communicate()
         if proc.returncode > 2:
             return False, Fraction(0, 1), (f"Checker returned with code {proc.returncode}, "
-                                           f"stderr: '{stderr.decode('utf-8')}'")
+                                           f"stderr: '{stderr.decode('utf-8')}'"), stderr.decode('utf-8')
         return self._parse_checker_output(output.decode('utf-8').split('\n'), stderr.decode('utf-8'))
 
     def _run_diff(self, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str, str]:
@@ -182,10 +182,11 @@ class BaseTaskType(RegisteredSubclassesBase):
 
     def check_output(self, input_file_path, output_file_path, answer_file_path) -> Tuple[bool, Fraction, str, str]:
         """
-        Runs the checker (or runs diff) and returns a tuple of three values:
+        Runs the checker (or runs diff) and returns a tuple of four values:
         - bool: whether the solution is correct
         - Fraction: percentage of the score
         - str: optional comment
+        - stderr
         """
         if self.has_checker:
             return self._run_checker(input_file_path, output_file_path, answer_file_path)
