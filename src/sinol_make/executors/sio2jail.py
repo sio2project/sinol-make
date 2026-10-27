@@ -43,7 +43,7 @@ class Sio2jailExecutor(BaseExecutor):
         if fds_to_close is not None:
             for fd in fds_to_close:
                 os.close(fd)
-        # sio2jail returns non-zero code only on intrnal error or invalid argument
+        # sio2jail returns non-zero code only on internal error or invalid argument
         _, proc_stderr = process.communicate()
         if process.returncode != 0:
             raise Sio2JailException(process.returncode, proc_stderr)
