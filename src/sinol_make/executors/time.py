@@ -1,4 +1,5 @@
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -12,15 +13,20 @@ from sinol_make.structs.status_structs import ExecutionResult, Status
 
 
 class TimeExecutor(BaseExecutor):
-    def _wrap_command(self, command: List[str], result_file_path: str, time_limit: int, memory_limit: int) -> List[str]:
+    def __init__(self):
         if sys.platform == 'darwin':
             time_name = 'gtime'
         elif sys.platform == 'linux':
-            time_name = '\\time'
+            time_name = 'time'
         else:
             util.exit_with_error("Measuring time with GNU time on Windows is not supported.")
 
-        return [f'{time_name}', '-f', '"%U\\n%M\\n%x"', '-o', f'"{result_file_path}"'] + command
+        self.time_path = shutil.which(time_name)
+        if self.time_path is None:
+            util.exit_with_error(f"{time_name} not found")
+
+    def _wrap_command(self, command: List[str], result_file_path: str, time_limit: int, memory_limit: int) -> List[str]:
+        return [f'"{self.time_path}"', '-f', '"%U\\n%M\\n%x"', '-o', f'"{result_file_path}"'] + command
 
     def _execute(self, cmdline: str, time_limit: int, hard_time_limit: int, memory_limit: int,
                  result_file_path: str, executable: str, execution_dir: str, stdin: int, stdout: int,
