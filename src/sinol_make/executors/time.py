@@ -14,6 +14,7 @@ from sinol_make.structs.status_structs import ExecutionResult, Status
 
 class TimeExecutor(BaseExecutor):
     def __init__(self):
+        super().__init__()
         if sys.platform == 'darwin':
             time_name = 'gtime'
         elif sys.platform == 'linux':
