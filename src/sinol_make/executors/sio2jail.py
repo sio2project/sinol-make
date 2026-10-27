@@ -8,6 +8,7 @@ from typing import List, Tuple, Union
 from sinol_make import util
 from sinol_make.executors import BaseExecutor
 from sinol_make.structs.status_structs import ExecutionResult, Status
+from sinol_make.interfaces.Errors import Sio2JailException
 
 
 class Sio2jailExecutor(BaseExecutor):
@@ -42,11 +43,10 @@ class Sio2jailExecutor(BaseExecutor):
         if fds_to_close is not None:
             for fd in fds_to_close:
                 os.close(fd)
+        # sio2jail returns non-zero code only on intrnal error or invalid argument
         _, proc_stderr = process.communicate()
         if process.returncode != 0:
-            util.exit_with_error(
-                f"sio2jail failed with exit code {process.returncode}:\n{proc_stderr}"
-            )
+            raise Sio2JailException(process.returncode, proc_stderr)
 
         return False, False, 0, []
 

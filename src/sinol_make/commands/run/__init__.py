@@ -1008,10 +1008,7 @@ class Command(BaseCommand):
         package_util.validate_test_names(self.ID)
         self.args = args
         self.config = package_util.get_config()
-        try:
-            self.contest = contest_types.get_contest_type()
-        except UnknownContestType as e:
-            util.exit_with_error(str(e))
+        self.contest = contest_types.get_contest_type()
 
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')
