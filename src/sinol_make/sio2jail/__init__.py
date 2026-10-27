@@ -7,6 +7,7 @@ import requests
 
 from sinol_make import util
 from sinol_make.executors.sio2jail import Sio2jailExecutor
+from sinol_make.interfaces.Errors import Sio2JailException
 from sinol_make.structs.status_structs import Status
 
 def sio2jail_supported():
@@ -82,28 +83,29 @@ def check_perf_counters_enabled():
 
     with (
         tempfile.NamedTemporaryFile() as sio2jail_result,
-        tempfile.TemporaryFile() as command_stdout,
-        tempfile.TemporaryFile() as command_stderr
+        tempfile.TemporaryFile() as command_stdout
     ):
-        result = executor.execute(
-            command=command,
-            time_limit=time_limit,
-            hard_time_limit=None,
-            memory_limit=memory_limit,
-            result_file_path=sio2jail_result.name,
-            executable=None,
-            execution_dir=None,
-            stdout=command_stdout,
-            stderr=command_stderr)
+        try:
+            result = executor.execute(
+                command=command,
+                time_limit=time_limit,
+                hard_time_limit=None,
+                memory_limit=memory_limit,
+                result_file_path=sio2jail_result.name,
+                executable=None,
+                execution_dir=None,
+                stdout=command_stdout)
+            error_str = ""
+        except Sio2JailException as err:
+            result = None
+            error_str = str(err)
         command_stdout.seek(0)
         output_str = command_stdout.read().decode('utf-8')
-        command_stderr.seek(0)
-        error_str = command_stderr.read().decode('utf-8')
         sio2jail_result.seek(0)
         result_raw = sio2jail_result.read().decode('utf-8')
 
     expected_output = "Test Successful!\n"
-    if result.Status != Status.OK or output_str != expected_output or error_str:
+    if result is None or result.Status != Status.OK or output_str != expected_output:
         max_perf_event_paranoid = 2
         if perf_event_paranoid > max_perf_event_paranoid:
             hint = (f"You have sysctl kernel.perf_event_paranoid = {perf_event_paranoid}"
@@ -125,9 +127,12 @@ def check_perf_counters_enabled():
             )
         opt_stdout_hint = f"\nCommand stdout (expected {repr(expected_output)}):\n---\n{output_str}" if output_str != expected_output else ""
         opt_stderr_hint = f"\nCommand stderr (expected none):\n---\n{error_str}" if error_str else ""
-        opt_sio2jail_hint = f"\nsio2jail result:\n---\n{result_raw}" if result.Status != Status.OK else ""
+        opt_sio2jail_hint = ""
+        if result_raw and (result is None or result.Status != Status.OK):
+            opt_sio2jail_hint = f"\nsio2jail result:\n---\n{result_raw}"
+        cmdline = result.Cmdline if result is not None else " ".join(command)
         util.exit_with_error("Failed sio2jail instruction counting self-check!"
-            f"\n\nTest command:\n---\n{result.Cmdline}\n"
+            f"\n\nTest command:\n---\n{cmdline}\n"
             f"{opt_stdout_hint}"
             f"{opt_stderr_hint}"
             f"{opt_sio2jail_hint}"
