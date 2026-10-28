@@ -12,9 +12,9 @@ int main() {
 		cout << a + b - 1;
 	else if (a == 4) {
 		time_t start = time(0);
-		int i = 0;
+		volatile int i = 0;
 		while (time(0) - start < 5) {
-			i++;
+			i = i + 1;
 		}
 		cout << a + b;
 	}

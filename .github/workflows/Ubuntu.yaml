@@ -4,26 +4,24 @@ on:
   push:
     branches: 'main'
   pull_request:
+    branches: 'main'
 permissions:
   contents: read
+concurrency:
+  # A new push to a PR cancels its older runs.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pytest:
-    # Self-hosted runner: never run code from fork PRs on it.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: self-hosted
+    timeout-minutes: 60
     strategy:
         matrix:
-            python-version: ["3.9", "3.13"]
+            python-version: ["3.11", "3.15"]
     name: pytest-ubuntu-python-${{ matrix.python-version }}
     container:
-      image: ubuntu:latest
-      volumes:
-        - /home/actions/oiejq:/github/home/.local/bin
-      env:
-        DEB_PYTHON_INSTALL_LAYOUT: deb
-        DEBIAN_FRONTEND: noninteractive
-        TZ: Europe/Warsaw
+      image: ghcr.io/sio2project/sinol-make-ci:ubuntu
       options:
         --privileged
     steps:
@@ -33,11 +31,8 @@ jobs:
           persist-credentials: false
       - name: Prepare system
         run: |
-          apt update
-          apt install -y sqlite3 sqlite3-doc build-essential dpkg texlive-latex-extra ghostscript git curl
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           sysctl kernel.perf_event_paranoid=-1
+          mkdir -p ~/.local/bin && ln -sf /usr/local/bin/sio2jail ~/.local/bin/sio2jail
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -45,9 +40,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install .[tests]
-          apt install -y time
       - name: Run pytest
         env:
           PYTEST_ADDOPTS: "--color=yes"
         run: |
-          python3 -m pytest -v -n $((`nproc` / 2))
+          python3 -m pytest -v -n $((`nproc` / 2)) --timeout=900 --timeout-method=thread

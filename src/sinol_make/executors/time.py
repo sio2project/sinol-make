@@ -55,7 +55,8 @@ class TimeExecutor(BaseExecutor):
                 if executable_process is not None and executable_process.memory_info().rss > memory_limit * 1024:
                     try:
                         os.killpg(process.pid, signal.SIGKILL)
-                    except ProcessLookupError:
+                    # macOS returns EPERM when the group leader is already a zombie.
+                    except (ProcessLookupError, PermissionError):
                         pass
                     mem_limit_exceeded = True
                     break
@@ -65,7 +66,7 @@ class TimeExecutor(BaseExecutor):
             if time.time() - start_time > hard_time_limit:
                 try:
                     os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
+                except (ProcessLookupError, PermissionError):
                     pass
                 timeout = True
                 break

@@ -45,7 +45,8 @@ class DetailedExecutor(BaseExecutor):
                 if executable_process is not None and mem_used > memory_limit * 1024:
                     try:
                         os.killpg(process.pid, signal.SIGKILL)
-                    except ProcessLookupError:
+                    # macOS returns EPERM when the group leader is already a zombie.
+                    except (ProcessLookupError, PermissionError):
                         pass
                     break
             except psutil.NoSuchProcess:
@@ -54,7 +55,7 @@ class DetailedExecutor(BaseExecutor):
             if time.time() - start_time > hard_time_limit:
                 try:
                     os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
+                except (ProcessLookupError, PermissionError):
                     pass
                 break
         time_used = time.time() - start_time

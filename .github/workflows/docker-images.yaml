@@ -1,0 +1,44 @@
+name: docker-images
+run-name: Build CI images
+on:
+  push:
+    branches: 'main'
+    paths:
+      - '.github/docker/**'
+      - '.github/workflows/docker-images.yaml'
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.repository == 'sio2project/sinol-make'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        distro: [ubuntu, arch]
+    name: build-${{ matrix.distro }}
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/sinol-make-ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build
+        run: |
+          docker build --pull -t "$IMAGE:${{ matrix.distro }}" .github/docker/${{ matrix.distro }}
+      - name: Push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          tag="${{ matrix.distro }}-$(date -u +%Y%m%d)"
+          docker tag "$IMAGE:${{ matrix.distro }}" "$IMAGE:$tag"
+          docker push "$IMAGE:${{ matrix.distro }}"
+          docker push "$IMAGE:$tag"
