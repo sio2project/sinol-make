@@ -1,5 +1,5 @@
 title: Package with lib file
-memory_limit: 16000
+memory_limit: 128000
 time_limit: 1000
 scores:
   1: 50
