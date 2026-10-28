@@ -12,7 +12,6 @@ from sinol_make.helpers import package_util, parsers, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.outgen import Command as OutgenCommand, compile_correct_solution, get_correct_solution
 from sinol_make.commands.doc import Command as DocCommand
-from sinol_make.interfaces.Errors import UnknownContestType
 
 
 class Command(BaseCommand):
@@ -280,10 +279,7 @@ class Command(BaseCommand):
         self.export_name = self.task_id
         self.task_type_cls = package_util.get_task_type_cls()
         package_util.validate_test_names(self.task_id)
-        try:
-            self.contest = contest_types.get_contest_type()
-        except UnknownContestType as e:
-            util.exit_with_error(str(e))
+        self.contest = contest_types.get_contest_type()
 
         config = package_util.get_config()
         package_util.validate_fake_time(config)

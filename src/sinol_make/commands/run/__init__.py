@@ -17,7 +17,7 @@ from sinol_make import contest_types, util, sio2jail
 from sinol_make.structs.run_structs import ExecutionData, PrintData
 from sinol_make.structs.cache_structs import CacheTest, CacheFile
 from sinol_make.interfaces.BaseCommand import BaseCommand
-from sinol_make.interfaces.Errors import CompilationError, UnknownContestType
+from sinol_make.interfaces.Errors import CompilationError
 from sinol_make.helpers import compile, compiler, package_util, printer, paths, cache, parsers
 from sinol_make.structs.status_structs import Status, ResultChange, PointsChange, ValidationResult, ExecutionResult, \
     TotalPointsChange
@@ -1015,10 +1015,7 @@ class Command(BaseCommand):
         package_util.validate_test_names(self.ID)
         self.args = args
         self.config = package_util.get_config()
-        try:
-            self.contest = contest_types.get_contest_type()
-        except UnknownContestType as e:
-            util.exit_with_error(str(e))
+        self.contest = contest_types.get_contest_type()
 
         if not 'title' in self.config.keys():
             util.exit_with_error('Title was not defined in config.yml.')

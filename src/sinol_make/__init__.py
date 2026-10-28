@@ -8,6 +8,7 @@ from sinol_make import util, sio2jail
 from sinol_make.helpers import cache, oicompare
 
 # Required for side effects
+from sinol_make.interfaces.Errors import SinolMakeException
 from sinol_make.task_type.normal import NormalTaskType # noqa
 from sinol_make.task_type.interactive import InteractiveTaskType # noqa
 
@@ -102,6 +103,8 @@ def main():
         util.exit_with_error(err)
     except SystemExit as err:
         exit(err.code)
+    except SinolMakeException as err:
+        util.exit_with_error(str(err))
     except Exception:
         print(traceback.format_exc())
         util.exit_with_error('An error occurred while running the command.\n'

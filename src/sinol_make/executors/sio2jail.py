@@ -8,6 +8,7 @@ from typing import List, Tuple, Union
 from sinol_make import util
 from sinol_make.executors import BaseExecutor
 from sinol_make.structs.status_structs import ExecutionResult, Status
+from sinol_make.interfaces.Errors import Sio2JailException
 
 
 class Sio2jailExecutor(BaseExecutor):
@@ -34,14 +35,18 @@ class Sio2jailExecutor(BaseExecutor):
         env['UNDER_SIO2JAIL'] = "1"
         try:
             process = subprocess.Popen(cmdline, *args, shell=True, stdin=stdin, stdout=stdout, env=env,
-                                        stderr=subprocess.DEVNULL, preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
+                                        stderr=subprocess.PIPE, encoding='utf-8', errors='replace',
+                                        preexec_fn=os.setpgrp, cwd=execution_dir, **kwargs)
         except TypeError as e:
             print(util.error(f"Invalid command: `{cmdline}`"))
             raise e
         if fds_to_close is not None:
             for fd in fds_to_close:
                 os.close(fd)
-        process.wait()
+        # sio2jail returns non-zero code only on internal error or invalid argument
+        _, proc_stderr = process.communicate()
+        if process.returncode != 0:
+            raise Sio2JailException(process.returncode, proc_stderr)
 
         return False, False, 0, []
 
