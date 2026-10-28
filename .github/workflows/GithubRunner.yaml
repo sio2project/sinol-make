@@ -6,12 +6,16 @@ on:
   pull_request:
 permissions:
   contents: read
+concurrency:
+  # A new push to a PR cancels its older runs.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pytest:
     strategy:
         matrix:
-            python-version: ["3.9", "3.13"]
+            python-version: ["3.11", "3.15"]
     name: pytest-github-runner-python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     steps:
@@ -26,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install .[tests]
-          sudo apt install texlive-latex-recommended -y
-          sudo apt install ghostscript -y
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-recommended ghostscript
       - name: Run github runner pytest
         env:
           PYTEST_ADDOPTS: "--color=yes"

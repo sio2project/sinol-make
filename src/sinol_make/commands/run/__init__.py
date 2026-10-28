@@ -434,8 +434,12 @@ class Command(BaseCommand):
         result_file = file_no_ext + ".res"
         hard_time_limit = math.ceil(2 * time_limit / 1000.0)
 
-        return self.task_type.run(time_limit, hard_time_limit, memory_limit, test, output_file,
-                                  package_util.get_out_from_in(test), result_file, executable, execution_dir)
+        try:
+            return self.task_type.run(time_limit, hard_time_limit, memory_limit, test, output_file,
+                                      package_util.get_out_from_in(test), result_file, executable, execution_dir)
+        except SystemExit as e:
+            # mp.Pool loses the task of a worker that exits, so the parent would wait for its result forever.
+            raise RuntimeError(f"Running {name} on {os.path.basename(test)} failed.") from e
 
     def run_solutions(self, compiled_commands, names, solutions, executables_dir):
         """
@@ -517,6 +521,9 @@ class Command(BaseCommand):
         except KeyboardInterrupt:
             keyboard_interrupt = True
             pool.terminate()
+        except RuntimeError as e:
+            pool.terminate()
+            util.exit_with_error(str(e))
         finally:
             if has_terminal:
                 run_event.clear()
