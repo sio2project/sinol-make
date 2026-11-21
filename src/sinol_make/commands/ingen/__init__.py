@@ -21,7 +21,7 @@ class Command(BaseCommand):
             self.get_name(),
             help='Generate input files',
             description='Generate input files using ingen program '
-                        '(for example prog/abcingen.cpp for abc task).'
+                        '(for example prog/abcingen.cpp for abc task). '
                         'You can also specify your ingen source '
                         'file which will be used.'
         )
