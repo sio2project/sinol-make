@@ -3,6 +3,8 @@ import os
 import shutil
 import tempfile
 
+from sinol_make import util as sinol_util
+from sinol_make.helpers import package_util, paths
 from sinol_make.commands.clean import Command
 from tests import util
 
@@ -34,6 +36,7 @@ def test_clean_tests():
         command.run(argparse.Namespace(
             tests=True,
             cache=False,
+            junk=False,
         ))
 
         assert set(os.listdir("in")) == {
@@ -44,7 +47,9 @@ def test_clean_tests():
             "hwr0.out",
             "hwr0a.out",
         }
-
+        assert not os.path.exists(
+            paths.get_cache_path("clean", "tests")
+        )
         # --tests should not remove cache.
         assert os.path.exists(".cache")
 
@@ -64,6 +69,7 @@ def test_clean_cache():
         command.run(argparse.Namespace(
             tests=False,
             cache=True,
+            junk=False,
         ))
 
         assert not os.path.exists(".cache")
@@ -71,16 +77,82 @@ def test_clean_cache():
         assert set(os.listdir("out")) == outputs_before
 
 
-def test_clean_without_flags():
+def test_clean_junk():
     """
-    Test that clean without flags removes generated tests and cache.
+    Test removing files and directories matching cleanup patterns.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         command = _create_package(tmpdir)
 
+        os.makedirs("prog/__pycache__", exist_ok=True)
+        os.makedirs("doc", exist_ok=True)
+        os.makedirs(".git", exist_ok=True)
+
+        with open(".git/foo.bak", "w"):
+            pass
+
+        with open(".cache/foo.bak", "w"):
+            pass
+
+        with open("foo.bak", "w"):
+            pass
+
+        with open("doc/foo.bak", "w"):
+            pass
+
+        with open("prog/foo.e", "w"):
+            pass
+
+        with open("doc/foo.e", "w"):
+            pass
+
+        with open("foo.txt", "w"):
+            pass
+
+        config = package_util.get_config()
+        config["sinol_cleanup_patterns"] = [
+            "*.bak",
+            "__pycache__/",
+            "prog/*.e",
+        ]
+        sinol_util.save_config(config)
+
         command.run(argparse.Namespace(
             tests=False,
             cache=False,
+            junk=True,
+        ))
+
+        assert not os.path.exists("foo.bak")
+        assert not os.path.exists("doc/foo.bak")
+        assert not os.path.exists("prog/foo.e")
+        assert not os.path.exists("prog/__pycache__")
+
+        assert os.path.exists("doc/foo.e")
+        assert os.path.exists("foo.txt")
+        assert os.path.exists(".git/foo.bak")
+        assert os.path.exists(".cache/foo.bak")
+
+
+def test_clean_without_flags():
+    """
+    Test that clean without flags removes generated tests, cache and junk.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        command = _create_package(tmpdir)
+
+        # Configure a junk pattern and create a matching file.
+        config = package_util.get_config()
+        config["sinol_cleanup_patterns"] = ["*.bak"]
+        sinol_util.save_config(config)
+
+        with open("foo.bak", "w"):
+            pass
+
+        command.run(argparse.Namespace(
+            tests=False,
+            cache=False,
+            junk=False,
         ))
 
         assert set(os.listdir("in")) == {
@@ -91,4 +163,21 @@ def test_clean_without_flags():
             "hwr0.out",
             "hwr0a.out",
         }
+
+        assert not os.path.exists("foo.bak")
         assert not os.path.exists(".cache")
+
+
+def test_clean_junk_without_patterns(capsys):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        command = _create_package(tmpdir)
+
+        command.run(argparse.Namespace(
+            tests=False,
+            cache=False,
+            junk=True,
+        ))
+
+        captured = capsys.readouterr()
+
+        assert "No sinol_cleanup_patterns defined in config.yml." in captured.out

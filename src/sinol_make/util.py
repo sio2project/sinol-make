@@ -93,6 +93,7 @@ def save_config(config):
         "sinol_contest_type",
         "sinol_latex_compiler",
         "sinol_static_tests",
+        "sinol_cleanup_patterns",
         "sinol_undocumented_time_tool",
         "sinol_undocumented_test_limits",
         "fake_time",

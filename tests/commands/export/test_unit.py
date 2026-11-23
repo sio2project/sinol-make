@@ -2,9 +2,11 @@ import yaml
 import shutil
 import tempfile
 
+import os
 from tests import util
 from .util import *
 from sinol_make.commands.ingen.ingen_util import generate_input_tests, get_generated_tests
+from sinol_make.commands.export import Command
 from sinol_make.helpers import paths
 
 def _create_package(tmpdir, path):
@@ -98,3 +100,47 @@ def test_create_makefile_in():
             with open(os.path.join(tmpdir, "makefile.in"), "r") as makefile:
                 lines = makefile.readlines()
                 assert_makefile_in(lines, task_name, config)
+
+
+def test_clear_files():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.makedirs(os.path.join(tmpdir, "prog"))
+        os.makedirs(os.path.join(tmpdir, "doc"))
+        os.makedirs(os.path.join(tmpdir, "prog", "__pycache__"))
+
+        with open(os.path.join(tmpdir, "prog", "foo.bak"), "w"):
+            pass
+
+        with open(os.path.join(tmpdir, "prog", "foo.cpp"), "w"):
+            pass
+
+        with open(os.path.join(tmpdir, "doc", "foo.log"), "w"):
+            pass
+
+        command = Command()
+
+        config = {
+            "sinol_cleanup_patterns": [
+                "*.bak",
+                "__pycache__/",
+            ],
+        }
+
+        command.clear_files(tmpdir, config)
+
+        assert not os.path.exists(
+            os.path.join(tmpdir, "prog", "foo.bak")
+        )
+
+        assert not os.path.exists(
+            os.path.join(tmpdir, "prog", "__pycache__")
+        )
+
+        assert os.path.exists(
+            os.path.join(tmpdir, "prog", "foo.cpp")
+        )
+
+        # Default export cleanup behavior.
+        assert not os.path.exists(
+            os.path.join(tmpdir, "doc", "foo.log")
+        )

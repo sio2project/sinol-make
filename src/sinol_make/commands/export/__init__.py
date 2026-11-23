@@ -8,7 +8,7 @@ import argparse
 
 from sinol_make import util, contest_types
 from sinol_make.commands.ingen.ingen_util import generate_input_tests, get_generated_tests
-from sinol_make.helpers import package_util, parsers, paths
+from sinol_make.helpers import cleanup, package_util, parsers, paths
 from sinol_make.interfaces.BaseCommand import BaseCommand
 from sinol_make.commands.outgen import Command as OutgenCommand, compile_correct_solution, get_correct_solution
 from sinol_make.commands.doc import Command as DocCommand
@@ -164,15 +164,17 @@ class Command(BaseCommand):
         if self.args.export_ocen:
             self.create_ocen(target_dir)
 
-    def clear_files(self, target_dir: str):
+    def clear_files(self, target_dir: str, config: dict):
         """
         Clears unnecessary files from target directory.
         :param target_dir: Directory to clear files from.
+        :param config: Config dictionary.
         """
         files_to_remove = ['doc/*~', 'doc/*.aux', 'doc/*.log', 'doc/*.dvi', 'doc/*.err', 'doc/*.inf']
-        for pattern in files_to_remove:
-            for f in glob.glob(os.path.join(target_dir, pattern)):
-                os.remove(f)
+        cleanup.remove_cleanup_paths(target_dir, files_to_remove)
+
+        patterns = cleanup.get_cleanup_patterns(config)
+        cleanup.remove_cleanup_paths(target_dir, patterns)
 
     def create_makefile_in(self, target_dir: str, config: dict):
         """
@@ -267,7 +269,7 @@ class Command(BaseCommand):
         generate_input_tests(self.task_id, self.args, paths.get_cache_path('export', 'tests'))
         self.compile_statement()
         self.copy_package_required_files(export_package_path)
-        self.clear_files(export_package_path)
+        self.clear_files(export_package_path, config)
         self.create_makefile_in(export_package_path, config)
         export_name = self.contest.additional_export_job()
         if export_name is not None:

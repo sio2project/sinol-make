@@ -112,6 +112,15 @@ sinol_static_tests: ["__ID__0.in", "__ID__0a.in"]
 # If this key is not specified, then this defaults to 100.
 sinol_total_score: 100
 
+# Files and directories matching these patterns are removed by
+# `sinol-make clean --junk` and excluded from exported packages.
+# Patterns ending with '/' match directories.
+# sinol_cleanup_patterns:
+#   - '*~'
+#   - '*.bak'
+#   - '__pycache__/'
+#   - 'prog/*.e'
+
 # sinol-make can check if the solutions run as expected when using `run` command.
 # Key `sinol_expected_scores` defines expected scores for each solution on each tests.
 # There should be no reason to change this key manually.
