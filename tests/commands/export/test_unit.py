@@ -2,9 +2,12 @@ import yaml
 import shutil
 import tempfile
 
+import os
 from tests import util
 from .util import *
-
+from sinol_make.commands.ingen.ingen_util import generate_input_tests, get_generated_tests
+from sinol_make.commands.export import Command
+from sinol_make.helpers import paths
 
 def _create_package(tmpdir, path):
     package_path = os.path.join(tmpdir, os.path.basename(path))
@@ -27,12 +30,15 @@ def test_get_generated_tests():
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         command = _create_package(tmpdir, util.get_handwritten_package_path())
-        command.generate_input_tests()
-        assert set(command.get_generated_tests()) == {"1a", "2a"}
+        target_dir = paths.get_cache_path('export', 'tests')
+        generate_input_tests(command.task_id, command.args, target_dir)
+        assert set(get_generated_tests(command.task_id, target_dir)) == {"1a", "2a"}
 
         command = _create_package(tmpdir, util.get_simple_package_path())
-        command.generate_input_tests()
-        assert set(command.get_generated_tests()) == {"1a", "2a", "3a", "4a"}
+        target_dir = paths.get_cache_path('export', 'tests')
+        generate_input_tests(command.task_id, command.args, target_dir)
+        assert set(get_generated_tests(command.task_id, target_dir)) == {"1a", "2a", "3a", "4a"}
+
 
 
 def test_copy_package_required_files():
@@ -44,7 +50,8 @@ def test_copy_package_required_files():
         res_dir = os.path.join(tmpdir, "res")
         os.mkdir(res_dir)
         command = _create_package(tmpdir, util.get_handwritten_package_path())
-        command.generate_input_tests()
+        target_dir = paths.get_cache_path('export', 'tests')
+        generate_input_tests(command.task_id, command.args, target_dir)
         command.copy_package_required_files(res_dir)
 
         assert_configs_equal(os.getcwd(), res_dir)
@@ -56,7 +63,8 @@ def test_copy_package_required_files():
         shutil.rmtree(res_dir)
         os.mkdir(res_dir)
         command = _create_package(tmpdir, util.get_simple_package_path())
-        command.generate_input_tests()
+        target_dir = paths.get_cache_path('export', 'tests')
+        generate_input_tests(command.task_id, command.args, target_dir)
         command.copy_package_required_files(res_dir)
 
         assert_configs_equal(os.getcwd(), res_dir)
@@ -92,3 +100,47 @@ def test_create_makefile_in():
             with open(os.path.join(tmpdir, "makefile.in"), "r") as makefile:
                 lines = makefile.readlines()
                 assert_makefile_in(lines, task_name, config)
+
+
+def test_clear_files():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.makedirs(os.path.join(tmpdir, "prog"))
+        os.makedirs(os.path.join(tmpdir, "doc"))
+        os.makedirs(os.path.join(tmpdir, "prog", "__pycache__"))
+
+        with open(os.path.join(tmpdir, "prog", "foo.bak"), "w"):
+            pass
+
+        with open(os.path.join(tmpdir, "prog", "foo.cpp"), "w"):
+            pass
+
+        with open(os.path.join(tmpdir, "doc", "foo.log"), "w"):
+            pass
+
+        command = Command()
+
+        config = {
+            "sinol_cleanup_patterns": [
+                "*.bak",
+                "__pycache__/",
+            ],
+        }
+
+        command.clear_files(tmpdir, config)
+
+        assert not os.path.exists(
+            os.path.join(tmpdir, "prog", "foo.bak")
+        )
+
+        assert not os.path.exists(
+            os.path.join(tmpdir, "prog", "__pycache__")
+        )
+
+        assert os.path.exists(
+            os.path.join(tmpdir, "prog", "foo.cpp")
+        )
+
+        # Default export cleanup behavior.
+        assert not os.path.exists(
+            os.path.join(tmpdir, "doc", "foo.log")
+        )
