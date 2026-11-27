@@ -211,6 +211,13 @@ def get_simple_interactive_package():
     return os.path.join(os.path.dirname(__file__), "packages", "simple_interactive")
 
 
+def get_static_tests_package_path():
+    """
+    Get path to package with static tests (/tests/packages/static_tests)
+    """
+    return os.path.join(os.path.dirname(__file__), "packages", "static_tests")
+
+
 def get_two_interactive_package():
     """
     Get path to interactive package with two processes (/tests/packages/two_interactive)

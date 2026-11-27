@@ -1,0 +1,18 @@
+title: Package with static tests and ingen avoiding overriding them
+sinol_task_id: stt
+static_tests: ["in/stt1a.in", "in/stt2.in"]
+memory_limit: 16000
+time_limit: 1000
+scores:
+  1: 25
+  2: 25
+  3: 25
+  4: 25
+sinol_expected_scores:
+  stt.cpp:
+    expected:
+      1: {points: 25, status: OK}
+      2: {points: 25, status: OK}
+      3: {points: 25, status: OK}
+      4: {points: 25, status: OK}
+    points: 100

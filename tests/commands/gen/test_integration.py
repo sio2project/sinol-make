@@ -144,6 +144,28 @@ def test_ingen(create_package):
     assert not os.path.exists(os.path.join(create_package, "in", ".md5sums"))
 
 
+@pytest.mark.parametrize("create_package", [util.get_static_tests_package_path()], indirect=True)
+def test_static_test_ingen_interaction(create_package):
+    """
+    Tests if a static test (stt1a.in) was ignored by `ingen`,
+    but it sill generated a test down the line (stt1b.in).
+    """
+    stt1a = os.path.join(create_package, "in", "stt1a.in")
+    edited_stt1a = os.path.getmtime(stt1a)
+
+    stt1b = os.path.join(create_package, "in", "stt1b.in")
+    assert not os.path.exists(stt1b)
+
+    config = package_util.get_config()
+    config["sinol_static_tests"] = "stt1a.in"
+    with open(os.path.join(create_package, "config.yml"), "w") as f:
+        yaml.dump(config, f)
+
+    simple_run(None, "ingen")
+    assert edited_stt1a == os.path.getmtime(stt1a)
+    assert os.path.exists(stt1b)
+
+
 @pytest.mark.parametrize("create_package", [util.get_shell_ingen_pack_path(), util.get_simple_package_path()],
                             indirect=True)
 def test_only_outputs_flag(create_package):
