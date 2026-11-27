@@ -145,7 +145,7 @@ def get_solutions_re(task_id: str) -> re.Pattern:
     Returns regex pattern matching all solutions for given task.
     :param task_id: Task id.
     """
-    return re.compile(r"^%s[bs]?[0-9]*(_.*)?\.(c|cpp|cc|py|rs)$" % task_id)
+    return re.compile(r"^%s[bs]?[0-9]*(_.*)?\.(c|cpp|cc|py|rs|dmf)$" % task_id)
 
 
 def get_executable_key(executable, task_id):
@@ -386,7 +386,7 @@ def get_all_code_files(task_id: str) -> List[str]:
     :return: List of code files.
     """
     result = glob.glob(os.path.join(os.getcwd(), "prog", f"{task_id}ingen.sh"))
-    for ext in ["c", "cpp", "py", "java", "rs"]:
+    for ext in ["c", "cpp", "py", "java", "rs", "dmf"]:
         result += glob.glob(os.path.join(os.getcwd(), f"prog/{task_id}*.{ext}"))
     return result
 

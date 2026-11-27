@@ -169,6 +169,16 @@ def get_rust_package_path():
     return os.path.join(os.path.dirname(__file__), "packages", "rus")
 
 
+def get_duck_package_path():
+    """Get path to Duckling test package (/tests/packages/duck)"""
+    return os.path.join(os.path.dirname(__file__), "packages", "duck")
+
+
+def get_mock_duck_compiler_path():
+    """Get path to the mock `duckc` compiler used in tests (/tests/mock_bin/duckc)"""
+    return os.path.join(os.path.dirname(__file__), "mock_bin", "duckc")
+
+
 def get_ocen_package_path():
     """
     Get path to package for testing ocen archive creation (/tests/packages/ocen)

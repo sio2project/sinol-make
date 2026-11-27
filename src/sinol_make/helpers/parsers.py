@@ -23,6 +23,9 @@ def add_compilation_arguments(parser: argparse.ArgumentParser, custom_sanitize_h
     parser.add_argument('--rust-compiler-path', dest='rust_compiler_path', type=str,
                         default=compiler.get_rust_compiler_path(),
                         help='Rust compiler to use (default: rustc)')
+    parser.add_argument('--duck-compiler-path', dest='duck_compiler_path', type=str,
+                        default=compiler.get_duck_compiler_path(),
+                        help='Duckling compiler to use (default: duckc)')
     # Java is not currently supported by sinol-make
     # parser.add_argument('--java-compiler-path', dest='java_compiler_path', type=str,
     #                     default=compiler.get_java_compiler_path(), help='Java compiler to use (default: javac)')

@@ -5,6 +5,7 @@ import shutil
 import stat
 import subprocess
 
+
 import sinol_make.helpers.compiler as compiler
 from sinol_make import util
 from sinol_make.helpers import paths, package_util
@@ -108,6 +109,10 @@ def compile(program, output, compilers: Compilers = None, compile_log=None, comp
                      '-o', output, '-O', '--edition=2024',
                      '-C', 'target-feature=+crt-static', '-C', 'strip=debuginfo', '-C', 'strip=symbols'] + \
                     extra_compilation_args
+    elif ext == '.dmf':
+        arguments = [compilers.duck_compiler_path or compiler.get_duck_compiler_path(), 
+                     'compile_modules', "-n", "package_llvm", program, "--no-incremental", "-O", "3", "--additional-link-options", "\"-static\""] + \
+                    extra_compilation_args + ['-o', output]
     elif ext == '.java':
         raise NotImplementedError('Java compilation is not implemented')
     else:

@@ -58,7 +58,7 @@ class InteractiveTaskType(BaseTaskType):
         Returns regex pattern matching all solutions for given task.
         :param task_id: Task id.
         """
-        return re.compile(r"^%ssoc\.(c|cpp|cc|py|rs)$" % task_id)
+        return re.compile(r"^%ssoc\.(c|cpp|cc|py|rs|dmf)$" % task_id)
 
     @classmethod
     def identify(cls) -> Tuple[bool, int]:

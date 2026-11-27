@@ -102,6 +102,18 @@ def get_rust_compiler_path():
         return 'rustc'
 
 
+@cache_result()
+def get_duck_compiler_path():
+    """
+    Get the Duckling compiler
+    """
+
+    if not check_if_installed('duckc'):
+        return None
+    else:
+        return 'duckc'
+
+
 def get_default_compilers():
     """
     Get the default compilers
@@ -111,6 +123,7 @@ def get_default_compilers():
         cpp_compiler_path=get_cpp_compiler_path(),
         python_interpreter_path=get_python_interpreter_path(),
         rust_compiler_path=get_rust_compiler_path(),
+        duck_compiler_path=get_duck_compiler_path(),
         # Java is not currently supported by sinol-make
         # java_compiler_path=get_java_compiler_path()
     )
@@ -154,6 +167,10 @@ def verify_compilers(args: argparse.Namespace, solutions: List[str]) -> Compiler
             compiler = 'Rust compiler'
             flag = '--rust-compiler-path'
             tried = 'rustc'
+        elif ext == '.dmf' and args.duck_compiler_path is None:
+            compiler = 'Duckling compiler'
+            flag = '--duck-compiler-path'
+            tried = 'duckc'
 
         if compiler != "":
             util.exit_with_error(
@@ -165,4 +182,5 @@ def verify_compilers(args: argparse.Namespace, solutions: List[str]) -> Compiler
         python_interpreter_path=args.python_interpreter_path,
         java_compiler_path=None,
         rust_compiler_path=args.rust_compiler_path,
+        duck_compiler_path=args.duck_compiler_path,
     )
